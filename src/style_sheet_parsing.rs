@@ -291,6 +291,7 @@ fn parse_branch(
 /// Consumes a stylesheet file's data and loads it into [`StyleSheet`].
 pub(crate) fn parse_stylesheet_file(type_registry: &TypeRegistry, stylesheet: &mut StyleSheet, file: StyleFile, data: Value)
 {
+    tracing::info!("parsing stylesheet");
     stylesheet.initialize_file(file.clone());
 
     let Value::Object(data) = data

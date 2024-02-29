@@ -4,10 +4,34 @@ use crate::*;
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
+use serde::{Deserialize, Serialize};
 
 //standard shortcuts
 
 
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn setup_justified_layout(mut rc: ReactCommands)
+{
+    // Update Layout whenever JustifiedLayout changes on the same entity.
+    rc.on(mutation::<JustifiedLayout>(),
+        |
+            mut rc        : ReactCommands,
+            event         : MutationEvent<JustifiedLayout>,
+            mut justified : Query<(&mut React<Layout>, &React<JustifiedLayout>)>
+        |
+        {
+            let Some(justified_entity) = event.read()
+            else { tracing::error!("justified layout mutation event missing"); return; };
+            let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
+            else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
+            *layout.get_mut(&mut rc) = Layout::from(**justified);
+        }
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The 2D dimensions of the node as a rectangle on the plane of the node's parent.
@@ -37,7 +61,7 @@ pub struct ParentUpdate
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Expresses the positioning reference of one axis of a node within another node.
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
 pub enum Justify
 {
     /// The node's minimum edge will align with the parent's minimum edge.
@@ -45,6 +69,7 @@ pub enum Justify
     /// - Y-axis: top side
     Min,
     /// The node's midpoint will align with the parent's midpoint.
+    #[default]
     Center,
     /// The node's maximum edge will align with the parent's maximum edge.
     /// - X-axis: right side
@@ -70,13 +95,13 @@ impl Relative
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The size of a node relative to its parent.
-#[derive(Debug, Copy, Clone)]
+#[derive(Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Size
 {
     /// The node's width and height are relative to the parents' width and height.
     ///
     /// Relative values are recorded in percentages.
-    Relative(Vec2),
+    Relative(Vec2)
 }
 
 impl Size
@@ -97,6 +122,14 @@ impl Size
     }
 }
 
+impl Default for Size
+{
+    fn default() -> Self
+    {
+        Self::Relative(Vec2::default())
+    }
+}
+
 impl From<Relative> for Size
 {
     fn from(rel: Relative) -> Self
@@ -110,7 +143,7 @@ impl From<Relative> for Size
 /// A layout component for UI nodes.
 ///
 /// This should be added to nodes as a [`UiInstruction`].
-#[derive(ReactComponent, Debug, Copy, Clone)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, Deserialize)]
 pub struct Layout
 {
     pub x_justify: Justify,
@@ -173,12 +206,10 @@ impl Layout
     }
 }
 
-impl UiInstruction for Layout
+impl CobwebStyle for Layout
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        rc.insert(node, self);
-
         // Update the node's transform on parent update or if the layout changes.
         let token = rc.on((entity_event::<ParentUpdate>(node), entity_mutation::<Layout>(node)),
             move
@@ -220,7 +251,8 @@ impl UiInstruction for Layout
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A [`UiInstruction`] that wraps [`Layout`] with simple justification-based settings.
+/// A [`CobwebStyle`] that wraps [`Layout`] with simple justification-based settings.
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum JustifiedLayout
 {
     TopLeft(Size),
@@ -234,18 +266,45 @@ pub enum JustifiedLayout
     BottomRight(Size),
 }
 
-impl UiInstruction for JustifiedLayout
+impl From<JustifiedLayout> for Layout
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity)
+    fn from(justified: JustifiedLayout) -> Self
     {
-        let layout = match self
+        match justified
         {
-            Self::Center(size) => Layout::centered(size),
+            JustifiedLayout::Center(size) => Layout::centered(size),
             _ => todo!(),
-        };
-        layout.apply(rc, node);
+        }
+    }
+}
 
-        //todo: shared reactor that updates Layout when JustifiedLayout changes
+impl Default for JustifiedLayout
+{
+    fn default() -> Self
+    {
+        Self::Center(Size::default())
+    }
+}
+
+impl CobwebStyle for JustifiedLayout
+{
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    {
+        Layout::from(*self).apply(rc, node);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct LayoutPlugin;
+
+impl Plugin for LayoutPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app.register_type::<Layout>()
+            .register_type::<JustifiedLayout>()
+            .add_systems(PreStartup, setup_justified_layout);
     }
 }
 

@@ -45,7 +45,7 @@ fn load_style_changes(
 ){
     if events.is_empty() { return; }
 
-    let stylesheet = stylesheet.get_mut(&mut rc);
+    let mut stylesheet_ref: Option<&mut StyleSheet> = None;
     let type_registry = types.read();
 
     for event in events.read()
@@ -67,7 +67,10 @@ fn load_style_changes(
         let Some(asset) = assets.remove(handle)
         else { tracing::error!("failed to remove stylesheet asset {:?}", handle); continue; };
 
+        if stylesheet_ref.is_none() { stylesheet_ref = Some(stylesheet.get_mut(&mut rc)); }
+        let stylesheet = stylesheet_ref.unwrap();
         parse_stylesheet_file(&type_registry, stylesheet, asset.file, asset.data);
+        stylesheet_ref = Some(stylesheet);
     }
 }
 
@@ -119,10 +122,10 @@ The stylesheet format has a short list of rules.
     "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
 
     "node1": {
-        "RelativeLayout": {"Center": {"size": {"Relative": [50.0, 50.0]}}},
+        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}},
 
         "node2": {
-            "RelativeLayout": {"Center": {"size": {"Relative": [50.0, 50.0]}}}
+            "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}}
         }
     }
 }
@@ -135,7 +138,7 @@ The stylesheet format has a short list of rules.
     "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
 
     "node1": {
-        "RelativeLayout": {"Center": {"size": {"Relative": [50.0, 50.0]}}},
+        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}},
 
         "node2": {
             "RelativeLayout": "inherited"
@@ -143,16 +146,20 @@ The stylesheet format has a short list of rules.
     }
 }
 ```
-- Node path references may be combined into path segments, which can be used to reduce indentation.
+- Node path references may be combined into path segments, which can be used to reduce indentation. If a style is inherited
+    in an abbreviated path, it will inherit from the current scope, not its path-parent.
 ```json
 {
     "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
 
+    "RelativeLayout": {"Center": {"Relative": [25.0, 25.0]}}
+
     "node1": {
-        "RelativeLayout": {"Center": {"size": {"Relative": [50.0, 50.0]}}}
+        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}}
     },
 
     "node1::node2": {
+        // This inherits {25.0, 25.0}.
         "RelativeLayout": "inherited"
     }
 }

@@ -1,17 +1,15 @@
 {
 
 "outer_block": {
-    "Block"           : {"color": {"Hsla": {"hue": 200.0, "saturation": 0.8, "lightness": 0.8, "alpha": 0.8}}},
-    "JustifiedLayout" : {"Center": {"size": {"Relative": [50.0, 50.0]}}},
+    "JustifiedLayout" : {"Center": {"Relative": [75.0, 75.0]}},
 
     "inner_block": {
-        "Block"           : "inherited",
-        "JustifiedLayout" : {"Center": {"size": {"Relative": [150.0, 50.0]}}}
+        "JustifiedLayout" : {"Center": {"Relative": [50.0, 50.0]}}
     },
 
     "inner_block::final_block": {
         "Block"           : {"color": {"Hsla": {"hue": 100.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-        "JustifiedLayout" : {"Center": {"size": {"Relative": [50.0, 50.0]}}}
+        "JustifiedLayout" : "inherited"
     }
 }
 

@@ -5,7 +5,7 @@ use crate::*;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_cobweb::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 //standard shortcuts
 use std::collections::HashMap;
@@ -109,7 +109,7 @@ fn spawn_block(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// [`CobwebStyle`] primitive for creating single-color rectangular blocks.
-#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Block
 {
     /// The color of the block.

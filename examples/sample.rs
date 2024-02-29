@@ -92,30 +92,40 @@ fn handle_keyboard_input_for_node(
 
 fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 {
+    let file = StyleRef::from_file("examples/sample.style.json");
+
+    /*
+    // For debugging serialization issues.
+    let block = Block{ color: Color::BLACK };
+    let block = serde_json::to_string(&block).unwrap();
+    tracing::error!("{:?}", block);
+    */
+
     // Build a block in the center of the camera.
-    let center = uc.build((
+    let style = file.extend("outer_block");
+    let outer = uc.build((
             Block{ color: Color::BLACK },
             InCamera(camera.single()),
-            JustifiedLayout::Center(Size::from(Relative::new(50., 50.))),
+            JustifiedLayout::load(&style),
         ))
         .id();
 
     // Build a block inside the other block.
+    let style = style.extend("inner_block");
     let inner = uc.build((
             Block{ color: Color::DARK_GRAY },
-            Parent(center),
-            JustifiedLayout::Center(Size::from(Relative::new(25., 25.))),
+            Parent(outer),
+            JustifiedLayout::load(&style),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node)  //todo: OnBroadcast
         ))
         .id();
 
     // Build another block inside the previous.
-    let file = StyleRef::from_file("examples/sample.style.json");
-    let style = file.extend("outer_block::inner_block::final_block");
+    let style = style.extend("final_block");
     uc.build((
             Block::load(&style),
             Parent(inner),
-            JustifiedLayout::Center(Size::from(Relative::new(50., 50.))),
+            JustifiedLayout::load(&style),
         ));
 }
 
@@ -147,7 +157,7 @@ fn main()
         )
         .add_plugins(CobwebUiPlugin)
         .add_style_sheet("examples/sample.style.json")
-        .insert_resource(bevy::winit::WinitSettings::desktop_app())
+        //.insert_resource(bevy::winit::WinitSettings::desktop_app())
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();
