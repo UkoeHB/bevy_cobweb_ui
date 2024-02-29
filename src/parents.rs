@@ -18,7 +18,9 @@ pub const DEFAULT_Z_OFFSET: f32 = 10.0f32;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A [`UiInstruction`] for adding a UI root node within a specific camera.
+/// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
+///
+/// Adds a `React<`[`NodeSize`]`>` component to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
 ///
@@ -88,6 +90,8 @@ impl UiInstruction for InCamera
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A [`UiInstruction`] for adding a UI node within a specific parent node.
+///
+/// Adds a `React<`[`NodeSize`]`>` component to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]

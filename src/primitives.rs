@@ -5,6 +5,7 @@ use crate::*;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_cobweb::prelude::*;
+use serde::Deserialize;
 
 //standard shortcuts
 use std::collections::HashMap;
@@ -12,29 +13,71 @@ use std::collections::HashMap;
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Resource)]
 struct BlockAssetCache
 {
     mesh: Mesh2dHandle,
+    //todo: is this not mapping not precise?
     colors: HashMap<u32, Handle<ColorMaterial>>,
 }
 
-fn spawn_block(
-    In((node, style)) : In<(Entity, BlockStyle)>,
-    mut cache         : Local<Option<BlockAssetCache>>,
-    mut rc            : ReactCommands,
-    mut meshes        : ResMut<Assets<Mesh>>,
-    mut materials     : ResMut<Assets<ColorMaterial>>
-){
-    // Get cached asset handles.
-    if cache.is_none()
+impl BlockAssetCache
+{
+    fn get_color_handle(&mut self, color: Color, materials: &mut Assets<ColorMaterial>) -> Handle<ColorMaterial>
     {
-        *cache = Some(BlockAssetCache{
+        self.colors.entry(color.as_rgba_u32()).or_insert_with(|| materials.add(color)).clone()
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn setup_block_primitive(mut rc: ReactCommands, mut meshes: ResMut<Assets<Mesh>>)
+{
+    rc.commands().insert_resource(
+        BlockAssetCache{
             mesh   : Mesh2dHandle(meshes.add(Rectangle::new(1.0, 1.0))),
             colors : HashMap::default(),
-        });
-    }
-    let cache = cache.as_mut().unwrap();
-    let color = cache.colors.entry(style.color.as_rgba_u32()).or_insert_with(|| materials.add(style.color));
+        }
+    );
+
+    // Update block styles when their `Block` components are mutated.
+    rc.on(mutation::<Block>(),
+        |
+            event         : MutationEvent<Block>,
+            nodes         : Query<(&Children, &React<Block>)>,
+            mut blocks    : Query<&mut Handle<ColorMaterial>>,
+            mut cache     : ResMut<BlockAssetCache>,
+            mut materials : ResMut<Assets<ColorMaterial>>
+        |
+        {
+            let Some(entity) = event.read()
+            else { tracing::error!("entity mutation event missing for block primitive refresh"); return; };
+            let Ok((children, block)) = nodes.get(entity)
+            else { tracing::debug!(?entity, "entity missing for block primitive refresh"); return; };
+
+            for child in children.iter()
+            {
+                let Ok(mut handle) = blocks.get_mut(*child) else { continue; };
+                *handle = cache.get_color_handle(block.color, &mut materials);
+                return;
+            }
+            tracing::warn!(?entity, "failed finding block child for updating style {:?}", **block);
+        }
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn spawn_block(
+    In((node, style)) : In<(Entity, Block)>,
+    mut cache         : ResMut<BlockAssetCache>,
+    mut rc            : ReactCommands,
+    mut materials     : ResMut<Assets<ColorMaterial>>
+){
+    // Get material handle for the color.
+    let color = cache.get_color_handle(style.color, &mut materials);
 
     // Spawn block entity as child of node.
     let block = rc.commands().spawn(
@@ -65,38 +108,41 @@ fn spawn_block(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Style of the [`Block`] UI primitive.
-#[derive(Copy, Clone)]
-pub struct BlockStyle
+/// [`CobwebStyle`] primitive for creating single-color rectangular blocks.
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Deserialize)]
+pub struct Block
 {
     /// The color of the block.
     pub color: Color,
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-
-/// [`UiInstruction`] primitive for creating a single-color rectangular block.
-pub struct Block
+impl CobwebStyle for Block
 {
-    /// The style of the block.
-    pub style: BlockStyle,
-}
-
-impl Block
-{
-    /// Makes a new block.
-    pub fn new(style: BlockStyle) -> Self
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        Self{ style }
+        // Create a block.
+        rc.commands().syscall((node, *self), spawn_block);
     }
 }
 
-impl UiInstruction for Block
+impl Default for Block
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity)
+    fn default() -> Self
     {
-        // Create a block.
-        rc.commands().syscall((node, self.style), spawn_block);
+        Self{ color: Color::NONE }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct PrimitivesPlugin;
+
+impl Plugin for PrimitivesPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app.register_type::<Block>()
+            .add_systems(PreStartup, setup_block_primitive);
     }
 }
 

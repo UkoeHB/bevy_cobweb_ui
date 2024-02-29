@@ -38,7 +38,7 @@ pub struct ParentUpdate
 
 /// Expresses the positioning reference of one axis of a node within another node.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum Justification
+pub enum Justify
 {
     /// The node's minimum edge will align with the parent's minimum edge.
     /// - X-axis: left side
@@ -113,8 +113,8 @@ impl From<Relative> for Size
 #[derive(ReactComponent, Debug, Copy, Clone)]
 pub struct Layout
 {
-    pub x_justify: Justification,
-    pub y_justify: Justification,
+    pub x_justify: Justify,
+    pub y_justify: Justify,
     pub offset_abs: Vec2,
     pub offset_rel: Vec2,
     pub size: Size,
@@ -131,8 +131,8 @@ impl Layout
     pub fn centered(size: impl Into<Size>) -> Self
     {
         Self {
-            x_justify  : Justification::Center,
-            y_justify  : Justification::Center,
+            x_justify  : Justify::Center,
+            y_justify  : Justify::Center,
             offset_abs : Vec2::default(),
             offset_rel : Vec2::default(),
             size       : size.into(),
@@ -153,18 +153,18 @@ impl Layout
 
         let mut x_offset = match self.x_justify
         {
-            Justification::Min    => 0.,
-            Justification::Center => (parent_dims.x / 2.) - (dims.x / 2.),
-            Justification::Max    => parent_dims.x - dims.x,
+            Justify::Min    => 0.,
+            Justify::Center => (parent_dims.x / 2.) - (dims.x / 2.),
+            Justify::Max    => parent_dims.x - dims.x,
         };
         x_offset += self.offset_abs.x;
         x_offset += self.offset_rel.x * parent_dims.x.max(0.) / 100.;
 
         let mut y_offset = match self.y_justify
         {
-            Justification::Min    => 0.,
-            Justification::Center => (parent_dims.y / 2.) - (dims.y / 2.),
-            Justification::Max    => parent_dims.y - dims.y,
+            Justify::Min    => 0.,
+            Justify::Center => (parent_dims.y / 2.) - (dims.y / 2.),
+            Justify::Max    => parent_dims.y - dims.y,
         };
         y_offset += self.offset_abs.y;
         y_offset += self.offset_rel.y * parent_dims.y.max(0.) / 100.;
@@ -215,6 +215,37 @@ impl UiInstruction for Layout
             }
         );
         cleanup_reactor_on_despawn(rc, node, token);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// A [`UiInstruction`] that wraps [`Layout`] with simple justification-based settings.
+pub enum JustifiedLayout
+{
+    TopLeft(Size),
+    TopCenter(Size),
+    TopRight(Size),
+    CenterLeft(Size),
+    Center(Size),
+    CenterRight(Size),
+    BottomLeft(Size),
+    BottomCenter(Size),
+    BottomRight(Size),
+}
+
+impl UiInstruction for JustifiedLayout
+{
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
+    {
+        let layout = match self
+        {
+            Self::Center(size) => Layout::centered(size),
+            _ => todo!(),
+        };
+        layout.apply(rc, node);
+
+        //todo: shared reactor that updates Layout when JustifiedLayout changes
     }
 }
 

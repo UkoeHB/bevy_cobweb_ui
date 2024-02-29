@@ -16,8 +16,10 @@ impl Plugin for CobwebUiPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(ReactPlugin);
-        app.add_plugins(AppEventsPlugin);
+        app.add_plugins(ReactPlugin)
+            .add_plugins(AppEventsPlugin)
+            .add_plugins(StyleSheetPlugin)
+            .add_plugins(PrimitivesPlugin);
     }
 }
 

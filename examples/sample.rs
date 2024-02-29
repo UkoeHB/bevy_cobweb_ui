@@ -48,9 +48,9 @@ fn handle_keyboard_input_for_node(
             if !check_cache(event.event) { return; }
             match layout.y_justify
             {
-                Justification::Min    => { layout.get_mut(&mut rc).y_justify = Justification::Center; }
-                Justification::Center => { layout.get_mut(&mut rc).y_justify = Justification::Max; }
-                Justification::Max    => (),
+                Justify::Min    => { layout.get_mut(&mut rc).y_justify = Justify::Center; }
+                Justify::Center => { layout.get_mut(&mut rc).y_justify = Justify::Max; }
+                Justify::Max    => (),
             }
         }
         Key::ArrowUp =>
@@ -58,9 +58,9 @@ fn handle_keyboard_input_for_node(
             if !check_cache(event.event) { return; }
             match layout.y_justify
             {
-                Justification::Min    => (),
-                Justification::Center => { layout.get_mut(&mut rc).y_justify = Justification::Min; }
-                Justification::Max    => { layout.get_mut(&mut rc).y_justify = Justification::Center; }
+                Justify::Min    => (),
+                Justify::Center => { layout.get_mut(&mut rc).y_justify = Justify::Min; }
+                Justify::Max    => { layout.get_mut(&mut rc).y_justify = Justify::Center; }
             }
         }
         Key::ArrowLeft =>
@@ -68,9 +68,9 @@ fn handle_keyboard_input_for_node(
             if !check_cache(event.event) { return; }
             match layout.x_justify
             {
-                Justification::Min    => (),
-                Justification::Center => { layout.get_mut(&mut rc).x_justify = Justification::Min; }
-                Justification::Max    => { layout.get_mut(&mut rc).x_justify = Justification::Center; }
+                Justify::Min    => (),
+                Justify::Center => { layout.get_mut(&mut rc).x_justify = Justify::Min; }
+                Justify::Max    => { layout.get_mut(&mut rc).x_justify = Justify::Center; }
             }
         }
         Key::ArrowRight =>
@@ -78,9 +78,9 @@ fn handle_keyboard_input_for_node(
             if !check_cache(event.event) { return; }
             match layout.x_justify
             {
-                Justification::Min    => { layout.get_mut(&mut rc).x_justify = Justification::Center; }
-                Justification::Center => { layout.get_mut(&mut rc).x_justify = Justification::Max; }
-                Justification::Max    => (),
+                Justify::Min    => { layout.get_mut(&mut rc).x_justify = Justify::Center; }
+                Justify::Center => { layout.get_mut(&mut rc).x_justify = Justify::Max; }
+                Justify::Max    => (),
             }
         }
         _ => (),
@@ -94,30 +94,29 @@ fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 {
     // Build a block in the center of the camera.
     let center = uc.build((
-            Block::new(BlockStyle{ color: Color::BLACK }),
+            Block{ color: Color::BLACK },
             InCamera(camera.single()),
-            Layout::centered(Relative::new(50., 50.)),
+            JustifiedLayout::Center(Size::from(Relative::new(50., 50.))),
         ))
         .id();
 
     // Build a block inside the other block.
-    uc.build((
-            Block::new(BlockStyle{ color: Color::DARK_GRAY }),
+    let inner = uc.build((
+            Block{ color: Color::DARK_GRAY },
             Parent(center),
-            Layout::centered(Relative::new(25., 25.)),
-            On::<KeyboardInput>::new(handle_keyboard_input_for_node)
-        ));
+            JustifiedLayout::Center(Size::from(Relative::new(25., 25.))),
+            On::<KeyboardInput>::new(handle_keyboard_input_for_node)  //todo: OnBroadcast
+        ))
+        .id();
 
     // Build another block inside the previous.
-    /*
-    let style = "final_block";
+    let file = StyleRef::from_file("examples/sample.style.json");
+    let style = file.extend("outer_block::inner_block::final_block");
     uc.build((
-            Block::load(style)),
+            Block::load(&style),
             Parent(inner),
-            Layout::load(style),
-            Size::load(style),
+            JustifiedLayout::Center(Size::from(Relative::new(50., 50.))),
         ));
-    */
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -147,6 +146,7 @@ fn main()
             )
         )
         .add_plugins(CobwebUiPlugin)
+        .add_style_sheet("examples/sample.style.json")
         .insert_resource(bevy::winit::WinitSettings::desktop_app())
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
