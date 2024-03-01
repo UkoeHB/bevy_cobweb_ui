@@ -4,7 +4,6 @@ use crate::*;
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::Deserialize;
 use serde_json::Value;
 
 //standard shortcuts
@@ -245,7 +244,7 @@ impl StyleSheet
     /// and `None` will be returned.
     pub fn get<S>(&self, style_ref: &FullStyleRef, ignore_unchanged: bool) -> Option<S>
     where
-        S: for<'de> Deserialize<'de>
+        S: CobwebStyle
     {
         // Access the style.
         let Some(style_file) = self.styles.get(&style_ref.file)
@@ -266,7 +265,8 @@ impl StyleSheet
             }
             else
             {
-                tracing::error!("could not load style {:?}, it was not found at path {:?} in file {:?}; maybe the path is wrong",
+                tracing::error!("could not load style {:?}, it was not found at path {:?} in file {:?}; \
+                    maybe the path is wrong",
                     style_ref.path.full_type_name, style_ref.path.path, style_ref.file);
             }
             return None;
@@ -285,8 +285,11 @@ impl StyleSheet
             Ok(style) => Some(style),
             Err(err) =>
             {
-                tracing::error!(?err, "failed deserializing style {:?} at path {:?} in file {:?}",
-                    style_ref.path.full_type_name, style_ref.path.path, style_ref.file);
+                let temp = S::default();
+                let hint = serde_json::to_string(&temp).unwrap();
+                tracing::error!("failed deserializing style {:?} at path {:?} in file {:?}, {:?}\n\
+                    serialization hint: {:?}",
+                    style_ref.path.full_type_name, style_ref.path.path, style_ref.file, err, hint);
                 None
             }
         }

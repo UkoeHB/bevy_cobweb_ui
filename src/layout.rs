@@ -61,7 +61,7 @@ pub struct ParentUpdate
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Expresses the positioning reference of one axis of a node within another node.
-#[derive(Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Justify
 {
     /// The node's minimum edge will align with the parent's minimum edge.
@@ -143,7 +143,7 @@ impl From<Relative> for Size
 /// A layout component for UI nodes.
 ///
 /// This should be added to nodes as a [`UiInstruction`].
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Layout
 {
     pub x_justify: Justify,

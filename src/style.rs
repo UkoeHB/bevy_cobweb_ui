@@ -4,7 +4,7 @@ use crate::*;
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 //standard shortcuts
 use std::any::TypeId;
@@ -21,7 +21,7 @@ use std::marker::PhantomData;
 /// Note that it is typically safe to manually mutate `CobwebStyle` components on node entities, because stylesheet loading is only
 /// used for initialization in production settings. If you *do* reload a stylesheet (e.g. during development),
 /// then existing dynamic styles that were changed will be overwritten.
-pub trait CobwebStyle: ReactComponent + Reflect + Default + for<'de> Deserialize<'de>
+pub trait CobwebStyle: ReactComponent + Reflect + Default + Serialize + for<'de> Deserialize<'de>
 {
     /// Applies a style to a node.
     ///
