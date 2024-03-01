@@ -47,11 +47,11 @@ where
     E: Clone + Send + Sync + 'static,
     T: IntoSystem<(), (), M> + Send + Sync + 'static
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity)
+    fn apply(self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
     {
         let reactor = rc.commands().spawn_system_command(self.callback);
 
-        let token = rc.on(broadcast::<E>(),
+        let token = rc.on_revokable(broadcast::<E>(),
             move
             |
                 mut commands : Commands,

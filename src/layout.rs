@@ -208,10 +208,10 @@ impl Layout
 
 impl CobwebStyle for Layout
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
     {
         // Update the node's transform on parent update or if the layout changes.
-        let token = rc.on((entity_event::<ParentUpdate>(node), entity_mutation::<Layout>(node)),
+        let token = rc.on_revokable((entity_event::<ParentUpdate>(node), entity_mutation::<Layout>(node)),
             move
             |
                 mut cache : Local<Option<ParentUpdate>>,
@@ -288,9 +288,9 @@ impl Default for JustifiedLayout
 
 impl CobwebStyle for JustifiedLayout
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
     {
-        Layout::from(*self).apply(rc, node);
+        Layout::from(*self).apply(rc, node, finishers);
     }
 }
 

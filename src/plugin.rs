@@ -19,6 +19,7 @@ impl Plugin for CobwebUiPlugin
         app.add_plugins(ReactPlugin)
             .add_plugins(AppEventsPlugin)
             .add_plugins(StyleSheetPlugin)
+            .add_plugins(UiInstructionPlugin)
             .add_plugins(LayoutPlugin)
             .add_plugins(PrimitivesPlugin);
     }

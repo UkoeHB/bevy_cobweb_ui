@@ -312,7 +312,7 @@ impl Default for StyleSheet
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that enables style loading.
-pub struct StyleSheetPlugin;
+pub(crate) struct StyleSheetPlugin;
 
 impl Plugin for StyleSheetPlugin
 {

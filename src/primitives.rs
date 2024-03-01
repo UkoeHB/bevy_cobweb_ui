@@ -90,8 +90,8 @@ fn spawn_block(
         .set_parent(node)
         .id();
 
-    // Scale the block mesh based on the parent's node size.
-    let token = rc.on(entity_mutation::<NodeSize>(node),
+    // Scale the block mesh based on the node size.
+    let token = rc.on_revokable(entity_mutation::<NodeSize>(node),
         move |nodes: Query<&React<NodeSize>>, mut transforms: Query<&mut Transform>|
         {
             let Ok(node) = nodes.get(node)
@@ -118,7 +118,7 @@ pub struct Block
 
 impl CobwebStyle for Block
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
     {
         // Create a block.
         rc.commands().syscall((node, *self), spawn_block);
