@@ -126,6 +126,7 @@ fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
             Block::load(&style),
             Parent(inner),
             JustifiedLayout::load(&style),
+            On::<KeyboardInput>::new(handle_keyboard_input_for_node)
         ));
 }
 
