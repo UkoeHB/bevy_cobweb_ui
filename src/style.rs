@@ -31,25 +31,6 @@ impl Default for StyleLoaderReactors
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Component)]
-struct LoadedStyle<T: CobwebStyle>
-{
-    style_ref: StyleRef,
-    initialized: bool,
-    p: PhantomData<T>
-}
-
-impl<T: CobwebStyle> LoadedStyle<T>
-{
-    fn new(style_ref: StyleRef) -> Self
-    {
-        Self{ style_ref, initialized: false, p: PhantomData::default() }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Updates the style `T` on nodes when the stylesheet is updated or when a loaded node receives a `FinishNode` event.
 fn style_loader_reactor<T: CobwebStyle>(
     node_event : EntityEvent<FinishNode>,
@@ -135,6 +116,28 @@ impl<T: CobwebStyle> UiInstruction for T
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Component added to nodes that load `T` from the stylesheet.
+///
+/// If removed from the node, then the associated style will no longer be updated on the entity when the stylesheet
+/// changes.
+#[derive(Component)]
+pub struct LoadedStyle<T: CobwebStyle>
+{
+    style_ref: StyleRef,
+    initialized: bool,
+    p: PhantomData<T>
+}
+
+impl<T: CobwebStyle> LoadedStyle<T>
+{
+    fn new(style_ref: StyleRef) -> Self
+    {
+        Self{ style_ref, initialized: false, p: PhantomData::default() }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// A [`UiInstruction`] for loading a [`CobwebStyle`] from the [`StyleSheet`].
 pub struct StyleLoader<T: CobwebStyle>
 {
@@ -150,6 +153,7 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
         T::default().apply(rc, node);
 
         // Save the loading context to this node.
+        // - This component is important for filtering for entities with styles that are loaded.
         rc.commands().entity(node).insert(LoadedStyle::<T>::new(self.style_ref));
 
         // Prep reactor for loading styles for this node.
