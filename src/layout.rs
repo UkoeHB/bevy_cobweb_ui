@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-// Update Layout whenever JustifiedLayout changes on the same entity.
+/// Updates Layout whenever JustifiedLayout changes on the same entity.
 fn justified_layout_reactor(
     event         : MutationEvent<JustifiedLayout>,
     mut rc        : ReactCommands,
@@ -31,6 +31,50 @@ impl WorldReactor for JustifiedLayoutReactor
     type StartingTriggers = MutationTrigger<JustifiedLayout>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(justified_layout_reactor) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+// Updates a node's transform on parent update or if the layout changes.
+fn layout_reactor(
+    ref_event : MutationEvent<LayoutRef>,
+    lay_event : MutationEvent<Layout>,
+    mut rc    : ReactCommands,
+    mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>, &React<LayoutRef>)>
+){
+    let Some(node) = ref_event.read().or_else(|| lay_event.read())
+    else { tracing::error!("failed running layout reactor, event is missing"); return; };
+    let Ok((mut transform, mut size, layout, layout_ref)) = nodes.get_mut(node)
+    else { tracing::debug!(?node, "node missing on layout update"); return; };
+
+    // Get the offset between our node's anchor and the parent node's anchor.
+    let parent_size = *layout_ref.parent_size;
+    let mut offset = layout.offset(parent_size);
+    let dims = layout.dims(parent_size);
+
+    // Convert the offset to a translation between the parent and node origins.
+    // - Offset = [vector to parent upper left corner]
+    //          + [anchor offset vector (convert y)]
+    //          + [node corner to node origin (convert y)]
+    offset.x = (-parent_size.x / 2.) + offset.x + (dims.x / 2.);
+    offset.y = (parent_size.y / 2.) + -offset.y + (-dims.y / 2.);
+
+    // Update this node's transform.
+    *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
+    transform.rotation = Quat::from_rotation_z(layout.z_rotation);
+
+    // Update our node's size.
+    //todo: how to use set_if_not_eq? NodeSize contains floats...
+    *size.get_mut(&mut rc) = NodeSize(dims);
+}
+
+struct LayoutReactor;
+impl WorldReactor for LayoutReactor
+{
+    type StartingTriggers = ();
+    type Triggers = (EntityMutationTrigger<LayoutRef>, EntityMutationTrigger<Layout>);
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(layout_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -212,39 +256,16 @@ impl CobwebStyle for Layout
 {
     fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        // Update the node's transform on parent update or if the layout changes.
-        let token = rc.on_revokable((entity_mutation::<LayoutRef>(node), entity_mutation::<Layout>(node)),
-            move
+        rc.commands().syscall(node,
             |
-                mut rc    : ReactCommands,
-                mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>, &React<LayoutRef>)>
+                In(node)    : In<Entity>,
+                mut rc      : ReactCommands,
+                mut reactor : Reactor<LayoutReactor>,
             |
             {
-                let Ok((mut transform, mut size, layout, layout_ref)) = nodes.get_mut(node)
-                else { tracing::debug!(?node, "node missing on layout update"); return; };
-
-                // Get the offset between our node's anchor and the parent node's anchor.
-                let parent_size = *layout_ref.parent_size;
-                let mut offset = layout.offset(parent_size);
-                let dims = layout.dims(parent_size);
-
-                // Convert the offset to a translation between the parent and node origins.
-                // - Offset = [vector to parent upper left corner]
-                //          + [anchor offset vector (convert y)]
-                //          + [node corner to node origin (convert y)]
-                offset.x = (-parent_size.x / 2.) + offset.x + (dims.x / 2.);
-                offset.y = (parent_size.y / 2.) + -offset.y + (-dims.y / 2.);
-
-                // Update this node's transform.
-                *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
-                transform.rotation = Quat::from_rotation_z(layout.z_rotation);
-
-                // Update our node's size.
-                //todo: how to use set_if_not_eq? NodeSize contains floats...
-                *size.get_mut(&mut rc) = NodeSize(dims);
+                reactor.add_triggers(&mut rc, (entity_mutation::<LayoutRef>(node), entity_mutation::<Layout>(node)));
             }
         );
-        cleanup_reactor_on_despawn(rc, node, token);
     }
 }
 
@@ -303,6 +324,7 @@ impl Plugin for LayoutPlugin
     {
         app.register_type::<Layout>()
             .register_type::<JustifiedLayout>()
+            .add_reactor(LayoutReactor)
             .add_reactor_with(JustifiedLayoutReactor, mutation::<JustifiedLayout>());
     }
 }
