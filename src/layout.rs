@@ -12,23 +12,25 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup_justified_layout(mut rc: ReactCommands)
+// Update Layout whenever JustifiedLayout changes on the same entity.
+fn justified_layout_reactor(
+    event         : MutationEvent<JustifiedLayout>,
+    mut rc        : ReactCommands,
+    mut justified : Query<(&mut React<Layout>, &React<JustifiedLayout>)>
+){
+    let Some(justified_entity) = event.read()
+    else { tracing::error!("justified layout mutation event missing"); return; };
+    let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
+    else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
+    *layout.get_mut(&mut rc) = Layout::from(**justified);
+}
+
+struct JustifiedLayoutReactor;
+impl WorldReactor for JustifiedLayoutReactor
 {
-    // Update Layout whenever JustifiedLayout changes on the same entity.
-    rc.on(mutation::<JustifiedLayout>(),
-        |
-            mut rc        : ReactCommands,
-            event         : MutationEvent<JustifiedLayout>,
-            mut justified : Query<(&mut React<Layout>, &React<JustifiedLayout>)>
-        |
-        {
-            let Some(justified_entity) = event.read()
-            else { tracing::error!("justified layout mutation event missing"); return; };
-            let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
-            else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
-            *layout.get_mut(&mut rc) = Layout::from(**justified);
-        }
-    );
+    type StartingTriggers = MutationTrigger<JustifiedLayout>;
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(justified_layout_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -301,7 +303,7 @@ impl Plugin for LayoutPlugin
     {
         app.register_type::<Layout>()
             .register_type::<JustifiedLayout>()
-            .add_systems(PreStartup, setup_justified_layout);
+            .add_reactor_with(JustifiedLayoutReactor, mutation::<JustifiedLayout>());
     }
 }
 
