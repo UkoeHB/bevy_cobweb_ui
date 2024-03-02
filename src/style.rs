@@ -8,8 +8,100 @@ use serde::{Deserialize, Serialize};
 
 //standard shortcuts
 use std::any::TypeId;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Resource)]
+struct StyleLoaderReactors
+{
+    handles: HashMap<TypeId, SystemCommand>,
+}
+
+impl Default for StyleLoaderReactors
+{
+    fn default() -> Self
+    {
+        Self{ handles: HashMap::default() }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component)]
+struct LoadedStyle<T: CobwebStyle>
+{
+    style_ref: StyleRef,
+    initialized: bool,
+    p: PhantomData<T>
+}
+
+impl<T: CobwebStyle> LoadedStyle<T>
+{
+    fn new(style_ref: StyleRef) -> Self
+    {
+        Self{ style_ref, initialized: false, p: PhantomData::default() }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Updates the style `T` on nodes when the stylesheet is updated or when a loaded node receives a `FinishNode` event.
+fn style_loader_reactor<T: CobwebStyle>(
+    node_event : EntityEvent<FinishNode>,
+    mut rc     : ReactCommands,
+    types      : Res<AppTypeRegistry>,
+    styles     : ReactRes<StyleSheet>,
+    mut nodes  : Query<(&mut React<T>, &mut LoadedStyle<T>)>
+){
+    // Prep node updater.
+    let mut updater = |node: &mut React<T>, ctx: &mut LoadedStyle<T>|
+    {
+        // Look up the type's short name.
+        let type_registry = types.read();
+        let Some(type_info) = type_registry.get(TypeId::of::<T>())
+        else
+        {
+            tracing::error!("type registry info missing for {:?}, make sure this type is registered in \
+                your app with App::register_type", std::any::type_name::<T>());
+            return;
+        };
+        let long_name = type_info.type_info().type_path();
+        let full_style_path = FullStylePath::new(ctx.style_ref.path.clone(), long_name);
+        let full_style_ref = FullStyleRef::new(ctx.style_ref.file.clone(), full_style_path);
+
+        // Get the stylesheet entry if it exists and if its file was changed (or we need to initialize).
+        let Some(loaded_style) = styles.get::<T>(&full_style_ref, ctx.initialized) else { return; };
+        ctx.initialized = true;
+
+        // Update the node.
+        *node.get_mut(&mut rc) = loaded_style;
+    };
+
+    // Check if triggered by a node event.
+    if let Some((node, _)) = node_event.read()
+    {
+        // Look up the node.
+        let Ok((mut node, mut ctx)) = nodes.get_mut(*node)
+        else { tracing::warn!(?node, "node missing on style update for {:?}", std::any::type_name::<T>()); return; };
+
+        // Update the node.
+        updater(&mut node, &mut ctx);
+    }
+    else // Otherwise assume it was triggered for all nodes.
+    {
+        for (mut node, mut ctx) in nodes.iter_mut()
+        {
+            updater(&mut node, &mut ctx);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait representing [`UiInstructions`](UiInstruction) that can be loaded with [`StyleSheet`].
@@ -57,42 +149,22 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
         // Default-initialize the instruction and apply it.
         T::default().apply(rc, node);
 
-        // Update the style `T` on this node when the stylesheet is updated.
-        let mut initialized = false;
-        let token = rc.on_revokable((entity_event::<FinishNode>(node), resource_mutation::<StyleSheet>()),
-            move
-            |
-                mut rc    : ReactCommands,
-                types     : Res<AppTypeRegistry>,
-                styles    : ReactRes<StyleSheet>,
-                mut nodes : Query<&mut React<T>>
-            |
+        // Save the loading context to this node.
+        rc.commands().entity(node).insert(LoadedStyle::<T>::new(self.style_ref));
+
+        // Prep reactor for loading styles for this node.
+        // - We manually manage the `style_loader_reactor` because it is generic over `T`.
+        rc.commands().syscall((),
+            move |mut rc: ReactCommands, mut reactors: ResMut<StyleLoaderReactors>|
             {
-                // Look up the type's short name.
-                let type_registry = types.read();
-                let Some(type_info) = type_registry.get(TypeId::of::<T>())
-                else
-                {
-                    tracing::error!("type registry info missing for {:?}, make sure this type is registered in \
-                        your app with App::register_type", std::any::type_name::<T>());
-                    return;
-                };
-                let long_name = type_info.type_info().type_path();
-                let full_style_path = FullStylePath::new(self.style_ref.path.clone(), long_name);
-                let full_style_ref = FullStyleRef::new(self.style_ref.file.clone(), full_style_path);
-
-                // Get the stylesheet entry if it exists and if its file was changed (or we need to initialize).
-                let Some(loaded_style) = styles.get::<T>(&full_style_ref, initialized) else { return; };
-                initialized = true;
-
-                // Update the node.
-                let Ok(mut node) = nodes.get_mut(node)
-                else { tracing::warn!(?node, "node missing on style update for {:?}", full_style_ref); return; };
-
-                *node.get_mut(&mut rc) = loaded_style;
+                let reactor = reactors.handles
+                    .entry(TypeId::of::<T>())
+                    .or_insert_with(
+                        || rc.on_persistent(resource_mutation::<StyleSheet>(), style_loader_reactor::<T>)
+                    );
+                rc.with(entity_event::<FinishNode>(node), *reactor, ReactorMode::Persistent);
             }
         );
-        cleanup_reactor_on_despawn(rc, node, token);
     }
 }
 
@@ -110,6 +182,18 @@ impl<T: CobwebStyle> IntoStyleLoader<T> for T
     fn load(style_ref: &StyleRef) -> StyleLoader<T>
     {
         StyleLoader{ style_ref: style_ref.clone(), p: PhantomData::default() }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct StylePlugin;
+
+impl Plugin for StylePlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app.init_resource::<StyleLoaderReactors>();
     }
 }
 
