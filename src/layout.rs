@@ -43,13 +43,13 @@ pub struct NodeSize(pub Vec2);
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The z-offset applied between this node and its parent.
-#[derive(ReactComponent, Debug, Copy, Clone, Deref, DerefMut)]
+#[derive(ReactComponent, Debug, Copy, Clone, Deref, DerefMut, Default)]
 pub struct NodeOffset(pub f32);
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Rerference data for use in defining the layout of a node.
-#[derive(Debug, Copy, Clone)]
+#[derive(ReactComponent, Debug, Copy, Clone, Default)]
 pub struct LayoutRef
 {
     /// The parent's node size.
@@ -211,18 +211,14 @@ impl CobwebStyle for Layout
     fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
         // Update the node's transform on parent update or if the layout changes.
-        let token = rc.on_revokable((entity_event::<LayoutRef>(node), entity_mutation::<Layout>(node)),
+        let token = rc.on_revokable((entity_mutation::<LayoutRef>(node), entity_mutation::<Layout>(node)),
             move
             |
-                mut cache : Local<Option<LayoutRef>>,
                 mut rc    : ReactCommands,
-                update    : EntityEvent<LayoutRef>,
-                mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>)>
+                mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>, &React<LayoutRef>)>
             |
             {
-                if let Some((_, update)) = update.read() { *cache = Some(*update); }
-                let Some(layout_ref) = &*cache else { return; };
-                let Ok((mut transform, mut size, layout)) = nodes.get_mut(node)
+                let Ok((mut transform, mut size, layout, layout_ref)) = nodes.get_mut(node)
                 else { tracing::debug!(?node, "node missing on layout update"); return; };
 
                 // Get the offset between our node's anchor and the parent node's anchor.

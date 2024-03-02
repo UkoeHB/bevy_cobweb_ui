@@ -158,8 +158,8 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
 
         // Prep reactor for loading styles for this node.
         // - We manually manage the `style_loader_reactor` because it is generic over `T`.
-        rc.commands().syscall((),
-            move |mut rc: ReactCommands, mut reactors: ResMut<StyleLoaderReactors>|
+        rc.commands().syscall(node,
+            |In(node): In<Entity>, mut rc: ReactCommands, mut reactors: ResMut<StyleLoaderReactors>|
             {
                 let reactor = reactors.handles
                     .entry(TypeId::of::<T>())

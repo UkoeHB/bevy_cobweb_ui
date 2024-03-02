@@ -19,7 +19,7 @@ fn handle_camera_update(
 ){
     for camera_entity in cameras.iter()
     {
-        rc.entity_event(camera_entity, CameraUpdate);
+        rc.broadcast(CameraUpdate(camera_entity));
     }
 }
 
@@ -38,7 +38,8 @@ fn handle_keyboard_inputs(mut inputs: EventReader<KeyboardInput>, mut rc: ReactC
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Event broadcasted whenever a camera's `Camera` or `Transform` changes.
-pub struct CameraUpdate;
+#[derive(Debug, Copy, Clone, Deref, DerefMut)]
+pub struct CameraUpdate(pub Entity);
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -47,7 +48,7 @@ pub struct CameraUpdate;
 /// Emits:
 /// - Broadcast event for `KeyboardInput`. Runs in `First`.`
 ///   You can use the [`On`] instruction to listen for this: `On::<KeyboardInput>::new(my_callback)`.
-/// - Entity event for [`CameraUpdate`]. Runs in `PostUpdate`.
+/// - Broadcast event for [`CameraUpdate`]. Runs in `PostUpdate`.
 pub struct AppEventsPlugin;
 
 impl Plugin for AppEventsPlugin
@@ -62,7 +63,6 @@ impl Plugin for AppEventsPlugin
             )
             .add_systems(PostUpdate,
                 (
-                    handle_camera_update,
                     handle_camera_update
                 )
                     .before(CameraUpdateSystem)
