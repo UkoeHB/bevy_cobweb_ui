@@ -2,7 +2,7 @@
 name = "bevy_cobweb_ui"
 description = "UI tools and widgets built with bevy_cobweb"
 authors = ["koe <ukoe@protonmail.com>"]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 keywords = ["gamedev", "reactive", "ui"]
 license = "MIT OR Apache-2.0"
@@ -34,7 +34,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-bevy        = { version = "0.13", default-features = false }
+bevy        = { version = "0.13", default-features = true }
 bevy_cobweb = { version = "0.2.0" }
 serde       = { version = "1.0" }
 serde_json  = { version = "1.0" }
