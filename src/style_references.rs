@@ -16,19 +16,18 @@ pub const STYLE_PATH_SEPARATOR: &'static str = "::";
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StyleFile
 {
-    file: Arc<str>,
+    pub(crate) file: Arc<str>,
 }
 
 impl StyleFile
 {
     /// Creates a new style file reference from a file name.
     ///
-    /// The file name may contain trailing file extensions (i.e. `.style.json`), but should not contain trailing
-    /// syntax (i.e. `examples/sample` and `examples/sample.style.json` are valid, but `examples/sample/` is not).
+    /// The file name should include the file extension (i.e. `.style.json`).
     pub fn new(file: &str) -> Self
     {
         // Strip file extensions.
-        let file = Arc::from(file.split('.').next().unwrap());
+        let file = Arc::from(file);
 
         Self{ file }
     }

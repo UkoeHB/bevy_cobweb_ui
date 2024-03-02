@@ -49,9 +49,8 @@ fn get_style_names(
     let Some(registration) = type_registry.get_with_short_type_path(short_name)
     else
     {
-
-        tracing::error!("failed getting long type name for {:?} at {:?} in {:?}; if the type is ambiguous \
-            because there are multiple types with this short name, add it to the file's 'using' section",
+        tracing::error!("failed getting long type name for {:?} at {:?} in {:?}; if the type is ambiguous because \
+            there are multiple types with this short name, add its long name to the stylesheet file's 'using' section",
             short_name, current_path, file);
         return None;
     };
@@ -291,7 +290,7 @@ fn parse_branch(
 /// Consumes a stylesheet file's data and loads it into [`StyleSheet`].
 pub(crate) fn parse_stylesheet_file(type_registry: &TypeRegistry, stylesheet: &mut StyleSheet, file: StyleFile, data: Value)
 {
-    tracing::info!("parsing stylesheet");
+    tracing::info!("parsing stylesheet {:?}", file.file);
     stylesheet.initialize_file(file.clone());
 
     let Value::Object(data) = data

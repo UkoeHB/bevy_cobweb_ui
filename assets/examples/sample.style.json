@@ -8,7 +8,7 @@
     },
 
     "inner_block::final_block": {
-        "Block"           : {"color": {"Hsla": {"hue": 28.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
+        "Block"           : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
         "JustifiedLayout" : "inherited"
     }
 }

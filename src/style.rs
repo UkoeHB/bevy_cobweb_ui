@@ -71,7 +71,12 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
                 // Look up the type's short name.
                 let type_registry = types.read();
                 let Some(type_info) = type_registry.get(TypeId::of::<T>())
-                else { tracing::error!("type registry info missing for {:?}", std::any::type_name::<T>()); return; };
+                else
+                {
+                    tracing::error!("type registry info missing for {:?}, make sure this type is registered in \
+                        your app with App::register_type", std::any::type_name::<T>());
+                    return;
+                };
                 let long_name = type_info.type_info().type_path();
                 let full_style_path = FullStylePath::new(self.style_ref.path.clone(), long_name);
                 let full_style_ref = FullStyleRef::new(self.style_ref.file.clone(), full_style_path);
