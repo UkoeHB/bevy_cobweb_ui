@@ -118,7 +118,7 @@ pub struct Block
 
 impl CobwebStyle for Block
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
         // Create a block.
         rc.commands().syscall((node, *self), spawn_block);

@@ -47,7 +47,7 @@ where
     E: Clone + Send + Sync + 'static,
     T: IntoSystem<(), (), M> + Send + Sync + 'static
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
         let reactor = rc.commands().spawn_system_command(self.callback);
 

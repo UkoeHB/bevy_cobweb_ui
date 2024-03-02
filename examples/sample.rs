@@ -94,13 +94,6 @@ fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
 
-    /*
-    // For debugging serialization issues.
-    let block = Block{ color: Color::BLACK };
-    let block = serde_json::to_string(&block).unwrap();
-    tracing::error!("{:?}", block);
-    */
-
     // Build a block in the center of the camera.
     let style = file.extend("outer_block");
     let outer = uc.build((

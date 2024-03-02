@@ -29,14 +29,14 @@ pub trait CobwebStyle: ReactComponent + Reflect + Default + Serialize + for<'de>
     /// Implementing this enables styles to be used as UI instructions. The [`UiInstruction`] implmentation for styles
     /// invokes this method. The UI instruction then inserts `Self` as a `ReactComponent` on the node. You should not
     /// insert it manually.
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers);
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity);
 }
 
 impl<T: CobwebStyle> UiInstruction for T
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
-        Self::apply_style(&self, rc, node, finishers);
+        Self::apply_style(&self, rc, node);
         rc.insert(node, self);
     }
 }
@@ -52,14 +52,14 @@ pub struct StyleLoader<T: CobwebStyle>
 
 impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
         // Default-initialize the instruction and apply it.
-        T::default().apply(rc, node, finishers);
+        T::default().apply(rc, node);
 
         // Update the style `T` on this node when the stylesheet is updated.
         let mut initialized = false;
-        let token = rc.on_revokable(resource_mutation::<StyleSheet>(),
+        let token = rc.on_revokable((entity_event::<FinishNode>(node), resource_mutation::<StyleSheet>()),
             move
             |
                 mut rc    : ReactCommands,
@@ -87,10 +87,7 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
                 *node.get_mut(&mut rc) = loaded_style;
             }
         );
-        cleanup_reactor_on_despawn(rc, node, token.clone());
-
-        // Load the style immediately if possible.
-        finishers.push(token.into());
+        cleanup_reactor_on_despawn(rc, node, token);
     }
 }
 

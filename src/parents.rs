@@ -31,7 +31,7 @@ pub struct InCamera(pub Entity);
 
 impl UiInstruction for InCamera
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
         let camera_entity = self.0;
 
@@ -75,16 +75,17 @@ impl UiInstruction for InCamera
                 let y = topleft.origin.distance(bottomleft.origin);
 
                 // Update this node with the parent's size.
-                let size = NodeSize(Vec2{ x, y });
-                let child_offset = NodeOffset(DEFAULT_CAMERA_Z_OFFSET);
-                rc.entity_event(node, ParentUpdate{ size, child_offset });
+                let parent_size = NodeSize(Vec2{ x, y });
+                let offset = NodeOffset(DEFAULT_CAMERA_Z_OFFSET);
+                rc.entity_event(node, LayoutRef{ parent_size, offset });
             }
         );
-        let token = rc.with(entity_event::<CameraUpdate>(camera_entity), sys_command, ReactorMode::Revokable).unwrap();
+        let token = rc.with(
+                (entity_event::<FinishNode>(node), entity_event::<CameraUpdate>(camera_entity)),
+                sys_command,
+                ReactorMode::Revokable
+            ).unwrap();
         cleanup_reactor_on_despawn(rc, node, token);
-
-        // Pull in the camera's current state.
-        finishers.push(sys_command);
     }
 }
 
@@ -100,7 +101,7 @@ pub struct Parent(pub Entity);
 
 impl UiInstruction for Parent
 {
-    fn apply(self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
+    fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
         let parent_entity = self.0;
 
@@ -113,7 +114,7 @@ impl UiInstruction for Parent
         // Prep entity.
         rc.insert(node, NodeSize::default());
 
-        let token = rc.on_revokable(entity_mutation::<NodeSize>(parent_entity),
+        let token = rc.on_revokable((entity_event::<FinishNode>(node), entity_mutation::<NodeSize>(parent_entity)),
             move
             |
                 mut rc : ReactCommands,
@@ -124,15 +125,12 @@ impl UiInstruction for Parent
                 else { tracing::debug!(?parent_entity, "parent node missing"); return; };
 
                 // Update this node with the parent's size.
-                let size = **parent;
-                let child_offset = NodeOffset(DEFAULT_Z_OFFSET);
-                rc.entity_event(node, ParentUpdate{ size, child_offset });
+                let parent_size = **parent;
+                let offset = NodeOffset(DEFAULT_Z_OFFSET);
+                rc.entity_event(node, LayoutRef{ parent_size, offset });
             }
         );
-        cleanup_reactor_on_despawn(rc, node, token.clone());
-
-        // Pull in the parent's node size.
-        finishers.push(token.into());
+        cleanup_reactor_on_despawn(rc, node, token);
     }
 }
 

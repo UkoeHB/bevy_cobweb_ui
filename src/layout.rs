@@ -48,14 +48,14 @@ pub struct NodeOffset(pub f32);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A parent node's updated layout information.
+/// Rerference data for use in defining the layout of a node.
 #[derive(Debug, Copy, Clone)]
-pub struct ParentUpdate
+pub struct LayoutRef
 {
     /// The parent's node size.
-    pub size: NodeSize,
-    /// The z-offset that children should use relative to the parent.
-    pub child_offset: NodeOffset,
+    pub parent_size: NodeSize,
+    /// The z-offset this node should use relative to its parent.
+    pub offset: NodeOffset,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -208,36 +208,37 @@ impl Layout
 
 impl CobwebStyle for Layout
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, _finishers: &mut UiInstructionFinishers)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
         // Update the node's transform on parent update or if the layout changes.
-        let token = rc.on_revokable((entity_event::<ParentUpdate>(node), entity_mutation::<Layout>(node)),
+        let token = rc.on_revokable((entity_event::<LayoutRef>(node), entity_mutation::<Layout>(node)),
             move
             |
-                mut cache : Local<Option<ParentUpdate>>,
+                mut cache : Local<Option<LayoutRef>>,
                 mut rc    : ReactCommands,
-                update    : EntityEvent<ParentUpdate>,
+                update    : EntityEvent<LayoutRef>,
                 mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>)>
             |
             {
                 if let Some((_, update)) = update.read() { *cache = Some(*update); }
-                let Some(parent) = &*cache else { return; };
+                let Some(layout_ref) = &*cache else { return; };
                 let Ok((mut transform, mut size, layout)) = nodes.get_mut(node)
                 else { tracing::debug!(?node, "node missing on layout update"); return; };
 
                 // Get the offset between our node's anchor and the parent node's anchor.
-                let mut offset = layout.offset(*parent.size);
-                let dims = layout.dims(*parent.size);
+                let parent_size = *layout_ref.parent_size;
+                let mut offset = layout.offset(parent_size);
+                let dims = layout.dims(parent_size);
 
                 // Convert the offset to a translation between the parent and node origins.
                 // - Offset = [vector to parent upper left corner]
                 //          + [anchor offset vector (convert y)]
                 //          + [node corner to node origin (convert y)]
-                offset.x = (-parent.size.x / 2.) + offset.x + (dims.x / 2.);
-                offset.y = (parent.size.y / 2.) + -offset.y + (-dims.y / 2.);
+                offset.x = (-parent_size.x / 2.) + offset.x + (dims.x / 2.);
+                offset.y = (parent_size.y / 2.) + -offset.y + (-dims.y / 2.);
 
                 // Update this node's transform.
-                *transform = Transform::from_translation(offset.extend(*parent.child_offset));
+                *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
                 transform.rotation = Quat::from_rotation_z(layout.z_rotation);
 
                 // Update our node's size.
@@ -288,9 +289,9 @@ impl Default for JustifiedLayout
 
 impl CobwebStyle for JustifiedLayout
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity, finishers: &mut UiInstructionFinishers)
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        Layout::from(*self).apply(rc, node, finishers);
+        Layout::from(*self).apply(rc, node);
     }
 }
 

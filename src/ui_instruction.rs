@@ -3,59 +3,26 @@
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy::utils::all_tuples;
-use bevy_cobweb::prelude::{ReactCommands, SystemCommand};
+use bevy_cobweb::prelude::ReactCommands;
 
 //standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Crate-level resource containing a finishers buffer.
-#[derive(Resource, Default)]
-pub struct UiInstructionFinishersCrate
-{
-    pub(crate) inner: UiInstructionFinishers,
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Buffer for system commands that should run at the end of building a UI bundle.
-pub struct UiInstructionFinishers
-{
-    pub(crate) buffer: Vec<SystemCommand>,
-}
-
-impl UiInstructionFinishers
-{
-    pub fn push(&mut self, sys_command: SystemCommand)
-    {
-        self.buffer.push(sys_command);
-    }
-}
-
-impl Default for UiInstructionFinishers
-{
-    fn default() -> Self
-    {
-        Self{ buffer: Vec::default() }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Helper trait for applying a UI instruction to a node entity.
 pub trait UiInstruction
 {
-    fn apply(self, rcommands: &mut ReactCommands, node_entity: Entity, finishers: &mut UiInstructionFinishers);
+    fn apply(self, rcommands: &mut ReactCommands, node_entity: Entity);
 }
 
 impl<I: UiInstruction> UiInstructionBundle for I
 {
     fn len(&self) -> usize { 1 }
 
-    fn build(self, rcommands: &mut ReactCommands, node_entity: Entity, finishers: &mut UiInstructionFinishers)
+    fn build(self, rcommands: &mut ReactCommands, node_entity: Entity)
     {
-        self.apply(rcommands, node_entity, finishers);
+        self.apply(rcommands, node_entity);
     }
 }
 
@@ -71,7 +38,7 @@ pub trait UiInstructionBundle
     fn len(&self) -> usize;
 
     /// Builds the bundle's instructions.
-    fn build(self, rcommands: &mut ReactCommands, node_entity: Entity, finishers: &mut UiInstructionFinishers);
+    fn build(self, rcommands: &mut ReactCommands, node_entity: Entity);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -99,12 +66,12 @@ macro_rules! tuple_impl
 
             #[allow(unused_variables, unused_mut)]
             #[inline(always)]
-            fn build(self, rcommands: &mut ReactCommands, node_entity: Entity, finishers: &mut UiInstructionFinishers)
+            fn build(self, rcommands: &mut ReactCommands, node_entity: Entity)
             {
                 #[allow(non_snake_case)]
                 let ($(mut $name,)*) = self;
                 $(
-                    $name.build(rcommands, node_entity, finishers);
+                    $name.build(rcommands, node_entity);
                 )*
             }
         }
@@ -112,17 +79,5 @@ macro_rules! tuple_impl
 }
 
 all_tuples!(tuple_impl, 0, 15, B);
-
-//-------------------------------------------------------------------------------------------------------------------
-
-pub(crate) struct UiInstructionPlugin;
-
-impl Plugin for UiInstructionPlugin
-{
-    fn build(&self, app: &mut App)
-    {
-        app.init_resource::<UiInstructionFinishersCrate>();
-    }
-}
 
 //-------------------------------------------------------------------------------------------------------------------

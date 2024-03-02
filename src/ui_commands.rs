@@ -11,29 +11,47 @@ use bevy_cobweb::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Entity event sent by [`UiCommands::build`] to a node after its instructions are built.
+///
+/// [`UiInstruction`] and [`CobwebStyle`] implementations should listen to `FinishNode` events if they have reactors
+/// that must run in order to initialize the node.
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
+pub struct FinishNode;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Wrapper around `EntityCommands` for UI nodes being constructed.
+///
+/// When this wrapper is dropped, a [`FinishNode`] entity event will be sent to the node. We wait to send this event
+/// until the wrapper is dropped so that entity modifications using this wrapper (e.g. component insertions) will be
+/// visible to reactors triggered by the event.
+#[derive(Deref, DerefMut)]
+pub struct UiEntityCommands<'a>(EntityCommands<'a>);
+
+impl<'a> Drop for UiEntityCommands<'a>
+{
+    fn drop(&mut self)
+    {
+        let node = self.id();
+        self.commands().add(move |world: &mut World| world.entity_event(node, FinishNode));
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(SystemParam)]
 pub struct UiCommands<'w, 's>
 {
-    pub rcommands: ReactCommands<'w, 's>,
-    finishers: ResMut<'w, UiInstructionFinishersCrate>,
+    pub rc: ReactCommands<'w, 's>,
 }
 
 impl<'w, 's> UiCommands<'w, 's>
 {
-    pub fn build(&mut self, instructions: impl UiInstructionBundle) -> EntityCommands
+    pub fn build(&mut self, instructions: impl UiInstructionBundle) -> UiEntityCommands
     {
-        let finishers = &mut self.finishers.inner;
-        finishers.buffer.clear();
-
-        let node = self.rcommands.commands().spawn_empty().id();
-        instructions.build(&mut self.rcommands, node, finishers);
-
-        for finisher in finishers.buffer.drain(..)
-        {
-            self.rcommands.commands().add(finisher);
-        }
-
-        self.rcommands.commands().entity(node)
+        let node = self.rc.commands().spawn_empty().id();
+        instructions.build(&mut self.rc, node);
+        UiEntityCommands(self.rc.commands().entity(node))
     }
 }
 
