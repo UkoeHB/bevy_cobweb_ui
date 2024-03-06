@@ -36,7 +36,7 @@ impl WorldReactor for JustifiedLayoutReactor
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-// Updates a node's transform on parent update or if the layout changes.
+/// Updates a node's transform on parent update or if the layout changes.
 fn layout_reactor(
     ref_event : MutationEvent<LayoutRef>,
     lay_event : MutationEvent<Layout>,
@@ -125,29 +125,27 @@ pub enum Justify
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Relative dimensions.
-#[derive(Debug, Copy, Clone, Deref, DerefMut)]
-pub struct Relative(pub Vec2);
-
-impl Relative
-{
-    /// Creates a new relative dimensions from x and y dimensions.
-    pub fn new(x: f32, y: f32) -> Self
-    {
-        Self(Vec2{ x, y})
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// The size of a node relative to its parent.
 #[derive(Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Size
 {
+    /// The node's width and height are absolute values in UI coordinates.
+    Absolute(Vec2),
     /// The node's width and height are relative to the parents' width and height.
     ///
     /// Relative values are recorded in percentages.
-    Relative(Vec2)
+    Relative(Vec2),
+    //Combined{ abs: Vec2, rel: Vec2 }
+    // The node's dimensions are fixed to a certain ratio, and both dimensions are <= the parent's dimensions
+    // (with at least one dimension equal to the parent's corresponding dimension).
+    //SolidIn(Vec2),
+    // The node's dimensions are fixed to a certain ratio, and both dimensions are >= the parent's dimensions
+    // (with at least one dimension equal to the parent's corresponding dimension).
+    //SolidOut(Vec2),
+    // The same as [`Self::SolidIn`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
+    //SolidInCombined{ ratio: Vec2, abs: Vec2, rel: Vec2 },
+    // The same as [`Self::SolidOut`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
+    //SolidOutCombined{ ratio: Vec2, abs: Vec2, rel: Vec2 },
 }
 
 impl Size
@@ -157,6 +155,13 @@ impl Size
     {
         match self
         {
+            Self::Absolute(abs) =>
+            {
+                Vec2{
+                    x: abs.x.max(0.),
+                    y: abs.y.max(0.),
+                }
+            },
             Self::Relative(rel) =>
             {
                 Vec2{
@@ -173,14 +178,6 @@ impl Default for Size
     fn default() -> Self
     {
         Self::Relative(Vec2::default())
-    }
-}
-
-impl From<Relative> for Size
-{
-    fn from(rel: Relative) -> Self
-    {
-        Self::Relative(rel.0)
     }
 }
 

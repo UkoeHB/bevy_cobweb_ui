@@ -26,10 +26,7 @@ impl StyleFile
     /// The file name should include the file extension (i.e. `.style.json`).
     pub fn new(file: &str) -> Self
     {
-        // Strip file extensions.
-        let file = Arc::from(file);
-
-        Self{ file }
+        Self{ file: Arc::from(file) }
     }
 }
 
