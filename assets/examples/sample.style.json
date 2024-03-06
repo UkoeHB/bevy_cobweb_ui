@@ -4,12 +4,12 @@
     "JustifiedLayout" : {"Center": {"Relative": [50.0, 50.0]}},
 
     "inner_block": {
-        "JustifiedLayout" : {"Center": {"SolidIn": [2, 3]}}
+        "JustifiedLayout" : {"Center": {"Relative": [50.0, 50.0]}}
     },
 
     "inner_block::final_block": {
         "Block"           : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-        "JustifiedLayout" : "inherited"
+        "JustifiedLayout" : {"Center": {"SolidIn": [2, 1]}}
     }
 }
 
