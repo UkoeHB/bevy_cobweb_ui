@@ -138,17 +138,25 @@ pub enum Size
     /// The node's width and height are computed from absolute values plus values relative to the parent.
     ///
     /// Relative values are recorded in percentages.
-    Combined{ abs: Vec2, rel: Vec2 }
-    // The node's dimensions are fixed to a certain ratio, and both dimensions are <= the parent's dimensions
-    // (with at least one dimension equal to the parent's corresponding dimension).
-    //SolidIn(Vec2),
+    Combined{ abs: Vec2, rel: Vec2 },
+    /// The node's dimensions are fixed to a certain ratio, and both dimensions are <= the parent's dimensions
+    /// (with at least one dimension equal to the parent's corresponding dimension).
+    ///
+    /// Ratio parameters are clamped to >= 1.
+    SolidIn((u32, u32)),
     // The node's dimensions are fixed to a certain ratio, and both dimensions are >= the parent's dimensions
     // (with at least one dimension equal to the parent's corresponding dimension).
-    //SolidOut(Vec2),
+    //
+    // Ratio parameters are clamped to >= 1.
+    //SolidOut((u32, u32)),
     // The same as [`Self::SolidIn`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    //SolidInCombined{ ratio: Vec2, abs: Vec2, rel: Vec2 },
+    //
+    // Ratio parameters are clamped to >= 1.
+    //SolidInCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
     // The same as [`Self::SolidOut`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    //SolidOutCombined{ ratio: Vec2, abs: Vec2, rel: Vec2 },
+    //
+    // Ratio parameters are clamped to >= 1.
+    //SolidOutCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
 }
 
 impl Size
@@ -156,7 +164,7 @@ impl Size
     /// Computes the dimensions of the node in 2D UI coordinates.
     pub fn compute(&self, parent_dims: Vec2) -> Vec2
     {
-        match self
+        match *self
         {
             Self::Absolute(abs) =>
             {
@@ -177,6 +185,30 @@ impl Size
                 Vec2{
                     x: abs.x.max(0.) + parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
                     y: abs.y.max(0.) + parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
+                }
+            }
+            Self::SolidIn((ratio_x, ratio_y)) =>
+            {
+                let ratio_x = ratio_x.max(1) as f32;
+                let ratio_y = ratio_y.max(1) as f32;
+                let parent_x = parent_dims.x.max(0.);
+                let parent_y = parent_dims.y.max(0.);
+
+                // Case: this node is flatter than its parent.
+                if (ratio_x * parent_y) >= (ratio_y * parent_x)
+                {
+                    Vec2{
+                        x: parent_x,
+                        y: parent_x * (ratio_y / ratio_x),
+                    }
+                }
+                // Case: this node is thinner than its parent.
+                else
+                {
+                    Vec2{
+                        x: parent_y * (ratio_x / ratio_y),
+                        y: parent_y,
+                    }
                 }
             }
         }

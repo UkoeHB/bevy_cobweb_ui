@@ -4,7 +4,7 @@
     "JustifiedLayout" : {"Center": {"Relative": [50.0, 50.0]}},
 
     "inner_block": {
-        "JustifiedLayout" : {"Center": {"Combined": { "abs": [20.0, 20.0], "rel": [20.0, 20.0]}}}
+        "JustifiedLayout" : {"Center": {"SolidIn": [2, 3]}}
     },
 
     "inner_block::final_block": {
