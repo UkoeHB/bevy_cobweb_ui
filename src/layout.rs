@@ -135,16 +135,23 @@ pub enum Size
     ///
     /// Relative values are recorded in percentages.
     Relative(Vec2),
+    /// The node's width and height equal the parent's width and height minus absolute padding values.
+    ///
+    /// Padding values are in UI coordinates. Positive padding will reduce the node size, while negative padding will
+    /// increase it.
+    ///
+    /// Note that if padding is too large, your node may completely disappear.
+    Padded(Vec2),
     /// The node's width and height are computed from absolute values plus values relative to the parent.
     ///
     /// Relative values are recorded in percentages.
     Combined{ abs: Vec2, rel: Vec2 },
-    /// The node's dimensions are fixed to a certain ratio, and both dimensions are <= the parent's dimensions
+    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are <= the parent's dimensions
     /// (with at least one dimension equal to the parent's corresponding dimension).
     ///
     /// Ratio parameters are clamped to >= 1.
     SolidIn((u32, u32)),
-    /// The node's dimensions are fixed to a certain ratio, and both dimensions are >= the parent's dimensions
+    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are >= the parent's dimensions
     /// (with at least one dimension equal to the parent's corresponding dimension).
     ///
     /// Ratio parameters are clamped to >= 1.
@@ -178,6 +185,13 @@ impl Size
                 Vec2{
                     x: parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
                     y: parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
+                }
+            }
+            Self::Padded(padding) =>
+            {
+                Vec2{
+                    x: (parent_dims.x - padding.x).max(0.),
+                    y: (parent_dims.y - padding.y).max(0.),
                 }
             }
             Self::Combined{ abs, rel } =>
