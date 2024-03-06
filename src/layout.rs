@@ -149,14 +149,14 @@ pub enum Size
     ///
     /// Ratio parameters are clamped to >= 1.
     SolidOut((u32, u32)),
-    // The same as [`Self::SolidIn`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    //
-    // Ratio parameters are clamped to >= 1.
-    //SolidInCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
-    // The same as [`Self::SolidOut`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    //
-    // Ratio parameters are clamped to >= 1.
-    //SolidOutCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
+    /// The same as [`Self::SolidIn`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
+    ///
+    /// Ratio parameters are clamped to >= 1.
+    SolidInCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
+    /// The same as [`Self::SolidOut`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
+    ///
+    /// Ratio parameters are clamped to >= 1.
+    SolidOutCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
 }
 
 impl Size
@@ -234,6 +234,16 @@ impl Size
                         y: parent_x * (ratio_y / ratio_x),
                     }
                 }
+            }
+            Self::SolidInCombined{ ratio, abs, rel } =>
+            {
+                let parent_dims = Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims);
+                Self::SolidIn(ratio).compute(parent_dims)
+            }
+            Self::SolidOutCombined{ ratio, abs, rel } =>
+            {
+                let parent_dims = Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims);
+                Self::SolidOut(ratio).compute(parent_dims)
             }
         }
     }
