@@ -182,10 +182,7 @@ impl Size
             }
             Self::Combined{ abs, rel } =>
             {
-                Vec2{
-                    x: abs.x.max(0.) + parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
-                    y: abs.y.max(0.) + parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
-                }
+                Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims)
             }
             Self::SolidIn((ratio_x, ratio_y)) =>
             {

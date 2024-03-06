@@ -9,7 +9,7 @@
 
     "inner_block::final_block": {
         "Block"           : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-        "JustifiedLayout" : {"Center": {"SolidOutCombined": {"ratio": [2, 3], "abs": [0.0, 0.0], "rel": [25.0, 25.0]}}}
+        "JustifiedLayout" : {"Center": {"Combined": {"abs": [50.0, 50.0], "rel": [25.0, 25.0]}}}
     }
 }
 
