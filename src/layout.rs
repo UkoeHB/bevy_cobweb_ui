@@ -135,7 +135,10 @@ pub enum Size
     ///
     /// Relative values are recorded in percentages.
     Relative(Vec2),
-    //Combined{ abs: Vec2, rel: Vec2 }
+    /// The node's width and height are computed from absolute values plus values relative to the parent.
+    ///
+    /// Relative values are recorded in percentages.
+    Combined{ abs: Vec2, rel: Vec2 }
     // The node's dimensions are fixed to a certain ratio, and both dimensions are <= the parent's dimensions
     // (with at least one dimension equal to the parent's corresponding dimension).
     //SolidIn(Vec2),
@@ -161,12 +164,19 @@ impl Size
                     x: abs.x.max(0.),
                     y: abs.y.max(0.),
                 }
-            },
+            }
             Self::Relative(rel) =>
             {
                 Vec2{
                     x: parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
                     y: parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
+                }
+            }
+            Self::Combined{ abs, rel } =>
+            {
+                Vec2{
+                    x: abs.x.max(0.) + parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
+                    y: abs.y.max(0.) + parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
                 }
             }
         }
