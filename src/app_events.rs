@@ -65,8 +65,8 @@ impl Plugin for AppEventsPlugin
                 (
                     handle_camera_update
                 )
-                    .before(CameraUpdateSystem)
-                    .after(TransformPropagate)
+                    .after(CameraUpdateSystem)
+                    .before(TransformPropagate)
             );
     }
 }

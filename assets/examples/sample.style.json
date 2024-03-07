@@ -9,13 +9,13 @@
 
     "inner_block::final_block": {
         "Block"           : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-        "JustifiedLayout" : {"Center": {"Padded": [50.0, 25.0]}}
+        "JustifiedLayout" : "inherited"
     }
 },
 
 "upper_right_img": {
-    "BasicImage"      : { "path": "examples/basic_image.png"},
-    "JustifiedLayout" : {"UpperRight": {"SolidInCombined": { "ratio": [640, 480], "abs": [0.0, 0.0], "rel": [10.0, 20.0]}}}
+    "BasicImage"      : {"path": "examples/basic_image.png"},
+    "JustifiedLayout" : {"UpperRight": {"SolidInCombined": {"ratio": [640, 480], "abs": [0.0, 0.0], "rel": [10.0, 20.0]}}}
 }
 
 }
