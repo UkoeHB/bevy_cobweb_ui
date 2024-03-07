@@ -62,7 +62,7 @@ fn layout_reactor(
 
     // Update this node's transform.
     *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
-    transform.rotation = Quat::from_rotation_z(layout.z_rotation);
+    transform.rotation = Quat::from_rotation_z(layout.rotation);
 
     // Update our node's size.
     //todo: how to use set_if_not_eq? NodeSize contains floats...
@@ -278,29 +278,101 @@ pub struct Layout
 {
     pub x_justify: Justify,
     pub y_justify: Justify,
-    pub offset_abs: Vec2,
-    pub offset_rel: Vec2,
+    pub abs_offset: Vec2,
+    pub rel_offset: Vec2,
     pub size: Size,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other layout calculations, and that the center of rotation is the node origin
     /// not the node anchor (i.e. the node's centerpoint, not its upper-left corner).
-    pub z_rotation: f32,
+    pub rotation: f32,
 }
 
 impl Layout
 {
+    fn new_justified(x_justify: Justify, y_justify: Justify, size: Size) -> Self
+    {
+        Self {
+            x_justify,
+            y_justify,
+            size,
+            ..Default::default()
+        }
+    }
+
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
     pub fn centered(size: impl Into<Size>) -> Self
     {
-        Self {
-            x_justify  : Justify::Center,
-            y_justify  : Justify::Center,
-            offset_abs : Vec2::default(),
-            offset_rel : Vec2::default(),
-            size       : size.into(),
-            z_rotation : 0.,
-        }
+        Self::new_justified(Justify::Center, Justify::Center, size.into())
+    }
+
+    /// Creates a node justified to center-left.
+    pub fn centerleft(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Min, Justify::Center, size.into())
+    }
+
+    /// Creates a node justified to center-right.
+    pub fn centerright(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Max, Justify::Center, size.into())
+    }
+
+    /// Creates a node justified to top-left.
+    pub fn topleft(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Min, Justify::Min, size.into())
+    }
+
+    /// Creates a node justified to top-center.
+    pub fn topcenter(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Center, Justify::Min, size.into())
+    }
+
+    /// Creates a node justified to top-right.
+    pub fn topright(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Max, Justify::Min, size.into())
+    }
+
+    /// Creates a node justified to bottom-left.
+    pub fn bottomleft(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Min, Justify::Max, size.into())
+    }
+
+    /// Creates a node justified to bottom-center.
+    pub fn bottomcenter(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Center, Justify::Max, size.into())
+    }
+
+    /// Creates a node justified to bottom-right.
+    pub fn bottomright(size: impl Into<Size>) -> Self
+    {
+        Self::new_justified(Justify::Max, Justify::Max, size.into())
+    }
+
+    /// Sets the relative offset.
+    pub fn rel_offset(mut self, offset: Vec2) -> Self
+    {
+        self.rel_offset = offset;
+        self
+    }
+
+    /// Sets the absolute offset.
+    pub fn abs_offset(mut self, offset: Vec2) -> Self
+    {
+        self.abs_offset = offset;
+        self
+    }
+
+    /// Sets the z-rotation in radians.
+    pub fn rotation(mut self, rotation: f32) -> Self
+    {
+        self.rotation = rotation;
+        self
     }
 
     /// Gets the dimensions of the node.
@@ -320,8 +392,8 @@ impl Layout
             Justify::Center => (parent_dims.x / 2.) - (dims.x / 2.),
             Justify::Max    => parent_dims.x - dims.x,
         };
-        x_offset += self.offset_abs.x;
-        x_offset += self.offset_rel.x * parent_dims.x.max(0.) / 100.;
+        x_offset += self.abs_offset.x;
+        x_offset += self.rel_offset.x * parent_dims.x.max(0.) / 100.;
 
         let mut y_offset = match self.y_justify
         {
@@ -329,8 +401,8 @@ impl Layout
             Justify::Center => (parent_dims.y / 2.) - (dims.y / 2.),
             Justify::Max    => parent_dims.y - dims.y,
         };
-        y_offset += self.offset_abs.y;
-        y_offset += self.offset_rel.y * parent_dims.y.max(0.) / 100.;
+        y_offset += self.abs_offset.y;
+        y_offset += self.rel_offset.y * parent_dims.y.max(0.) / 100.;
 
         Vec2{ x: x_offset, y: y_offset }
     }
@@ -376,8 +448,15 @@ impl From<JustifiedLayout> for Layout
     {
         match justified
         {
-            JustifiedLayout::Center(size) => Layout::centered(size),
-            _ => todo!(),
+            JustifiedLayout::TopLeft(size)      => Layout::topleft(size),
+            JustifiedLayout::TopCenter(size)    => Layout::topcenter(size),
+            JustifiedLayout::TopRight(size)     => Layout::topright(size),
+            JustifiedLayout::CenterLeft(size)   => Layout::centerleft(size),
+            JustifiedLayout::Center(size)       => Layout::centered(size),
+            JustifiedLayout::CenterRight(size)  => Layout::centerright(size),
+            JustifiedLayout::BottomLeft(size)   => Layout::bottomleft(size),
+            JustifiedLayout::BottomCenter(size) => Layout::bottomcenter(size),
+            JustifiedLayout::BottomRight(size)  => Layout::bottomright(size),
         }
     }
 }
