@@ -98,7 +98,15 @@ fn style_loader_reactor<T: CobwebStyle>(
 /// loading is only used for initialization in production settings.
 /// If you *do* reload a stylesheet (e.g. during development), then existing dynamic styles that were changed will be
 /// overwritten.
-pub trait CobwebStyle: ReactComponent + Reflect + PartialEq + Clone + Default + Serialize + for<'de> Deserialize<'de>
+pub trait CobwebStyle:
+  ReactComponent
++ Reflect
++ FromReflect
++ PartialEq
++ Clone
++ Default
++ Serialize
++ for<'de> Deserialize<'de>
 {
     /// Applies a style to a node.
     ///

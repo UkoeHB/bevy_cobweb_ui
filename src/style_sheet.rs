@@ -313,7 +313,17 @@ impl StyleSheet
         {
             ReflectedStyle::Value(style) =>
             {
-                reflected.apply(style.as_reflect());
+                let Some(new_value) = S::from_reflect(style.as_reflect())
+                else
+                {
+                    let temp = S::default();
+                    let hint = serde_json::to_string(&temp).unwrap();
+                    tracing::error!("failed reflecting style {:?} at path {:?} in file {:?}\n\
+                        serialization hint: {:?}",
+                        style_ref.path.full_type_name, style_ref.path.path, style_ref.file, hint);
+                    return false;
+                };
+                *reflected = new_value;
                 true
             }
             ReflectedStyle::DeserializationFailed(err) =>
