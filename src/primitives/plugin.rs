@@ -15,7 +15,8 @@ impl Plugin for PrimitivesPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(BlockPrimitivePlugin);
+        app.add_plugins(BasicImagePrimitivePlugin)
+            .add_plugins(BlockPrimitivePlugin);
     }
 }
 

@@ -90,15 +90,13 @@ fn handle_keyboard_input_for_node(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
+fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 {
-    let file = StyleRef::from_file("examples/sample.style.json");
-
-    // Build a block in the center of the camera.
-    let style = file.extend("outer_block");
+    // Build a block in the center of its parent.
+    let style = path.extend("outer_block");
     let outer = uc.build((
             Block{ color: Color::BLACK },
-            InCamera(camera.single()),
+            Parent(parent),
             JustifiedLayout::load(&style),
         ))
         .id();
@@ -121,6 +119,38 @@ fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
             JustifiedLayout::load(&style),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node)
         ));
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
+{
+    // Top left image
+    uc.build((
+            BasicImage::new("examples/basic_image.png"),
+            Parent(parent),
+            Layout::upperleft(Size::Relative(Vec2{ x: 20.0, y: 20.0 }))
+        ));
+
+    // Top right image
+    let path = path.extend("upper_right_img");
+    uc.build((
+            BasicImage::load(&path),
+            Parent(parent),
+            JustifiedLayout::load(&path),
+        ));
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
+{
+    let file = StyleRef::from_file("examples/sample.style.json");
+    let root = uc.build((InCamera(camera.single()), Layout::overlay())).id();
+    add_blocks(&mut uc, &file, root);
+    add_images(&mut uc, &file, root);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

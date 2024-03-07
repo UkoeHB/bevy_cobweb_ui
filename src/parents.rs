@@ -133,6 +133,8 @@ impl WorldReactor for CameraRefreshReactor
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates the layout ref of children of a node when the node's size changes.
+///
+/// Does nothing if a node has no children.
 fn parent_update_reactor(
     parent_size : MutationEvent<NodeSize>,
     mut rc      : ReactCommands,
@@ -141,8 +143,7 @@ fn parent_update_reactor(
 ){
     let Some(node) = parent_size.read()
     else { tracing::error!("failed updating children layout refs, event is missing"); return; };
-    let Ok((children, node_size)) = sizes.get(node)
-    else { tracing::error!(?node, "failed updating children layout refs, node is missing"); return; };
+    let Ok((children, node_size)) = sizes.get(node) else { return; };
 
     // Update the children with the parent's size.
     let parent_size = **node_size;

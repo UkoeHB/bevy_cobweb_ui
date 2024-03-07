@@ -300,6 +300,14 @@ impl Layout
         }
     }
 
+    /// Creates a node that perfectly overlaps its parent.
+    pub fn overlay() -> Self
+    {
+        let mut overlay = Self::default();
+        overlay.size = Size::Padded(Vec2::default());
+        overlay
+    }
+
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
     pub fn centered(size: impl Into<Size>) -> Self
     {
@@ -318,38 +326,38 @@ impl Layout
         Self::new_justified(Justify::Max, Justify::Center, size.into())
     }
 
-    /// Creates a node justified to top-left.
-    pub fn topleft(size: impl Into<Size>) -> Self
+    /// Creates a node justified to upper-left.
+    pub fn upperleft(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Min, Justify::Min, size.into())
     }
 
-    /// Creates a node justified to top-center.
-    pub fn topcenter(size: impl Into<Size>) -> Self
+    /// Creates a node justified to upper-center.
+    pub fn uppercenter(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Center, Justify::Min, size.into())
     }
 
-    /// Creates a node justified to top-right.
-    pub fn topright(size: impl Into<Size>) -> Self
+    /// Creates a node justified to upper-right.
+    pub fn upperright(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Max, Justify::Min, size.into())
     }
 
-    /// Creates a node justified to bottom-left.
-    pub fn bottomleft(size: impl Into<Size>) -> Self
+    /// Creates a node justified to lower-left.
+    pub fn lowerleft(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Min, Justify::Max, size.into())
     }
 
-    /// Creates a node justified to bottom-center.
-    pub fn bottomcenter(size: impl Into<Size>) -> Self
+    /// Creates a node justified to lower-center.
+    pub fn lowercenter(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Center, Justify::Max, size.into())
     }
 
-    /// Creates a node justified to bottom-right.
-    pub fn bottomright(size: impl Into<Size>) -> Self
+    /// Creates a node justified to lower-right.
+    pub fn lowerright(size: impl Into<Size>) -> Self
     {
         Self::new_justified(Justify::Max, Justify::Max, size.into())
     }
@@ -431,15 +439,15 @@ impl CobwebStyle for Layout
 #[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JustifiedLayout
 {
-    TopLeft(Size),
-    TopCenter(Size),
-    TopRight(Size),
+    UpperLeft(Size),
+    UpperCenter(Size),
+    UpperRight(Size),
     CenterLeft(Size),
     Center(Size),
     CenterRight(Size),
-    BottomLeft(Size),
-    BottomCenter(Size),
-    BottomRight(Size),
+    LowerLeft(Size),
+    LowerCenter(Size),
+    LowerRight(Size),
 }
 
 impl From<JustifiedLayout> for Layout
@@ -448,15 +456,15 @@ impl From<JustifiedLayout> for Layout
     {
         match justified
         {
-            JustifiedLayout::TopLeft(size)      => Layout::topleft(size),
-            JustifiedLayout::TopCenter(size)    => Layout::topcenter(size),
-            JustifiedLayout::TopRight(size)     => Layout::topright(size),
+            JustifiedLayout::UpperLeft(size)      => Layout::upperleft(size),
+            JustifiedLayout::UpperCenter(size)    => Layout::uppercenter(size),
+            JustifiedLayout::UpperRight(size)     => Layout::upperright(size),
             JustifiedLayout::CenterLeft(size)   => Layout::centerleft(size),
             JustifiedLayout::Center(size)       => Layout::centered(size),
             JustifiedLayout::CenterRight(size)  => Layout::centerright(size),
-            JustifiedLayout::BottomLeft(size)   => Layout::bottomleft(size),
-            JustifiedLayout::BottomCenter(size) => Layout::bottomcenter(size),
-            JustifiedLayout::BottomRight(size)  => Layout::bottomright(size),
+            JustifiedLayout::LowerLeft(size)   => Layout::lowerleft(size),
+            JustifiedLayout::LowerCenter(size) => Layout::lowercenter(size),
+            JustifiedLayout::LowerRight(size)  => Layout::lowerright(size),
         }
     }
 }
@@ -486,6 +494,7 @@ impl Plugin for LayoutPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<Size>()
+            .register_type::<(u32, u32)>()
             .register_type::<Layout>()
             .register_type::<JustifiedLayout>()
             .add_reactor(LayoutReactor)

@@ -101,9 +101,9 @@ impl WorldReactor for BlockMeshReactor
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup_block_primitive(mut rc: ReactCommands, mut meshes: ResMut<Assets<Mesh>>)
+fn setup_block_primitive(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>)
 {
-    rc.commands().insert_resource(
+    commands.insert_resource(
         BlockAssetCache{
             mesh   : Mesh2dHandle(meshes.add(Rectangle::new(1.0, 1.0))),
             colors : HashMap::default(),
