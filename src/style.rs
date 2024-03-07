@@ -55,12 +55,15 @@ fn style_loader_reactor<T: CobwebStyle>(
         let full_style_path = FullStylePath::new(ctx.style_ref.path.clone(), long_name);
         let full_style_ref = FullStyleRef::new(ctx.style_ref.file.clone(), full_style_path);
 
-        // Get the stylesheet entry if it exists and if its file was changed (or we need to initialize).
-        let Some(loaded_style) = styles.get::<T>(&full_style_ref, ctx.initialized) else { return; };
-        ctx.initialized = true;
 
         // Update the node.
-        *node.get_mut(&mut rc) = loaded_style;
+        let reflected = node.get_mut_noreact();
+        if styles.apply(&full_style_ref, ctx.initialized, reflected)
+        {
+            // Trigger change detection and mark initialized.
+            node.get_mut(&mut rc);
+            ctx.initialized = true;
+        }
     };
 
     // Check if triggered by a node event.
@@ -95,7 +98,7 @@ fn style_loader_reactor<T: CobwebStyle>(
 /// loading is only used for initialization in production settings.
 /// If you *do* reload a stylesheet (e.g. during development), then existing dynamic styles that were changed will be
 /// overwritten.
-pub trait CobwebStyle: ReactComponent + Reflect + Default + Serialize + for<'de> Deserialize<'de>
+pub trait CobwebStyle: ReactComponent + Reflect + PartialEq + Clone + Default + Serialize + for<'de> Deserialize<'de>
 {
     /// Applies a style to a node.
     ///

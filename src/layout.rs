@@ -126,7 +126,7 @@ pub enum Justify
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The size of a node relative to its parent.
-#[derive(Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Size
 {
     /// The node's width and height are absolute values in UI coordinates.
@@ -273,7 +273,7 @@ impl Default for Size
 /// A layout component for UI nodes.
 ///
 /// This should be added to nodes as a [`UiInstruction`].
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Layout
 {
     pub x_justify: Justify,
@@ -356,7 +356,7 @@ impl CobwebStyle for Layout
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A [`CobwebStyle`] that wraps [`Layout`] with simple justification-based settings.
-#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JustifiedLayout
 {
     TopLeft(Size),
@@ -406,7 +406,8 @@ impl Plugin for LayoutPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<Layout>()
+        app.register_type::<Size>()
+            .register_type::<Layout>()
             .register_type::<JustifiedLayout>()
             .add_reactor(LayoutReactor)
             .add_reactor_with(JustifiedLayoutReactor, mutation::<JustifiedLayout>());

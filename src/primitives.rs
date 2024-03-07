@@ -143,7 +143,7 @@ fn spawn_block(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// [`CobwebStyle`] primitive for creating single-color rectangular blocks.
-#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Block
 {
     /// The color of the block.

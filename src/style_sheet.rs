@@ -4,7 +4,6 @@ use crate::*;
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde_json::Value;
 
 //standard shortcuts
 use std::collections::{HashMap, HashSet};
@@ -78,11 +77,29 @@ fn load_style_changes(
 
 struct ErasedStyle
 {
-    style: Arc<Value>,
+    style: ReflectedStyle,
     changed: Arc<AtomicBool>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Clone)]
+pub(crate) enum ReflectedStyle
+{
+    Value(Arc<Box<dyn Reflect + 'static>>),
+    DeserializationFailed(Arc<serde_json::Error>),
+}
+
+impl ReflectedStyle
+{
+    pub(crate) fn equals(&self, other: &ReflectedStyle) -> Option<bool>
+    {
+        let (Self::Value(this), Self::Value(other)) = (self, other) else { return Some(false); };
+        this.reflect_partial_eq(other.as_reflect())
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive resource for managing styles loaded from stylesheet assets.
@@ -205,27 +222,35 @@ impl StyleSheet
     }
 
     /// Inserts a style at the specified path if its value will change.
-    pub(crate) fn insert(&mut self, file: &StyleFile, path: FullStylePath, style: Arc<Value>)
+    pub(crate) fn insert(&mut self, file_ref: &StyleFile, path: FullStylePath, style: ReflectedStyle)
     {
-        let file = self.styles.get_mut(&file).expect("file should have been initialized");
+        let file = self.styles.get_mut(&file_ref).expect("file should have been initialized");
 
-        let mut inserter = ||
+        let mut inserter = |style: ReflectedStyle|
         {
             self.change_count += 1;
-            ErasedStyle{ style: style.clone(), changed: self.changed.clone() }
+            ErasedStyle{ style, changed: self.changed.clone() }
         };
 
-        match file.entry(path)
+        match file.entry(path.clone())
         {
             std::collections::hash_map::Entry::Vacant(entry) =>
             {
-                entry.insert(inserter());
+                entry.insert(inserter(style));
             }
             std::collections::hash_map::Entry::Occupied(mut entry) =>
             {
-                // Check if the style changed.
-                if *entry.get().style == *style { return; }
-                entry.insert(inserter());
+                // Insert if the style value changed.
+                match entry.get().style.equals(&style)
+                {
+                    Some(true) => (),
+                    Some(false) => { entry.insert(inserter(style)); }
+                    None =>
+                    {
+                        tracing::error!("failed inserting style {:?} from {:?}, the reflected value doesn't implement \
+                            PartialEq", path, file_ref);
+                    }
+                }
             }
         }
     }
@@ -238,11 +263,15 @@ impl StyleSheet
         (self.pending.len(), self.styles.len())
     }
 
-    /// Gets a style.
+    /// Applies updates to a style.
     ///
-    /// If `ignore_unchanged` is set to `true` then if the style did not change this tick, it won't be deserialized,
-    /// and `None` will be returned.
-    pub fn get<S>(&self, style_ref: &FullStyleRef, ignore_unchanged: bool) -> Option<S>
+    /// If `ignore_unchanged` is set to `true` then if the style did not change this tick `false` will be returned.
+    pub fn apply<'a, S>(
+        &'a self,
+        style_ref         : &FullStyleRef,
+        ignore_unchanged  : bool,
+        reflected         : &'a mut S,
+    ) -> bool
     where
         S: CobwebStyle
     {
@@ -252,7 +281,7 @@ impl StyleSheet
         {
             tracing::error!("could not load style {:?} at path {:?}, file {:?} was not found",
                 style_ref.path.full_type_name, style_ref.path.path, style_ref.file);
-            return None;
+            return false;
         };
         let Some(erased_style) = style_file.get(&style_ref.path)
         else
@@ -269,28 +298,32 @@ impl StyleSheet
                     maybe the path is wrong",
                     style_ref.path.full_type_name, style_ref.path.path, style_ref.file);
             }
-            return None;
+            return false;
         };
 
         // Check if this style was changed this tick.
         // - The caller can skip this check if they need to get an initial value for this style.
         if ignore_unchanged
         {
-            if !erased_style.changed.load(Ordering::Relaxed) { return None; }
+            if !erased_style.changed.load(Ordering::Relaxed) { return false; }
         }
 
-        // Deserialize the style.
-        match serde_json::from_value((*erased_style.style).clone())
+        // Update the style.
+        match &erased_style.style
         {
-            Ok(style) => Some(style),
-            Err(err) =>
+            ReflectedStyle::Value(style) =>
+            {
+                reflected.apply(style.as_reflect());
+                true
+            }
+            ReflectedStyle::DeserializationFailed(err) =>
             {
                 let temp = S::default();
                 let hint = serde_json::to_string(&temp).unwrap();
                 tracing::error!("failed deserializing style {:?} at path {:?} in file {:?}, {:?}\n\
                     serialization hint: {:?}",
-                    style_ref.path.full_type_name, style_ref.path.path, style_ref.file, err, hint);
-                None
+                    style_ref.path.full_type_name, style_ref.path.path, style_ref.file, **err, hint);
+                false
             }
         }
     }

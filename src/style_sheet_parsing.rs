@@ -3,6 +3,8 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::reflect::TypeRegistry;
+use bevy::reflect::serde::TypedReflectDeserializer;
+use serde::de::DeserializeSeed;
 use serde_json::{Map, Value};
 
 //standard shortcuts
@@ -31,22 +33,28 @@ fn is_style_entry(key: &str) -> bool
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn get_style_names(
-    type_registry  : &TypeRegistry,
+fn get_style_meta<'a>(
+    type_registry  : &'a TypeRegistry,
     file           : &StyleFile,
     current_path   : &StylePath,
     short_name     : &str,
     name_shortcuts : &mut HashMap<&'static str, &'static str>,
-) -> Option<(&'static str, &'static str)>
+) -> Option<(&'static str, &'static str, TypedReflectDeserializer<'a>)>
 {
     // Check if we already have this mapping.
-    if let Some((short_name, long_name)) = name_shortcuts.get_key_value(short_name)
+    let mut found_mapping = false;
+    let registration = match name_shortcuts.get(short_name)
     {
-        return Some((short_name, long_name));
-    }
+        Some(long_name) =>
+        {
+            found_mapping = true;
+            type_registry.get_with_type_path(long_name)
+        }
+        None => type_registry.get_with_short_type_path(short_name)
+    };
 
     // Look up the longname
-    let Some(registration) = type_registry.get_with_short_type_path(short_name)
+    let Some(registration) = registration
     else
     {
         tracing::error!("failed getting long type name for {:?} at {:?} in {:?}; if the type is ambiguous because \
@@ -54,13 +62,17 @@ fn get_style_names(
             short_name, current_path, file);
         return None;
     };
+
     let short_name = registration.type_info().type_path_table().short_path();  //get static version
     let long_name = registration.type_info().type_path_table().path();
 
     // Save this mapping for later.
-    name_shortcuts.insert(short_name, long_name);
+    if !found_mapping { name_shortcuts.insert(short_name, long_name); }
 
-    Some((short_name, long_name))
+    // Deserializer
+    let deserializer = TypedReflectDeserializer::new(registration, type_registry);
+
+    Some((short_name, long_name, deserializer))
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -70,8 +82,8 @@ fn get_inherited_style_value(
     file         : &StyleFile,
     current_path : &StylePath,
     short_name   : &str,
-    style_entry  : &Vec<Arc<Value>>, 
-) -> Option<Arc<Value>>
+    style_entry  : &Vec<ReflectedStyle>, 
+) -> Option<ReflectedStyle>
 {
     // Try to inherit the last style entry in the stack.
     let Some(inherited) = style_entry.last()
@@ -93,8 +105,9 @@ fn get_style_value(
     current_path : &StylePath,
     short_name   : &str,
     value        : Value,
-    style_entry  : &Vec<Arc<Value>>, 
-) -> Option<Arc<Value>>
+    style_entry  : &Vec<ReflectedStyle>,
+    deserializer : TypedReflectDeserializer,
+) -> Option<ReflectedStyle>
 {
     match &value
     {
@@ -102,7 +115,14 @@ fn get_style_value(
         {
             get_inherited_style_value(file, current_path, short_name, style_entry)
         },
-        _ => Some(Arc::new(value)),
+        _ =>
+        {
+            match deserializer.deserialize(value)
+            {
+                Ok(value) => Some(ReflectedStyle::Value(Arc::new(value))),
+                Err(err)  => Some(ReflectedStyle::DeserializationFailed(Arc::new(err))),
+            }
+        }
     }
 }
 
@@ -157,18 +177,20 @@ fn handle_style_entry(
     short_name     : &str,
     value          : Value,
     name_shortcuts : &mut HashMap<&'static str, &'static str>,
-    style_stack    : &mut HashMap<&'static str, Vec<Arc<Value>>>,
+    style_stack    : &mut HashMap<&'static str, Vec<ReflectedStyle>>,
     stack_tracker  : &mut Vec<(&'static str, usize)>,
 ){
     // Get the style's longname.
-    let Some((short_name, long_name)) = get_style_names(type_registry, file, current_path, short_name, name_shortcuts)
+    let Some((short_name, long_name, deserializer)) =
+        get_style_meta(type_registry, file, current_path, short_name, name_shortcuts)
     else { return; };
 
     // Get the style's value.
     let style_entry = style_stack.entry(short_name).or_insert_with(|| Vec::default());
     let starting_len = style_entry.len();
 
-    let Some(style_value) = get_style_value(file, current_path, short_name, value, &style_entry) else { return; };
+    let Some(style_value) = get_style_value(file, current_path, short_name, value, &style_entry, deserializer)
+    else { return; };
 
     // Save this style.
     style_entry.push(style_value.clone());
@@ -189,7 +211,7 @@ fn handle_branch_entry(
     value          : Value,
     depth          : usize,
     name_shortcuts : &mut HashMap<&'static str, &'static str>,
-    style_stack    : &mut HashMap<&'static str, Vec<Arc<Value>>>,
+    style_stack    : &mut HashMap<&'static str, Vec<ReflectedStyle>>,
     stack_trackers : &mut Vec<Vec<(&'static str, usize)>>,
 ){
     let Value::Object(data) = value
@@ -225,7 +247,7 @@ fn parse_branch(
     mut data       : Map<String, Value>,
     depth          : usize,
     name_shortcuts : &mut HashMap<&'static str, &'static str>,
-    style_stack    : &mut HashMap<&'static str, Vec<Arc<Value>>>,
+    style_stack    : &mut HashMap<&'static str, Vec<ReflectedStyle>>,
     stack_trackers : &mut Vec<Vec<(&'static str, usize)>>,
 ){
     let mut stack_tracker = stack_trackers.pop().unwrap_or_default();
@@ -303,7 +325,7 @@ pub(crate) fn parse_stylesheet_file(type_registry: &TypeRegistry, stylesheet: &m
     // [ shortname : longname ]
     let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
     // [ shortname : [ style value ] ]
-    let mut style_stack: HashMap<&'static str, Vec<Arc<Value>>> = HashMap::default();
+    let mut style_stack: HashMap<&'static str, Vec<ReflectedStyle>> = HashMap::default();
     // [ {shortname, top index into stylestack when first stack added this frame} ]
     let mut stack_trackers: Vec<Vec<(&'static str, usize)>> = Vec::default();
 
