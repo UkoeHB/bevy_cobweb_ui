@@ -169,9 +169,9 @@ impl Default for Block
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct PrimitivesPlugin;
+pub(crate) struct BlockPrimitivePlugin;
 
-impl Plugin for PrimitivesPlugin
+impl Plugin for BlockPrimitivePlugin
 {
     fn build(&self, app: &mut App)
     {
