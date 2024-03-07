@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates Layout whenever JustifiedLayout changes on the same entity.
+/// Updates [`Layout`] whenever [`JustifiedLayout`] changes on the same entity.
 fn justified_layout_reactor(
     event         : MutationEvent<JustifiedLayout>,
     mut rc        : ReactCommands,
@@ -22,7 +22,7 @@ fn justified_layout_reactor(
     else { tracing::error!("justified layout mutation event missing"); return; };
     let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
     else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
-    *layout.get_mut(&mut rc) = Layout::from(**justified);
+    layout.set_if_not_eq(&mut rc, Layout::from(**justified));
 }
 
 struct JustifiedLayoutReactor;
@@ -64,9 +64,8 @@ fn layout_reactor(
     *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
     transform.rotation = Quat::from_rotation_z(layout.rotation);
 
-    // Update our node's size.
-    //todo: how to use set_if_not_eq? NodeSize contains floats...
-    *size.get_mut(&mut rc) = NodeSize(dims);
+    // Update our node's size if it changed.
+    size.set_if_not_eq(&mut rc, NodeSize(dims));
 }
 
 struct LayoutReactor;
@@ -83,19 +82,19 @@ impl WorldReactor for LayoutReactor
 /// The 2D dimensions of the node as a rectangle on the plane of the node's parent.
 ///
 /// Translate by 1/2 of each dimension to reach the edges of the node parent.
-#[derive(ReactComponent, Default, Debug, Copy, Clone, Deref, DerefMut)]
+#[derive(ReactComponent, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
 pub struct NodeSize(pub Vec2);
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The z-offset applied between this node and its parent.
-#[derive(ReactComponent, Debug, Copy, Clone, Deref, DerefMut, Default)]
+#[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Deref, DerefMut, Default)]
 pub struct NodeOffset(pub f32);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Rerference data for use in defining the layout of a node.
-#[derive(ReactComponent, Debug, Copy, Clone, Default)]
+/// Reference data for use in defining the layout of a node.
+#[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Default)]
 pub struct LayoutRef
 {
     /// The parent's node size.

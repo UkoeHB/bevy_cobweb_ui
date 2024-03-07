@@ -72,7 +72,7 @@ fn camera_update_reactor(
     for child in children.iter()
     {
         let Ok(mut layout_ref) = refs.get_mut(*child) else { continue; };
-        *layout_ref.get_mut(&mut rc) = parent_ref;
+        layout_ref.set_if_not_eq(&mut rc, parent_ref);
     }
 }
 
@@ -118,6 +118,7 @@ fn camera_refresh_reactor(
     let Some(parent_ref) = get_camera_layout_ref(**camera_entity, camera_transform, camera) else { return; };
 
     // Update the target node.
+    // - Note: Since we are refreshing, we don't use set_if_not_eq().
     *layout_ref.get_mut(&mut rc) = parent_ref;
 }
 
@@ -153,7 +154,7 @@ fn parent_update_reactor(
     for child in children.iter()
     {
         let Ok(mut layout_ref) = nodes.get_mut(*child) else { continue; };
-        *layout_ref.get_mut(&mut rc) = parent_ref;
+        layout_ref.set_if_not_eq(&mut rc, parent_ref);
     }
 }
 
@@ -183,6 +184,7 @@ fn parent_refresh_reactor(
     else { tracing::debug!(?node, "failed updating parent layout ref, parent node not found"); return; };
 
     // Update the target node with the parent's size.
+    // - Note: Since we are refreshing, we don't use set_if_not_eq().
     let parent_size = **parent_size;
     let offset = NodeOffset(DEFAULT_Z_OFFSET);
     let parent_ref = LayoutRef{ parent_size, offset };
