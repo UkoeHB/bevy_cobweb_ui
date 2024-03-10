@@ -17,7 +17,7 @@ use std::collections::HashMap;
 struct BlockAssetCache
 {
     mesh: Mesh2dHandle,
-    //todo: is this not mapping not precise?
+    //todo: is this mapping not precise?
     colors: HashMap<u32, Handle<ColorMaterial>>,
 }
 

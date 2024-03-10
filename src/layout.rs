@@ -124,9 +124,15 @@ pub enum Justify
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// The size of a node relative to its parent.
+/// Represents a transformation between two rectangles.
+///
+/// When `Dims` is used as a [`UiInstruction`], this is used to transform the node's [`DimsRef`] into a
+/// [`NodeSizeEstimate`].
+///
+/// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
+/// [`NodeSizeEstimate`] and also its final [`NodeSize`] if it has a [`NodeSizeAdjuster`].
 #[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Size
+pub enum Dims
 {
     /// The node's width and height are absolute values in UI coordinates.
     Absolute(Vec2),
@@ -141,35 +147,6 @@ pub enum Size
     ///
     /// Note that if padding is too large, your node may completely disappear.
     Padded(Vec2),
-    /// The node's width and height are computed from absolute values plus values relative to the parent.
-    ///
-    /// Relative values are recorded in percentages.
-    Combined{
-        #[reflect(default)]
-        abs: Vec2,
-        #[reflect(default)]
-        rel: Vec2
-    },
-    /// The same as [`Self::SolidInFill`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    ///
-    /// Ratio parameters are clamped to >= 1.
-    SolidIn{
-        ratio: (u32, u32),
-        #[reflect(default)]
-        abs: Vec2,
-        #[reflect(default)]
-        rel: Vec2
-    },
-    /// The same as [`Self::SolidOutFill`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
-    ///
-    /// Ratio parameters are clamped to >= 1.
-    SolidOut{
-        ratio: (u32, u32),
-        #[reflect(default)]
-        abs: Vec2,
-        #[reflect(default)]
-        rel: Vec2
-    },
     /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are <= the parent's dimensions
     /// (with at least one dimension equal to the parent's corresponding dimension).
     ///
@@ -180,12 +157,48 @@ pub enum Size
     ///
     /// Ratio parameters are clamped to >= 1.
     SolidOutFill((u32, u32)),
+    /// The parent's dimensions are adjusted by padding, then the node's width and height are computed from absolute
+    /// values plus values relative to the adjusted parent.
+    ///
+    /// Relative values are recorded in percentages.
+    Combined{
+        #[reflect(default)]
+        pad: Vec2,
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
+    /// Equivalent to [`Self::SolidInFill`] applied to parent dimensions adjusted by [`Self::Combined`].
+    ///
+    /// Ratio parameters are clamped to >= 1.
+    SolidIn{
+        ratio: (u32, u32),
+        #[reflect(default)]
+        pad: Vec2,
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
+    /// Equivalent to [`Self::SolidOutFill`] applied to parent dimensions adjusted by [`Self::Combined`].
+    ///
+    /// Ratio parameters are clamped to >= 1.
+    SolidOut{
+        ratio: (u32, u32),
+        #[reflect(default)]
+        pad: Vec2,
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
 }
 
-impl Size
+impl Dims
 {
     /// Computes the dimensions of the node in 2D UI coordinates.
-    pub fn compute(&self, parent_dims: Vec2) -> Vec2
+    pub fn compute(&self, parent_size: Vec2) -> Vec2
     {
         match *self
         {
@@ -199,37 +212,23 @@ impl Size
             Self::Relative(rel) =>
             {
                 Vec2{
-                    x: parent_dims.x.max(0.) * rel.x.max(0.) / 100.,
-                    y: parent_dims.y.max(0.) * rel.y.max(0.) / 100.,
+                    x: parent_size.x.max(0.) * rel.x.max(0.) / 100.,
+                    y: parent_size.y.max(0.) * rel.y.max(0.) / 100.,
                 }
             }
             Self::Padded(padding) =>
             {
                 Vec2{
-                    x: (parent_dims.x - padding.x).max(0.),
-                    y: (parent_dims.y - padding.y).max(0.),
+                    x: (parent_size.x - padding.x).max(0.),
+                    y: (parent_size.y - padding.y).max(0.),
                 }
-            }
-            Self::Combined{ abs, rel } =>
-            {
-                Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims)
-            }
-            Self::SolidIn{ ratio, abs, rel } =>
-            {
-                let parent_dims = Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims);
-                Self::SolidInFill(ratio).compute(parent_dims)
-            }
-            Self::SolidOut{ ratio, abs, rel } =>
-            {
-                let parent_dims = Self::Absolute(abs).compute(parent_dims) + Self::Relative(rel).compute(parent_dims);
-                Self::SolidOutFill(ratio).compute(parent_dims)
             }
             Self::SolidInFill((ratio_x, ratio_y)) =>
             {
                 let ratio_x = ratio_x.max(1) as f32;
                 let ratio_y = ratio_y.max(1) as f32;
-                let parent_x = parent_dims.x.max(0.);
-                let parent_y = parent_dims.y.max(0.);
+                let parent_x = parent_size.x.max(0.);
+                let parent_y = parent_size.y.max(0.);
 
                 // Case: this node is flatter than its parent.
                 if (ratio_x * parent_y) >= (ratio_y * parent_x)
@@ -252,8 +251,8 @@ impl Size
             {
                 let ratio_x = ratio_x.max(1) as f32;
                 let ratio_y = ratio_y.max(1) as f32;
-                let parent_x = parent_dims.x.max(0.);
-                let parent_y = parent_dims.y.max(0.);
+                let parent_x = parent_size.x.max(0.);
+                let parent_y = parent_size.y.max(0.);
 
                 // Case: this node is flatter than its parent.
                 if (ratio_x * parent_y) >= (ratio_y * parent_x)
@@ -272,11 +271,26 @@ impl Size
                     }
                 }
             }
+            Self::Combined{ pad, abs, rel } =>
+            {
+                let parent_size = Self::Padded(pad).compute(parent_size);
+                Self::Absolute(abs).compute(parent_size) + Self::Relative(rel).compute(parent_size)
+            }
+            Self::SolidIn{ ratio, pad, abs, rel } =>
+            {
+                let parent_size = Self::Combined{ pad, abs, rel }.compute(parent_size);
+                Self::SolidInFill(ratio).compute(parent_size)
+            }
+            Self::SolidOut{ ratio, pad, abs, rel } =>
+            {
+                let parent_size = Self::Combined{ pad, abs, rel }.compute(parent_size);
+                Self::SolidOutFill(ratio).compute(parent_size)
+            }
         }
     }
 }
 
-impl Default for Size
+impl Default for Dims
 {
     fn default() -> Self
     {
@@ -296,7 +310,7 @@ pub struct Layout
     pub y_justify: Justify,
     pub abs_offset: Vec2,
     pub rel_offset: Vec2,
-    pub size: Size,
+    pub size: Dims,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other layout calculations, and that the center of rotation is the node origin
@@ -306,7 +320,7 @@ pub struct Layout
 
 impl Layout
 {
-    fn new_justified(x_justify: Justify, y_justify: Justify, size: Size) -> Self
+    fn new_justified(x_justify: Justify, y_justify: Justify, size: Dims) -> Self
     {
         Self {
             x_justify,
@@ -320,60 +334,60 @@ impl Layout
     pub fn overlay() -> Self
     {
         let mut overlay = Self::default();
-        overlay.size = Size::Padded(Vec2::default());
+        overlay.size = Dims::Padded(Vec2::default());
         overlay
     }
 
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
-    pub fn centered(size: impl Into<Size>) -> Self
+    pub fn centered(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Center, Justify::Center, size.into())
     }
 
     /// Creates a node justified to center-left.
-    pub fn centerleft(size: impl Into<Size>) -> Self
+    pub fn centerleft(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Min, Justify::Center, size.into())
     }
 
     /// Creates a node justified to center-right.
-    pub fn centerright(size: impl Into<Size>) -> Self
+    pub fn centerright(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Max, Justify::Center, size.into())
     }
 
     /// Creates a node justified to upper-left.
-    pub fn upperleft(size: impl Into<Size>) -> Self
+    pub fn upperleft(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Min, Justify::Min, size.into())
     }
 
     /// Creates a node justified to upper-center.
-    pub fn uppercenter(size: impl Into<Size>) -> Self
+    pub fn uppercenter(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Center, Justify::Min, size.into())
     }
 
     /// Creates a node justified to upper-right.
-    pub fn upperright(size: impl Into<Size>) -> Self
+    pub fn upperright(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Max, Justify::Min, size.into())
     }
 
     /// Creates a node justified to lower-left.
-    pub fn lowerleft(size: impl Into<Size>) -> Self
+    pub fn lowerleft(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Min, Justify::Max, size.into())
     }
 
     /// Creates a node justified to lower-center.
-    pub fn lowercenter(size: impl Into<Size>) -> Self
+    pub fn lowercenter(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Center, Justify::Max, size.into())
     }
 
     /// Creates a node justified to lower-right.
-    pub fn lowerright(size: impl Into<Size>) -> Self
+    pub fn lowerright(size: impl Into<Dims>) -> Self
     {
         Self::new_justified(Justify::Max, Justify::Max, size.into())
     }
@@ -400,33 +414,33 @@ impl Layout
     }
 
     /// Gets the dimensions of the node.
-    pub fn dims(&self, parent_dims: Vec2) -> Vec2
+    pub fn dims(&self, parent_size: Vec2) -> Vec2
     {
-        self.size.compute(parent_dims)
+        self.size.compute(parent_size)
     }
 
     /// Gets the offset between our node and the parent in 2D UI coordinates.
-    pub fn offset(&self, parent_dims: Vec2) -> Vec2
+    pub fn offset(&self, parent_size: Vec2) -> Vec2
     {
-        let dims = self.dims(parent_dims);
+        let dims = self.dims(parent_size);
 
         let mut x_offset = match self.x_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_dims.x / 2.) - (dims.x / 2.),
-            Justify::Max    => parent_dims.x - dims.x,
+            Justify::Center => (parent_size.x / 2.) - (dims.x / 2.),
+            Justify::Max    => parent_size.x - dims.x,
         };
         x_offset += self.abs_offset.x;
-        x_offset += self.rel_offset.x * parent_dims.x.max(0.) / 100.;
+        x_offset += self.rel_offset.x * parent_size.x.max(0.) / 100.;
 
         let mut y_offset = match self.y_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_dims.y / 2.) - (dims.y / 2.),
-            Justify::Max    => parent_dims.y - dims.y,
+            Justify::Center => (parent_size.y / 2.) - (dims.y / 2.),
+            Justify::Max    => parent_size.y - dims.y,
         };
         y_offset += self.abs_offset.y;
-        y_offset += self.rel_offset.y * parent_dims.y.max(0.) / 100.;
+        y_offset += self.rel_offset.y * parent_size.y.max(0.) / 100.;
 
         Vec2{ x: x_offset, y: y_offset }
     }
@@ -455,15 +469,15 @@ impl CobwebStyle for Layout
 #[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JustifiedLayout
 {
-    UpperLeft(Size),
-    UpperCenter(Size),
-    UpperRight(Size),
-    CenterLeft(Size),
-    Center(Size),
-    CenterRight(Size),
-    LowerLeft(Size),
-    LowerCenter(Size),
-    LowerRight(Size),
+    UpperLeft(Dims),
+    UpperCenter(Dims),
+    UpperRight(Dims),
+    CenterLeft(Dims),
+    Center(Dims),
+    CenterRight(Dims),
+    LowerLeft(Dims),
+    LowerCenter(Dims),
+    LowerRight(Dims),
 }
 
 impl From<JustifiedLayout> for Layout
@@ -472,15 +486,15 @@ impl From<JustifiedLayout> for Layout
     {
         match justified
         {
-            JustifiedLayout::UpperLeft(size)      => Layout::upperleft(size),
-            JustifiedLayout::UpperCenter(size)    => Layout::uppercenter(size),
-            JustifiedLayout::UpperRight(size)     => Layout::upperright(size),
-            JustifiedLayout::CenterLeft(size)   => Layout::centerleft(size),
-            JustifiedLayout::Center(size)       => Layout::centered(size),
-            JustifiedLayout::CenterRight(size)  => Layout::centerright(size),
-            JustifiedLayout::LowerLeft(size)   => Layout::lowerleft(size),
-            JustifiedLayout::LowerCenter(size) => Layout::lowercenter(size),
-            JustifiedLayout::LowerRight(size)  => Layout::lowerright(size),
+            JustifiedLayout::UpperLeft(dims)   => Layout::upperleft(dims),
+            JustifiedLayout::UpperCenter(dims) => Layout::uppercenter(dims),
+            JustifiedLayout::UpperRight(dims)  => Layout::upperright(dims),
+            JustifiedLayout::CenterLeft(dims)  => Layout::centerleft(dims),
+            JustifiedLayout::Center(dims)      => Layout::centered(dims),
+            JustifiedLayout::CenterRight(dims) => Layout::centerright(dims),
+            JustifiedLayout::LowerLeft(dims)   => Layout::lowerleft(dims),
+            JustifiedLayout::LowerCenter(dims) => Layout::lowercenter(dims),
+            JustifiedLayout::LowerRight(dims)  => Layout::lowerright(dims),
         }
     }
 }
@@ -489,7 +503,7 @@ impl Default for JustifiedLayout
 {
     fn default() -> Self
     {
-        Self::Center(Size::default())
+        Self::Center(Dims::default())
     }
 }
 
@@ -509,7 +523,7 @@ impl Plugin for LayoutPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<Size>()
+        app.register_type::<Dims>()
             .register_type::<(u32, u32)>()
             .register_type::<Layout>()
             .register_type::<JustifiedLayout>()

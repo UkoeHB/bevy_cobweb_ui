@@ -130,7 +130,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     uc.build((
             BasicImage::new("examples/basic_image.png"),
             Parent(parent),
-            Layout::upperleft(Size::Relative(Vec2{ x: 20.0, y: 20.0 }))
+            Layout::upperleft(Dims::Relative(Vec2{ x: 20.0, y: 20.0 }))
         ));
 
     // Top right image
