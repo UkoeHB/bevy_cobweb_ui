@@ -144,7 +144,12 @@ pub enum Size
     /// The node's width and height are computed from absolute values plus values relative to the parent.
     ///
     /// Relative values are recorded in percentages.
-    Combined{ abs: Vec2, rel: Vec2 },
+    Combined{
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
     /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are <= the parent's dimensions
     /// (with at least one dimension equal to the parent's corresponding dimension).
     ///
@@ -158,11 +163,23 @@ pub enum Size
     /// The same as [`Self::SolidIn`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
     ///
     /// Ratio parameters are clamped to >= 1.
-    SolidInCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
+    SolidInCombined{
+        ratio: (u32, u32),
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
     /// The same as [`Self::SolidOut`] except parent dimensions are adusted by `abs` and `rel` before computing the size.
     ///
     /// Ratio parameters are clamped to >= 1.
-    SolidOutCombined{ ratio: (u32, u32), abs: Vec2, rel: Vec2 },
+    SolidOutCombined{
+        ratio: (u32, u32),
+        #[reflect(default)]
+        abs: Vec2,
+        #[reflect(default)]
+        rel: Vec2
+    },
 }
 
 impl Size

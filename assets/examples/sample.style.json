@@ -15,7 +15,7 @@
 
 "upper_right_img": {
     "BasicImage"      : {"path": "examples/basic_image.png"},
-    "JustifiedLayout" : {"UpperRight": {"SolidInCombined": {"ratio": [640, 480], "abs": [0.0, 0.0], "rel": [10.0, 20.0]}}}
+    "JustifiedLayout" : {"UpperRight": {"SolidInCombined": {"ratio": [640, 480], "rel": [10.0, 20.0]}}}
 }
 
 }

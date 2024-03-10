@@ -255,11 +255,18 @@ impl UiInstruction for InCamera
 
 //-------------------------------------------------------------------------------------------------------------------
 
+//todo: OnTexture
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// A [`UiInstruction`] for adding a UI node within a specific parent node.
+///
+/// The node is set as a child of the parent entity.
 ///
 /// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`LayoutRef`]`>` to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
+//todo: need to validate that the node doesn't already have a parent (set_parent() just replaces the current parent)
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]
 pub struct Parent(pub Entity);
 
