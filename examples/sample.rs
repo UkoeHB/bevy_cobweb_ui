@@ -98,6 +98,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
             Block{ color: Color::BLACK },
             Parent(parent),
             Justified::load(&style),
+            Dims::load(&style),
         ))
         .id();
 
@@ -107,7 +108,8 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
             Block{ color: Color::DARK_GRAY },
             Parent(outer),
             Justified::load(&style),
-            On::<KeyboardInput>::new(handle_keyboard_input_for_node)  //todo: OnBroadcast
+            Dims::load(&style),
+            On::<KeyboardInput>::new(handle_keyboard_input_for_node),  //todo: OnBroadcast
         ))
         .id();
 
@@ -117,7 +119,8 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
             Block::load(&style),
             Parent(inner),
             Justified::load(&style),
-            On::<KeyboardInput>::new(handle_keyboard_input_for_node)
+            Dims::load(&style),
+            On::<KeyboardInput>::new(handle_keyboard_input_for_node),
         ));
 }
 
@@ -130,7 +133,8 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     uc.build((
             BasicImage::new("examples/basic_image.png"),
             Parent(parent),
-            Position::upperleft(Dims::Relative(Vec2{ x: 20.0, y: 20.0 }))
+            Position::topleft(),
+            Dims::Relative(Vec2{ x: 20.0, y: 20.0 }),
         ));
 
     // Top right image
@@ -139,6 +143,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
             BasicImage::load(&path),
             Parent(parent),
             Justified::load(&path),
+            Dims::load(&path),
         ));
 }
 
@@ -148,7 +153,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = uc.build((InCamera(camera.single()), Position::overlay())).id();
+    let root = uc.build((InCamera(camera.single()), Dims::overlay())).id();
     add_blocks(&mut uc, &file, root);
     add_images(&mut uc, &file, root);
 }

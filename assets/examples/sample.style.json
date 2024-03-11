@@ -1,21 +1,28 @@
 {
 
 "outer_block": {
-    "Justified": {"Center": {"Relative": [50.0, 50.0]}},
+    "Justified" : "Center",
+    "Dims"      : {"Relative": [50.0, 50.0]},
 
     "inner_block": {
-        "Justified": {"Center": {"Relative": [40.0, 25.0]}}
+        "Justified" : "BottomRight",
+        "Dims"      : {"Relative": [40.0, 50.0]},
+
+        "final_block": {
+            "Block"     : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
+            "Justified" : "inherited"
+        }
     },
 
     "inner_block::final_block": {
-        "Block"     : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-        "Justified" : "inherited"
+        "Dims"  : "inherited"
     }
 },
 
 "upper_right_img": {
     "BasicImage" : {"path": "examples/basic_image.png"},
-    "Justified"  : {"UpperRight": {"SolidIn": {"ratio": [640, 480], "rel": [10.0, 20.0]}}}
+    "Justified"  : "TopRight",
+    "Dims"       : {"SolidIn": {"ratio": [640, 480], "rel": [10.0, 20.0]}}
 }
 
 }

@@ -1,12 +1,44 @@
 //local shortcuts
+use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
 //standard shortcuts
 
 
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Updates a node's size.
+fn dims_reactor(
+    ref_event : MutationEvent<SizeRef>,
+    lay_event : MutationEvent<Dims>,
+    mut rc    : ReactCommands,
+    mut nodes : Query<(&mut React<NodeSize>, &React<Dims>, &React<SizeRef>)>
+){
+    let Some(node) = ref_event.read().or_else(|| lay_event.read())
+    else { tracing::error!("failed running dims reactor, event is missing"); return; };
+    let Ok((mut size, dims, size_ref)) = nodes.get_mut(node)
+    else { tracing::debug!(?node, "node missing on dims update"); return; };
+
+    // Update our node's size if it changed.
+    let parent_size = *size_ref.parent_size;
+    let dims = dims.compute(parent_size);
+    size.set_if_not_eq(&mut rc, NodeSize(dims));
+}
+
+struct DimsReactor;
+impl WorldReactor for DimsReactor
+{
+    type StartingTriggers = ();
+    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Dims>);
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(dims_reactor) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents a transformation between two rectangles.
@@ -16,7 +48,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
 /// [`NodeSizeEstimate`] and also its final [`NodeSize`] if it has a [`NodeSizeAdjuster`].
-#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Dims
 {
     /// The node's width and height are absolute values in UI coordinates.
@@ -81,7 +113,13 @@ pub enum Dims
 
 impl Dims
 {
-    /// Computes the dimensions of the node in 2D UI coordinates.
+    /// Creates a node that perfectly overlaps its parent.
+    pub fn overlay() -> Self
+    {
+        Self::Padded(Vec2::default())
+    }
+
+    /// Transforms `parent_size` into a child size.
     pub fn compute(&self, parent_size: Vec2) -> Vec2
     {
         match *self
@@ -174,6 +212,23 @@ impl Dims
     }
 }
 
+impl CobwebStyle for Dims
+{
+    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    {
+        rc.commands().syscall(node,
+            |
+                In(node)    : In<Entity>,
+                mut rc      : ReactCommands,
+                mut reactor : Reactor<DimsReactor>,
+            |
+            {
+                reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Dims>(node)));
+            }
+        );
+    }
+}
+
 impl Default for Dims
 {
     fn default() -> Self
@@ -191,7 +246,8 @@ impl Plugin for DimsPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<Dims>()
-            .register_type::<(u32, u32)>();
+            .register_type::<(u32, u32)>()
+            .add_reactor(DimsReactor);
     }
 }
 

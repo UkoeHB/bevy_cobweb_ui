@@ -19,10 +19,10 @@ fn justified_reactor(
     mut justified : Query<(&mut React<Position>, &React<Justified>)>
 ){
     let Some(justified_entity) = event.read()
-    else { tracing::error!("justified layout mutation event missing"); return; };
-    let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
-    else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
-    layout.set_if_not_eq(&mut rc, Position::from(**justified));
+    else { tracing::error!("justified position mutation event missing"); return; };
+    let Ok((mut position, justified)) = justified.get_mut(justified_entity)
+    else { tracing::debug!("position entity {:?} missing on justified position mutation", justified_entity); return; };
+    position.set_if_not_eq(&mut rc, Position::from(**justified));
 }
 
 struct JustifiedReactor;
@@ -36,43 +36,42 @@ impl WorldReactor for JustifiedReactor
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates a node's transform on parent update or if the layout changes.
+/// Updates a node's transform.
 fn position_reactor(
-    ref_event : MutationEvent<SizeRef>,
-    lay_event : MutationEvent<Position>,
-    mut rc    : ReactCommands,
-    mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Position>, &React<SizeRef>)>
+    ref_event  : MutationEvent<SizeRef>,
+    size_event : MutationEvent<NodeSize>,
+    pos_event  : MutationEvent<Position>,
+    mut nodes  : Query<(&mut Transform, &React<NodeSize>, &React<Position>, &React<SizeRef>)>
 ){
-    let Some(node) = ref_event.read().or_else(|| lay_event.read())
-    else { tracing::error!("failed running layout reactor, event is missing"); return; };
-    let Ok((mut transform, mut size, layout, layout_ref)) = nodes.get_mut(node)
-    else { tracing::debug!(?node, "node missing on layout update"); return; };
+    let Some(node) = ref_event.read().or_else(|| size_event.read()).or_else(|| pos_event.read())
+    else { tracing::error!("failed running position reactor, event is missing"); return; };
+    let Ok((mut transform, node_size, position, size_ref)) = nodes.get_mut(node)
+    else { tracing::debug!(?node, "node missing on position update"); return; };
 
     // Get the offset between our node's anchor and the parent node's anchor.
-    let parent_size = *layout_ref.parent_size;
-    let mut offset = layout.offset(parent_size);
-    let dims = layout.dims(parent_size);
+    let parent_size = *size_ref.parent_size;
+    let size = ***node_size;
+    let mut offset = position.offset(size, parent_size);
 
     // Convert the offset to a translation between the parent and node origins.
-    // - Offset = [vector to parent upper left corner]
+    // - Offset = [vector to parent top left corner]
     //          + [anchor offset vector (convert y)]
     //          + [node corner to node origin (convert y)]
-    offset.x = (-parent_size.x / 2.) + offset.x + (dims.x / 2.);
-    offset.y = (parent_size.y / 2.) + -offset.y + (-dims.y / 2.);
+    offset.x = (-parent_size.x / 2.) + offset.x + (size.x / 2.);
+    offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
 
     // Update this node's transform.
-    *transform = Transform::from_translation(offset.extend(*layout_ref.offset));
-    transform.rotation = Quat::from_rotation_z(layout.rotation);
-
-    // Update our node's size if it changed.
-    size.set_if_not_eq(&mut rc, NodeSize(dims));
+    let mut new_transform = Transform::from_translation(offset.extend(*size_ref.offset));
+    new_transform.rotation = Quat::from_rotation_z(position.rotation);
+    if new_transform == *transform { return; }  //Avoid triggering change detection needlessly.
+    *transform = new_transform;
 }
 
 struct PositionReactor;
 impl WorldReactor for PositionReactor
 {
     type StartingTriggers = ();
-    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Position>);
+    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<NodeSize>, EntityMutationTrigger<Position>);
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(position_reactor) }
 }
 
@@ -111,86 +110,72 @@ pub struct Position
     pub y_justify: Justify,
     pub abs_offset: Vec2,
     pub rel_offset: Vec2,
-    pub size: Dims,
     /// The node's rotation around its z-axis in radians.
     ///
-    /// Note that rotation is applied after other layout calculations, and that the center of rotation is the node origin
-    /// not the node anchor (i.e. the node's centerpoint, not its upper-left corner).
+    /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
+    /// not the node anchor (i.e. the node's centerpoint, not its top-left corner).
     pub rotation: f32,
 }
 
 impl Position
 {
-    fn new_justified(x_justify: Justify, y_justify: Justify, size: Dims) -> Self
+    fn new_justified(x_justify: Justify, y_justify: Justify) -> Self
     {
-        Self {
-            x_justify,
-            y_justify,
-            size,
-            ..Default::default()
-        }
-    }
-
-    /// Creates a node that perfectly overlaps its parent.
-    pub fn overlay() -> Self
-    {
-        let mut overlay = Self::default();
-        overlay.size = Dims::Padded(Vec2::default());
-        overlay
+        Self { x_justify, y_justify, ..Default::default() }
     }
 
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
-    pub fn centered(size: impl Into<Dims>) -> Self
+    pub fn centered() -> Self
     {
-        Self::new_justified(Justify::Center, Justify::Center, size.into())
+        Self::new_justified(Justify::Center, Justify::Center)
     }
 
     /// Creates a node justified to center-left.
-    pub fn centerleft(size: impl Into<Dims>) -> Self
+    pub fn centerleft() -> Self
     {
-        Self::new_justified(Justify::Min, Justify::Center, size.into())
+        Self::new_justified(Justify::Min, Justify::Center)
     }
 
     /// Creates a node justified to center-right.
-    pub fn centerright(size: impl Into<Dims>) -> Self
+    pub fn centerright() -> Self
     {
-        Self::new_justified(Justify::Max, Justify::Center, size.into())
+        Self::new_justified(Justify::Max, Justify::Center)
     }
 
-    /// Creates a node justified to upper-left.
-    pub fn upperleft(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to top-left.
+    pub fn topleft() -> Self
     {
-        Self::new_justified(Justify::Min, Justify::Min, size.into())
+        Self::new_justified(Justify::Min, Justify::Min)
     }
 
-    /// Creates a node justified to upper-center.
-    pub fn uppercenter(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to top-center.
+    pub fn topcenter() -> Self
     {
-        Self::new_justified(Justify::Center, Justify::Min, size.into())
+        Self::new_justified(Justify::Center, Justify::Min)
     }
 
-    /// Creates a node justified to upper-right.
-    pub fn upperright(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to top-right.
+    pub fn topright() -> Self
     {
-        Self::new_justified(Justify::Max, Justify::Min, size.into())
+        Self::new_justified(Justify::Max, Justify::Min)
     }
 
-    /// Creates a node justified to lower-left.
-    pub fn lowerleft(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to bottom-left.
+    pub fn bottomleft() -> Self
     {
-        Self::new_justified(Justify::Min, Justify::Max, size.into())
+        Self::new_justified(Justify::Min, Justify::Max)
     }
 
-    /// Creates a node justified to lower-center.
-    pub fn lowercenter(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to bottom-center.
+    pub fn bottomcenter() -> Self
     {
-        Self::new_justified(Justify::Center, Justify::Max, size.into())
+        Self::new_justified(Justify::Center, Justify::Max)
     }
 
-    /// Creates a node justified to lower-right.
-    pub fn lowerright(size: impl Into<Dims>) -> Self
+    /// Creates a node justified to bottom-right.
+    pub fn bottomright() -> Self
     {
-        Self::new_justified(Justify::Max, Justify::Max, size.into())
+        Self::new_justified(Justify::Max, Justify::Max)
     }
 
     /// Sets the relative offset.
@@ -214,22 +199,14 @@ impl Position
         self
     }
 
-    /// Gets the dimensions of the node.
-    pub fn dims(&self, parent_size: Vec2) -> Vec2
-    {
-        self.size.compute(parent_size)
-    }
-
     /// Gets the offset between our node and the parent in 2D UI coordinates.
-    pub fn offset(&self, parent_size: Vec2) -> Vec2
+    pub fn offset(&self, size: Vec2, parent_size: Vec2) -> Vec2
     {
-        let dims = self.dims(parent_size);
-
         let mut x_offset = match self.x_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_size.x / 2.) - (dims.x / 2.),
-            Justify::Max    => parent_size.x - dims.x,
+            Justify::Center => (parent_size.x / 2.) - (size.x / 2.),
+            Justify::Max    => parent_size.x - size.x,
         };
         x_offset += self.abs_offset.x;
         x_offset += self.rel_offset.x * parent_size.x.max(0.) / 100.;
@@ -237,8 +214,8 @@ impl Position
         let mut y_offset = match self.y_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_size.y / 2.) - (dims.y / 2.),
-            Justify::Max    => parent_size.y - dims.y,
+            Justify::Center => (parent_size.y / 2.) - (size.y / 2.),
+            Justify::Max    => parent_size.y - size.y,
         };
         y_offset += self.abs_offset.y;
         y_offset += self.rel_offset.y * parent_size.y.max(0.) / 100.;
@@ -258,7 +235,9 @@ impl CobwebStyle for Position
                 mut reactor : Reactor<PositionReactor>,
             |
             {
-                reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Position>(node)));
+                reactor.add_triggers(&mut rc,
+                    (entity_mutation::<SizeRef>(node), entity_mutation::<NodeSize>(node), entity_mutation::<Position>(node))
+                );
             }
         );
     }
@@ -267,18 +246,19 @@ impl CobwebStyle for Position
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A [`CobwebStyle`] that wraps [`Position`] with simple justification-based settings.
-#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub enum Justified
 {
-    UpperLeft(Dims),
-    UpperCenter(Dims),
-    UpperRight(Dims),
-    CenterLeft(Dims),
-    Center(Dims),
-    CenterRight(Dims),
-    LowerLeft(Dims),
-    LowerCenter(Dims),
-    LowerRight(Dims),
+    TopLeft,
+    TopCenter,
+    TopRight,
+    CenterLeft,
+    #[default]
+    Center,
+    CenterRight,
+    BottomLeft,
+    BottomCenter,
+    BottomRight,
 }
 
 impl From<Justified> for Position
@@ -287,24 +267,16 @@ impl From<Justified> for Position
     {
         match justified
         {
-            Justified::UpperLeft(dims)   => Position::upperleft(dims),
-            Justified::UpperCenter(dims) => Position::uppercenter(dims),
-            Justified::UpperRight(dims)  => Position::upperright(dims),
-            Justified::CenterLeft(dims)  => Position::centerleft(dims),
-            Justified::Center(dims)      => Position::centered(dims),
-            Justified::CenterRight(dims) => Position::centerright(dims),
-            Justified::LowerLeft(dims)   => Position::lowerleft(dims),
-            Justified::LowerCenter(dims) => Position::lowercenter(dims),
-            Justified::LowerRight(dims)  => Position::lowerright(dims),
+            Justified::TopLeft      => Position::topleft(),
+            Justified::TopCenter    => Position::topcenter(),
+            Justified::TopRight     => Position::topright(),
+            Justified::CenterLeft   => Position::centerleft(),
+            Justified::Center       => Position::centered(),
+            Justified::CenterRight  => Position::centerright(),
+            Justified::BottomLeft   => Position::bottomleft(),
+            Justified::BottomCenter => Position::bottomcenter(),
+            Justified::BottomRight  => Position::bottomright(),
         }
-    }
-}
-
-impl Default for Justified
-{
-    fn default() -> Self
-    {
-        Self::Center(Dims::default())
     }
 }
 
