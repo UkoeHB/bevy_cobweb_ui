@@ -19,10 +19,10 @@ fn handle_keyboard_input_for_node(
     mut cache : Local<Option<KeyboardInput>>,
     mut event : SystemEvent<UiEvent<KeyboardInput>>,
     mut rc    : ReactCommands,
-    mut nodes : Query<&mut React<Layout>>
+    mut nodes : Query<&mut React<Position>>
 ){
     let Some(event) = event.take() else { return; };
-    let Ok(mut layout) = nodes.get_mut(event.node) else { return; };
+    let Ok(mut position) = nodes.get_mut(event.node) else { return; };
 
     let mut check_cache = |input: KeyboardInput| -> bool
     {
@@ -46,40 +46,40 @@ fn handle_keyboard_input_for_node(
         Key::ArrowDown =>
         {
             if !check_cache(event.event) { return; }
-            match layout.y_justify
+            match position.y_justify
             {
-                Justify::Min    => { layout.get_mut(&mut rc).y_justify = Justify::Center; }
-                Justify::Center => { layout.get_mut(&mut rc).y_justify = Justify::Max; }
+                Justify::Min    => { position.get_mut(&mut rc).y_justify = Justify::Center; }
+                Justify::Center => { position.get_mut(&mut rc).y_justify = Justify::Max; }
                 Justify::Max    => (),
             }
         }
         Key::ArrowUp =>
         {
             if !check_cache(event.event) { return; }
-            match layout.y_justify
+            match position.y_justify
             {
                 Justify::Min    => (),
-                Justify::Center => { layout.get_mut(&mut rc).y_justify = Justify::Min; }
-                Justify::Max    => { layout.get_mut(&mut rc).y_justify = Justify::Center; }
+                Justify::Center => { position.get_mut(&mut rc).y_justify = Justify::Min; }
+                Justify::Max    => { position.get_mut(&mut rc).y_justify = Justify::Center; }
             }
         }
         Key::ArrowLeft =>
         {
             if !check_cache(event.event) { return; }
-            match layout.x_justify
+            match position.x_justify
             {
                 Justify::Min    => (),
-                Justify::Center => { layout.get_mut(&mut rc).x_justify = Justify::Min; }
-                Justify::Max    => { layout.get_mut(&mut rc).x_justify = Justify::Center; }
+                Justify::Center => { position.get_mut(&mut rc).x_justify = Justify::Min; }
+                Justify::Max    => { position.get_mut(&mut rc).x_justify = Justify::Center; }
             }
         }
         Key::ArrowRight =>
         {
             if !check_cache(event.event) { return; }
-            match layout.x_justify
+            match position.x_justify
             {
-                Justify::Min    => { layout.get_mut(&mut rc).x_justify = Justify::Center; }
-                Justify::Center => { layout.get_mut(&mut rc).x_justify = Justify::Max; }
+                Justify::Min    => { position.get_mut(&mut rc).x_justify = Justify::Center; }
+                Justify::Center => { position.get_mut(&mut rc).x_justify = Justify::Max; }
                 Justify::Max    => (),
             }
         }
@@ -97,7 +97,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     let outer = uc.build((
             Block{ color: Color::BLACK },
             Parent(parent),
-            JustifiedLayout::load(&style),
+            Justified::load(&style),
         ))
         .id();
 
@@ -106,7 +106,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     let inner = uc.build((
             Block{ color: Color::DARK_GRAY },
             Parent(outer),
-            JustifiedLayout::load(&style),
+            Justified::load(&style),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node)  //todo: OnBroadcast
         ))
         .id();
@@ -116,7 +116,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     uc.build((
             Block::load(&style),
             Parent(inner),
-            JustifiedLayout::load(&style),
+            Justified::load(&style),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node)
         ));
 }
@@ -130,7 +130,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     uc.build((
             BasicImage::new("examples/basic_image.png"),
             Parent(parent),
-            Layout::upperleft(Dims::Relative(Vec2{ x: 20.0, y: 20.0 }))
+            Position::upperleft(Dims::Relative(Vec2{ x: 20.0, y: 20.0 }))
         ));
 
     // Top right image
@@ -138,7 +138,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
     uc.build((
             BasicImage::load(&path),
             Parent(parent),
-            JustifiedLayout::load(&path),
+            Justified::load(&path),
         ));
 }
 
@@ -148,7 +148,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = uc.build((InCamera(camera.single()), Layout::overlay())).id();
+    let root = uc.build((InCamera(camera.single()), Position::overlay())).id();
     add_blocks(&mut uc, &file, root);
     add_images(&mut uc, &file, root);
 }

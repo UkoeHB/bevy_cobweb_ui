@@ -12,36 +12,36 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates [`Layout`] whenever [`JustifiedLayout`] changes on the same entity.
-fn justified_layout_reactor(
-    event         : MutationEvent<JustifiedLayout>,
+/// Updates [`Position`] whenever [`Justified`] changes on the same entity.
+fn justified_reactor(
+    event         : MutationEvent<Justified>,
     mut rc        : ReactCommands,
-    mut justified : Query<(&mut React<Layout>, &React<JustifiedLayout>)>
+    mut justified : Query<(&mut React<Position>, &React<Justified>)>
 ){
     let Some(justified_entity) = event.read()
     else { tracing::error!("justified layout mutation event missing"); return; };
     let Ok((mut layout, justified)) = justified.get_mut(justified_entity)
     else { tracing::debug!("layout entity {:?} missing on justified layout mutation", justified_entity); return; };
-    layout.set_if_not_eq(&mut rc, Layout::from(**justified));
+    layout.set_if_not_eq(&mut rc, Position::from(**justified));
 }
 
-struct JustifiedLayoutReactor;
-impl WorldReactor for JustifiedLayoutReactor
+struct JustifiedReactor;
+impl WorldReactor for JustifiedReactor
 {
-    type StartingTriggers = MutationTrigger<JustifiedLayout>;
+    type StartingTriggers = MutationTrigger<Justified>;
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(justified_layout_reactor) }
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(justified_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates a node's transform on parent update or if the layout changes.
-fn layout_reactor(
-    ref_event : MutationEvent<LayoutRef>,
-    lay_event : MutationEvent<Layout>,
+fn position_reactor(
+    ref_event : MutationEvent<SizeRef>,
+    lay_event : MutationEvent<Position>,
     mut rc    : ReactCommands,
-    mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Layout>, &React<LayoutRef>)>
+    mut nodes : Query<(&mut Transform, &mut React<NodeSize>, &React<Position>, &React<SizeRef>)>
 ){
     let Some(node) = ref_event.read().or_else(|| lay_event.read())
     else { tracing::error!("failed running layout reactor, event is missing"); return; };
@@ -68,12 +68,12 @@ fn layout_reactor(
     size.set_if_not_eq(&mut rc, NodeSize(dims));
 }
 
-struct LayoutReactor;
-impl WorldReactor for LayoutReactor
+struct PositionReactor;
+impl WorldReactor for PositionReactor
 {
     type StartingTriggers = ();
-    type Triggers = (EntityMutationTrigger<LayoutRef>, EntityMutationTrigger<Layout>);
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(layout_reactor) }
+    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Position>);
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(position_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ pub struct NodeOffset(pub f32);
 
 /// Reference data for use in defining the layout of a node.
 #[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Default)]
-pub struct LayoutRef
+pub struct SizeRef
 {
     /// The parent's node size.
     pub parent_size: NodeSize,
@@ -106,15 +106,17 @@ pub struct LayoutRef
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Expresses the positioning reference of one axis of a node within another node.
+///
+/// Defaults to [`Self::Min`].
 #[derive(Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Justify
 {
     /// The node's minimum edge will align with the parent's minimum edge.
     /// - X-axis: left side
     /// - Y-axis: top side
+    #[default]
     Min,
     /// The node's midpoint will align with the parent's midpoint.
-    #[default]
     Center,
     /// The node's maximum edge will align with the parent's maximum edge.
     /// - X-axis: right side
@@ -300,11 +302,12 @@ impl Default for Dims
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A layout component for UI nodes.
+/// Represents the position of a rectangle within a another rectangle.
 ///
-/// This should be added to nodes as a [`UiInstruction`].
+/// When added as a [`UiInstruction`] to a node, this will be used to control the node's [`Transform`] using the
+/// node's size and automatically-computed [`SizeRef`].
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Layout
+pub struct Position
 {
     pub x_justify: Justify,
     pub y_justify: Justify,
@@ -318,7 +321,7 @@ pub struct Layout
     pub rotation: f32,
 }
 
-impl Layout
+impl Position
 {
     fn new_justified(x_justify: Justify, y_justify: Justify, size: Dims) -> Self
     {
@@ -446,7 +449,7 @@ impl Layout
     }
 }
 
-impl CobwebStyle for Layout
+impl CobwebStyle for Position
 {
     fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
@@ -454,10 +457,10 @@ impl CobwebStyle for Layout
             |
                 In(node)    : In<Entity>,
                 mut rc      : ReactCommands,
-                mut reactor : Reactor<LayoutReactor>,
+                mut reactor : Reactor<PositionReactor>,
             |
             {
-                reactor.add_triggers(&mut rc, (entity_mutation::<LayoutRef>(node), entity_mutation::<Layout>(node)));
+                reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Position>(node)));
             }
         );
     }
@@ -465,9 +468,9 @@ impl CobwebStyle for Layout
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A [`CobwebStyle`] that wraps [`Layout`] with simple justification-based settings.
+/// A [`CobwebStyle`] that wraps [`Position`] with simple justification-based settings.
 #[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum JustifiedLayout
+pub enum Justified
 {
     UpperLeft(Dims),
     UpperCenter(Dims),
@@ -480,26 +483,26 @@ pub enum JustifiedLayout
     LowerRight(Dims),
 }
 
-impl From<JustifiedLayout> for Layout
+impl From<Justified> for Position
 {
-    fn from(justified: JustifiedLayout) -> Self
+    fn from(justified: Justified) -> Self
     {
         match justified
         {
-            JustifiedLayout::UpperLeft(dims)   => Layout::upperleft(dims),
-            JustifiedLayout::UpperCenter(dims) => Layout::uppercenter(dims),
-            JustifiedLayout::UpperRight(dims)  => Layout::upperright(dims),
-            JustifiedLayout::CenterLeft(dims)  => Layout::centerleft(dims),
-            JustifiedLayout::Center(dims)      => Layout::centered(dims),
-            JustifiedLayout::CenterRight(dims) => Layout::centerright(dims),
-            JustifiedLayout::LowerLeft(dims)   => Layout::lowerleft(dims),
-            JustifiedLayout::LowerCenter(dims) => Layout::lowercenter(dims),
-            JustifiedLayout::LowerRight(dims)  => Layout::lowerright(dims),
+            Justified::UpperLeft(dims)   => Position::upperleft(dims),
+            Justified::UpperCenter(dims) => Position::uppercenter(dims),
+            Justified::UpperRight(dims)  => Position::upperright(dims),
+            Justified::CenterLeft(dims)  => Position::centerleft(dims),
+            Justified::Center(dims)      => Position::centered(dims),
+            Justified::CenterRight(dims) => Position::centerright(dims),
+            Justified::LowerLeft(dims)   => Position::lowerleft(dims),
+            Justified::LowerCenter(dims) => Position::lowercenter(dims),
+            Justified::LowerRight(dims)  => Position::lowerright(dims),
         }
     }
 }
 
-impl Default for JustifiedLayout
+impl Default for Justified
 {
     fn default() -> Self
     {
@@ -507,11 +510,11 @@ impl Default for JustifiedLayout
     }
 }
 
-impl CobwebStyle for JustifiedLayout
+impl CobwebStyle for Justified
 {
     fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        Layout::from(*self).apply(rc, node);
+        Position::from(*self).apply(rc, node);
     }
 }
 
@@ -525,10 +528,10 @@ impl Plugin for LayoutPlugin
     {
         app.register_type::<Dims>()
             .register_type::<(u32, u32)>()
-            .register_type::<Layout>()
-            .register_type::<JustifiedLayout>()
-            .add_reactor(LayoutReactor)
-            .add_reactor_with(JustifiedLayoutReactor, mutation::<JustifiedLayout>());
+            .register_type::<Position>()
+            .register_type::<Justified>()
+            .add_reactor(PositionReactor)
+            .add_reactor_with(JustifiedReactor, mutation::<Justified>());
     }
 }
 

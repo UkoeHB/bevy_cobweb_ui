@@ -15,7 +15,7 @@ fn get_camera_layout_ref(
     camera_entity    : Entity,
     camera_transform : &GlobalTransform,
     camera           : &Camera,
-) -> Option<LayoutRef>
+) -> Option<SizeRef>
 {
     // Get world coordinates of the camera's viewport.
     let Some(rect) = camera.logical_viewport_rect()
@@ -40,7 +40,7 @@ fn get_camera_layout_ref(
     let parent_size = NodeSize(Vec2{ x, y });
     let offset = NodeOffset(DEFAULT_CAMERA_Z_OFFSET);
 
-    Some(LayoutRef{ parent_size, offset })
+    Some(SizeRef{ parent_size, offset })
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ fn camera_update_reactor(
     update   : BroadcastEvent<CameraUpdate>,
     mut rc   : ReactCommands,
     cameras  : Query<(&Children, &GlobalTransform, &Camera)>,
-    mut refs : Query<&mut React<LayoutRef>>
+    mut refs : Query<&mut React<SizeRef>>
 ){
     // Get the camera entity
     let Some(CameraUpdate(camera_entity)) = update.read()
@@ -92,7 +92,7 @@ fn camera_refresh_reactor(
     finish    : EntityEvent<FinishNode>,
     mut rc    : ReactCommands,
     cameras   : Query<(&GlobalTransform, &Camera)>,
-    mut nodes : Query<(&bevy::hierarchy::Parent, &mut React<LayoutRef>)>,
+    mut nodes : Query<(&bevy::hierarchy::Parent, &mut React<SizeRef>)>,
 ){
     // Get the target node.
     let Some((target_node, _)) = finish.read()
@@ -140,7 +140,7 @@ fn parent_update_reactor(
     parent_size : MutationEvent<NodeSize>,
     mut rc      : ReactCommands,
     sizes       : Query<(&Children, &React<NodeSize>)>,
-    mut nodes   : Query<&mut React<LayoutRef>>,
+    mut nodes   : Query<&mut React<SizeRef>>,
 ){
     let Some(node) = parent_size.read()
     else { tracing::error!("failed updating children layout refs, event is missing"); return; };
@@ -149,7 +149,7 @@ fn parent_update_reactor(
     // Update the children with the parent's size.
     let parent_size = **node_size;
     let offset = NodeOffset(DEFAULT_Z_OFFSET);
-    let parent_ref = LayoutRef{ parent_size, offset };
+    let parent_ref = SizeRef{ parent_size, offset };
 
     for child in children.iter()
     {
@@ -173,7 +173,7 @@ impl WorldReactor for ParentUpdateReactor
 fn parent_refresh_reactor(
     finish    : EntityEvent<FinishNode>,
     mut rc    : ReactCommands,
-    mut nodes : Query<(&bevy::hierarchy::Parent, &mut React<LayoutRef>)>,
+    mut nodes : Query<(&bevy::hierarchy::Parent, &mut React<SizeRef>)>,
     sizes     : Query<&React<NodeSize>>,
 ){
     let Some((node, _)) = finish.read()
@@ -187,7 +187,7 @@ fn parent_refresh_reactor(
     // - Note: Since we are refreshing, we don't use set_if_not_eq().
     let parent_size = **parent_size;
     let offset = NodeOffset(DEFAULT_Z_OFFSET);
-    let parent_ref = LayoutRef{ parent_size, offset };
+    let parent_ref = SizeRef{ parent_size, offset };
     *layout_ref.get_mut(&mut rc) = parent_ref;
 }
 
@@ -212,7 +212,7 @@ pub const DEFAULT_Z_OFFSET: f32 = 10.0f32;
 
 /// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
 ///
-/// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`LayoutRef`]`>` to the node.
+/// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
 ///
@@ -235,7 +235,7 @@ impl UiInstruction for InCamera
 
         // Prep entity.
         rc.insert(node, NodeSize::default());
-        rc.insert(node, LayoutRef::default());
+        rc.insert(node, SizeRef::default());
 
         // Refresh the node's layout ref on node finish.
         rc.commands().syscall(node,
@@ -263,7 +263,7 @@ impl UiInstruction for InCamera
 ///
 /// The node is set as a child of the parent entity.
 ///
-/// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`LayoutRef`]`>` to the node.
+/// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
 //todo: need to validate that the node doesn't already have a parent (set_parent() just replaces the current parent)
@@ -284,7 +284,7 @@ impl UiInstruction for Parent
 
         // Prep entity.
         rc.insert(node, NodeSize::default());
-        rc.insert(node, LayoutRef::default());
+        rc.insert(node, SizeRef::default());
 
         // Refresh the node's layout ref on node finish, and refresh children layouts on update.
         rc.commands().syscall(node,
