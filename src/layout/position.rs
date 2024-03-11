@@ -106,10 +106,14 @@ pub enum Justify
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Position
 {
+    /// Justification of the node on the parent's x-axis.
     pub x_justify: Justify,
+    /// Justification of the node on the parent's y-axis.
     pub y_justify: Justify,
-    pub abs_offset: Vec2,
-    pub rel_offset: Vec2,
+    /// Offset from the node's anchor-point within its parent, in absolute UI coordinates.
+    pub abs: Vec2,
+    /// Offset from the node's anchor-point within its parent, relative to the parent size.
+    pub rel: Vec2,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
@@ -125,7 +129,7 @@ impl Position
     }
 
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
-    pub fn centered() -> Self
+    pub fn center() -> Self
     {
         Self::new_justified(Justify::Center, Justify::Center)
     }
@@ -179,16 +183,16 @@ impl Position
     }
 
     /// Sets the relative offset.
-    pub fn rel_offset(mut self, offset: Vec2) -> Self
+    pub fn rel(mut self, offset: Vec2) -> Self
     {
-        self.rel_offset = offset;
+        self.rel = offset;
         self
     }
 
     /// Sets the absolute offset.
-    pub fn abs_offset(mut self, offset: Vec2) -> Self
+    pub fn abs(mut self, offset: Vec2) -> Self
     {
-        self.abs_offset = offset;
+        self.abs = offset;
         self
     }
 
@@ -208,8 +212,8 @@ impl Position
             Justify::Center => (parent_size.x / 2.) - (size.x / 2.),
             Justify::Max    => parent_size.x - size.x,
         };
-        x_offset += self.abs_offset.x;
-        x_offset += self.rel_offset.x * parent_size.x.max(0.) / 100.;
+        x_offset += self.abs.x;
+        x_offset += self.rel.x * parent_size.x.max(0.) / 100.;
 
         let mut y_offset = match self.y_justify
         {
@@ -217,8 +221,8 @@ impl Position
             Justify::Center => (parent_size.y / 2.) - (size.y / 2.),
             Justify::Max    => parent_size.y - size.y,
         };
-        y_offset += self.abs_offset.y;
-        y_offset += self.rel_offset.y * parent_size.y.max(0.) / 100.;
+        y_offset += self.abs.y;
+        y_offset += self.rel.y * parent_size.y.max(0.) / 100.;
 
         Vec2{ x: x_offset, y: y_offset }
     }
@@ -246,6 +250,8 @@ impl CobwebStyle for Position
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A [`CobwebStyle`] that wraps [`Position`] with simple justification-based settings.
+///
+/// Defaults to [`Self::Center`].
 #[derive(ReactComponent, Reflect, Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub enum Justified
 {
@@ -271,7 +277,7 @@ impl From<Justified> for Position
             Justified::TopCenter    => Position::topcenter(),
             Justified::TopRight     => Position::topright(),
             Justified::CenterLeft   => Position::centerleft(),
-            Justified::Center       => Position::centered(),
+            Justified::Center       => Position::center(),
             Justified::CenterRight  => Position::centerright(),
             Justified::BottomLeft   => Position::bottomleft(),
             Justified::BottomCenter => Position::bottomcenter(),
