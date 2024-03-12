@@ -112,9 +112,9 @@ pub struct Position
     /// Justification of the node on the parent's y-axis.
     pub y_justify: Justify,
     /// Offset from the node's anchor-point within its parent, in absolute UI coordinates.
-    pub abs: Vec2,
-    /// Offset from the node's anchor-point within its parent, relative to the parent size.
-    pub rel: Vec2,
+    pub pixels: Vec2,
+    /// Offset from the node's anchor-point within its parent, as percentages of the parent dimensions.
+    pub percent: Vec2,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
@@ -183,17 +183,17 @@ impl Position
         Self::new_justified(Justify::Max, Justify::Max)
     }
 
-    /// Sets the relative offset.
-    pub fn rel(mut self, offset: Vec2) -> Self
+    /// Sets the absolute offset.
+    pub fn pixels(mut self, offset: Vec2) -> Self
     {
-        self.rel = offset;
+        self.pixels = offset;
         self
     }
 
-    /// Sets the absolute offset.
-    pub fn abs(mut self, offset: Vec2) -> Self
+    /// Sets the percentage offset.
+    pub fn percent(mut self, offset: Vec2) -> Self
     {
-        self.abs = offset;
+        self.percent = offset;
         self
     }
 
@@ -213,8 +213,8 @@ impl Position
             Justify::Center => (parent_size.x / 2.) - (size.x / 2.),
             Justify::Max    => parent_size.x - size.x,
         };
-        x_offset += self.abs.x;
-        x_offset += self.rel.x * parent_size.x.max(0.) / 100.;
+        x_offset += self.pixels.x;
+        x_offset += self.percent.x * parent_size.x.max(0.) / 100.;
 
         let mut y_offset = match self.y_justify
         {
@@ -222,8 +222,8 @@ impl Position
             Justify::Center => (parent_size.y / 2.) - (size.y / 2.),
             Justify::Max    => parent_size.y - size.y,
         };
-        y_offset += self.abs.y;
-        y_offset += self.rel.y * parent_size.y.max(0.) / 100.;
+        y_offset += self.pixels.y;
+        y_offset += self.percent.y * parent_size.y.max(0.) / 100.;
 
         Vec2{ x: x_offset, y: y_offset }
     }

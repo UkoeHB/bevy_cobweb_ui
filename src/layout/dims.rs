@@ -48,15 +48,18 @@ impl WorldReactor for DimsReactor
 ///
 /// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
 /// [`NodeSizeEstimate`] and also its final [`NodeSize`] if it has a [`NodeSizeAdjuster`].
-#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+///
+/// Defaults to [`Self::Overlay`].`
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Dims
 {
+    /// The node's width and height equal the parent's width and height.
+    #[default]
+    Overlay,
     /// The node's width and height are absolute values in UI coordinates.
-    Absolute(Vec2),
-    /// The node's width and height are relative to the parents' width and height.
-    ///
-    /// Relative values are recorded in percentages.
-    Relative(Vec2),
+    Pixels(Vec2),
+    /// The node's width and height are percentages of the parents' width and height.
+    Percent(Vec2),
     /// The node's width and height equal the parent's width and height minus absolute padding values.
     ///
     /// Padding values are in UI coordinates. Positive padding will reduce the node size, while negative padding will
@@ -74,16 +77,16 @@ pub enum Dims
     ///
     /// Ratio parameters are clamped to >= 1.
     SolidOutFill((u32, u32)),
-    /// The node's width and height equal `(parent_dims - pad) * rel + abs`.
+    /// The node's width and height equal `(parent_dims - pad) * percent + pixels`.
     ///
     /// Relative values are recorded in percentages.
     Combined{
         #[reflect(default)]
         pad: Vec2,
         #[reflect(default)]
-        abs: Vec2,
+        pixels: Vec2,
         #[reflect(default)]
-        rel: Vec2
+        percent: Vec2
     },
     /// Equivalent to [`Self::SolidInFill`] applied to parent dimensions adjusted by [`Self::Combined`].
     ///
@@ -93,9 +96,9 @@ pub enum Dims
         #[reflect(default)]
         pad: Vec2,
         #[reflect(default)]
-        abs: Vec2,
+        pixels: Vec2,
         #[reflect(default)]
-        rel: Vec2
+        percent: Vec2
     },
     /// Equivalent to [`Self::SolidOutFill`] applied to parent dimensions adjusted by [`Self::Combined`].
     ///
@@ -105,33 +108,28 @@ pub enum Dims
         #[reflect(default)]
         pad: Vec2,
         #[reflect(default)]
-        abs: Vec2,
+        pixels: Vec2,
         #[reflect(default)]
-        rel: Vec2
+        percent: Vec2
     },
 }
 
 impl Dims
 {
-    /// Creates a node that perfectly overlaps its parent.
-    pub fn overlay() -> Self
-    {
-        Self::Padded(Vec2::default())
-    }
-
     /// Transforms `parent_size` into a child size.
     pub fn compute(&self, parent_size: Vec2) -> Vec2
     {
         match *self
         {
-            Self::Absolute(abs) =>
+            Self::Overlay => parent_size,
+            Self::Pixels(pixels) =>
             {
                 Vec2{
-                    x: abs.x.max(0.),
-                    y: abs.y.max(0.),
+                    x: pixels.x.max(0.),
+                    y: pixels.y.max(0.),
                 }
             }
-            Self::Relative(rel) =>
+            Self::Percent(rel) =>
             {
                 Vec2{
                     x: parent_size.x.max(0.) * rel.x.max(0.) / 100.,
@@ -193,19 +191,19 @@ impl Dims
                     }
                 }
             }
-            Self::Combined{ pad, abs, rel } =>
+            Self::Combined{ pad, pixels, percent } =>
             {
                 let parent_size = Self::Padded(pad).compute(parent_size);
-                Self::Absolute(abs).compute(parent_size) + Self::Relative(rel).compute(parent_size)
+                Self::Pixels(pixels).compute(parent_size) + Self::Percent(percent).compute(parent_size)
             }
-            Self::SolidIn{ ratio, pad, abs, rel } =>
+            Self::SolidIn{ ratio, pad, pixels, percent } =>
             {
-                let parent_size = Self::Combined{ pad, abs, rel }.compute(parent_size);
+                let parent_size = Self::Combined{ pad, pixels, percent }.compute(parent_size);
                 Self::SolidInFill(ratio).compute(parent_size)
             }
-            Self::SolidOut{ ratio, pad, abs, rel } =>
+            Self::SolidOut{ ratio, pad, pixels, percent } =>
             {
-                let parent_size = Self::Combined{ pad, abs, rel }.compute(parent_size);
+                let parent_size = Self::Combined{ pad, pixels, percent }.compute(parent_size);
                 Self::SolidOutFill(ratio).compute(parent_size)
             }
         }
@@ -226,14 +224,6 @@ impl CobwebStyle for Dims
                 reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Dims>(node)));
             }
         );
-    }
-}
-
-impl Default for Dims
-{
-    fn default() -> Self
-    {
-        Self::Relative(Vec2::default())
     }
 }
 

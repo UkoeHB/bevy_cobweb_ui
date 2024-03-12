@@ -131,10 +131,10 @@ fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 {
     // Top left image
     ui.build((
-            BasicImage::new("examples/basic_image.png"),
+            BasicImage::new("examples/green_rectangle.png"),
             Parent(parent),
             Position::topleft(),
-            Dims::Relative(Vec2{ x: 20.0, y: 20.0 }),
+            Dims::Percent(Vec2{ x: 20.0, y: 20.0 }),
         ));
 
     // Top right image
@@ -153,7 +153,7 @@ fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = ui.build((InCamera(camera.single()), Dims::overlay())).id();
+    let root = ui.build((InCamera(camera.single()), Dims::Overlay)).id();
     add_blocks(&mut ui, &file, root);
     add_images(&mut ui, &file, root);
 }

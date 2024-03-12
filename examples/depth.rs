@@ -13,7 +13,7 @@ use bevy::window::WindowTheme;
 
 fn add_plain_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
 {
-    let section = ui.build((Parent(parent), Dims::overlay())).id();
+    let section = ui.build((Parent(parent), Dims::Overlay)).id();
     for i in 0..quantity
     {
         let color = match i % 3
@@ -26,8 +26,8 @@ fn add_plain_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset
                 Block{ color },
                 Parent(section),
                 Position::topleft()
-                    .rel(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
-                Dims::Relative(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
+                    .percent(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
+                Dims::Percent(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
             ));
     }
 }
@@ -37,7 +37,7 @@ fn add_plain_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset
 
 fn add_reverse_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
 {
-    let section = ui.build((Parent(parent), Dims::overlay())).id();
+    let section = ui.build((Parent(parent), Dims::Overlay)).id();
     for i in (0..quantity).rev()
     {
         let color = match i % 3
@@ -50,8 +50,8 @@ fn add_reverse_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offs
                 Block{ color },
                 Parent(section),
                 Position::topleft()
-                    .rel(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
-                Dims::Relative(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
+                    .percent(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
+                Dims::Percent(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
             ));
     }
 }
@@ -61,7 +61,7 @@ fn add_reverse_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offs
 
 fn add_reverse_blocks_zlevel(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
 {
-    let section = ui.build((Parent(parent), Dims::overlay())).id();
+    let section = ui.build((Parent(parent), Dims::Overlay)).id();
     for i in 0..quantity
     {
         let color = match i % 3
@@ -74,8 +74,8 @@ fn add_reverse_blocks_zlevel(ui: &mut UiCommands, parent: Entity, quantity: usiz
                 Block{ color },
                 Parent(section),
                 Position::topleft()
-                    .rel(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
-                Dims::Relative(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
+                    .percent(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
+                Dims::Percent(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
             ))
             .insert(ZLevel((quantity - i) as i32));
     }
@@ -86,7 +86,7 @@ fn add_reverse_blocks_zlevel(ui: &mut UiCommands, parent: Entity, quantity: usiz
 
 fn add_alternating_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
 {
-    let section = ui.build((Parent(parent), Dims::overlay())).id();
+    let section = ui.build((Parent(parent), Dims::Overlay)).id();
     for i in 0..quantity
     {
         let color = match i % 3
@@ -99,8 +99,8 @@ fn add_alternating_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, 
                 Block{ color },
                 Parent(section),
                 Position::topleft()
-                    .rel(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
-                Dims::Relative(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
+                    .percent(Vec2{ x: (i * (100 / quantity)) as f32 - offset/4., y: offset + (i * 3) as f32 }),
+                Dims::Percent(Vec2{ x: (2 * (100 / quantity)) as f32, y: height })
             ))
             .insert(ZLevel((i % 2) as i32));
     }
@@ -111,7 +111,7 @@ fn add_alternating_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, 
 
 fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
 {
-    let root = ui.build((InCamera(camera.single()), Dims::overlay())).id();
+    let root = ui.build((InCamera(camera.single()), Dims::Overlay)).id();
 
     add_plain_blocks(&mut ui, root, 5, 0., 20.);
     add_reverse_blocks(&mut ui, root, 5, 10., 20.);
