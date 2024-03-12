@@ -5,7 +5,7 @@
     "Dims"      : {"Relative": [50.0, 50.0]},
 
     "inner_block": {
-        "Justified" : "BottomRight",
+        "Justified" : "Center",
         "Dims"      : {"Relative": [40.0, 50.0]},
 
         "final_block": {

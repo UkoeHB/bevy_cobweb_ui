@@ -163,7 +163,6 @@ fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot
 
 fn setup(mut commands: Commands)
 {
-    // prepare UI camera
     commands.spawn(UiCamera2D::default());
 }
 
