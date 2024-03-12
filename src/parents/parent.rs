@@ -86,7 +86,7 @@ impl WorldReactor for ParentUpdateReactor
 ///
 /// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
 ///
-/// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
+/// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
 //todo: need to validate that the node doesn't already have a parent (set_parent() just replaces the current parent)
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]
 pub struct Parent(pub Entity);

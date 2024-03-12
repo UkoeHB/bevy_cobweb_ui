@@ -18,7 +18,7 @@ pub struct UiRoot
     /// Defines the base z-offset applied between the entity and its node children.
     ///
     /// For example, this is set to a negative value for cameras nodes attached to cameras so UI elements will be in-view of the
-    /// camera (see [`DEFAULT_CAMERA_Z_OFFSET`]).
+    /// camera (see [`DEFAULT_CAMERA_Z_OFFSET`](crate::DEFAULT_CAMERA_Z_OFFSET)).
     pub base_z_offset: f32,
 }
 

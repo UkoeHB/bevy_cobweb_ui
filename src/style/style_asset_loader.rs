@@ -67,7 +67,7 @@ fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetS
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Possible errors that can be produced by [`StyleAssetLoader`].
+/// Possible errors that can be produced by the internal `StyleAssetLoader`.
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum StyleAssetLoaderError
@@ -138,7 +138,7 @@ impl Default for StyleSheetList
 /// Extends `App` with methods supporting [`StyleSheet`] use.
 pub trait StyleSheetListAppExt
 {
-    /// Registers a style sheet file that should be loaded as a stylesheet asset.
+    /// Registers a style sheet file to be loaded as a stylesheet asset.
     fn add_style_sheet(&mut self, file: impl Into<String>) -> &mut Self;
 }
 

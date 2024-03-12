@@ -28,7 +28,7 @@ impl<I: UiInstruction> UiInstructionBundle for I
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for building UI nodes with [`UiCommands`].
+/// Helper trait for building UI nodes with [`UiCommands`](crate::UiCommands).
 ///
 /// All members of a bundle must implement [`UiInstructionBundle`]. You should implement [`UiInstruction`]
 /// on the root members of a bundle.

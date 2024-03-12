@@ -143,8 +143,8 @@ pub const DEFAULT_CAMERA_Z_OFFSET: f32 = -100.0;
 #[derive(Bundle)]
 pub struct UiCameraRoot
 {
-    vis: InheritedVisibility,
-    root: UiRoot,
+    pub vis: InheritedVisibility,
+    pub root: UiRoot,
 }
 
 impl Default for UiCameraRoot
@@ -162,12 +162,12 @@ impl Default for UiCameraRoot
 
 /// Bundle for creating a 2D camera as a UI root node.
 ///
-/// This creates a completely new camera.
+/// This creates a completely new camera. Use [`UiCameraRoot`] if you already have a camera.
 #[derive(Bundle)]
 pub struct UiCamera2D
 {
-    camera: Camera2dBundle,
-    root: UiCameraRoot,
+    pub camera: Camera2dBundle,
+    pub root: UiCameraRoot,
 }
 
 impl Default for UiCamera2D
@@ -190,9 +190,9 @@ impl Default for UiCamera2D
 ///
 /// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
 ///
-/// The node's `Transform` will be updated automatically if you use a [`Layout`] instruction.
+/// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
 ///
-/// This currently only works for 2D cameras.
+/// This currently only works for 2D UI cameras. See [`UiCamera2D`] and [`UiCameraRoot`] for setting up a camera.
 //todo: support 3D cameras ???
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]
 pub struct InCamera(pub Entity);

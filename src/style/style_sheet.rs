@@ -107,8 +107,8 @@ impl ReflectedStyle
 /**
 ### Stylesheet asset format
 
-Stylesheets are written as JSON files with the extension `.style.json`. You can configure [`StyleSheetPlugin`]
-to control how stylesheet files are discovered in the asset directory.
+Stylesheets are written as JSON files with the extension `.style.json`. You must register stylesheets in your app with
+[`StyleSheetListAppExt::add_style_sheet`].
 
 The stylesheet format has a short list of rules.
 
@@ -119,8 +119,9 @@ The stylesheet format has a short list of rules.
 }
 ```
 - If the first map entry's key is `"using"`, then the value should be an array of full type names. This array
-    should contain full type names for any [`Style`] that has an ambiguous short name (i.e. there are multiple `Reflect`
-    types with the same short name). Note that currently we only support one version of a shortname per file.
+    should contain full type names for any [`Style`] that has an ambiguous short name (this will happen if there are
+    multiple `Reflect` types with the same short name). Note that currently we only support one version of a shortname
+    per file.
 ```json
 {
     "using": [
@@ -129,19 +130,19 @@ The stylesheet format has a short list of rules.
     ]
 }
 ```
-- All other map keys may either be [`Style`] short type names or node path references. A style short name is a marker for
-    a style, and is followed by a map containing the serialized value of that style. Node path references are used to
-    locate specific styles in the map, and each node should be a map of styles and other nodes. The leaf nodes of the overall
-    structure will be styles.
+- All other map keys may either be [`CobwebStyle`] short type names or node path references.
+    A style short name is a marker for a style, and is followed by a map containing the serialized value of that style.
+    Node path references are used to locate specific styles in the map, and each node should be a map of styles and
+    other nodes. The leaf nodes of the overall structure will be styles.
 ```json
 {
-    "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
+    "using": [ "bevy_cobweb_ui::layout::Dims" ],
 
     "node1": {
-        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}},
+        "Dims": {"Percent": [50.0, 50.0]},
 
         "node2": {
-            "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}}
+            "Dims": {"Percent": [50.0, 50.0]}
         }
     }
 }
@@ -151,13 +152,13 @@ The stylesheet format has a short list of rules.
     to be inherited, insert it below any child nodes.
 ```json
 {
-    "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
+    "using": [ "bevy_cobweb_ui::layout::Dims" ],
 
     "node1": {
-        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}},
+        "Dims": {"Percent": [50.0, 50.0]},
 
         "node2": {
-            "RelativeLayout": "inherited"
+            "Dims": "inherited"
         }
     }
 }
@@ -166,17 +167,17 @@ The stylesheet format has a short list of rules.
     in an abbreviated path, it will inherit from the current scope, not its path-parent.
 ```json
 {
-    "using": [ "bevy_cobweb_ui::layout::RelativeLayout" ],
+    "using": [ "bevy_cobweb_ui::layout::Dims" ],
 
-    "RelativeLayout": {"Center": {"Relative": [25.0, 25.0]}}
+    "Dims": {"Percent": [25.0, 25.0]},
 
     "node1": {
-        "RelativeLayout": {"Center": {"Relative": [50.0, 50.0]}}
+        "Dims": {"Percent": [50.0, 50.0]}
     },
 
     "node1::node2": {
         // This inherits {25.0, 25.0}.
-        "RelativeLayout": "inherited"
+        "Dims": "inherited"
     }
 }
 ```

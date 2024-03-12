@@ -46,7 +46,7 @@ pub struct CameraUpdate(pub Entity);
 /// Adds systems that emit events that UI nodes might react to.
 ///
 /// Emits:
-/// - Broadcast event for `KeyboardInput`. Runs in `First`.`
+/// - Broadcast event for `KeyboardInput`. Runs in `First`.
 ///   You can use the [`On`] instruction to listen for this: `On::<KeyboardInput>::new(my_callback)`.
 /// - Broadcast event for [`CameraUpdate`]. Runs in `PostUpdate`.
 pub struct AppEventsPlugin;
