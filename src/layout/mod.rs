@@ -8,6 +8,6 @@ mod sorting;
 //API exports
 pub use crate::layout::components::*;
 pub use crate::layout::dims::*;
-pub(crate) use crate::layout::plugin::*;
+pub use crate::layout::plugin::*;
 pub use crate::layout::position::*;
 pub use crate::layout::sorting::*;

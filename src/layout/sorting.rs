@@ -172,7 +172,7 @@ impl Plugin for SortingPlugin
     {
         app
             .register_type::<ZLevel>()
-            .add_systems(PostUpdate, update_z_order.in_set(LayoutSet));
+            .add_systems(PostUpdate, update_z_order.in_set(LayoutSetSort));
     }
 }
 
