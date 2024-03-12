@@ -37,7 +37,7 @@ fn handle_keyboard_inputs(mut inputs: EventReader<KeyboardInput>, mut rc: ReactC
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Event broadcasted whenever a camera's `Camera` or `Transform` changes.
+/// Event broadcasted whenever a camera's [`Camera`] or [`Transform`] changes.
 #[derive(Debug, Copy, Clone, Deref, DerefMut)]
 pub struct CameraUpdate(pub Entity);
 
@@ -46,9 +46,9 @@ pub struct CameraUpdate(pub Entity);
 /// Adds systems that emit events that UI nodes might react to.
 ///
 /// Emits:
-/// - Broadcast event for `KeyboardInput`. Runs in `First`.
+/// - Broadcast event for [`KeyboardInput`]. Runs in [`First`].
 ///   You can use the [`On`] instruction to listen for this: `On::<KeyboardInput>::new(my_callback)`.
-/// - Broadcast event for [`CameraUpdate`]. Runs in `PostUpdate`.
+/// - Broadcast event for [`CameraUpdate`]. Runs in [`PostUpdate`].
 pub struct AppEventsPlugin;
 
 impl Plugin for AppEventsPlugin

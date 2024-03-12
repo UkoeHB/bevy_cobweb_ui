@@ -142,6 +142,10 @@ fn layout(world: &mut World)
 
 //todo: system to mark Frame nodes dirty if their Children changes
 //todo: system to mark CobwebNode nodes dirty if their Parent changes
+//todo: HierarchyEvent::ChildRemoved + RemovedComponents<FrameMember> -> trigger Frame rebuild on child removal (i.e. despawn)
+//      - is this covered by tracking Children changes?
+
+//todo: Frame dirty on member insert, member dirty on insert
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------

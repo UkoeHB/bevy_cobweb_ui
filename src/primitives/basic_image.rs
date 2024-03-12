@@ -144,7 +144,8 @@ impl CobwebStyle for BasicImage
                 mut rc      : ReactCommands,
                 mut reactor : Reactor<BasicImageReactor>,
                 mut refresh : Reactor<BasicImageStyleReactor>,
-            |{
+            |
+            {
                 reactor.add_triggers(&mut rc, entity_mutation::<NodeSize>(node));
                 refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
             }
