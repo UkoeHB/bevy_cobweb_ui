@@ -20,7 +20,7 @@
 },
 
 "upper_right_img": {
-    "BasicImage" : {"path": "examples/basic_image.png"},
+    "BasicImage" : {"path": "examples/green_rectangle.png"},
     "Justified"  : "TopRight",
     "Dims"       : {"SolidIn": {"ratio": [640, 480], "rel": [10.0, 20.0]}}
 }
