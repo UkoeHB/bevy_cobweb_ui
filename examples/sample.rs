@@ -90,11 +90,11 @@ fn handle_keyboard_input_for_node(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
+fn add_blocks(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 {
     // Build a block in the center of its parent.
     let style = path.extend("outer_block");
-    let outer = uc.build((
+    let outer = ui.build((
             Block{ color: Color::BLACK },
             Parent(parent),
             Justified::load(&style),
@@ -104,7 +104,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 
     // Build a block inside the other block.
     let style = style.extend("inner_block");
-    let inner = uc.build((
+    let inner = ui.build((
             Block{ color: Color::DARK_GRAY },
             Parent(outer),
             Justified::load(&style),
@@ -115,7 +115,7 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 
     // Build another block inside the previous.
     let style = style.extend("final_block");
-    uc.build((
+    ui.build((
             Block::load(&style),
             Parent(inner),
             Justified::load(&style),
@@ -127,10 +127,10 @@ fn add_blocks(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
+fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 {
     // Top left image
-    uc.build((
+    ui.build((
             BasicImage::new("examples/basic_image.png"),
             Parent(parent),
             Position::topleft(),
@@ -139,7 +139,7 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 
     // Top right image
     let path = path.extend("upper_right_img");
-    uc.build((
+    ui.build((
             BasicImage::load(&path),
             Parent(parent),
             Justified::load(&path),
@@ -150,12 +150,12 @@ fn add_images(uc: &mut UiCommands, path: &StyleRef, parent: Entity)
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
+fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = uc.build((InCamera(camera.single()), Dims::overlay())).id();
-    add_blocks(&mut uc, &file, root);
-    add_images(&mut uc, &file, root);
+    let root = ui.build((InCamera(camera.single()), Dims::overlay())).id();
+    add_blocks(&mut ui, &file, root);
+    add_images(&mut ui, &file, root);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
