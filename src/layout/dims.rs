@@ -49,12 +49,15 @@ impl WorldReactor for DimsReactor
 /// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
 /// [`NodeSizeEstimate`] and also its final [`NodeSize`] if it has a [`NodeSizeAdjuster`].
 ///
-/// Defaults to [`Self::Overlay`].`
+/// Defaults to [`Self::None`]. This avoids stylesheet-loading async issues for e.g. sprite nodes that are loaded from file,
+/// where an empty sprite is loaded as a white square. We want to minimize the impact of that white square.
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Dims
 {
-    /// The node's width and height equal the parent's width and height.
+    /// The node has zero size.
     #[default]
+    None,
+    /// The node's width and height equal the parent's width and height.
     Overlay,
     /// The node's width and height are absolute values in UI coordinates.
     Pixels(Vec2),
@@ -121,6 +124,7 @@ impl Dims
     {
         match *self
         {
+            Self::None => Vec2::default(),
             Self::Overlay => parent_size,
             Self::Pixels(pixels) =>
             {
