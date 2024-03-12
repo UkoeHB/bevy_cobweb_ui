@@ -24,33 +24,37 @@ pub struct UiRoot
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for all UI nodes.
+/// Component that controls the z-order of nodes relative to their siblings on the same parent.
+///
+/// Sibling nodes are sorted by `ZLevel` so higher levels are positioned above lower levels.
+/// Within a level, sibling nodes are ordered based on their index in the parent's [`Children`] list so that newer
+/// nodes default to sorting above older nodes.
+///
+/// If one node is sorted above another, then the higher node's children will be sorted above all children of the lower,
+/// regardless of `ZLevel`.
+#[derive(Component, Reflect, Debug, Default, Copy, Clone, Deref, DerefMut, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ZLevel(pub i32);
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Marker component for UI nodes.
 #[derive(Component, Default, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub struct CobwebNode;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that records the 2D dimensions of a node as a rectangle on the plane of the node's parent.
+/// Reactive component that records the 2D dimensions of a node as a rectangle on the plane of the node's parent.
 #[derive(ReactComponent, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
 pub struct NodeSize(pub Vec2);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// The z-offset applied between this node and its parent.
-//todo: ZLevel
-#[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Deref, DerefMut, Default)]
-pub struct NodeOffset(pub f32);
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Reference data for use in defining the layout of a node.
+/// Reactive component with reference data for use in defining the layout of a node.
 #[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Default)]
 pub struct SizeRef
 {
     /// The parent's node size.
     pub parent_size: NodeSize,
-    /// The z-offset this node should use relative to its parent.
-    pub offset: NodeOffset,
 }
 
 //-------------------------------------------------------------------------------------------------------------------

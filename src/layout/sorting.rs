@@ -119,7 +119,14 @@ fn update_z_order_children(
     {
         // Update the child.
         child_count += 1;
-        child_count += update_z_order_node(cache, child.entity, offset + Z_INCREMENT * (child_count as f32), transforms, nodes, levels);
+        child_count += update_z_order_node(
+            cache,
+            child.entity,
+            offset + Z_INCREMENT * (child_count as f32),
+            transforms,
+            nodes,
+            levels
+        );
     }
 
     cache.push(sorted_children);
@@ -145,19 +152,6 @@ fn update_z_order(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Controls the z-order of a node relative to its siblings on the same parent.
-///
-/// Sibling nodes are sorted by `ZLevel` so higher levels are positioned above lower levels.
-/// Within a level, sibling nodes are ordered based on their index in the parent's [`Children`] list so that newer
-/// nodes default to sorting above older nodes.
-///
-/// If one node is sorted above another, then the higher node's children will be sorted above all children of the lower,
-/// regardless of `ZLevel`.
-#[derive(Component, Reflect, Debug, Default, Copy, Clone, Deref, DerefMut, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ZLevel(pub i32);
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Z-increment used for ordering UI nodes relative to their parents.
 ///
 /// All UI nodes are globally ordered by unique z-values separeted by `Z_INCREMENT`.
@@ -166,7 +160,7 @@ pub struct ZLevel(pub i32);
 ///
 /// A node's non-node children should order themselves using z values smaller than this, otherwise they will
 /// z-fight with other nodes.
-pub const Z_INCREMENT: f32 = 0.00001;
+pub const Z_INCREMENT: f32 = 0.001;
 
 //-------------------------------------------------------------------------------------------------------------------
 

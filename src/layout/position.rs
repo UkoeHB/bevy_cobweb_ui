@@ -61,10 +61,11 @@ fn position_reactor(
     offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
 
     // Update this node's transform.
-    let mut new_transform = Transform::from_translation(offset.extend(*size_ref.offset));
-    new_transform.rotation = Quat::from_rotation_z(position.rotation);
-    if new_transform == *transform { return; }  //Avoid triggering change detection needlessly.
-    *transform = new_transform;
+    // - Avoid triggering change detection needlessly.
+    let rotation = Quat::from_rotation_z(position.rotation);
+    if transform.translation.x != offset.x { transform.translation.x = offset.x; }
+    if transform.translation.y != offset.y { transform.translation.y = offset.y; }
+    if transform.rotation      != rotation { transform.rotation      = rotation; }
 }
 
 struct PositionReactor;

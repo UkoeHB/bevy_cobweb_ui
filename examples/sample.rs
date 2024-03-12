@@ -163,12 +163,8 @@ fn build_ui(mut uc: UiCommands, camera: Query<Entity, With<Camera>>)
 
 fn setup(mut commands: Commands)
 {
-    // prepare 2D camera
-    commands.spawn(
-            Camera2dBundle{ transform: Transform{ translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() }, ..default() }
-        )
-        .insert(InheritedVisibility::VISIBLE)
-        .insert(camera_ui_root());
+    // prepare UI camera
+    commands.spawn(UiCamera2D::default());
 }
 
 //-------------------------------------------------------------------------------------------------------------------

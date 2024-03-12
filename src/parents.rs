@@ -38,9 +38,8 @@ fn get_camera_layout_ref(
 
     // Update the layout reference of the targets.
     let parent_size = NodeSize(Vec2{ x, y });
-    let offset = NodeOffset(DEFAULT_CAMERA_Z_OFFSET);
 
-    Some(SizeRef{ parent_size, offset })
+    Some(SizeRef{ parent_size })
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -148,8 +147,7 @@ fn parent_update_reactor(
 
     // Update the children with the parent's size.
     let parent_size = **node_size;
-    let offset = NodeOffset(DEFAULT_Z_OFFSET);
-    let parent_ref = SizeRef{ parent_size, offset };
+    let parent_ref = SizeRef{ parent_size };
 
     for child in children.iter()
     {
@@ -186,8 +184,7 @@ fn parent_refresh_reactor(
     // Update the target node with the parent's size.
     // - Note: Since we are refreshing, we don't use set_if_not_eq().
     let parent_size = **parent_size;
-    let offset = NodeOffset(DEFAULT_Z_OFFSET);
-    let parent_ref = SizeRef{ parent_size, offset };
+    let parent_ref = SizeRef{ parent_size };
     *layout_ref.get_mut(&mut rc) = parent_ref;
 }
 
@@ -205,15 +202,53 @@ impl WorldReactor for ParentRefreshReactor
 /// The depth of root-level UI nodes tied to a camera, relative to the camera.
 pub const DEFAULT_CAMERA_Z_OFFSET: f32 = -100.0;
 
-/// The default vertical offset between a child and parent node.
-pub const DEFAULT_Z_OFFSET: f32 = 10.0f32;
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Bundle for setting up a camera as a UI root node.
+///
+/// This can be added to existing camera entities.
+#[derive(Bundle)]
+pub struct UiCameraRoot
+{
+    vis: InheritedVisibility,
+    root: UiRoot,
+}
+
+impl Default for UiCameraRoot
+{
+    fn default() -> Self
+    {
+        Self{
+            vis  : InheritedVisibility::VISIBLE,
+            root : UiRoot{ base_z_offset: DEFAULT_CAMERA_Z_OFFSET }
+        }
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Makes a [`UiRoot`] for camera root nodes.
-pub fn camera_ui_root() -> UiRoot
+/// Bundle for creating a 2D camera as a UI root node.
+///
+/// This creates a completely new camera entity.
+#[derive(Bundle)]
+pub struct UiCamera2D
 {
-    UiRoot{ base_z_offset: DEFAULT_CAMERA_Z_OFFSET }
+    camera: Camera2dBundle,
+    root: UiCameraRoot,
+}
+
+impl Default for UiCamera2D
+{
+    fn default() -> Self
+    {
+        Self{
+            camera: Camera2dBundle{
+                transform: Transform{ translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
+                ..default()
+            },
+            root: UiCameraRoot::default(),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
