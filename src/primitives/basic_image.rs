@@ -50,19 +50,40 @@ impl Default for BasicImageAssetCache
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Gets visibility based on avilability of the basic image.
+///
+/// If no image, then visibility is hidden, otherwise it's inherited.
+fn get_basic_image_visibility(path: &str, current: Visibility) -> Visibility
+{
+    match (path, current)
+    {
+        ("", Visibility::Inherited) => Visibility::Hidden,
+        ("", Visibility::Hidden) => current,
+        (_, Visibility::Hidden) => Visibility::Inherited,
+        _ => current,
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Updates basic image styles when their `BasicImage` components are mutated.
 fn basic_image_style_reactor(
     event            : MutationEvent<BasicImage>,
-    mut nodes        : Query<(&mut Handle<Image>, &React<BasicImage>)>,
+    mut nodes        : Query<(&mut Handle<Image>, &mut Visibility, &React<BasicImage>)>,
     mut cache        : ResMut<BasicImageAssetCache>,
     mut asset_server : ResMut<AssetServer>
 ){
     let Some(entity) = event.read()
     else { tracing::error!("entity mutation event missing for basic image primitive refresh"); return; };
-    let Ok((mut texture, basic_image)) = nodes.get_mut(entity)
-    else { tracing::debug!(?entity, "entity missing for basic image primitive refresh"); return; };
+    let Ok((mut texture, mut visibility, basic_image)) = nodes.get_mut(entity)
+    else { tracing::debug!(?entity, "entity missing for basic image style refresh"); return; };
 
     *texture = cache.get_handle_by_ref(&basic_image.path, &mut asset_server);
+
+    // Disable visibility when waiting for a texture.
+    let new_visibility = get_basic_image_visibility(basic_image.path.as_str(), *visibility);
+    if *visibility != new_visibility { *visibility = new_visibility; }
 }
 
 struct BasicImageStyleReactor;
@@ -71,6 +92,33 @@ impl WorldReactor for BasicImageStyleReactor
     type StartingTriggers = MutationTrigger<BasicImage>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(basic_image_style_reactor) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Updates basic image sprite when the node is done building.
+///
+/// Sets the visibility to [`Visibility::Hidden`] if there is currently no image selected.
+fn basic_image_refresh_reactor(
+    event     : EntityEvent<FinishNode>,
+    mut nodes : Query<(&mut Visibility, &React<BasicImage>)>,
+){
+    let Some((node, _)) = event.read()
+    else { tracing::error!("basic image refresh reactor event did not fire as expected"); return; };
+    let Ok((mut visibility, basic_image)) = nodes.get_mut(*node)
+    else { tracing::debug!(?node, "entity missing for basic image primitive refresh"); return; };
+
+    let new_visibility = get_basic_image_visibility(basic_image.path.as_str(), *visibility);
+    if *visibility != new_visibility { *visibility = new_visibility; }
+}
+
+struct BasicImageRefreshReactor;
+impl WorldReactor for BasicImageRefreshReactor
+{
+    type StartingTriggers = ();
+    type Triggers = EntityEventTrigger<FinishNode>;
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(basic_image_refresh_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -106,6 +154,7 @@ fn prepare_basic_image(
     mut asset_server  : ResMut<AssetServer>,
     mut cache         : ResMut<BasicImageAssetCache>,
     mut reactor       : Reactor<BasicImageReactor>,
+    mut refresh       : Reactor<BasicImageRefreshReactor>,
 ){
     // Get image handle.
     let texture = cache.get_handle(style.path, &mut asset_server);
@@ -118,6 +167,9 @@ fn prepare_basic_image(
 
     // Track the node size.
     reactor.add_triggers(&mut rc, entity_mutation::<NodeSize>(node));
+
+    // Initialize the image.
+    refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -170,7 +222,8 @@ impl Plugin for BasicImagePrimitivePlugin
         app.register_type::<BasicImage>()
             .init_resource::<BasicImageAssetCache>()
             .add_reactor_with(BasicImageStyleReactor, mutation::<BasicImage>())
-            .add_reactor(BasicImageReactor);
+            .add_reactor(BasicImageReactor)
+            .add_reactor(BasicImageRefreshReactor);
     }
 }
 
