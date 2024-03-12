@@ -210,6 +210,14 @@ pub const DEFAULT_Z_OFFSET: f32 = 10.0f32;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Makes a [`UiRoot`] for camera root nodes.
+pub fn camera_ui_root() -> UiRoot
+{
+    UiRoot{ base_z_offset: DEFAULT_CAMERA_Z_OFFSET }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
 ///
 /// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
@@ -250,6 +258,8 @@ impl UiInstruction for InCamera
                 refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
             }
         );
+
+        //todo: validate that camera entity contains UiRoot component
     }
 }
 

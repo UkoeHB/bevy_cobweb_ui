@@ -1,10 +1,10 @@
 //local shortcuts
+use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::render::camera::CameraUpdateSystem;
-use bevy::transform::TransformSystem::TransformPropagate;
 use bevy_cobweb::prelude::*;
 
 //standard shortcuts
@@ -66,7 +66,7 @@ impl Plugin for AppEventsPlugin
                     handle_camera_update
                 )
                     .after(CameraUpdateSystem)
-                    .before(TransformPropagate)
+                    .before(LayoutSet)
             );
     }
 }

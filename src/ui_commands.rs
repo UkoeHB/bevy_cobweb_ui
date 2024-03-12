@@ -49,7 +49,7 @@ impl<'w, 's> UiCommands<'w, 's>
 {
     pub fn build(&mut self, instructions: impl UiInstructionBundle) -> UiEntityCommands
     {
-        let node = self.rc.commands().spawn_empty().id();
+        let node = self.rc.commands().spawn(CobwebNode).id();
         instructions.build(&mut self.rc, node);
         UiEntityCommands(self.rc.commands().entity(node))
     }

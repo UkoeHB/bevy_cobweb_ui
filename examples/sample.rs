@@ -167,7 +167,8 @@ fn setup(mut commands: Commands)
     commands.spawn(
             Camera2dBundle{ transform: Transform{ translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() }, ..default() }
         )
-        .insert(InheritedVisibility::VISIBLE);
+        .insert(InheritedVisibility::VISIBLE)
+        .insert(camera_ui_root());
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -186,7 +187,7 @@ fn main()
         )
         .add_plugins(CobwebUiPlugin)
         .add_style_sheet("examples/sample.style.json")
-        //.insert_resource(bevy::winit::WinitSettings::desktop_app())
+        .insert_resource(bevy::winit::WinitSettings::desktop_app())
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();
