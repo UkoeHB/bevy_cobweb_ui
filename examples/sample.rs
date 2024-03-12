@@ -1,3 +1,5 @@
+//! Demonstrates library primitives and features.
+
 //local shortcuts
 use bevy_cobweb_ui::prelude::*;
 
@@ -93,33 +95,33 @@ fn handle_keyboard_input_for_node(
 fn add_blocks(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 {
     // Build a block in the center of its parent.
-    let style = path.extend("outer_block");
+    let outer_block = path.extend("outer_block");
     let outer = ui.build((
             Block{ color: Color::BLACK },
             Parent(parent),
-            Justified::load(&style),
-            Dims::load(&style),
+            Justified::load(&outer_block),
+            Dims::load(&outer_block),
         ))
         .id();
 
     // Build a block inside the other block.
-    let style = style.extend("inner_block");
+    let inner_block = outer_block.extend("inner_block");
     let inner = ui.build((
             Block{ color: Color::DARK_GRAY },
             Parent(outer),
-            Justified::load(&style),
-            Dims::load(&style),
+            Justified::load(&inner_block),
+            Dims::load(&inner_block),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node),  //todo: OnBroadcast
         ))
         .id();
 
     // Build another block inside the previous.
-    let style = style.extend("final_block");
+    let final_block = inner_block.extend("final_block");
     ui.build((
-            Block::load(&style),
+            Block::load(&final_block),
             Parent(inner),
-            Justified::load(&style),
-            Dims::load(&style),
+            Justified::load(&final_block),
+            Dims::load(&final_block),
             On::<KeyboardInput>::new(handle_keyboard_input_for_node),
         ));
 }
@@ -138,12 +140,12 @@ fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
         ));
 
     // Top right image
-    let path = path.extend("upper_right_img");
+    let upper_right_img = path.extend("upper_right_img");
     ui.build((
-            BasicImage::load(&path),
+            BasicImage::load(&upper_right_img),
             Parent(parent),
-            Justified::load(&path),
-            Dims::load(&path),
+            Justified::load(&upper_right_img),
+            Dims::load(&upper_right_img),
         ));
 }
 
