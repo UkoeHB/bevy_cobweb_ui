@@ -9,11 +9,17 @@ use std::sync::Arc;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The token that separates parts of a style path.
+///
+/// Example: `menu::header::title`, where `menu`, `header`, and `title` are path extensions.
 pub const STYLE_PATH_SEPARATOR: &'static str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the path to a stylesheet file in the `asset` directory.
+///
+/// Stylesheet files use the `.style.json` extension.
+///
+/// Example: `ui/home.style.json` for a `home` stylesheet in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StyleFile
 {
@@ -36,6 +42,8 @@ impl StyleFile
 /// Represents the path to a specific style in a stylesheet file.
 /// 
 /// Path extensions are stored as [`SmolStr`], so it is recommended for extensions to be <= 25 characters long.
+///
+/// Example: `menu::header::title` for accessing the `title` style path in a stylesheet.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StylePath
 {
@@ -75,10 +83,16 @@ impl StylePath
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents a complete reference to a style instance in a stylesheet asset.
+///
+/// Example:
+/// - File: `ui/home.style.json` for a `home` stylesheet in `assets/ui`.
+/// - Path: `menu::header::title` for accessing the `title` style path in the `home` stylesheet.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct StyleRef
 {
+    /// See [`StyleFile`].
     pub file: StyleFile,
+    /// See [`StylePath`].
     pub path: StylePath,
 }
 
@@ -108,11 +122,13 @@ impl StyleRef
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores a complete style path, including the style's [`type_path`](bevy::reflect::TypePath::type_path).
+/// Stores a complete [`StylePath`] in addition to the style's [`type_path`](bevy::reflect::TypePath::type_path).
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct FullStylePath
 {
+    /// See [`StylePath`].
     pub path: StylePath,
+    /// See [`type_path`](bevy::reflect::TypePath::type_path).
     pub full_type_name: &'static str,
 }
 
@@ -132,7 +148,9 @@ impl FullStylePath
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct FullStyleRef
 {
+    /// See [`StyleFile`].
     pub file: StyleFile,
+    /// See [`FullStylePath`].
     pub path: FullStylePath,
 }
 
