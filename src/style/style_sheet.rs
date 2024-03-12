@@ -361,8 +361,7 @@ impl Plugin for StyleSheetPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(StyleAssetLoaderPlugin)
-            .init_react_resource::<StyleSheet>()
+        app.init_react_resource::<StyleSheet>()
             .add_systems(PreStartup, setup_stylesheet)
             .add_systems(First,
                 (
