@@ -1,6 +1,7 @@
 //local shortcuts
 
 //third-party shortcuts
+use smol_str::SmolStr;
 
 //standard shortcuts
 use std::sync::Arc;
@@ -33,10 +34,12 @@ impl StyleFile
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the path to a specific style in a stylesheet file.
+/// 
+/// Path extensions are stored as [`SmolStr`], so it is recommended for extensions to be <= 25 characters long.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StylePath
 {
-    path: Arc<[Arc<str>]>,
+    path: Arc<[SmolStr]>,
 }
 
 impl StylePath
@@ -59,12 +62,12 @@ impl StylePath
         Self{ path: Arc::from(path) }
     }
 
-    fn extend_inner(extension: &str, path: &mut Vec<Arc<str>>)
+    fn extend_inner(extension: &str, path: &mut Vec<SmolStr>)
     {
         for path_element in extension.split(STYLE_PATH_SEPARATOR)
         {
             if path_element.is_empty() { continue; }
-            path.push(Arc::from(String::from(path_element)));
+            path.push(SmolStr::from(path_element));
         }
     }
 }
