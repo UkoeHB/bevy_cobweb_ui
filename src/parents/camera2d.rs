@@ -11,7 +11,7 @@ use bevy_cobweb::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn get_camera_layout_ref(
+fn compute_camera_size_ref(
     camera_entity    : Entity,
     camera_transform : &GlobalTransform,
     camera           : &Camera,
@@ -36,10 +36,7 @@ fn get_camera_layout_ref(
     let x = bottomleft.origin.distance(bottomright.origin);
     let y = topleft.origin.distance(bottomleft.origin);
 
-    // Update the layout reference of the targets.
-    let parent_size = NodeSize(Vec2{ x, y });
-
-    Some(SizeRef{ parent_size })
+    Some(SizeRef(Vec2{ x, y }))
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -65,7 +62,7 @@ fn camera_update_reactor(
     };
 
     // Get camera layout info.
-    let Some(parent_ref) = get_camera_layout_ref(*camera_entity, camera_transform, camera) else { return; };
+    let Some(parent_ref) = compute_camera_size_ref(*camera_entity, camera_transform, camera) else { return; };
 
     // Update children.
     for child in children.iter()
@@ -98,7 +95,7 @@ fn camera_refresh_reactor(
     else { tracing::error!("failed updating layout ref of in-camera node, node event missing"); return; };
 
     // Get the camera entity.
-    let Ok((camera_entity, mut layout_ref)) = nodes.get_mut(*target_node)
+    let Ok((camera_entity, mut size_ref)) = nodes.get_mut(*target_node)
     else
     {
         tracing::debug!(?target_node, "failed updating layout ref of in-camera node, target node has no camera parent");
@@ -114,11 +111,11 @@ fn camera_refresh_reactor(
     };
 
     // Get camera layout info.
-    let Some(parent_ref) = get_camera_layout_ref(**camera_entity, camera_transform, camera) else { return; };
+    let Some(parent_ref) = compute_camera_size_ref(**camera_entity, camera_transform, camera) else { return; };
 
     // Update the target node.
     // - Note: Since we are refreshing, we don't use set_if_not_eq().
-    *layout_ref.get_mut(&mut rc) = parent_ref;
+    *size_ref.get_mut(&mut rc) = parent_ref;
 }
 
 struct CameraRefreshReactor;
@@ -130,6 +127,28 @@ impl WorldReactor for CameraRefreshReactor
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn get_camera_size_ref(world: &World, camera: Entity) -> SizeRef
+{
+    // Look up camera entity
+    let Some(transform) = world.get::<GlobalTransform>(camera)
+    else
+    {
+        tracing::warn!("failed getting SizeRef from camera, camera {:?} is missing GlobalTransform component", camera);
+        return SizeRef::default();
+    };
+    let Some(camera_ref) = world.get::<Camera>(camera)
+    else
+    {
+        tracing::warn!("failed getting SizeRef from camera, camera {:?} is missing Camera component", camera);
+        return SizeRef::default();
+    };
+
+    // Get the camera size reference.
+    compute_camera_size_ref(camera, transform, camera_ref).unwrap_or_default()
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The depth of root-level UI nodes tied to a camera, relative to the camera.
@@ -188,7 +207,8 @@ impl Default for UiCamera2D
 
 /// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
 ///
-/// Adds `SpatialBundle`, `React<`[`NodeSize`]`>`, and `React<`[`SizeRef`]`>` to the node.
+/// Adds a default [`SpatialBundle`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef) to the node.
+/// Also adds a [`React<SizeRefSource::Camera>`](SizeRefSource::Camera) to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
 ///
@@ -212,6 +232,7 @@ impl UiInstruction for InCamera
         // Prep entity.
         rc.insert(node, NodeSize::default());
         rc.insert(node, SizeRef::default());
+        rc.insert(node, SizeRefSource::Camera);
 
         // Refresh the node's layout ref on node finish.
         rc.commands().syscall(node,

@@ -25,7 +25,7 @@ fn dims_reactor(
     else { tracing::debug!(?node, "node missing on dims update"); return; };
 
     // Update our node's size if it changed.
-    let parent_size = *size_ref.parent_size;
+    let parent_size = ***size_ref;
     let dims = dims.compute(parent_size);
     size.set_if_not_eq(&mut rc, NodeSize(dims));
 }

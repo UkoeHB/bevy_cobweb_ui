@@ -13,7 +13,7 @@ use bevy::window::WindowTheme;
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Blocks should be stacked from left to right. Stacking is 'natural' based on registration order.
+/// Blocks are stacked from left to right. Stacking is 'natural' based on registration order.
 fn add_plain_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
 {
     let section = ui.build((Parent(parent), Dims::Overlay)).id();
@@ -38,7 +38,7 @@ fn add_plain_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Blocks should stack from right to left. Stacking is 'natural' based on registration order.
+/// Blocks are stacked from right to left. Stacking is 'natural' based on registration order.
 ///
 /// These should be on top of the previous set of blocks.
 fn add_reverse_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
@@ -65,7 +65,7 @@ fn add_reverse_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offs
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Blocks should stack from left to right. Stacking is ZLevel-controled.
+/// Blocks are stacked from left to right. Stacking is ZLevel-controled.
 ///
 /// These should be on top of the previous set of blocks.
 fn add_reverse_blocks_zlevel(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)
@@ -93,7 +93,7 @@ fn add_reverse_blocks_zlevel(ui: &mut UiCommands, parent: Entity, quantity: usiz
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Blocks should stack alternating. Stacking is ZLevel-controled.
+/// Blocks are stacked alternating. Stacking is ZLevel-controled.
 ///
 /// These should be on top of the previous set of blocks.
 fn add_alternating_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, offset: f32, height: f32)

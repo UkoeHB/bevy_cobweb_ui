@@ -49,7 +49,7 @@ fn position_reactor(
     else { tracing::debug!(?node, "node missing on position update"); return; };
 
     // Get the offset between our node's anchor and the parent node's anchor.
-    let parent_size = *size_ref.parent_size;
+    let parent_size = ***size_ref;
     let size = ***node_size;
     let mut offset = position.offset(size, parent_size);
 
@@ -77,6 +77,34 @@ impl WorldReactor for PositionReactor
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn compute_new_transform(
+    sizeref: SizeRef,
+    nodesize: NodeSize,
+    position: &Position,
+    transform: &mut Mut<Transform>,
+){
+    // Get the offset between our node's anchor and the parent node's anchor.
+    let parent_size = *sizeref;
+    let size = *nodesize;
+    let mut offset = position.offset(size, parent_size);
+
+    // Convert the offset to a translation between the parent and node origins.
+    // - Offset = [vector to parent top left corner]
+    //          + [anchor offset vector (convert y)]
+    //          + [node corner to node origin (convert y)]
+    offset.x = (-parent_size.x / 2.) + offset.x + (size.x / 2.);
+    offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
+
+    // Update this node's transform.
+    // - Avoid triggering change detection needlessly.
+    let rotation = Quat::from_rotation_z(position.rotation);
+    if transform.translation.x != offset.x { transform.translation.x = offset.x; }
+    if transform.translation.y != offset.y { transform.translation.y = offset.y; }
+    if transform.rotation      != rotation { transform.rotation      = rotation; }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Expresses the positioning reference of one axis of a node within another node.

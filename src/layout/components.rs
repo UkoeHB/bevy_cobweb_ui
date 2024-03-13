@@ -43,18 +43,16 @@ pub struct CobwebNode;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component that records the 2D dimensions of a node as a rectangle on the plane of the node's parent.
+/// Reactive component with the size reference for computing the layout of a node.
+///
+/// Typically this equals the parent's [`NodeSize`], or is derived from a [`UiCamera2D`].
 #[derive(ReactComponent, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
-pub struct NodeSize(pub Vec2);
+pub struct SizeRef(pub Vec2);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component with reference data for use in defining the layout of a node.
-#[derive(ReactComponent, Debug, PartialEq, Copy, Clone, Default)]
-pub struct SizeRef
-{
-    /// The parent's node size.
-    pub parent_size: NodeSize,
-}
+/// Reactive component that records the 2D dimensions of a node as a rectangle on the plane of the node's parent.
+#[derive(ReactComponent, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
+pub struct NodeSize(pub Vec2);
 
 //-------------------------------------------------------------------------------------------------------------------
