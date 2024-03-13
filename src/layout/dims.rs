@@ -43,7 +43,7 @@ impl WorldReactor for DimsReactor
 
 /// Represents a transformation between two rectangles.
 ///
-/// When `Dims` is used as a [`UiInstruction`], this is used to transform the node's [`DimsRef`] into a
+/// When `Dims` is used as a [`UiInstruction`], this is used to transform the node's [`SizeRef`] into a
 /// [`NodeSizeEstimate`].
 ///
 /// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
