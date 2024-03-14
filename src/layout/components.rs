@@ -12,6 +12,7 @@ use bevy_cobweb::prelude::*;
 /// Component for UI root entities.
 ///
 /// Note that root entities are *not* UI nodes. Typically they are cameras, textures, or entities in world space.
+/// UI node trees sit on top of UI roots.
 #[derive(Component, Debug, Copy, Clone)]
 pub struct UiRoot
 {
@@ -43,18 +44,27 @@ pub struct CobwebNode;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component with the size reference of the root ancestor of a node.
+/// Component with the [`SizeRef`] of the base ancestor of a node.
+///
+/// The base ancestor of a node is the last ancestor before you reach the [`UiRoot`] (i.e. it's the first actual
+/// node in the tree that sits on a [`UiRoot`]).
 ///
 /// This is updated in [`LayoutSetCompute`].
-#[derive(Component, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
-pub struct RootSizeRef(pub Vec2);
+#[derive(Component, Debug, Default, PartialEq, Copy, Clone)]
+pub struct BaseSizeRef
+{
+    pub base: Option<Entity>,
+    pub sizeref: SizeRef,
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component with the size reference for computing the layout of a node.
+/// Component with the size reference for computing the layout of a node.
 ///
 /// Typically this equals the parent's [`NodeSize`], or is derived from a [`UiCamera2D`].
-#[derive(ReactComponent, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
+///
+/// This is updated in [`LayoutSetCompute`].
+#[derive(Component, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
 pub struct SizeRef(pub Vec2);
 
 //-------------------------------------------------------------------------------------------------------------------

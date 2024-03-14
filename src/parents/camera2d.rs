@@ -161,13 +161,12 @@ impl Default for UiCamera2D
 
 /// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
 ///
-/// Adds a default [`SpatialBundle`], [`RootSizeRef`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef)
-/// to the node.
-/// Also adds a [`React<SizeRefSource::Camera>`](SizeRefSource::Camera) to the node.
+/// Adds [`SpatialBundle`], [`BaseSizeRef`], [`SizeRef`], [`React<SizeRefSource>`](SizeRefSource), and
+/// [`React<NodeSize>`](NodeSize) to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
 ///
-/// [`RootSizeRef`] for nodes on cameras will typically equal [`SizeRef`] unless the camera is also a node.
+/// [`BaseSizeRef`] for nodes on cameras will typically equal [`SizeRef`] unless the camera is also a node.
 ///
 /// This currently only works for 2D UI cameras. See [`UiCamera2D`] and [`UiCameraRoot`] for setting up a camera.
 //todo: support 3D cameras ???
@@ -185,12 +184,12 @@ impl UiInstruction for InCamera
             .entity(node)
             .set_parent(camera_entity)
             .insert(SpatialBundle::default())
-            .insert(RootSizeRef::default());
+            .insert(BaseSizeRef::default())
+            .insert(SizeRef::default());
 
         // Prep entity.
-        rc.insert(node, NodeSize::default());
-        rc.insert(node, SizeRef::default());
         rc.insert(node, SizeRefSource::Camera);
+        rc.insert(node, NodeSize::default());
         //todo: validate that camera entity contains UiRoot component
     }
 }

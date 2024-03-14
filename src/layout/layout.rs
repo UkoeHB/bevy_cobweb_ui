@@ -30,7 +30,7 @@ use bevy_cobweb::prelude::*;
 struct ProcessNodeParamsReact<'w, 's>
 {
     rc: ReactCommands<'w, 's>,
-    sizeref: Query<'w, 's, &'static mut React<SizeRef>, With<CobwebNode>>,
+    sizeref: Query<'w, 's, &'static mut SizeRef, With<CobwebNode>>,
     nodesize: Query<'w, 's, &'static mut React<NodeSize>, With<CobwebNode>>,
 }
 
@@ -47,7 +47,10 @@ impl<'w, 's> ProcessNodeParamsReact<'w, 's>
             tracing::warn!("failed setting SizeRef on {:?}, SizeRef component is missing", node);
             return None;
         };
-        sizeref.set_if_not_eq(&mut self.rc, new_sizeref)
+        let old_sizeref = *sizeref;
+        if old_sizeref == new_sizeref { return None; }
+        *sizeref = new_sizeref;
+        Some(old_sizeref)
     }
 
     /// Sets a new [`NodeSize`] value and returns the old one if changed.

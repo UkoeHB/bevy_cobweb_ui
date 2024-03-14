@@ -43,6 +43,7 @@ impl<'a> Drop for UiEntityCommands<'a>
 pub struct UiCommands<'w, 's>
 {
     pub rc: ReactCommands<'w, 's>,
+    pub tracker: ResMut<'w, DirtyNodeTracker>,
 }
 
 impl<'w, 's> UiCommands<'w, 's>
@@ -50,6 +51,7 @@ impl<'w, 's> UiCommands<'w, 's>
     pub fn build(&mut self, instructions: impl UiInstructionBundle) -> UiEntityCommands
     {
         let node = self.rc.commands().spawn(CobwebNode).id();
+        self.tracker.insert(node);
         instructions.build(&mut self.rc, node);
         UiEntityCommands(self.rc.commands().entity(node))
     }

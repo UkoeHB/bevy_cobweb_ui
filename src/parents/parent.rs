@@ -9,7 +9,6 @@ use bevy_cobweb::prelude::*;
 
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) fn get_parent_size_ref(world: &World, parent: Entity) -> SizeRef
 {
@@ -31,10 +30,10 @@ pub(crate) fn get_parent_size_ref(world: &World, parent: Entity) -> SizeRef
 ///
 /// The node is set as a child of the parent entity.
 ///
-/// Adds [`SpatialBundle`], [`RootSizeRef`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef) to the node.
+/// Adds [`SpatialBundle`], [`BaseSizeRef`], [`SizeRef`], [`React<SizeRefSource>`](SizeRefSource), and
+/// [`React<NodeSize>`](NodeSize) to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
-//todo: need to validate that the node doesn't already have a parent (set_parent() just replaces the current parent)
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]
 pub struct Parent(pub Entity);
 
@@ -42,19 +41,17 @@ impl UiInstruction for Parent
 {
     fn apply(self, rc: &mut ReactCommands, node: Entity)
     {
-        let parent_entity = self.0;
-
         // Set this node as a child of the parent.
         rc.commands()
             .entity(node)
-            .set_parent(parent_entity)
+            .set_parent(self.0)
             .insert(SpatialBundle::default())
-            .insert(RootSizeRef::default());
+            .insert(BaseSizeRef::default())
+            .insert(SizeRef::default());
 
         // Prep entity.
+        rc.insert(node, SizeRefSource::Parent);
         rc.insert(node, NodeSize::default());
-        rc.insert(node, SizeRef::default());
-        rc.insert(node, SizeRefSource::default());
     }
 }
 

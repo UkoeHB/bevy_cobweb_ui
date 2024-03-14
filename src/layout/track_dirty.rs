@@ -3,9 +3,8 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
-use bevy::ecs::entity::{Entities, EntityHashSet};
+use bevy::ecs::entity::EntityHashSet;
 use bevy::hierarchy::HierarchyEvent;
-use bevy_cobweb::prelude::*;
 
 //standard shortcuts
 
@@ -32,27 +31,6 @@ fn track_hierarchy_changes(
             }
         }
     }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-fn detect_new_nodes(
-    event       : EntityEvent<NodeBuilt>,
-    entities    : &Entities,
-    mut tracker : ResMut<DirtyNodeTracker>
-){
-    let (entity, _) = event.read().unwrap();
-    if entities.get(entity).is_none() { return; }
-    tracker.insert(entity);
-}
-
-struct DetectNewNodes;
-impl WorldReactor for DetectNewNodes
-{
-    type StartingTriggers = AnyEntityEventTrigger<NodeBuilt>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_new_nodes) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -135,12 +113,7 @@ impl Plugin for TrackDirtyPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<DirtyNodeTracker>()
-            .add_reactor_with(DetectNewNodes, any_entity_event::<NodeBuilt>())
-            .add_systems(PostUpdate,
-                (
-                    track_hierarchy_changes,
-                ).in_set(LayoutSetPrep)
-            );
+            .add_systems(PostUpdate, track_hierarchy_changes.in_set(LayoutSetPrep));
     }
 }
 
