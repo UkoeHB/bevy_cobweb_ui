@@ -155,7 +155,7 @@ fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
 fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = ui.build((InCamera(camera.single()), Dims::Overlay)).id();
+    let root = ui.build(InCamera(camera.single())).id();
     add_blocks(&mut ui, &file, root);
     add_images(&mut ui, &file, root);
 }

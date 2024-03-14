@@ -123,7 +123,7 @@ fn add_alternating_blocks(ui: &mut UiCommands, parent: Entity, quantity: usize, 
 
 fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
 {
-    let root = ui.build((InCamera(camera.single()), Dims::Overlay)).id();
+    let root = ui.build(InCamera(camera.single())).id();
 
     add_plain_blocks(&mut ui, root, 5, 0., 20.);
     add_reverse_blocks(&mut ui, root, 5, 10., 20.);
