@@ -13,16 +13,16 @@ use bevy_cobweb::prelude::*;
 
 /// Entity event sent by [`UiCommands::build`] to a node after its instructions are built.
 ///
-/// [`UiInstruction`] and [`CobwebStyle`] implementations should listen to `FinishNode` events if they have reactors
+/// [`UiInstruction`] and [`CobwebStyle`] implementations should listen to `NodeBuilt` events if they have reactors
 /// that must run in order to initialize the node.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
-pub struct FinishNode;
+pub struct NodeBuilt;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Wrapper around `EntityCommands` for UI nodes being constructed.
 ///
-/// When this wrapper is dropped, a [`FinishNode`] entity event will be sent to the node. We wait to send this event
+/// When this wrapper is dropped, a [`NodeBuilt`] entity event will be sent to the node. We wait to send this event
 /// until the wrapper is dropped so that entity modifications using this wrapper (e.g. component insertions) will be
 /// visible to reactors triggered by the event.
 #[derive(Deref, DerefMut)]
@@ -33,7 +33,7 @@ impl<'a> Drop for UiEntityCommands<'a>
     fn drop(&mut self)
     {
         let node = self.id();
-        self.commands().add(move |world: &mut World| world.entity_event(node, FinishNode));
+        self.commands().add(move |world: &mut World| world.entity_event(node, NodeBuilt));
     }
 }
 

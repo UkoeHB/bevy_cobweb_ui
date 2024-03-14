@@ -38,7 +38,7 @@ fn track_hierarchy_changes(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_new_nodes(
-    event       : EntityEvent<FinishNode>,
+    event       : EntityEvent<NodeBuilt>,
     entities    : &Entities,
     mut tracker : ResMut<DirtyNodeTracker>
 ){
@@ -50,7 +50,7 @@ fn detect_new_nodes(
 struct DetectNewNodes;
 impl WorldReactor for DetectNewNodes
 {
-    type StartingTriggers = AnyEntityEventTrigger<FinishNode>;
+    type StartingTriggers = AnyEntityEventTrigger<NodeBuilt>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_new_nodes) }
 }
@@ -135,7 +135,7 @@ impl Plugin for TrackDirtyPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<DirtyNodeTracker>()
-            .add_reactor_with(DetectNewNodes, any_entity_event::<FinishNode>())
+            .add_reactor_with(DetectNewNodes, any_entity_event::<NodeBuilt>())
             .add_systems(PostUpdate,
                 (
                     track_hierarchy_changes,

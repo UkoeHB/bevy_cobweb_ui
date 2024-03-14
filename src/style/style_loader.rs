@@ -30,9 +30,9 @@ impl Default for StyleLoaderReactors
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates the style `T` on nodes when the stylesheet is updated or when a loaded node receives a `FinishNode` event.
+/// Updates the style `T` on nodes when the stylesheet is updated or when a loaded node receives a `NodeBuilt` event.
 fn style_loader_reactor<T: CobwebStyle>(
-    node_event : EntityEvent<FinishNode>,
+    node_event : EntityEvent<NodeBuilt>,
     mut rc     : ReactCommands,
     types      : Res<AppTypeRegistry>,
     styles     : ReactRes<StyleSheet>,
@@ -137,7 +137,7 @@ impl<T: CobwebStyle> UiInstruction for StyleLoader<T>
                     .or_insert_with(
                         || rc.on_persistent(resource_mutation::<StyleSheet>(), style_loader_reactor::<T>)
                     );
-                rc.with(entity_event::<FinishNode>(node), *reactor, ReactorMode::Persistent);
+                rc.with(entity_event::<NodeBuilt>(node), *reactor, ReactorMode::Persistent);
             }
         );
     }

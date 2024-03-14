@@ -60,7 +60,7 @@ fn get_basic_image_visibility(path: &str) -> Visibility
 ///
 /// Sets the visibility to [`Visibility::Hidden`] if there is currently no image selected.
 fn basic_image_style_reactor(
-    event            : EntityEvent<FinishNode>,
+    event            : EntityEvent<NodeBuilt>,
     image            : MutationEvent<BasicImage>,
     mut nodes        : Query<(&mut Handle<Image>, &mut Visibility, &React<BasicImage>)>,
     mut cache        : ResMut<BasicImageAssetCache>,
@@ -81,7 +81,7 @@ struct BasicImageStyleReactor;
 impl WorldReactor for BasicImageStyleReactor
 {
     type StartingTriggers = MutationTrigger<BasicImage>;
-    type Triggers = EntityEventTrigger<FinishNode>;
+    type Triggers = EntityEventTrigger<NodeBuilt>;
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(basic_image_style_reactor) }
 }
 
@@ -145,7 +145,7 @@ impl CobwebStyle for BasicImage
             |
             {
                 reactor.add_triggers(&mut rc, entity_mutation::<NodeSize>(node));
-                refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
+                refresh.add_triggers(&mut rc, entity_event::<NodeBuilt>(node));
             }
         );
     }
