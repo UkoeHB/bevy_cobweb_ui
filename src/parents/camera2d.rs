@@ -41,7 +41,7 @@ fn compute_camera_size_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Updates the layout ref of children of an updated camera.
 fn camera_update_reactor(
     update   : BroadcastEvent<CameraUpdate>,
@@ -79,10 +79,52 @@ impl WorldReactor for CameraUpdateReactor
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_update_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Handles camera updates.
+/// - If the camera is a [`CobwebNode`], marks the camera dirty.
+/// - If the camera is a [`UiRoot`], marks children of the camera dirty.
+fn camera_update(
+    update      : BroadcastEvent<CameraUpdate>,
+    mut tracker : ResMut<DirtyNodeTracker>,
+    cameras     : Query<&Children, (With<Camera>, With<UiRoot>)>,
+    nodes       : Query<(), With<CobwebNode>>,
+){
+    // Get the camera entity
+    let Some(CameraUpdate(camera_entity)) = update.read()
+    else { tracing::error!("failed updating layout ref of in-camera node, event is missing"); return; };
+
+    // Check if the camera is a node.
+    if nodes.contains(*camera_entity)
+    {
+        tracker.insert(*camera_entity);
+        return;
+    }
+
+    // Get the camera state if the camera is a UiRoot.
+    let Ok(children) = cameras.get(*camera_entity) else { return; };
+
+    // Mark child nodes dirty.
+    for child in children.iter()
+    {
+        if !nodes.contains(*child) { continue; }
+        tracker.insert(*child);
+    }
+}
+
+struct CameraUpdateReactor;
+impl WorldReactor for CameraUpdateReactor
+{
+    type StartingTriggers = BroadcastTrigger<CameraUpdate>;
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_update) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+/*
 /// Refreshes the layout ref of a child of a camera.
 fn camera_refresh_reactor(
     finish    : EntityEvent<FinishNode>,
@@ -125,7 +167,7 @@ impl WorldReactor for CameraRefreshReactor
     type Triggers = EntityEventTrigger<FinishNode>;
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_refresh_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -237,7 +279,7 @@ impl UiInstruction for InCamera
         rc.insert(node, NodeSize::default());
         rc.insert(node, SizeRef::default());
         rc.insert(node, SizeRefSource::Camera);
-
+/*
         // Refresh the node's layout ref on node finish.
         rc.commands().syscall(node,
             |
@@ -251,7 +293,7 @@ impl UiInstruction for InCamera
                 refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
             }
         );
-
+*/
         //todo: validate that camera entity contains UiRoot component
     }
 }
@@ -264,8 +306,8 @@ impl Plugin for Camera2DPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_reactor_with(CameraUpdateReactor, broadcast::<CameraUpdate>())
-            .add_reactor(CameraRefreshReactor);
+        app.add_reactor_with(CameraUpdateReactor, broadcast::<CameraUpdate>());
+            //.add_reactor(CameraRefreshReactor);
     }
 }
 

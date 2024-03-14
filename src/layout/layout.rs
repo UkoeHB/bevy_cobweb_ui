@@ -105,6 +105,7 @@ impl<'w, 's> ProcessNodeParams<'w, 's>
 #[derive(PartialEq)]
 enum ProcessNodeResult
 {
+    NotANode,
     AbortNoChange,
     NoSizeChange,
     SizeChange,
@@ -193,6 +194,9 @@ fn process_node_layout(
     node: Entity,
 ) -> ProcessNodeResult
 {
+    // Check if this is actually a node.
+    if !nodes.contains(node) { return ProcessNodeResult::NotANode; }
+
     // Mark self non-dirty.
     let node_dirty = params.tracker().remove(node);
 
@@ -223,9 +227,6 @@ fn process_node_layout(
     let mut _child_changed = false;
     for child in children.get(node).ok().into_iter().map(|c| c.iter()).flatten()
     {
-        // Skip non-node children.
-        if nodes.contains(*child) { continue; }
-
         let child_result = process_node_layout(
             is_full_traversal,
             params,

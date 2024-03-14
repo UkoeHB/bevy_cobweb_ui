@@ -10,7 +10,7 @@ use bevy_cobweb::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Updates the layout ref of children of a node when the node's size changes.
 ///
 /// Does nothing if a node has no children.
@@ -33,10 +33,10 @@ fn parent_update_reactor(
         layout_ref.set_if_not_eq(&mut rc, parent_ref);
     }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Refreshes the layout ref of a node from its parent.
 fn parent_refresh_reactor(
     finish    : EntityEvent<FinishNode>,
@@ -64,7 +64,7 @@ impl WorldReactor for ParentRefreshReactor
     type Triggers = EntityEventTrigger<FinishNode>;
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(parent_refresh_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -83,7 +83,7 @@ pub(crate) fn get_parent_size_ref(world: &World, parent: Entity) -> SizeRef
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 pub(crate) struct ParentUpdateReactor;
 impl WorldReactor for ParentUpdateReactor
 {
@@ -91,7 +91,7 @@ impl WorldReactor for ParentUpdateReactor
     type Triggers = EntityMutationTrigger<NodeSize>;
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(parent_update_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A [`UiInstruction`] for adding a UI node within a specific parent node.
@@ -126,7 +126,7 @@ impl UiInstruction for Parent
 
         // Don't add a SizeRefSource for efficiency, since it defaults to Parent.
         debug_assert!(matches!(SizeRefSource::default(), SizeRefSource::Parent));
-
+/*
         // Refresh the node's layout ref on node finish, and refresh children layouts on update.
         rc.commands().syscall(node,
             |
@@ -140,6 +140,7 @@ impl UiInstruction for Parent
                 refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
             }
         );
+*/
     }
 }
 
@@ -149,11 +150,11 @@ pub(crate) struct ParentPlugin;
 
 impl Plugin for ParentPlugin
 {
-    fn build(&self, app: &mut App)
-    {
+    fn build(&self, _app: &mut App)
+    {/*
         app.add_reactor(ParentUpdateReactor)
             .add_reactor(ParentRefreshReactor);
-    }
+    */}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
