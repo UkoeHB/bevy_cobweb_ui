@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Updates a node's size.
 fn dims_reactor(
     ref_event : MutationEvent<SizeRef>,
@@ -38,18 +38,16 @@ impl WorldReactor for DimsReactor
     type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Dims>);
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(dims_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_dims_reactor(
-    insertion   : InsertionEvent<Dims>,
     mutation    : MutationEvent<Dims>,
-    removal     : RemovalEvent<Dims>,
     entities    : &Entities,
     mut tracker : ResMut<DirtyNodeTracker>
 ){
-    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    let entity = mutation.read().unwrap();
     if entities.get(entity).is_none() { return; }
     tracker.insert(entity);
 }
@@ -57,7 +55,7 @@ fn detect_dims_reactor(
 struct DetectDimsReactor;
 impl WorldReactor for DetectDimsReactor
 {
-    type StartingTriggers = (InsertionTrigger::<Dims>, MutationTrigger::<Dims>, RemovalTrigger::<Dims>);
+    type StartingTriggers = MutationTrigger::<Dims>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_dims_reactor) }
 }
@@ -69,6 +67,8 @@ impl WorldReactor for DetectDimsReactor
 ///
 /// When `Dims` is used as a [`UiInstruction`], this is used to transform the node's [`SizeRef`] into a
 /// [`NodeSizeEstimate`].
+///
+/// Mutating `Dims` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 ///
 /// `Dims` can also be wrapped in [`MinDims`] and [`MaxDims`] instructions, which will constrain the node's
 /// [`NodeSizeEstimate`] and also its final [`NodeSize`] if it has a [`NodeSizeAdjuster`].
@@ -239,8 +239,9 @@ impl Dims
 
 impl CobwebStyle for Dims
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity)
     {
+        /*
         rc.commands().syscall(node,
             |
                 In(node)    : In<Entity>,
@@ -251,6 +252,7 @@ impl CobwebStyle for Dims
                 reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Dims>(node)));
             }
         );
+        */
     }
 }
 
@@ -264,8 +266,8 @@ impl Plugin for DimsPlugin
     {
         app.register_type::<Dims>()
             .register_type::<(u32, u32)>()
-            .add_reactor(DimsReactor)
-            .add_reactor_with(DetectDimsReactor, (insertion::<Dims>(), mutation::<Dims>(), removal::<Dims>()));
+            //.add_reactor(DimsReactor)
+            .add_reactor_with(DetectDimsReactor, mutation::<Dims>());
     }
 }
 

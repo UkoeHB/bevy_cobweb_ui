@@ -52,7 +52,7 @@ impl Plugin for LayoutPlugin
             .add_plugins(SortingPlugin)
             .add_plugins(SizeRefSourcePlugin)
             .add_plugins(TrackDirtyPlugin)
-            //.add_plugins(LayoutAlgorithmPlugin)
+            .add_plugins(LayoutAlgorithmPlugin)
             .configure_sets(PostUpdate, LayoutSet.before(TransformPropagate))
             .configure_sets(PostUpdate,
                 (

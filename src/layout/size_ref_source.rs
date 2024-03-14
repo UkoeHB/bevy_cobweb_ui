@@ -13,13 +13,11 @@ use bevy_cobweb::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_sizeref_source(
-    insertion   : InsertionEvent<SizeRefSource>,
     mutation    : MutationEvent<SizeRefSource>,
-    removal     : RemovalEvent<SizeRefSource>,
     entities    : &Entities,
     mut tracker : ResMut<DirtyNodeTracker>
 ){
-    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    let entity = mutation.read().unwrap();
     if entities.get(entity).is_none() { return; }
     tracker.insert(entity);
 }
@@ -27,9 +25,7 @@ fn detect_sizeref_source(
 struct DetectSizeRefSource;
 impl WorldReactor for DetectSizeRefSource
 {
-    type StartingTriggers = (
-        InsertionTrigger::<SizeRefSource>, MutationTrigger::<SizeRefSource>, RemovalTrigger::<SizeRefSource>
-    );
+    type StartingTriggers = MutationTrigger::<SizeRefSource>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_sizeref_source) }
 }
@@ -40,6 +36,8 @@ impl WorldReactor for DetectSizeRefSource
 /// Reactive component that controls how [`SizeRefs`](SizeRef) are derived during layout computation.
 ///
 /// This component is designed for use in [`UiInstructions`](UiInstruction), not in user code.
+///
+/// Mutating `SizeRefSource` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 ///
 /// Includes built-in sources for efficieny. The [`Self::Custom`] variant can be used if designing a custom source.
 ///
@@ -114,9 +112,7 @@ impl Plugin for SizeRefSourcePlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_reactor_with(DetectSizeRefSource,
-                (insertion::<SizeRefSource>(), mutation::<SizeRefSource>(), removal::<SizeRefSource>())
-            );
+        app.add_reactor_with(DetectSizeRefSource, mutation::<SizeRefSource>());
     }
 }
 

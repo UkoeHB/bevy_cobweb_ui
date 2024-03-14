@@ -386,7 +386,7 @@ impl Plugin for LayoutAlgorithmPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<DirtyNodeTracker>()
+        app
             // These systems are broken into separate steps to improve parallelism as much as possible. The improvement
             // is 'not much' because layout uses a `&World` reference, which will prevent most other systems from
             // running in parallel.

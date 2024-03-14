@@ -36,7 +36,7 @@ impl WorldReactor for DetectJustified
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Updates a node's transform.
 fn position_reactor(
     ref_event  : MutationEvent<SizeRef>,
@@ -76,18 +76,16 @@ impl WorldReactor for PositionReactor
     type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<NodeSize>, EntityMutationTrigger<Position>);
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(position_reactor) }
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_position(
-    insertion   : InsertionEvent<Position>,
     mutation    : MutationEvent<Position>,
-    removal     : RemovalEvent<Position>,
     entities    : &Entities,
     mut tracker : ResMut<DirtyNodeTracker>
 ){
-    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    let entity = mutation.read().unwrap();
     if entities.get(entity).is_none() { return; }
     tracker.insert(entity);
 }
@@ -95,7 +93,7 @@ fn detect_position(
 struct DetectPosition;
 impl WorldReactor for DetectPosition
 {
-    type StartingTriggers = (InsertionTrigger::<Position>, MutationTrigger::<Position>, RemovalTrigger::<Position>);
+    type StartingTriggers = MutationTrigger::<Position>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_position) }
 }
@@ -156,6 +154,8 @@ pub enum Justify
 ///
 /// When added as a [`UiInstruction`] to a node, this will control the node's [`Transform`] using the node's
 /// automatically-computed [`NodeSize`] and [`SizeRef`].
+///
+/// Mutating `Position` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Position
 {
@@ -283,8 +283,9 @@ impl Position
 
 impl CobwebStyle for Position
 {
-    fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
+    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity)
     {
+        /*
         rc.commands().syscall(node,
             |
                 In(node)    : In<Entity>,
@@ -297,6 +298,7 @@ impl CobwebStyle for Position
                 );
             }
         );
+        */
     }
 }
 
@@ -358,9 +360,9 @@ impl Plugin for PositionPlugin
         app
             .register_type::<Position>()
             .register_type::<Justified>()
-            .add_reactor(PositionReactor)
+            //.add_reactor(PositionReactor)
             .add_reactor_with(DetectJustified, mutation::<Justified>())
-            .add_reactor_with(DetectPosition, (insertion::<Position>(), mutation::<Position>(), removal::<Position>()));
+            .add_reactor_with(DetectPosition, mutation::<Position>());
     }
 }
 
