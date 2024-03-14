@@ -53,14 +53,14 @@ pub enum Dims
     /// The node's width and height equal the parent's width and height.
     #[default]
     Overlay,
-    /// The node's width and height are absolute values in UI coordinates.
+    /// The node's width and height are absolute values in [`Transform`] coordinates.
     Pixels(Vec2),
     /// The node's width and height are percentages of the parents' width and height.
     Percent(Vec2),
     /// The node's width and height equal the parent's width and height minus absolute padding values.
     ///
-    /// Padding values are in UI coordinates. Positive padding will reduce the node size, while negative padding will
-    /// increase it.
+    /// Padding values are in [`Transform`] coordinates. Positive padding will reduce the node size, while negative
+    /// padding will increase it.
     ///
     /// Note that if padding is too large, your node may completely disappear.
     Padded(Vec2),

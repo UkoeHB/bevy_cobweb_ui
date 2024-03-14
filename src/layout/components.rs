@@ -50,11 +50,19 @@ pub struct CobwebNode;
 /// node in the tree that sits on a [`UiRoot`]).
 ///
 /// This is updated in [`LayoutSetCompute`].
-#[derive(Component, Debug, Default, PartialEq, Copy, Clone)]
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub struct BaseSizeRef
 {
-    pub base: Option<Entity>,
+    pub base: Entity,
     pub sizeref: SizeRef,
+}
+
+impl Default for BaseSizeRef
+{
+    fn default() -> Self
+    {
+        Self{ base: Entity::PLACEHOLDER, sizeref: SizeRef::default() }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

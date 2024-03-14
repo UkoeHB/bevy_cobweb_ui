@@ -30,32 +30,12 @@ use bevy_cobweb::prelude::*;
 struct ProcessNodeParamsReact<'w, 's>
 {
     rc: ReactCommands<'w, 's>,
-    sizeref: Query<'w, 's, &'static mut SizeRef, With<CobwebNode>>,
     nodesize: Query<'w, 's, &'static mut React<NodeSize>, With<CobwebNode>>,
 }
 
 impl<'w, 's> ProcessNodeParamsReact<'w, 's>
 {
-    /// Sets a new [`SizeRef`] value and returns the old one if changed.
-    ///
-    /// Logs a warning if the entity has no existing [`SizeRef`] component.
-    fn set_sizeref(&mut self, node: Entity, new_sizeref: SizeRef) -> Option<SizeRef>
-    {
-        let Ok(mut sizeref) = self.sizeref.get_mut(node)
-        else
-        {
-            tracing::warn!("failed setting SizeRef on {:?}, SizeRef component is missing", node);
-            return None;
-        };
-        let old_sizeref = *sizeref;
-        if old_sizeref == new_sizeref { return None; }
-        *sizeref = new_sizeref;
-        Some(old_sizeref)
-    }
-
     /// Sets a new [`NodeSize`] value and returns the old one if changed.
-    ///
-    /// Logs a warning if the entity has no existing [`NodeSize`] component.
     fn set_nodesize(&mut self, node: Entity, new_nodesize: NodeSize) -> Option<NodeSize>
     {
         let Ok(mut nodesize) = self.nodesize.get_mut(node)
@@ -78,6 +58,8 @@ struct ProcessNodeParams<'w, 's>
         &'w World,
         ResMut<'w, DirtyNodeTracker>,
         Query<'w, 's, &'static mut Transform, With<CobwebNode>>,
+        Query<'w, 's, &'static mut BaseSizeRef, With<CobwebNode>>,
+        Query<'w, 's, &'static mut SizeRef, With<CobwebNode>>,
         ProcessNodeParamsReact<'w, 's>,
     )>,
 }
@@ -88,17 +70,62 @@ impl<'w, 's> ProcessNodeParams<'w, 's>
     {
         self.inner.p0()
     }
+
     fn tracker(&mut self) -> ResMut<DirtyNodeTracker>
     {
         self.inner.p1()
     }
+
     fn transform(&mut self) -> Query<&'static mut Transform, With<CobwebNode>>
     {
         self.inner.p2()
     }
-    fn react(&mut self) -> ProcessNodeParamsReact
+
+    fn base_sizeref(&mut self) -> Query<&'static mut BaseSizeRef, With<CobwebNode>>
     {
         self.inner.p3()
+    }
+
+    fn sizeref(&mut self) -> Query<&'static mut SizeRef, With<CobwebNode>>
+    {
+        self.inner.p4()
+    }
+
+    fn react(&mut self) -> ProcessNodeParamsReact
+    {
+        self.inner.p5()
+    }
+
+    /// Sets a new [`BaseSizeRef`] value and returns `true` if changed.
+    fn set_base_sizeref(&mut self, node: Entity, new_base_sizeref: BaseSizeRef) -> bool
+    {
+        let mut query = self.base_sizeref();
+        let Ok(mut base_sizeref) = query.get_mut(node)
+        else
+        {
+            tracing::warn!("failed setting BaseSizeRef on {:?}, BaseSizeRef component is missing", node);
+            return false;
+        };
+        if *base_sizeref == new_base_sizeref { return false; }
+        *base_sizeref = new_base_sizeref;
+
+        true
+    }
+
+    /// Sets a new [`SizeRef`] value and returns `true` if changed.
+    fn set_sizeref(&mut self, node: Entity, new_sizeref: SizeRef) -> bool
+    {
+        let mut query = self.sizeref();
+        let Ok(mut sizeref) = query.get_mut(node)
+        else
+        {
+            tracing::warn!("failed setting SizeRef on {:?}, SizeRef component is missing", node);
+            return false;
+        };
+        if *sizeref == new_sizeref { return false; }
+        *sizeref = new_sizeref;
+
+        true
     }
 }
 
@@ -112,6 +139,18 @@ enum ProcessNodeResult
     AbortNoChange,
     NoSizeChange,
     SizeChange,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_base_sizeref(params: &mut ProcessNodeParams, node: Entity) -> Option<BaseSizeRef>
+{
+    let Some(parent) = params.world().get::<bevy::hierarchy::Parent>(node).map(|p| **p) else { return None; };
+    params.base_sizeref()
+        .get(parent)
+        .map(|b| *b)
+        .ok()
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -146,6 +185,7 @@ fn update_node_size(
     //adjuster: &Query<&React<NodeSizeAdjuster>, With<CobwebNode>>,
     position: &Query<&React<Position>, With<CobwebNode>>,
     node: Entity,
+    _base_sizeref: BaseSizeRef,
     sizeref: SizeRef,
 ) -> ProcessNodeResult
 {
@@ -155,7 +195,8 @@ fn update_node_size(
     let new_nodesize = NodeSize(dims.get(node).map(|d| **d).unwrap_or_default().compute(*sizeref));
 
     //todo: Get NodeSizeAdjustment
-    // - NodeSizeAdjuster enum with optional callback: fn(&world, entity, size_estimate, min, max) (also FnMut boxed option)
+    // - NodeSizeAdjuster enum with optional callback: fn(&world, entity, base_sizeref, size_estimate, min, max)
+    //   - (also FnMut boxed option)
     // - Default to zero.
 
     // Compute adjusted `NodeSize` value.
@@ -195,6 +236,7 @@ fn process_node_layout(
     //inframe: &Query<&React<InFrame>, With<CobwebNode>>,
     //derived: &Query<&React<InFrameDerived>, With<CobwebNode>>,
     node: Entity,
+    base_sizeref: Option<BaseSizeRef>,
 ) -> ProcessNodeResult
 {
     // Check if this is actually a node.
@@ -205,11 +247,19 @@ fn process_node_layout(
 
     // Compute new `SizeRef` for the node.
     // - Uses `SizeRefSource::default()` if the node has no `SizeRefSource`.
-    let new_sizeref = source.get(node).map(|s| &**s).unwrap_or(&SizeRefSource::default()).compute(params.world(), node);
-    let prev_sizeref = params.react().set_sizeref(node, new_sizeref);
+    let new_sizeref = source.get(node)
+        .map(|s| &**s).unwrap_or(&SizeRefSource::default())
+        .compute(params.world(), base_sizeref, node);
 
-    // We need to update if the node was dirty or its `SizeRef` changed.
-    let need_update = node_dirty || prev_sizeref.is_some();
+    // If we have no `BaseSizeRef` then this is a base node, so set it to our own SizeRef.
+    let base_sizeref = base_sizeref.unwrap_or(BaseSizeRef{ base: node, sizeref: new_sizeref });
+
+    // Save sizerefs.
+    let base_sizeref_changed = params.set_base_sizeref(node, base_sizeref);
+    let prev_sizeref_changed = params.set_sizeref(node, new_sizeref);
+
+    // We need to update if the node was dirty or its `BaseSizeRef` or `SizeRef` changed.
+    let need_update = node_dirty || base_sizeref_changed || prev_sizeref_changed;
 
     // Abort if we don't need to update and this isn't a full traversal (or there are zero dirty remaining).
     if !need_update && (!is_full_traversal || params.tracker().len() == 0)
@@ -220,7 +270,7 @@ fn process_node_layout(
     // Update the node size.
     let node_result = match need_update
     {
-        true => update_node_size(params, dims, position, node, new_sizeref),
+        true => update_node_size(params, dims, position, node, base_sizeref, new_sizeref),
         false => ProcessNodeResult::NoSizeChange,
     };
 
@@ -245,6 +295,7 @@ fn process_node_layout(
             //inframe,
             //derived,
             *child,
+            Some(base_sizeref),
         );
 
         if child_result == ProcessNodeResult::SizeChange { _child_changed = true; }
@@ -295,6 +346,7 @@ fn layout_full_traversal(
             //&inframe,
             //&derived,
             *node,
+            None,
         );
     }
 
@@ -330,6 +382,9 @@ fn layout_targeted_traversal(
         // Skip nodes that have already been removed from the tracker.
         if !params.tracker().contains(node) { continue; }
 
+        // Get base sizeref from parent if possible.
+        let base_sizeref = get_base_sizeref(&mut params, node);
+
         process_node_layout(
             false,
             &mut params,
@@ -345,6 +400,7 @@ fn layout_targeted_traversal(
             //&inframe,
             //&derived,
             node,
+            base_sizeref,
         );
     }
 

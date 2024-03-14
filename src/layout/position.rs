@@ -120,7 +120,7 @@ pub struct Position
     pub x_justify: Justify,
     /// Justification of the node on the parent's y-axis.
     pub y_justify: Justify,
-    /// Offset from the node's anchor-point within its parent, in absolute UI coordinates.
+    /// Offset from the node's anchor-point within its parent, in [`Transform`] coordinates.
     pub pixels: Vec2,
     /// Offset from the node's anchor-point within its parent, as percentages of the parent dimensions.
     pub percent: Vec2,
@@ -213,7 +213,7 @@ impl Position
         self
     }
 
-    /// Gets the offset between our node and the parent in 2D UI coordinates.
+    /// Gets the offset between our node and the parent in 2D [`Transform`] coordinates.
     pub fn offset(&self, size: Vec2, parent_size: Vec2) -> Vec2
     {
         let mut x_offset = match self.x_justify

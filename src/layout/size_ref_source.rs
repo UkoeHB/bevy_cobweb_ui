@@ -55,8 +55,11 @@ pub enum SizeRefSource
     ///
     /// Does not store the camera entity directly, which enables easier re-parenting of nodes to different cameras.
     Camera,
+    //BaseSizeRef: use this directly
     //Texture
     //Entity ?? i.e. any entity with GlobalTransform + maybe a marker component
+    //Entity + reference frame for SizeRefs ?? e.g. a specific camera instead of the entity itself
+    //CustomBase(..callback..)
     //Custom(..callback..)
 }
 
@@ -73,14 +76,18 @@ impl SizeRefSource
     /// the layout loop). It is generally simpler and more reliable to access entities directly in the world
     /// with [`World::get`] (although less efficient if you have many query terms to access/check).
     ///
-    /// We also pass in `root_sizeref`, which is the [`SizeRef`] of the `target's` root ancestor.
-    //pub fn compute(&self, world: &World, _root_size: SizeRef, target: Entity) -> SizeRef
-    pub fn compute(&self, world: &World, target: Entity) -> SizeRef
+    /// We also pass in [`BaseSizeRef`]. If `base_sizeref` is `None` then `target` is a base node and its [`SizeRef`] must
+    /// be computed directly (e.g. from a camera).
+    pub fn compute(&self, world: &World, base_sizeref: Option<BaseSizeRef>, target: Entity) -> SizeRef
     {
         match self
         {
             Self::Parent =>
             {
+                if base_sizeref.is_none()
+                {
+                    tracing::error!("encountered missing BaseSizeRef in SizeRefSource::Parent for {:?}", target);
+                }
                 let Some(parent) = world.get::<bevy::hierarchy::Parent>(target)
                 else
                 {
