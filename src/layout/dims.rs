@@ -12,35 +12,6 @@ use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-/*
-/// Updates a node's size.
-fn dims_reactor(
-    ref_event : MutationEvent<SizeRef>,
-    lay_event : MutationEvent<Dims>,
-    mut rc    : ReactCommands,
-    mut nodes : Query<(&mut React<NodeSize>, &React<Dims>, &React<SizeRef>)>
-){
-    let Some(node) = ref_event.read().or_else(|| lay_event.read())
-    else { tracing::error!("failed running dims reactor, event is missing"); return; };
-    let Ok((mut size, dims, size_ref)) = nodes.get_mut(node)
-    else { tracing::debug!(?node, "node missing on dims update"); return; };
-
-    // Update our node's size if it changed.
-    let parent_size = ***size_ref;
-    let dims = dims.compute(parent_size);
-    size.set_if_not_eq(&mut rc, NodeSize(dims));
-}
-
-struct DimsReactor;
-impl WorldReactor for DimsReactor
-{
-    type StartingTriggers = ();
-    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Dims>);
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(dims_reactor) }
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 fn detect_dims_reactor(
     mutation    : MutationEvent<Dims>,
@@ -239,21 +210,7 @@ impl Dims
 
 impl CobwebStyle for Dims
 {
-    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity)
-    {
-        /*
-        rc.commands().syscall(node,
-            |
-                In(node)    : In<Entity>,
-                mut rc      : ReactCommands,
-                mut reactor : Reactor<DimsReactor>,
-            |
-            {
-                reactor.add_triggers(&mut rc, (entity_mutation::<SizeRef>(node), entity_mutation::<Dims>(node)));
-            }
-        );
-        */
-    }
+    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity) { }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -266,7 +223,6 @@ impl Plugin for DimsPlugin
     {
         app.register_type::<Dims>()
             .register_type::<(u32, u32)>()
-            //.add_reactor(DimsReactor)
             .add_reactor_with(DetectDimsReactor, mutation::<Dims>());
     }
 }

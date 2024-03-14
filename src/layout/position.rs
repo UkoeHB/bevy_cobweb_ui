@@ -36,49 +36,6 @@ impl WorldReactor for DetectJustified
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-/*
-/// Updates a node's transform.
-fn position_reactor(
-    ref_event  : MutationEvent<SizeRef>,
-    size_event : MutationEvent<NodeSize>,
-    pos_event  : MutationEvent<Position>,
-    mut nodes  : Query<(&mut Transform, &React<NodeSize>, &React<Position>, &React<SizeRef>)>
-){
-    let Some(node) = ref_event.read().or_else(|| size_event.read()).or_else(|| pos_event.read())
-    else { tracing::error!("failed running position reactor, event is missing"); return; };
-    let Ok((mut transform, node_size, position, size_ref)) = nodes.get_mut(node)
-    else { tracing::debug!(?node, "node missing on position update"); return; };
-
-    // Get the offset between our node's anchor and the parent node's anchor.
-    let parent_size = ***size_ref;
-    let size = ***node_size;
-    let mut offset = position.offset(size, parent_size);
-
-    // Convert the offset to a translation between the parent and node origins.
-    // - Offset = [vector to parent top left corner]
-    //          + [anchor offset vector (convert y)]
-    //          + [node corner to node origin (convert y)]
-    offset.x = (-parent_size.x / 2.) + offset.x + (size.x / 2.);
-    offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
-
-    // Update this node's transform.
-    // - Avoid triggering change detection needlessly.
-    let rotation = Quat::from_rotation_z(position.rotation);
-    if transform.translation.x != offset.x { transform.translation.x = offset.x; }
-    if transform.translation.y != offset.y { transform.translation.y = offset.y; }
-    if transform.rotation      != rotation { transform.rotation      = rotation; }
-}
-
-struct PositionReactor;
-impl WorldReactor for PositionReactor
-{
-    type StartingTriggers = ();
-    type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<NodeSize>, EntityMutationTrigger<Position>);
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(position_reactor) }
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 fn detect_position(
     mutation    : MutationEvent<Position>,
@@ -283,23 +240,7 @@ impl Position
 
 impl CobwebStyle for Position
 {
-    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity)
-    {
-        /*
-        rc.commands().syscall(node,
-            |
-                In(node)    : In<Entity>,
-                mut rc      : ReactCommands,
-                mut reactor : Reactor<PositionReactor>,
-            |
-            {
-                reactor.add_triggers(&mut rc,
-                    (entity_mutation::<SizeRef>(node), entity_mutation::<NodeSize>(node), entity_mutation::<Position>(node))
-                );
-            }
-        );
-        */
-    }
+    fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity) { }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -360,7 +301,6 @@ impl Plugin for PositionPlugin
         app
             .register_type::<Position>()
             .register_type::<Justified>()
-            //.add_reactor(PositionReactor)
             .add_reactor_with(DetectJustified, mutation::<Justified>())
             .add_reactor_with(DetectPosition, mutation::<Position>());
     }

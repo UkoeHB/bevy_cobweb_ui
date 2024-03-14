@@ -41,47 +41,6 @@ fn compute_camera_size_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
-/*
-/// Updates the layout ref of children of an updated camera.
-fn camera_update_reactor(
-    update   : BroadcastEvent<CameraUpdate>,
-    mut rc   : ReactCommands,
-    cameras  : Query<(&Children, &GlobalTransform, &Camera)>,
-    mut refs : Query<&mut React<SizeRef>>
-){
-    // Get the camera entity
-    let Some(CameraUpdate(camera_entity)) = update.read()
-    else { tracing::error!("failed updating layout ref of in-camera node, event is missing"); return; };
-
-    // Get the camera state.
-    let Ok((children, camera_transform, camera)) = cameras.get(*camera_entity)
-    else
-    {
-        tracing::debug!(?camera_entity, "failed updating layout ref of in-camera nodes, camera entity missing");
-        return;
-    };
-
-    // Get camera layout info.
-    let Some(parent_ref) = compute_camera_size_ref(*camera_entity, camera_transform, camera) else { return; };
-
-    // Update children.
-    for child in children.iter()
-    {
-        let Ok(mut layout_ref) = refs.get_mut(*child) else { continue; };
-        layout_ref.set_if_not_eq(&mut rc, parent_ref);
-    }
-}
-
-struct CameraUpdateReactor;
-impl WorldReactor for CameraUpdateReactor
-{
-    type StartingTriggers = BroadcastTrigger<CameraUpdate>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_update_reactor) }
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 /// Handles camera updates.
 /// - If the camera is a [`CobwebNode`], marks the camera dirty.
@@ -93,8 +52,7 @@ fn camera_update(
     nodes       : Query<(), With<CobwebNode>>,
 ){
     // Get the camera entity
-    let Some(CameraUpdate(camera_entity)) = update.read()
-    else { tracing::error!("failed updating layout ref of in-camera node, event is missing"); return; };
+    let CameraUpdate(camera_entity) = update.read().unwrap();
 
     // Check if the camera is a node.
     if nodes.contains(*camera_entity)
@@ -122,52 +80,6 @@ impl WorldReactor for CameraUpdateReactor
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_update) }
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-/*
-/// Refreshes the layout ref of a child of a camera.
-fn camera_refresh_reactor(
-    finish    : EntityEvent<FinishNode>,
-    mut rc    : ReactCommands,
-    cameras   : Query<(&GlobalTransform, &Camera)>,
-    mut nodes : Query<(&bevy::hierarchy::Parent, &mut React<SizeRef>)>,
-){
-    // Get the target node.
-    let Some((target_node, _)) = finish.read()
-    else { tracing::error!("failed updating layout ref of in-camera node, node event missing"); return; };
-
-    // Get the camera entity.
-    let Ok((camera_entity, mut size_ref)) = nodes.get_mut(target_node)
-    else
-    {
-        tracing::debug!(?target_node, "failed updating layout ref of in-camera node, target node has no camera parent");
-        return;
-    };
-
-    // Get the camera.
-    let Ok((camera_transform, camera)) = cameras.get(**camera_entity)
-    else
-    {
-        tracing::debug!(?camera_entity, "failed updating layout ref of in-camera node, camera entity missing");
-        return;
-    };
-
-    // Get camera layout info.
-    let Some(parent_ref) = compute_camera_size_ref(**camera_entity, camera_transform, camera) else { return; };
-
-    // Update the target node.
-    // - Note: Since we are refreshing, we don't use set_if_not_eq().
-    *size_ref.get_mut(&mut rc) = parent_ref;
-}
-
-struct CameraRefreshReactor;
-impl WorldReactor for CameraRefreshReactor
-{
-    type StartingTriggers = ();
-    type Triggers = EntityEventTrigger<FinishNode>;
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(camera_refresh_reactor) }
-}
-*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -204,8 +116,8 @@ pub const DEFAULT_CAMERA_Z_OFFSET: f32 = -100.0;
 #[derive(Bundle)]
 pub struct UiCameraRoot
 {
-    pub vis: InheritedVisibility,
-    pub root: UiRoot,
+    pub vis  : InheritedVisibility,
+    pub root : UiRoot,
 }
 
 impl Default for UiCameraRoot
@@ -227,8 +139,8 @@ impl Default for UiCameraRoot
 #[derive(Bundle)]
 pub struct UiCamera2D
 {
-    pub camera: Camera2dBundle,
-    pub root: UiCameraRoot,
+    pub camera : Camera2dBundle,
+    pub root   : UiCameraRoot,
 }
 
 impl Default for UiCamera2D
@@ -279,21 +191,6 @@ impl UiInstruction for InCamera
         rc.insert(node, NodeSize::default());
         rc.insert(node, SizeRef::default());
         rc.insert(node, SizeRefSource::Camera);
-/*
-        // Refresh the node's layout ref on node finish.
-        rc.commands().syscall(node,
-            |
-                In(node)    : In<Entity>,
-                mut rc      : ReactCommands,
-                mut update  : Reactor<ParentUpdateReactor>,
-                mut refresh : Reactor<CameraRefreshReactor>
-            |
-            {
-                update.add_triggers(&mut rc, entity_mutation::<NodeSize>(node));
-                refresh.add_triggers(&mut rc, entity_event::<FinishNode>(node));
-            }
-        );
-*/
         //todo: validate that camera entity contains UiRoot component
     }
 }
@@ -307,7 +204,6 @@ impl Plugin for Camera2DPlugin
     fn build(&self, app: &mut App)
     {
         app.add_reactor_with(CameraUpdateReactor, broadcast::<CameraUpdate>());
-            //.add_reactor(CameraRefreshReactor);
     }
 }
 
