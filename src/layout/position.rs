@@ -3,6 +3,7 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
+use bevy::ecs::entity::Entities;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -13,24 +14,24 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates [`Position`] whenever [`Justified`] changes on the same entity.
-fn justified_reactor(
+fn detect_justified(
     event         : MutationEvent<Justified>,
     mut rc        : ReactCommands,
     mut justified : Query<(&mut React<Position>, &React<Justified>)>
 ){
-    let Some(justified_entity) = event.read()
-    else { tracing::error!("justified position mutation event missing"); return; };
+    let justified_entity = event.read().unwrap();
     let Ok((mut position, justified)) = justified.get_mut(justified_entity)
     else { tracing::debug!("position entity {:?} missing on justified position mutation", justified_entity); return; };
+
     position.set_if_not_eq(&mut rc, Position::from(**justified));
 }
 
-struct JustifiedReactor;
-impl WorldReactor for JustifiedReactor
+struct DetectJustified;
+impl WorldReactor for DetectJustified
 {
     type StartingTriggers = MutationTrigger<Justified>;
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(justified_reactor) }
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_justified) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -79,11 +80,34 @@ impl WorldReactor for PositionReactor
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
+fn detect_position(
+    insertion   : InsertionEvent<Position>,
+    mutation    : MutationEvent<Position>,
+    removal     : RemovalEvent<Position>,
+    entities    : &Entities,
+    mut tracker : ResMut<DirtyNodeTracker>
+){
+    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    if entities.get(entity).is_none() { return; }
+    tracker.insert(entity);
+}
+
+struct DetectPosition;
+impl WorldReactor for DetectPosition
+{
+    type StartingTriggers = (InsertionTrigger::<Position>, MutationTrigger::<Position>, RemovalTrigger::<Position>);
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_position) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) fn compute_new_transform(
-    sizeref: SizeRef,
-    nodesize: NodeSize,
-    position: &Position,
-    transform: &mut Mut<Transform>,
+    sizeref   : SizeRef,
+    nodesize  : NodeSize,
+    position  : &Position,
+    transform : &mut Mut<Transform>,
 ){
     // Get the offset between our node's anchor and the parent node's anchor.
     let parent_size = *sizeref;
@@ -128,10 +152,10 @@ pub enum Justify
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the position of a rectangle within a another rectangle.
+/// Represents the position of a rectangle within another rectangle.
 ///
-/// When added as a [`UiInstruction`] to a node, this will be used to control the node's [`Transform`] using the
-/// node's size and automatically-computed [`SizeRef`].
+/// When added as a [`UiInstruction`] to a node, this will control the node's [`Transform`] using the node's
+/// automatically-computed [`NodeSize`] and [`SizeRef`].
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Position
 {
@@ -146,7 +170,7 @@ pub struct Position
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
-    /// not the node anchor (i.e. the node's centerpoint, not its top-left corner).
+    /// not the node anchor (i.e. the node's centerpoint, not the anchor defined by justify constraints).
     pub rotation: f32,
 }
 
@@ -335,7 +359,8 @@ impl Plugin for PositionPlugin
             .register_type::<Position>()
             .register_type::<Justified>()
             .add_reactor(PositionReactor)
-            .add_reactor_with(JustifiedReactor, mutation::<Justified>());
+            .add_reactor_with(DetectJustified, mutation::<Justified>())
+            .add_reactor_with(DetectPosition, (insertion::<Position>(), mutation::<Position>(), removal::<Position>()));
     }
 }
 

@@ -3,11 +3,38 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
+use bevy::ecs::entity::Entities;
 use bevy_cobweb::prelude::*;
 
 //standard shortcuts
 
 
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn detect_sizeref_source(
+    insertion   : InsertionEvent<SizeRefSource>,
+    mutation    : MutationEvent<SizeRefSource>,
+    removal     : RemovalEvent<SizeRefSource>,
+    entities    : &Entities,
+    mut tracker : ResMut<DirtyNodeTracker>
+){
+    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    if entities.get(entity).is_none() { return; }
+    tracker.insert(entity);
+}
+
+struct DetectSizeRefSource;
+impl WorldReactor for DetectSizeRefSource
+{
+    type StartingTriggers = (
+        InsertionTrigger::<SizeRefSource>, MutationTrigger::<SizeRefSource>, RemovalTrigger::<SizeRefSource>
+    );
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_sizeref_source) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive component that controls how [`SizeRefs`](SizeRef) are derived during layout computation.
@@ -47,6 +74,9 @@ impl SizeRefSource
     /// with [`QueryState::update_archetypes`] (however note that this data may become stale after reactions run within
     /// the layout loop). It is generally simpler and more reliable to access entities directly in the world
     /// with [`World::get`] (although less efficient if you have many query terms to access/check).
+    ///
+    /// We also pass in `root_sizeref`, which is the [`SizeRef`] of the `target's` root ancestor.
+    //pub fn compute(&self, world: &World, _root_size: SizeRef, target: Entity) -> SizeRef
     pub fn compute(&self, world: &World, target: Entity) -> SizeRef
     {
         match self
@@ -73,6 +103,20 @@ impl SizeRefSource
             }
             //Self::Custom(callback) =>
         }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct SizeRefSourcePlugin;
+
+impl Plugin for SizeRefSourcePlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app.add_reactor_with(DetectSizeRefSource,
+                (insertion::<SizeRefSource>(), mutation::<SizeRefSource>(), removal::<SizeRefSource>())
+            );
     }
 }
 

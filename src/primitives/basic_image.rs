@@ -66,8 +66,7 @@ fn basic_image_style_reactor(
     mut cache        : ResMut<BasicImageAssetCache>,
     mut asset_server : ResMut<AssetServer>
 ){
-    let Some(entity) = event.read().map(|(e, _)| e).cloned().or_else(|| image.read())
-    else { tracing::error!("event missing for basic image primitive refresh"); return; };
+    let entity = event.read().map(|(e, _)| e).or_else(|| image.read()).unwrap();
     let Ok((mut texture, mut visibility, basic_image)) = nodes.get_mut(entity)
     else { tracing::debug!(?entity, "entity missing for basic image style refresh"); return; };
 
@@ -94,8 +93,7 @@ fn basic_image_reactor(
     event     : MutationEvent<NodeSize>,
     mut nodes : Query<(&mut Sprite, &React<NodeSize>)>,
 ){
-    let Some(node) = event.read()
-    else { tracing::error!("basic image reactor event did not fire as expected"); return; };
+    let node = event.read().unwrap();
     let Ok((mut sprite, node_size)) = nodes.get_mut(node)
     else { tracing::debug!(?node, "node missing for basic image size update"); return; };
 

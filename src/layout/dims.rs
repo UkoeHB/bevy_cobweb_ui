@@ -3,6 +3,7 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
+use bevy::ecs::entity::Entities;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -36,6 +37,29 @@ impl WorldReactor for DimsReactor
     type StartingTriggers = ();
     type Triggers = (EntityMutationTrigger<SizeRef>, EntityMutationTrigger<Dims>);
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(dims_reactor) }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------
+
+fn detect_dims_reactor(
+    insertion   : InsertionEvent<Dims>,
+    mutation    : MutationEvent<Dims>,
+    removal     : RemovalEvent<Dims>,
+    entities    : &Entities,
+    mut tracker : ResMut<DirtyNodeTracker>
+){
+    let entity = insertion.read().or_else(|| mutation.read()).or_else(|| removal.read()).unwrap();
+    if entities.get(entity).is_none() { return; }
+    tracker.insert(entity);
+}
+
+struct DetectDimsReactor;
+impl WorldReactor for DetectDimsReactor
+{
+    type StartingTriggers = (InsertionTrigger::<Dims>, MutationTrigger::<Dims>, RemovalTrigger::<Dims>);
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_dims_reactor) }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -240,7 +264,8 @@ impl Plugin for DimsPlugin
     {
         app.register_type::<Dims>()
             .register_type::<(u32, u32)>()
-            .add_reactor(DimsReactor);
+            .add_reactor(DimsReactor)
+            .add_reactor_with(DetectDimsReactor, (insertion::<Dims>(), mutation::<Dims>(), removal::<Dims>()));
     }
 }
 

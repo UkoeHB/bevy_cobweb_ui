@@ -46,7 +46,7 @@ fn parent_refresh_reactor(
 ){
     let Some((node, _)) = finish.read()
     else { tracing::error!("failed updating parent layout ref, event is missing"); return; };
-    let Ok((parent, mut size_ref)) = nodes.get_mut(*node)
+    let Ok((parent, mut size_ref)) = nodes.get_mut(node)
     else { tracing::debug!(?node, "failed updating parent layout ref, node is missing"); return; };
     let Ok(parent_size) = sizes.get(**parent)
     else { tracing::debug!(?node, "failed updating parent layout ref, parent node not found"); return; };
@@ -98,7 +98,7 @@ impl WorldReactor for ParentUpdateReactor
 ///
 /// The node is set as a child of the parent entity.
 ///
-/// Adds [`SpatialBundle`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef) to the node.
+/// Adds [`SpatialBundle`], [`RootSizeRef`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef) to the node.
 /// Does not add a [`React<SizeRefSource>`](SizeRefSource) to the node because [`SizeRefSource`] defaults to
 /// [`SizeRefSource::Parent`].
 ///
@@ -117,7 +117,8 @@ impl UiInstruction for Parent
         rc.commands()
             .entity(node)
             .set_parent(parent_entity)
-            .insert(SpatialBundle::default());
+            .insert(SpatialBundle::default())
+            .insert(RootSizeRef::default());
 
         // Prep entity.
         rc.insert(node, NodeSize::default());

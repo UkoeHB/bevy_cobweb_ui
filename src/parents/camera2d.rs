@@ -95,7 +95,7 @@ fn camera_refresh_reactor(
     else { tracing::error!("failed updating layout ref of in-camera node, node event missing"); return; };
 
     // Get the camera entity.
-    let Ok((camera_entity, mut size_ref)) = nodes.get_mut(*target_node)
+    let Ok((camera_entity, mut size_ref)) = nodes.get_mut(target_node)
     else
     {
         tracing::debug!(?target_node, "failed updating layout ref of in-camera node, target node has no camera parent");
@@ -207,10 +207,13 @@ impl Default for UiCamera2D
 
 /// A [`UiInstruction`] for adding a UI root node within a specific camera's viewport.
 ///
-/// Adds a default [`SpatialBundle`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef) to the node.
+/// Adds a default [`SpatialBundle`], [`RootSizeRef`], [`React<NodeSize>`](NodeSize), and [`React<SizeRef>`](SizeRef)
+/// to the node.
 /// Also adds a [`React<SizeRefSource::Camera>`](SizeRefSource::Camera) to the node.
 ///
 /// The node's `Transform` will be updated automatically if you use a [`Position`] instruction.
+///
+/// [`RootSizeRef`] for nodes on cameras will typically equal [`SizeRef`] unless the camera is also a node.
 ///
 /// This currently only works for 2D UI cameras. See [`UiCamera2D`] and [`UiCameraRoot`] for setting up a camera.
 //todo: support 3D cameras ???
@@ -227,7 +230,8 @@ impl UiInstruction for InCamera
         rc.commands()
             .entity(node)
             .set_parent(camera_entity)
-            .insert(SpatialBundle::default());
+            .insert(SpatialBundle::default())
+            .insert(RootSizeRef::default());
 
         // Prep entity.
         rc.insert(node, NodeSize::default());

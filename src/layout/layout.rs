@@ -17,7 +17,6 @@ use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
-use bevy::ecs::entity::EntityHashSet;
 use bevy::ecs::system::SystemParam;
 use bevy_cobweb::prelude::*;
 
@@ -379,81 +378,6 @@ fn layout_targeted_traversal_loop(world: &mut World)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-//todo: system to mark Frame nodes dirty if their Children changes
-//todo: system to mark CobwebNode nodes dirty if their Parent changes
-//todo: HierarchyEvent::ChildRemoved + RemovedComponents<FrameMember> -> trigger Frame rebuild on child removal (i.e. despawn)
-//      - is this covered by tracking Children changes?
-
-//todo: Frame dirty on member insert, member dirty on insert
-
-//todo: track insertions/removals/mutations of the following (ignore removals caused by despawns)
-// - SizeRefSource, Dims, MinDims, MaxDims, NodeSizeAdjuster, Position, Frame, InFrame, InFrameDerived
-
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Tracks UI nodes that need layout updates this tick.
-///
-/// Use [`Self::insert`] to mark nodes dirty as needed.
-///
-/// Built-in [`UiInstructions`](UiInstruction) will automatically mark nodes dirty when their tracked components are
-/// changed (e.g. [`Dims`], [`Position`], etc.).
-/// Hierarchy changes are automatically detected, and the relevant nodes will be updated.
-#[derive(Resource, Default)]
-pub struct DirtyNodeTracker
-{
-    dirty: EntityHashSet,
-    list: Vec<Entity>,
-}
-
-impl DirtyNodeTracker
-{
-    /// Inserts a dirty entity to the tracker.
-    pub fn insert(&mut self, entity: Entity)
-    {
-        let _ = self.dirty.insert(entity);
-        self.list.push(entity);
-    }
-
-    /// Gets the number of dirty nodes.
-    pub fn len(&self) -> usize
-    {
-        self.dirty.len()
-    }
-
-    /// Checks if an entity is currently marked dirty.
-    pub fn contains(&mut self, entity: Entity) -> bool
-    {
-        self.dirty.contains(&entity)
-    }
-
-    fn remove(&mut self, entity: Entity) -> bool
-    {
-        self.dirty.remove(&entity)
-    }
-
-    fn take_list(&mut self) -> Vec<Entity>
-    {
-        let mut temp = Vec::default();
-        std::mem::swap(&mut self.list, &mut temp);
-        temp
-    }
-
-    fn return_list(&mut self, list: Vec<Entity>)
-    {
-        debug_assert_eq!(self.list.len(), 0);
-        self.list = list;
-    }
-
-    fn clear(&mut self)
-    {
-        self.dirty.clear();
-        self.list.clear();
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) struct LayoutAlgorithmPlugin;

@@ -50,6 +50,8 @@ impl Plugin for LayoutPlugin
         app.add_plugins(DimsPlugin)
             .add_plugins(PositionPlugin)
             .add_plugins(SortingPlugin)
+            .add_plugins(SizeRefSourcePlugin)
+            .add_plugins(TrackDirtyPlugin)
             //.add_plugins(LayoutAlgorithmPlugin)
             .configure_sets(PostUpdate, LayoutSet.before(TransformPropagate))
             .configure_sets(PostUpdate,

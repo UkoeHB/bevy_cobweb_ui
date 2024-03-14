@@ -69,7 +69,7 @@ fn style_loader_reactor<T: CobwebStyle>(
     if let Some((node, _)) = node_event.read()
     {
         // Look up the node.
-        let Ok((mut node, mut ctx)) = nodes.get_mut(*node)
+        let Ok((mut node, mut ctx)) = nodes.get_mut(node)
         else { tracing::warn!(?node, "node missing on style update for {:?}", std::any::type_name::<T>()); return; };
 
         // Update the node.

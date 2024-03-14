@@ -47,8 +47,7 @@ fn block_reactor(
     mut cache     : ResMut<BlockAssetCache>,
     mut materials : ResMut<Assets<ColorMaterial>>
 ){
-    let Some(entity) = event.read()
-    else { tracing::error!("entity mutation event missing for block primitive refresh"); return; };
+    let entity = event.read().unwrap();
     let Ok((children, block)) = nodes.get(entity)
     else { tracing::debug!(?entity, "entity missing for block primitive refresh"); return; };
 
@@ -78,8 +77,7 @@ fn block_mesh_reactor(
     nodes      : Query<(&Children, &React<NodeSize>)>,
     mut blocks : Query<&mut Transform, With<BlockMesh>>
 ){
-    let Some(node) = event.read()
-    else { tracing::error!("block mesh reactor event did not fire as expected"); return; };
+    let node = event.read().unwrap();
     let Ok((children, node_size)) = nodes.get(node)
     else { tracing::debug!(?node, "node missing for block size update"); return; };
 

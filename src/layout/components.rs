@@ -43,6 +43,14 @@ pub struct CobwebNode;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Component with the size reference of the root ancestor of a node.
+///
+/// This is updated in [`LayoutSetCompute`].
+#[derive(Component, Default, Debug, PartialEq, Copy, Clone, Deref, DerefMut)]
+pub struct RootSizeRef(pub Vec2);
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Reactive component with the size reference for computing the layout of a node.
 ///
 /// Typically this equals the parent's [`NodeSize`], or is derived from a [`UiCamera2D`].
