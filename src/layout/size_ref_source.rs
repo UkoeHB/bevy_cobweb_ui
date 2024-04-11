@@ -63,6 +63,13 @@ pub enum SizeRefSource
     //Custom(..callback..)
 }
 
+//EntityInCamera{camera, entity, scale_configs}: child of camera (orients toward camera position), position is on
+// an entity, SizeRef is camera + distance between camera and entity (but UI camera is orthographic projection and entities
+// are perspective projection, so 'player position' is probably tied to perspective-projection camera position and
+// UI camera is stationariy... maybe need to allow different cameras for positioning and scale? or use the perspective
+// camera as an in-world UI camera ?? this would ensure world UI properly respects occlusion but maybe causes interference
+// with rendering tricks?)
+
 impl SizeRefSource
 {
     /// Makes a new custom source.
