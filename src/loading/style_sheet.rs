@@ -1,6 +1,5 @@
 use crate::*;
 
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::utils::warn_once;
 use bevy_cobweb::prelude::*;
@@ -102,13 +101,13 @@ pub(crate) enum ReflectedStyle
 
 impl ReflectedStyle
 {
-    fn equals(&self, other: &ReflectedStyle) -> Option<bool>
+    pub(crate) fn equals(&self, other: &ReflectedStyle) -> Option<bool>
     {
         let (Self::Value(this), Self::Value(other)) = (self, other) else { return Some(false); };
         this.reflect_partial_eq(other.as_reflect())
     }
 
-    fn get_value<T: ReflectableStyle>(&self, style_ref: &StyleRef) -> Option<T>
+    pub(crate) fn get_value<T: ReflectableStyle>(&self, style_ref: &StyleRef) -> Option<T>
     {
         match self
         {
@@ -297,7 +296,7 @@ impl StyleSheet
                     .map(|e| e.style.equals(&style))
                     .unwrap_or(Some(false))
                 {
-                    Some(true) => return false,
+                    Some(true) => { return false },
                     Some(false) =>
                     {
                         entry.get_mut().push(ErasedStyle{ type_id, style: style.clone() });
@@ -323,13 +322,13 @@ impl StyleSheet
 
     /// Adds an entity to the tracking context.
     ///
-    /// Schedules reactors that will run to handle pending updates for the entity.
+    /// Schedules callbacks that will run to handle pending updates for the entity.
     pub(crate) fn track_entity(
         &mut self,
         entity: Entity,
         style_ref: StyleRef,
         rc: &mut ReactCommands,
-        reactors: &StyleLoaderReactors
+        callbacks: &StyleLoaderCallbacks
     ){
         // Add to subscriptions.
         // - Note: don't check for duplicates for max efficiency.
@@ -348,7 +347,7 @@ impl StyleSheet
                 .or_default()
                 .push((style.style.clone(), style_ref.clone(), SmallVec::from_elem(entity, 1)));
 
-            let Some(syscommand) = reactors.get(type_id)
+            let Some(syscommand) = callbacks.get(type_id)
             else
             {
                 tracing::warn!("found style at {:?} that wasn't registered as a loadable style", style_ref);
@@ -387,11 +386,10 @@ impl StyleSheet
         self.needs_updates.clear();
     }
 
-    /// Updates entities that subscribed to `React<T>` found at recently-updated style paths.
-    pub(crate) fn update_reactive_styles<T: ReactComponent + ReflectableStyle>(
+    /// Updates entities that subscribed to `T` found at recently-updated style paths.
+    pub(crate) fn update_styles<T: ReflectableStyle>(
         &mut self,
-        rc: &mut ReactCommands,
-        maybe_entities: &mut Query<Option<&mut React<T>>>,
+        mut callback: impl FnMut(Entity, &StyleRef, &ReflectedStyle),
     ){
         let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
 
@@ -399,61 +397,7 @@ impl StyleSheet
         {
             for entity in entities.drain(..)
             {
-                let Ok(component) = maybe_entities.get_mut(entity) else { continue };
-                let Some(new_val) = style.get_value(&styleref) else { continue };
-
-                match component
-                {
-                    Some(mut component) =>
-                    {
-                        *component.get_mut(rc) = new_val;
-                    }
-                    None =>
-                    {
-                        rc.insert(entity, new_val);
-                    }
-                }
-
-                rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
-            }
-        }
-    }
-
-    /// Updates entities that subscribed to `T` bundles found at recently-updated style paths.
-    pub(crate) fn update_bundle_styles<T: Bundle + ReflectableStyle>(
-        &mut self,
-        rc: &mut ReactCommands,
-    ){
-        let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
-
-        for (style, styleref, mut entities) in needs_updates.drain(..)
-        {
-            for entity in entities.drain(..)
-            {
-                let Some(bundle) = style.get_value::<T>(&styleref) else { continue };
-                rc.commands().entity(entity).try_insert(bundle);
-
-                rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
-            }
-        }
-    }
-
-    /// Updates entities that subscribed to `T` deriveds found at recently-updated style paths.
-    pub(crate) fn update_derived_styles<T: ReflectableStyle>(
-        &mut self,
-        rc: &mut ReactCommands,
-        conversion: fn(T, &mut EntityCommands),
-    ){
-        let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
-
-        for (style, styleref, mut entities) in needs_updates.drain(..)
-        {
-            for entity in entities.drain(..)
-            {
-                let Some(derived) = style.get_value(&styleref) else { continue };
-                (conversion)(derived, &mut rc.commands().entity(entity));
-
-                rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
+                (callback)(entity, &styleref, &style);
             }
         }
     }

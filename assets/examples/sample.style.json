@@ -3,7 +3,7 @@
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
-        "content": {"justify_main": "FlexEnd", "justify_cross": "FlexEnd"}
+        "content": {"justify_main": "FlexStart", "justify_cross": "FlexStart"}
     },
 
     "a": {

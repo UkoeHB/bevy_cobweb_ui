@@ -4,26 +4,32 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::{Serialize, Deserialize};
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-fn background_color_converter(color: BgColor, cmds: &mut EntityCommands)
-{
-    cmds.insert(color.to_bevy());
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BackgroundColor`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BgColor(Color);
+pub struct BgColor(pub Color);
 
-impl BgColor
+impl StyleToBevy for BgColor
 {
     /// Converts to a [`BackgroundColor`].
-    pub fn to_bevy(&self) -> BackgroundColor
+    fn to_bevy(self, ec: &mut EntityCommands)
     {
-        BackgroundColor(self.0.clone())
+        ec.try_insert(BackgroundColor(self.0.clone()));
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderColor`], can be loaded as a style.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrColor(pub Color);
+
+impl StyleToBevy for BrColor
+{
+    /// Converts to a [`BorderColor`].
+    fn to_bevy(self, ec: &mut EntityCommands)
+    {
+        ec.try_insert(BorderColor(self.0.clone()));
     }
 }
 
@@ -37,7 +43,9 @@ impl Plugin for UiComponentsExtPlugin
     {
         app
             .register_type::<BgColor>()
-            .register_derived_style::<BgColor>(background_color_converter)
+            .register_type::<BrColor>()
+            .register_derived_style::<BgColor>()
+            .register_derived_style::<BrColor>()
             ;
     }
 }
