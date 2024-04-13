@@ -1,6 +1,7 @@
 //! Demonstrates library primitives and features.
 
 //local shortcuts
+use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 
 //third-party shortcuts
@@ -153,13 +154,12 @@ fn build_ui(mut cmds: Commands)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
 
-    let path = file.e("root");
-    cmds.spawn(NodeBundle::default()).load(&path)
-        .with_children(|children| {
-            children.spawn(NodeBundle::default()).load(&path.e("a"));
-            children.spawn(NodeBundle::default()).load(&path.e("b"));
-        })
-        ;
+    cmds.root_node(file.e("root"), |root, path| {
+        root.child_node(path.e("a"), |_n, _p|{})
+            .child_node(path.e("b"), |_n, _p|{})
+            .on_event::<u32>().r(||{})
+            .update_on(despawn(Entity::PLACEHOLDER), |id| move || { println!("success {:?}", id); });
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------

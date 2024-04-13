@@ -7,16 +7,16 @@ mod callbacks;
 mod loading;
 mod plugin;
 mod primitives;
+mod react_ext;
 mod style_ext;
-mod ui_instruction_utils;
 
 pub use crate::app_events::*;
 //pub use crate::callbacks::*;
 pub use crate::loading::*;
 pub use crate::plugin::*;
 //pub use crate::primitives::*;
+pub use crate::react_ext::*;
 pub use crate::style_ext::*;
-pub use crate::ui_instruction_utils::*;
 
 //pub use bevy_cobweb_ui_derive::*;
 

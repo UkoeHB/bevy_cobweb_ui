@@ -161,17 +161,17 @@ pub struct StylesLoaded;
 pub trait StyleLoadingEntityCommandsExt
 {
     /// Registers the current entity to load styles from `style_ref`.
-    fn load(&mut self, style_ref: &StyleRef) -> &mut Self;
+    fn load(&mut self, style_ref: StyleRef) -> &mut Self;
 }
 
 impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
 {
-    fn load(&mut self, style_ref: &StyleRef) -> &mut Self
+    fn load(&mut self, style_ref: StyleRef) -> &mut Self
     {
         self.insert(LoadedStyles);
 
         let id = self.id();
-        self.commands().syscall((id, style_ref.clone()),
+        self.commands().syscall((id, style_ref),
                 |
                     In((id, style_ref)): In<(Entity, StyleRef)>,
                     mut rc: ReactCommands,
