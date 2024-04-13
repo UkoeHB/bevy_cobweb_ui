@@ -1,13 +1,11 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::reflect::TypeRegistry;
 use bevy::reflect::serde::TypedReflectDeserializer;
 use serde::de::DeserializeSeed;
 use serde_json::{Map, Value};
 
-//standard shortcuts
+use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -39,7 +37,7 @@ fn get_style_meta<'a>(
     current_path   : &StylePath,
     short_name     : &str,
     name_shortcuts : &mut HashMap<&'static str, &'static str>,
-) -> Option<(&'static str, &'static str, TypedReflectDeserializer<'a>)>
+) -> Option<(&'static str, &'static str, TypeId, TypedReflectDeserializer<'a>)>
 {
     // Check if we already have this mapping.
     let mut found_mapping = false;
@@ -72,7 +70,7 @@ fn get_style_meta<'a>(
     // Deserializer
     let deserializer = TypedReflectDeserializer::new(registration, type_registry);
 
-    Some((short_name, long_name, deserializer))
+    Some((short_name, long_name, registration.type_info().type_id(), deserializer))
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -181,7 +179,7 @@ fn handle_style_entry(
     stack_tracker  : &mut Vec<(&'static str, usize)>,
 ){
     // Get the style's longname.
-    let Some((short_name, long_name, deserializer)) =
+    let Some((short_name, long_name, type_id, deserializer)) =
         get_style_meta(type_registry, file, current_path, short_name, name_shortcuts)
     else { return; };
 
@@ -196,7 +194,7 @@ fn handle_style_entry(
     style_entry.push(style_value.clone());
     stack_tracker.push((short_name, starting_len));
 
-    stylesheet.insert(file, FullStylePath::new(current_path.clone(), long_name), style_value);
+    stylesheet.insert(&StyleRef{ file: file.clone(), path: current_path.clone() }, style_value, type_id, long_name);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

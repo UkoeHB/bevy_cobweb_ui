@@ -1,10 +1,5 @@
-//local shortcuts
-
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------

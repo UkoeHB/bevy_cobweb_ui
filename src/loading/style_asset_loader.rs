@@ -1,26 +1,23 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use serde_json::from_slice;
 use thiserror::Error;
 
-//standard shortcuts
 use std::collections::HashMap;
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-struct StyleAssetLoader;
+struct StyleSheetAssetLoader;
 
-impl AssetLoader for StyleAssetLoader
+impl AssetLoader for StyleSheetAssetLoader
 {
     type Asset = StyleSheetAsset;
     type Settings = ();
-    type Error = StyleAssetLoaderError;
+    type Error = StyleSheetAssetLoaderError;
 
     fn load<'a>(
         &'a self,
@@ -67,10 +64,10 @@ fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetS
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Possible errors that can be produced by the internal `StyleAssetLoader`.
+/// Possible errors that can be produced by the internal `StyleSheetAssetLoader`.
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum StyleAssetLoaderError
+pub enum StyleSheetAssetLoaderError
 {
     /// An [IO Error](std::io::Error).
     #[error("Could not read the stylesheet file: {0}")]
@@ -159,9 +156,9 @@ impl StyleSheetListAppExt for App
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin to load [`StyleSheet`] files into [`StyleSheetAssets`](StyleSheetAsset).
-pub(crate) struct StyleAssetLoaderPlugin;
+pub(crate) struct StyleSheetAssetLoaderPlugin;
 
-impl Plugin for StyleAssetLoaderPlugin
+impl Plugin for StyleSheetAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
@@ -171,7 +168,7 @@ impl Plugin for StyleAssetLoaderPlugin
         }
 
         app.init_asset::<StyleSheetAsset>()
-            .register_asset_loader(StyleAssetLoader)
+            .register_asset_loader(StyleSheetAssetLoader)
             .add_systems(PreStartup, load_stylesheets);
     }
 }

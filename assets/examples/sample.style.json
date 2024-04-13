@@ -1,26 +1,23 @@
 {
 
-"outer_block": {
-    "Justified" : "Center",
-    "Dims"      : {"Percent": [50.0, 50.0]},
-
-    "inner_block": {
-        "Justified" : "Center",
-        "Dims"      : {"Percent": [40.0, 50.0]},
-
-        "final_block": {
-            "Block"     : {"color": {"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}},
-            "Justified" : "inherited"
-        }
+"root": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"justify_main": "FlexEnd", "justify_cross": "FlexEnd"}
     },
 
-    "inner_block::final_block": {"Dims": "inherited"}
-},
+    "a": {
+        "FlexStyle": {
+            "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 10.0}},
+            "flex": {"justify_self_cross": "Center"}
+        },
+        "BgColor": [{"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}]
+    },
 
-"upper_right_img": {
-    "BasicImage" : {"path": "examples/green_rectangle.png"},
-    "Justified"  : "TopRight",
-    "Dims"       : {"SolidIn": {"ratio": [640, 480], "percent": [10.0, 20.0]}}
+    "b": {
+        "FlexStyle": {"dims": {"width": {"Percent": 20.0}, "height": {"Percent": 20.0}}},
+        "BgColor": [{"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}}]
+    }
 }
 
 }

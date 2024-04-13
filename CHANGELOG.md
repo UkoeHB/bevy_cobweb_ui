@@ -1,5 +1,10 @@
 # Changelog
 
+## WIP
+
+- Major rework focused on adding ergonomics to `bevy_ui`.
+
+
 ## 0.0.3
 
 - Early draft of the core API with layout rework.

@@ -1,22 +1,18 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct StylePlugin;
+pub(crate) struct LoadingPlugin;
 
-impl Plugin for StylePlugin
+impl Plugin for LoadingPlugin
 {
     fn build(&self, app: &mut App)
     {
         app.add_plugins(StyleLoaderPlugin)
-            .add_plugins(StyleAssetLoaderPlugin)
+            .add_plugins(StyleSheetAssetLoaderPlugin)
             .add_plugins(StyleSheetPlugin);
     }
 }

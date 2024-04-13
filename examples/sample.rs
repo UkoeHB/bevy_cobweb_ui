@@ -5,14 +5,11 @@ use bevy_cobweb_ui::prelude::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
-use bevy::input::ButtonState;
-use bevy::input::keyboard::{Key, KeyboardInput};
 use bevy::window::WindowTheme;
-use bevy_cobweb::prelude::*;
 
 //standard shortcuts
 
-
+/*
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -148,16 +145,21 @@ fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
             Dims::load(&upper_right_img),
         ));
 }
-
+*/
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot>)>)
+fn build_ui(mut cmds: Commands)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
-    let root = ui.build(InCamera(camera.single())).id();
-    add_blocks(&mut ui, &file, root);
-    add_images(&mut ui, &file, root);
+
+    let path = file.e("root");
+    cmds.spawn(NodeBundle::default()).load(&path)
+        .with_children(|children| {
+            children.spawn(NodeBundle::default()).load(&path.e("a"));
+            children.spawn(NodeBundle::default()).load(&path.e("b"));
+        })
+        ;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -165,7 +167,10 @@ fn build_ui(mut ui: UiCommands, camera: Query<Entity, (With<Camera>, With<UiRoot
 
 fn setup(mut commands: Commands)
 {
-    commands.spawn(UiCamera2D::default());
+    commands.spawn(Camera2dBundle{
+        transform: Transform{ translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
+        ..default()
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------

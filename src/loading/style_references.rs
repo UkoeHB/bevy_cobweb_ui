@@ -1,9 +1,5 @@
-//local shortcuts
-
-//third-party shortcuts
 use smol_str::SmolStr;
 
-//standard shortcuts
 use std::sync::Arc;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -47,7 +43,7 @@ impl StyleFile
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StylePath
 {
-    path: Arc<[SmolStr]>,
+    pub(crate) path: Arc<[SmolStr]>,
 }
 
 impl StylePath
@@ -87,7 +83,7 @@ impl StylePath
 /// Example:
 /// - File: `ui/home.style.json` for a `home` stylesheet in `assets/ui`.
 /// - Path: `menu::header::title` for accessing the `title` style path in the `home` stylesheet.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct StyleRef
 {
     /// See [`StyleFile`].
@@ -117,6 +113,12 @@ impl StyleRef
             file: self.file.clone(),
             path: self.path.extend(extension)
         }
+    }
+
+    /// Shorthand method for [`Self::extend`].
+    pub fn e(&self, extension: &str) -> Self
+    {
+        self.extend(extension)
     }
 }
 

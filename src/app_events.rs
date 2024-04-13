@@ -1,5 +1,4 @@
 //local shortcuts
-use crate::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
@@ -66,7 +65,6 @@ impl Plugin for AppEventsPlugin
                     handle_camera_update
                 )
                     .after(CameraUpdateSystem)
-                    .before(LayoutSet)
             );
     }
 }

@@ -1,4 +1,5 @@
 //local shortcuts
+/*
 use crate::*;
 
 //third-party shortcuts
@@ -88,5 +89,5 @@ impl<E: Clone + Send + Sync + 'static> On<E>
         OnEvent{ callback, phantom: PhantomData::default() }
     }
 }
-
+ */
 //-------------------------------------------------------------------------------------------------------------------

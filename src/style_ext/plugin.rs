@@ -1,22 +1,19 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
-
-//standard shortcuts
-
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct ParentsPlugin;
+pub struct StyleExtPlugin;
 
-impl Plugin for ParentsPlugin
+impl Plugin for StyleExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(Camera2DPlugin)
-            .add_plugins(ParentPlugin);
+        app
+            .add_plugins(StyleWrappersPlugin)
+            .add_plugins(UiComponentsExtPlugin)
+            ;
     }
 }
 
