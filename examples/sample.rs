@@ -5,7 +5,6 @@ use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use sickle_ui::SickleUiPlugin;
-use sickle_ui::TrackedInteraction;
 use sickle_ui::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -32,7 +31,6 @@ fn build_ui(mut c: Commands)
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.load(path.e("button"), |button, path| {
             let button_id = button.id();
-            button.insert((Interaction::default(), TrackedInteraction::default()));
             button.insert_reactive(Counter(0))
                 .on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
                     counters.get_mut(&mut c, button_id).map(Counter::increment);

@@ -1,7 +1,6 @@
 use crate::*;
 
 use bevy::prelude::*;
-use sickle_ui::FluxInteractionUpdate;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -11,7 +10,7 @@ impl Plugin for SickleExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
+        app.add_plugins(UiInteractionExtPlugin);
     }
 }
 

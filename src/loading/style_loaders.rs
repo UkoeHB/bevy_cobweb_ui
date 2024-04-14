@@ -82,7 +82,8 @@ fn bundle_style_loader<T: Bundle + ReflectableStyle>(
         |entity, style_ref, style|
         {
             let Some(bundle) = style.get_value::<T>(style_ref) else { return };
-            c.entity(entity).try_insert(bundle);
+            let Some(mut ec) = c.get_entity(entity) else { return };
+            ec.try_insert(bundle);
 
             c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
@@ -101,7 +102,8 @@ fn derived_style_loader<T: StyleToBevy + ReflectableStyle>(
         |entity, style_ref, style|
         {
             let Some(value) = style.get_value::<T>(style_ref) else { return };
-            value.to_bevy(&mut c.entity(entity));
+            let Some(mut ec) = c.get_entity(entity) else { return };
+            value.to_bevy(&mut ec);
 
             c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }

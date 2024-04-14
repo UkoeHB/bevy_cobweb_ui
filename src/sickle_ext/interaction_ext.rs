@@ -1,6 +1,7 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_cobweb::prelude::*;
-use sickle_ui::{ui_builder::UiBuilder, FluxInteraction};
+use serde::{Deserialize, Serialize};
+use sickle_ui::{ui_builder::UiBuilder, FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
 use crate::*;
 
@@ -151,6 +152,38 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
     ) -> EntityCommands<'_>
     {
         self.on_event::<Disabled>().r(callback)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable that indicates a node is interactable.
+///
+/// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Interactive;
+
+impl StyleToBevy for Interactive
+{
+    fn to_bevy(self, ec: &mut EntityCommands)
+    {
+        ec.try_insert((Interaction::default(), TrackedInteraction::default()));
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct UiInteractionExtPlugin;
+
+impl Plugin for UiInteractionExtPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app
+            .register_type::<Interactive>()
+            .register_derived_style::<Interactive>()
+            .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate))
+            ;
     }
 }
 
