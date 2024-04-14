@@ -1,7 +1,7 @@
 /*
 container.load_child(path.e("button"), |button, path| {
     let id = button.id();
-    let counter = button.reactive_data(Counter::default()).id();
+    let counter = button.insert_reactive(Counter::default()).id();
     button.on_event::<Pressed>().r(move |mut cmds: Commands, mut counters: ReactiveMut<Counter>| {
         counters.get_mut(&mut cmds, counter).map(Counter::increment);
     });
@@ -22,9 +22,16 @@ use crate::*;
 
 use std::marker::PhantomData;
 
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_cobweb::prelude::*;
 use sickle_ui::ui_builder::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn insert_react_component<T: ReactComponent>(In((entity, component)): In<(Entity, T)>, mut rc: ReactCommands)
+{
+    rc.insert(entity, component);
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -38,7 +45,9 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     {
         let triggers = (triggers, entity_event::<StylesLoaded>(entity));
         rc.with(triggers, syscommand, ReactorMode::Revokable).unwrap()
-    } else {
+    }
+    else
+    {
         rc.with(triggers, syscommand, ReactorMode::Revokable).unwrap()
     };
 
@@ -51,29 +60,30 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 /// Helper struct returned by [`on_event`](NodeReactEntityCommandsExt::on_event).
 ///
 /// Call [`Self::r`] to add a reactor.
-pub struct OnEventExt<'w, 's, 'a, T: Send + Sync + 'static>
+//todo: Use UiBuilder once reborrowing is implemented
+pub struct OnEventExt<'a, T: Send + Sync + 'static>
 {
-    eb: &'a mut UiBuilder<'w, 's, 'a, Entity>,
+    ec: EntityCommands<'a>,
     _p: PhantomData<T>,
 }
 
-impl<'w, 's, 'a, T: Send + Sync + 'static> OnEventExt<'w, 's, 'a, T>
+impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 {
-    fn new(eb: &'a mut UiBuilder<'w, 's, 'a, Entity>) -> OnEventExt<'w, 's, 'a, T>
+    fn new(ec: EntityCommands<'a>) -> OnEventExt<'a, T>
     {
-        Self{ eb, _p: PhantomData::default() }
+        Self{ ec, _p: PhantomData::default() }
     }
 
     /// Adds a reactor to an [`on_event`](NodeReactEntityCommandsExt::on_event) request.
     pub fn r<M>(
-        self,
+        mut self,
         callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> &'a mut UiBuilder<'w, 's, 'a, Entity>
+    ) -> EntityCommands<'a>
     {
-        let syscommand = self.eb.commands().spawn_system_command(callback);
-        let id = self.eb.id();
+        let syscommand = self.ec.commands().spawn_system_command(callback);
+        let id = self.ec.id();
         //todo: register this reactor directly
-        self.eb.commands().syscall((id, syscommand),
+        self.ec.commands().syscall((id, syscommand),
                 |In((entity, syscommand)): In<(Entity, SystemCommand)>, mut rc: ReactCommands|
                 {
                     // ReactorMode::Cleanup will clean up the reactor when `entity` is despawned (or if it was already
@@ -82,19 +92,25 @@ impl<'w, 's, 'a, T: Send + Sync + 'static> OnEventExt<'w, 's, 'a, T>
                 }
             );
 
-        self.eb
+        self.ec
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering reactors for node entities.
-pub trait NodeReactEntityCommandsExt<'w, 's, 'a>
+pub trait NodeReactEntityCommandsExt
 {
+    /// Inserts a reactive component to the entity.
+    ///
+    /// The component can be accessed with the [`React<T>`] component, or with the
+    /// [`Reactive`]/[`ReactiveMut`] system parameters.
+    fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self;
+
     /// Registers an [`entity_event`] reactor for the current entity.
     ///
     /// Use [`OnEventExt::r`] to register the reactor.
-    fn on_event<T: Send + Sync + 'static>(&'a mut self) -> OnEventExt<'w, 's, 'a, T>;
+    fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>;
 
     /// Updates an entity with a reactor system.
     ///
@@ -109,11 +125,19 @@ pub trait NodeReactEntityCommandsExt<'w, 's, 'a>
     ) -> &mut Self;
 }
 
-impl<'w, 's, 'a> NodeReactEntityCommandsExt<'w, 's, 'a> for UiBuilder<'w, 's, 'a, Entity>
+impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
 {
-    fn on_event<T: Send + Sync + 'static>(&'a mut self) -> OnEventExt<'w, 's, 'a, T>
+    fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
-        OnEventExt::new(self)
+        let id = self.id();
+        //todo: do this directly via commands
+        self.commands().syscall((id, component), insert_react_component);
+        self
+    }
+
+    fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
+    {
+        OnEventExt::new(self.entity_commands())
     }
 
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
