@@ -17,7 +17,7 @@ fn setup_stylesheet(sheet_list: Res<StyleSheetList>, mut stylesheet: ReactResMut
     // begin tracking expected stylesheet files
     for file in sheet_list.iter_files()
     {
-        stylesheet.get_mut_noreact().prepare_file(StyleFile::new(file.as_str()));
+        stylesheet.get_noreact().prepare_file(StyleFile::new(file.as_str()));
     }
 }
 
@@ -25,7 +25,7 @@ fn setup_stylesheet(sheet_list: Res<StyleSheetList>, mut stylesheet: ReactResMut
 //-------------------------------------------------------------------------------------------------------------------
 
 fn load_style_changes(
-    mut rc         : ReactCommands,
+    mut c          : Commands,
     mut events     : EventReader<AssetEvent<StyleSheetAsset>>,
     sheet_list     : Res<StyleSheetList>,
     mut assets     : ResMut<Assets<StyleSheetAsset>>,
@@ -56,14 +56,14 @@ fn load_style_changes(
         let Some(asset) = assets.remove(handle)
         else { tracing::error!("failed to remove stylesheet asset {:?}", handle); continue; };
 
-        let stylesheet = stylesheet.get_mut_noreact();
+        let stylesheet = stylesheet.get_noreact();
         parse_stylesheet_file(&type_registry, stylesheet, asset.file, asset.data);
         need_reactions = true;
     }
 
     if need_reactions
     {
-        stylesheet.get_mut(&mut rc);
+        stylesheet.get_mut(&mut c);
     }
 }
 
@@ -74,10 +74,10 @@ fn cleanup_stylesheet(mut stylesheet: ReactResMut<StyleSheet>, mut removed: Remo
 {
     for removed in removed.read()
     {
-        stylesheet.get_mut_noreact().remove_entity(removed);
+        stylesheet.get_noreact().remove_entity(removed);
     }
 
-    stylesheet.get_mut_noreact().cleanup_pending();
+    stylesheet.get_noreact().cleanup_pending();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -327,7 +327,7 @@ impl StyleSheet
         &mut self,
         entity: Entity,
         style_ref: StyleRef,
-        rc: &mut ReactCommands,
+        c: &mut Commands,
         callbacks: &StyleLoaderCallbacks
     ){
         // Add to subscriptions.
@@ -354,13 +354,13 @@ impl StyleSheet
                 continue;
             };
 
-            rc.commands().add(syscommand);
+            c.add(syscommand);
         }
 
         // Notify the entity that some of its styles have loaded.
         if styles.len() > 0
         {
-            rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
+            c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
     }
 

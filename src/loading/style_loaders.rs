@@ -23,7 +23,7 @@ fn register_style_impl<M, T: 'static>(
     }
 
     CallbackSystem::new(
-        move |mut rc: ReactCommands, mut loaders: ResMut<StyleLoaderCallbacks>|
+        move |mut c: Commands, mut loaders: ResMut<StyleLoaderCallbacks>|
         {
             let entry = loaders.callbacks.entry(TypeId::of::<T>());
             if matches!(entry, std::collections::hash_map::Entry::Occupied(_))
@@ -32,7 +32,7 @@ fn register_style_impl<M, T: 'static>(
             }
 
             entry.or_insert_with(
-                    || rc.on_persistent(resource_mutation::<StyleSheet>(), callback)
+                    || c.react().on_persistent(resource_mutation::<StyleSheet>(), callback)
                 );
         }
     ).run(&mut app.world, ());
@@ -43,11 +43,11 @@ fn register_style_impl<M, T: 'static>(
 
 /// Updates the style `React<T>` on entities.
 fn reactive_style_loader<T: ReactComponent + ReflectableStyle>(
-    mut rc       : ReactCommands,
+    mut c        : Commands,
     mut styles   : ReactResMut<StyleSheet>,
     mut entities : Query<Option<&mut React<T>>>
 ){
-    styles.get_mut_noreact().update_styles::<T>(
+    styles.get_noreact().update_styles::<T>(
         |entity, style_ref, style|
         {
             let Ok(component) = entities.get_mut(entity) else { return };
@@ -57,15 +57,15 @@ fn reactive_style_loader<T: ReactComponent + ReflectableStyle>(
             {
                 Some(mut component) =>
                 {
-                    *component.get_mut(&mut rc) = new_val;
+                    *component.get_mut(&mut c) = new_val;
                 }
                 None =>
                 {
-                    rc.insert(entity, new_val);
+                    c.react().insert(entity, new_val);
                 }
             }
 
-            rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
+            c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
     );
 }
@@ -75,16 +75,16 @@ fn reactive_style_loader<T: ReactComponent + ReflectableStyle>(
 
 /// Updates the style bundle `T` on entities.
 fn bundle_style_loader<T: Bundle + ReflectableStyle>(
-    mut rc       : ReactCommands,
+    mut c        : Commands,
     mut styles   : ReactResMut<StyleSheet>,
 ){
-    styles.get_mut_noreact().update_styles::<T>(
+    styles.get_noreact().update_styles::<T>(
         |entity, style_ref, style|
         {
             let Some(bundle) = style.get_value::<T>(style_ref) else { return };
-            rc.commands().entity(entity).try_insert(bundle);
+            c.entity(entity).try_insert(bundle);
 
-            rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
+            c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
     );
 }
@@ -94,16 +94,16 @@ fn bundle_style_loader<T: Bundle + ReflectableStyle>(
 
 /// Uses `T` to derive changes on subscribed entities.
 fn derived_style_loader<T: StyleToBevy + ReflectableStyle>(
-    mut rc       : ReactCommands,
+    mut c        : Commands,
     mut styles   : ReactResMut<StyleSheet>,
 ){
-    styles.get_mut_noreact().update_styles::<T>(
+    styles.get_noreact().update_styles::<T>(
         |entity, style_ref, style|
         {
             let Some(value) = style.get_value::<T>(style_ref) else { return };
-            value.to_bevy(&mut rc.commands().entity(entity));
+            value.to_bevy(&mut c.entity(entity));
 
-            rc.entity_event::<StylesLoaded>(entity, StylesLoaded);
+            c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
     );
 }
@@ -174,12 +174,12 @@ impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
         self.commands().syscall((id, style_ref),
                 |
                     In((id, style_ref)): In<(Entity, StyleRef)>,
-                    mut rc: ReactCommands,
+                    mut c: Commands,
                     loaders: Res<StyleLoaderCallbacks>,
                     mut stylesheet: ReactResMut<StyleSheet>,
                 |
                 {
-                    stylesheet.get_mut_noreact().track_entity(id, style_ref, &mut rc, &loaders);
+                    stylesheet.get_noreact().track_entity(id, style_ref, &mut c, &loaders);
                 }
             );
 

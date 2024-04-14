@@ -1,16 +1,11 @@
 //! Demonstrates library primitives and features.
 
-use bevy::ui::FocusPolicy;
-//local shortcuts
-use bevy_cobweb_ui::prelude::*;
-
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
+use bevy_cobweb_ui::prelude::*;
+use sickle_ui::SickleUiPlugin;
 use sickle_ui::TrackedInteraction;
 use sickle_ui::ui_builder::*;
-
-//standard shortcuts
 
 /*
 //-------------------------------------------------------------------------------------------------------------------
@@ -158,8 +153,8 @@ fn build_ui(mut cmds: Commands)
 
     cmds.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.load(path.e("a"), |node, _p|{
-            node.insert((Interaction::default(), FocusPolicy::Block, TrackedInteraction::default()));
-            node.on_event::<Pressed>().r(|| { println!("pressed!"); });
+            node.insert((Interaction::default(), TrackedInteraction::default()));
+            node.on_pressed(|| { println!("pressed!"); });
         });
 
         root.load(path.e("b"), |node, _p|{
@@ -193,6 +188,7 @@ fn main()
                 }
             )
         )
+        .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_style_sheet("examples/sample.style.json")
         .insert_resource(bevy::winit::WinitSettings::desktop_app())

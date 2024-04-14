@@ -14,22 +14,22 @@ use bevy_cobweb::prelude::*;
 
 fn handle_camera_update(
     cameras : Query<Entity, Or<(Changed<Camera>, Changed<Transform>)>>,
-    mut rc  : ReactCommands
+    mut c   : Commands
 ){
     for camera_entity in cameras.iter()
     {
-        rc.broadcast(CameraUpdate(camera_entity));
+        c.react().broadcast(CameraUpdate(camera_entity));
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn handle_keyboard_inputs(mut inputs: EventReader<KeyboardInput>, mut rc: ReactCommands)
+fn handle_keyboard_inputs(mut inputs: EventReader<KeyboardInput>, mut c: Commands)
 {
     for input in inputs.read()
     {
-        rc.broadcast(input.clone());
+        c.react().broadcast(input.clone());
     }
 }
 

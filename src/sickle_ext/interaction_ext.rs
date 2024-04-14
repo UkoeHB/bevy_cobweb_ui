@@ -1,6 +1,8 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::EntityCommands, prelude::*};
 use bevy_cobweb::prelude::*;
-use sickle_ui::FluxInteraction;
+use sickle_ui::{ui_builder::UiBuilder, FluxInteraction};
+
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -20,30 +22,135 @@ pub struct Disabled;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts `sickle_ui` flux events to reactive entity events (see [`ReactCommand::entity_event`]).
-pub(crate) fn flux_ui_events(mut rc: ReactCommands, fluxes: Query<(Entity, &FluxInteraction), Changed<FluxInteraction>>)
+pub(crate) fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Changed<FluxInteraction>>)
 {
     for (entity, flux) in fluxes.iter() {
         match *flux {
             FluxInteraction::None => (),
             FluxInteraction::PointerEnter => {
-                rc.entity_event(entity, PointerEnter);
+                c.react().entity_event(entity, PointerEnter);
             }
             FluxInteraction::PointerLeave => {
-                rc.entity_event(entity, PointerLeave);
+                c.react().entity_event(entity, PointerLeave);
             }
             FluxInteraction::Pressed => {
-                rc.entity_event(entity, Pressed);
+                c.react().entity_event(entity, Pressed);
             }
             FluxInteraction::Released => {
-                rc.entity_event(entity, Released);
+                c.react().entity_event(entity, Released);
             }
             FluxInteraction::PressCanceled => {
-                rc.entity_event(entity, PressCanceled);
+                c.react().entity_event(entity, PressCanceled);
             }
             FluxInteraction::Disabled => {
-                rc.entity_event(entity, Disabled);
+                c.react().entity_event(entity, Disabled);
             }
         }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper trait for registering interaction reactors for node entities.
+pub trait UiInteractionExt
+{
+    /// Adds a reactor to a [`PointerEnter`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<PointerEnter>().r(callback)`.
+    fn on_pointer_enter<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+
+    /// Adds a reactor to a [`PointerLeave`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<PointerLeave>().r(callback)`.
+    fn on_pointer_leave<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+
+    /// Adds a reactor to a [`Pressed`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<Pressed>().r(callback)`.
+    fn on_pressed<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+
+    /// Adds a reactor to a [`Released`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<Released>().r(callback)`.
+    fn on_released<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+
+    /// Adds a reactor to a [`PressCanceled`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<PressCanceled>().r(callback)`.
+    fn on_press_canceled<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+
+    /// Adds a reactor to a [`Disabled`] entity event.
+    ///
+    /// Equivalent to `entity_builder.on_event::<Disabled>().r(callback)`.
+    fn on_disabled<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>;
+}
+
+impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
+{
+    fn on_pointer_enter<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<Pressed>().r(callback)
+    }
+
+    fn on_pointer_leave<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<PointerLeave>().r(callback)
+    }
+
+    fn on_pressed<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<Pressed>().r(callback)
+    }
+
+    fn on_released<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<Released>().r(callback)
+    }
+
+    fn on_press_canceled<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<PressCanceled>().r(callback)
+    }
+
+    fn on_disabled<M>(
+        &mut self,
+        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
+    ) -> EntityCommands<'_>
+    {
+        self.on_event::<Disabled>().r(callback)
     }
 }
 

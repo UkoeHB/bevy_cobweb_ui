@@ -1,16 +1,16 @@
 /*
-container.load_child(path.e("button"), |button, path| {
-    let id = button.id();
-    let counter = button.insert_reactive(Counter::default()).id();
-    button.on_event::<Pressed>().r(move |mut cmds: Commands, mut counters: ReactiveMut<Counter>| {
-        counters.get_mut(&mut cmds, counter).map(Counter::increment);
-    });
+container.load(path.e("button"), |button, path| {
+    let button_id = button.id();
+    button.insert_reactive(Counter::default())
+        .on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+            counters.get_mut(&mut c, button_id).map(Counter::increment);
+        });
 
-    button.load_child(path.e("text"), |text, _| {
-        text.update_on(entity_mutation::<Counter>(counter),
-            |id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
-                let Some(counter) = counters.get(counter) else { return };
-                let _ = editor.write(id, |t| write!("Count: {}", *counter));
+    button.load(path.e("text"), |text, _| {
+        text.update_on(entity_mutation::<Counter>(button_id),
+            |text_id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
+                let Some(counter) = counters.get(button_id) else { return };
+                editor.write(text_id, |t| write!(t, "Count: {}", *counter));
             }
         );
     });
@@ -28,31 +28,24 @@ use sickle_ui::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn insert_react_component<T: ReactComponent>(In((entity, component)): In<(Entity, T)>, mut rc: ReactCommands)
-{
-    rc.insert(entity, component);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     In((entity, syscommand, triggers)): In<(Entity, SystemCommand, Triggers)>,
-    mut rc: ReactCommands,
+    mut c: Commands,
     loaded: Query<(), With<LoadedStyles>>
 ){
     // Detect styles loaded if appropriate.
     let revoke_token = if loaded.contains(entity)
     {
         let triggers = (triggers, entity_event::<StylesLoaded>(entity));
-        rc.with(triggers, syscommand, ReactorMode::Revokable).unwrap()
+        c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
     }
     else
     {
-        rc.with(triggers, syscommand, ReactorMode::Revokable).unwrap()
+        c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
     };
 
     //todo: more efficient cleanup mechanism
-    cleanup_reactor_on_despawn(&mut rc, entity, revoke_token);
+    cleanup_reactor_on_despawn(&mut c, entity, revoke_token);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -82,15 +75,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
     {
         let syscommand = self.ec.commands().spawn_system_command(callback);
         let id = self.ec.id();
-        //todo: register this reactor directly
-        self.ec.commands().syscall((id, syscommand),
-                |In((entity, syscommand)): In<(Entity, SystemCommand)>, mut rc: ReactCommands|
-                {
-                    // ReactorMode::Cleanup will clean up the reactor when `entity` is despawned (or if it was already
-                    // despawned).
-                    rc.with(entity_event::<T>(entity), syscommand, ReactorMode::Cleanup);
-                }
-            );
+        self.ec.commands().react().with(entity_event::<T>(id), syscommand, ReactorMode::Cleanup);
 
         self.ec
     }
@@ -130,8 +115,7 @@ impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
         let id = self.id();
-        //todo: do this directly via commands
-        self.commands().syscall((id, component), insert_react_component);
+        self.commands().react().insert(id, component);
         self
     }
 
