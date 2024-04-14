@@ -24,17 +24,17 @@ impl Counter
 
 fn build_ui(mut c: Commands)
 {
-    let file = StyleRef::from_file("examples/sample.style.json");
+    let file = StyleRef::from_file("examples/basic_counter.style.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.load(path.e("button"), |button, path| {
             let button_id = button.id();
-            button.insert_reactive(Counter(0)).on_pressed(
+            button.insert_reactive(Counter(0));
+            button.on_pressed(
                 move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
                     counters.get_mut(&mut c, button_id).map(Counter::increment);
-                },
+                }
             );
-
             button.load(path.e("text"), |text, _path| {
                 text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
                     move |mut editor: TextEditor, counters: Reactive<Counter>| {
@@ -68,8 +68,7 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
-        .add_style_sheet("examples/sample.style.json")
-        .insert_resource(bevy::winit::WinitSettings::desktop_app())
+        .add_style_sheet("examples/basic_counter.style.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();

@@ -7,8 +7,7 @@
     },
 
     "button": {
-        "AbsoluteStyle": {
-            "dims": {"top": "Auto", "left": "Auto"},
+        "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
         "BgColor": [{"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}}],
@@ -16,7 +15,7 @@
 
         "text": {
             "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}}
+                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 12.0}, "right": {"Px": 12.0}}}
             },
             "TextLine": {}
         }
