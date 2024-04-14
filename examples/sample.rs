@@ -2,163 +2,57 @@
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
+use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use sickle_ui::SickleUiPlugin;
 use sickle_ui::TrackedInteraction;
 use sickle_ui::ui_builder::*;
 
-/*
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates the justification of a node based on arrow-key inputs.
-fn handle_keyboard_input_for_node(
-    mut cache : Local<Option<KeyboardInput>>,
-    mut event : SystemEvent<UiEvent<KeyboardInput>>,
-    mut rc    : ReactCommands,
-    mut nodes : Query<&mut React<Position>>
-){
-    let Some(event) = event.take() else { return; };
-    let Ok(mut position) = nodes.get_mut(event.node) else { return; };
+#[derive(ReactComponent, Deref)]
+struct Counter(usize);
 
-    let mut check_cache = |input: KeyboardInput| -> bool
+impl Counter
+{
+    fn increment(&mut self)
     {
-        if cache.is_none()
-        {
-            *cache = Some(input);
-            return true;
-        }
-        let cached = cache.as_ref().unwrap().clone();
-        *cache = Some(input.clone());
-
-        // Return true when a key is just pressed.
-        if input.state == ButtonState::Released { return false; }
-        if input.logical_key != cached.logical_key { return true; }
-        if cached.state == ButtonState::Pressed { return false; }
-        true
-    };
-
-    match event.event.logical_key
-    {
-        Key::ArrowDown =>
-        {
-            if !check_cache(event.event) { return; }
-            match position.y_justify
-            {
-                Justify::Min    => { position.get_mut(&mut rc).y_justify = Justify::Center; }
-                Justify::Center => { position.get_mut(&mut rc).y_justify = Justify::Max; }
-                Justify::Max    => (),
-            }
-        }
-        Key::ArrowUp =>
-        {
-            if !check_cache(event.event) { return; }
-            match position.y_justify
-            {
-                Justify::Min    => (),
-                Justify::Center => { position.get_mut(&mut rc).y_justify = Justify::Min; }
-                Justify::Max    => { position.get_mut(&mut rc).y_justify = Justify::Center; }
-            }
-        }
-        Key::ArrowLeft =>
-        {
-            if !check_cache(event.event) { return; }
-            match position.x_justify
-            {
-                Justify::Min    => (),
-                Justify::Center => { position.get_mut(&mut rc).x_justify = Justify::Min; }
-                Justify::Max    => { position.get_mut(&mut rc).x_justify = Justify::Center; }
-            }
-        }
-        Key::ArrowRight =>
-        {
-            if !check_cache(event.event) { return; }
-            match position.x_justify
-            {
-                Justify::Min    => { position.get_mut(&mut rc).x_justify = Justify::Center; }
-                Justify::Center => { position.get_mut(&mut rc).x_justify = Justify::Max; }
-                Justify::Max    => (),
-            }
-        }
-        _ => (),
+        self.0 += 1;
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_blocks(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
-{
-    // Build a block in the center of its parent.
-    let outer_block = path.extend("outer_block");
-    let outer = ui.build((
-            Block{ color: Color::BLACK },
-            Parent(parent),
-            Justified::load(&outer_block),
-            Dims::load(&outer_block),
-        ))
-        .id();
-
-    // Build a block inside the other block.
-    let inner_block = outer_block.extend("inner_block");
-    let inner = ui.build((
-            Block{ color: Color::DARK_GRAY },
-            Parent(outer),
-            Justified::load(&inner_block),
-            Dims::load(&inner_block),
-            On::<KeyboardInput>::new(handle_keyboard_input_for_node),  //todo: OnBroadcast
-        ))
-        .id();
-
-    // Build another block inside the previous.
-    let final_block = inner_block.extend("final_block");
-    ui.build((
-            Block::load(&final_block),
-            Parent(inner),
-            Justified::load(&final_block),
-            Dims::load(&final_block),
-            On::<KeyboardInput>::new(handle_keyboard_input_for_node),
-        ));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-fn add_images(ui: &mut UiCommands, path: &StyleRef, parent: Entity)
-{
-    // Top left image
-    ui.build((
-            BasicImage::new("examples/green_rectangle.png"),
-            Parent(parent),
-            Position::topleft(),
-            Dims::Percent(Vec2{ x: 20.0, y: 20.0 }),
-        ));
-
-    // Top right image
-    let upper_right_img = path.extend("upper_right_img");
-    ui.build((
-            BasicImage::load(&upper_right_img),
-            Parent(parent),
-            Justified::load(&upper_right_img),
-            Dims::load(&upper_right_img),
-        ));
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
-
-fn build_ui(mut cmds: Commands)
+fn build_ui(mut c: Commands)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
 
-    cmds.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load(path.e("a"), |node, _p|{
-            node.insert((Interaction::default(), TrackedInteraction::default()));
-            node.on_pressed(|| { println!("pressed!"); });
-        });
+    c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
+        root.load(path.e("button"), |button, path| {
+            let button_id = button.id();
+            button.insert((Interaction::default(), TrackedInteraction::default()));
+            button.insert_reactive(Counter(0))
+                .on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+                    counters.get_mut(&mut c, button_id).map(Counter::increment);
+                });
 
-        root.load(path.e("b"), |node, _p|{
-            node.update_on((), |id| move || { println!("todo... {:?}", id); });
+            button.load_with(
+                path.e("text"),
+                TextBundle{
+                    text: Text::from_section("", TextStyle{ font_size: 25., ..default() }).with_no_wrap(),
+                    ..default()
+                },
+                |text, _path| {
+                    text.update_on(entity_mutation::<Counter>(button_id),
+                        |text_id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
+                            let Some(counter) = counters.get(button_id) else { return };
+                            editor.write(text_id, |t| write!(t, "Count: {}", **counter));
+                        }
+                    );
+                }
+            );
         });
     });
 }

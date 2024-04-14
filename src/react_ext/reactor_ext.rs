@@ -1,23 +1,3 @@
-/*
-container.load(path.e("button"), |button, path| {
-    let button_id = button.id();
-    button.insert_reactive(Counter::default())
-        .on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-            counters.get_mut(&mut c, button_id).map(Counter::increment);
-        });
-
-    button.load(path.e("text"), |text, _| {
-        text.update_on(entity_mutation::<Counter>(button_id),
-            |text_id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
-                let Some(counter) = counters.get(button_id) else { return };
-                editor.write(text_id, |t| write!(t, "Count: {}", *counter));
-            }
-        );
-    });
-});
-
-*/
-
 use crate::*;
 
 use std::marker::PhantomData;

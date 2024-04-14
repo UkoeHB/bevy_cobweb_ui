@@ -3,20 +3,21 @@
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
-        "content": {"justify_main": "FlexStart", "justify_cross": "FlexStart"}
+        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     },
 
-    "a": {
-        "FlexStyle": {
-            "dims": {"width": {"Percent": 30.0}, "height": {"Percent": 10.0}},
-            "flex": {"justify_self_cross": "FlexStart"}
+    "button": {
+        "AbsoluteStyle": {
+            "dims": {"top": "Auto", "left": "Auto"},
+            "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
-        "BgColor": [{"Hsla": {"hue": 55.0, "saturation": 0.4, "lightness": 0.8, "alpha": 0.8}}]
-    },
+        "BgColor": [{"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}}],
 
-    "b": {
-        "FlexStyle": {"dims": {"width": {"Percent": 20.0}, "height": {"Percent": 20.0}}},
-        "BgColor": [{"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}}]
+        "text": {
+            "FlexStyle": {
+                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}}
+            }
+        }
     }
 }
 
