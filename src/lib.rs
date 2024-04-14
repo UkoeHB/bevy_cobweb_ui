@@ -8,15 +8,17 @@ mod loading;
 mod plugin;
 mod primitives;
 mod react_ext;
+mod sickle_ext;
 mod style_ext;
 
-pub use crate::app_events::*;
-//pub use crate::callbacks::*;
-pub use crate::loading::*;
-pub use crate::plugin::*;
-//pub use crate::primitives::*;
-pub use crate::react_ext::*;
-pub use crate::style_ext::*;
+pub use app_events::*;
+//pub use callbacks::*;
+pub use loading::*;
+pub use plugin::*;
+//pub use primitives::*;
+pub use react_ext::*;
+pub use sickle_ext::*;
+pub use style_ext::*;
 
 //pub use bevy_cobweb_ui_derive::*;
 

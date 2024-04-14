@@ -1,12 +1,13 @@
 //! Demonstrates library primitives and features.
 
+use bevy::ui::FocusPolicy;
 //local shortcuts
-use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
+use sickle_ui::TrackedInteraction;
 use sickle_ui::ui_builder::*;
 
 //standard shortcuts
@@ -156,10 +157,14 @@ fn build_ui(mut cmds: Commands)
     let file = StyleRef::from_file("examples/sample.style.json");
 
     cmds.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load(path.e("a"), |_n, _p|{})
-            .load(path.e("b"), |_n, _p|{})
-            .on_event::<u32>().r(||{})
-            .update_on(despawn(Entity::PLACEHOLDER), |id| move || { println!("success {:?}", id); });
+        root.load(path.e("a"), |node, _p|{
+            node.insert((Interaction::default(), FocusPolicy::Block, TrackedInteraction::default()));
+            node.on_event::<Pressed>().r(|| { println!("pressed!"); });
+        });
+
+        root.load(path.e("b"), |node, _p|{
+            node.update_on((), |id| move || { println!("todo... {:?}", id); });
+        });
     });
 }
 

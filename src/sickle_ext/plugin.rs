@@ -1,20 +1,17 @@
 use crate::*;
 
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
+use sickle_ui::FluxInteractionUpdate;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub struct CobwebUiPlugin;
+pub(crate) struct SickleExtPlugin;
 
-impl Plugin for CobwebUiPlugin
+impl Plugin for SickleExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(ReactPlugin)
-            .add_plugins(LoadingPlugin)
-            .add_plugins(StyleExtPlugin)
-            .add_plugins(SickleExtPlugin);
+        app.add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }
 
