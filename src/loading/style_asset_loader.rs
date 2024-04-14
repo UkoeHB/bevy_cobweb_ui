@@ -1,14 +1,13 @@
-use crate::*;
+use std::collections::HashMap;
 
-use bevy::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
+use bevy::prelude::*;
 use serde_json::from_slice;
 use thiserror::Error;
 
-use std::collections::HashMap;
+use crate::*;
 
-//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 struct StyleSheetAssetLoader;
@@ -21,21 +20,21 @@ impl AssetLoader for StyleSheetAssetLoader
 
     fn load<'a>(
         &'a self,
-        reader       : &'a mut Reader,
-        _settings    : &'a (),
-        load_context : &'a mut LoadContext,
+        reader: &'a mut Reader,
+        _settings: &'a (),
+        load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>>
     {
-        Box::pin(
-            async move
-            {
-                let mut bytes = Vec::new();
-                reader.read_to_end(&mut bytes).await?;
-                //todo: replace this with custom parsing that only allocates where absolutely necessary
-                let data: serde_json::Value = from_slice(&bytes)?;
-                Ok(StyleSheetAsset{ file: StyleFile::new(&load_context.asset_path().path().to_string_lossy()), data })
-            }
-        )
+        Box::pin(async move {
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            //todo: replace this with custom parsing that only allocates where absolutely necessary
+            let data: serde_json::Value = from_slice(&bytes)?;
+            Ok(StyleSheetAsset {
+                file: StyleFile::new(&load_context.asset_path().path().to_string_lossy()),
+                data,
+            })
+        })
     }
 
     fn extensions(&self) -> &[&str]
@@ -45,15 +44,13 @@ impl AssetLoader for StyleSheetAssetLoader
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 /// Instructs the asset server to load all stylesheet files.
 fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetServer>)
 {
     let mut handles = HashMap::default();
 
-    for sheet in sheets.iter_files()
-    {
+    for sheet in sheets.iter_files() {
         let handle = asset_server.load(sheet.clone());
         handles.insert(handle.id(), handle);
     }
@@ -61,7 +58,6 @@ fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetS
     sheets.set_handles(handles);
 }
 
-//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Possible errors that can be produced by the internal `StyleSheetAssetLoader`.
@@ -126,7 +122,7 @@ impl Default for StyleSheetList
 {
     fn default() -> Self
     {
-        Self{ files: Vec::default(), handles: HashMap::default() }
+        Self { files: Vec::default(), handles: HashMap::default() }
     }
 }
 
@@ -143,8 +139,7 @@ impl StyleSheetListAppExt for App
 {
     fn add_style_sheet(&mut self, file: impl Into<String>) -> &mut Self
     {
-        if !self.world.contains_resource::<StyleSheetList>()
-        {
+        if !self.world.contains_resource::<StyleSheetList>() {
             self.init_resource::<StyleSheetList>();
         }
 
@@ -162,8 +157,7 @@ impl Plugin for StyleSheetAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        if !app.world.contains_resource::<StyleSheetList>()
-        {
+        if !app.world.contains_resource::<StyleSheetList>() {
             app.init_resource::<StyleSheetList>();
         }
 

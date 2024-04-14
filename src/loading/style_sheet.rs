@@ -1,86 +1,82 @@
-use crate::*;
+use std::any::{type_name, TypeId};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy::utils::warn_once;
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 
-use std::any::{type_name, TypeId};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use crate::*;
 
-//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 fn setup_stylesheet(sheet_list: Res<StyleSheetList>, mut stylesheet: ReactResMut<StyleSheet>)
 {
     // begin tracking expected stylesheet files
-    for file in sheet_list.iter_files()
-    {
+    for file in sheet_list.iter_files() {
         stylesheet.get_noreact().prepare_file(StyleFile::new(file.as_str()));
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 fn load_style_changes(
-    mut c          : Commands,
-    mut events     : EventReader<AssetEvent<StyleSheetAsset>>,
-    sheet_list     : Res<StyleSheetList>,
-    mut assets     : ResMut<Assets<StyleSheetAsset>>,
-    mut stylesheet : ReactResMut<StyleSheet>,
-    types          : Res<AppTypeRegistry>,
-){
-    if events.is_empty() { return; }
+    mut c: Commands,
+    mut events: EventReader<AssetEvent<StyleSheetAsset>>,
+    sheet_list: Res<StyleSheetList>,
+    mut assets: ResMut<Assets<StyleSheetAsset>>,
+    mut stylesheet: ReactResMut<StyleSheet>,
+    types: Res<AppTypeRegistry>,
+)
+{
+    if events.is_empty() {
+        return;
+    }
 
     let type_registry = types.read();
     let mut need_reactions = false;
 
-    for event in events.read()
-    {
-        let id = match event
-        {
-            AssetEvent::Added{ id } |
-            AssetEvent::Modified{ id } => id,
-            _ =>
-            {
+    for event in events.read() {
+        let id = match event {
+            AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
+            _ => {
                 tracing::debug!("ignoring stylesheet asset event {:?}", event);
                 continue;
-            },
+            }
         };
 
-        let Some(handle) = sheet_list.get_handle(*id)
-        else { tracing::warn!("encountered stylesheet asset event {:?} for an untracked asset", id); continue; };
+        let Some(handle) = sheet_list.get_handle(*id) else {
+            tracing::warn!("encountered stylesheet asset event {:?} for an untracked asset", id);
+            continue;
+        };
 
-        let Some(asset) = assets.remove(handle)
-        else { tracing::error!("failed to remove stylesheet asset {:?}", handle); continue; };
+        let Some(asset) = assets.remove(handle) else {
+            tracing::error!("failed to remove stylesheet asset {:?}", handle);
+            continue;
+        };
 
         let stylesheet = stylesheet.get_noreact();
         parse_stylesheet_file(&type_registry, stylesheet, asset.file, asset.data);
         need_reactions = true;
     }
 
-    if need_reactions
-    {
+    if need_reactions {
         stylesheet.get_mut(&mut c);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------------------------------------
 
 fn cleanup_stylesheet(mut stylesheet: ReactResMut<StyleSheet>, mut removed: RemovedComponents<LoadedStyles>)
 {
-    for removed in removed.read()
-    {
+    for removed in removed.read() {
         stylesheet.get_noreact().remove_entity(removed);
     }
 
     stylesheet.get_noreact().cleanup_pending();
 }
 
-//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 struct ErasedStyle
@@ -89,7 +85,6 @@ struct ErasedStyle
     style: ReflectedStyle,
 }
 
-//-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Clone)]
@@ -103,19 +98,17 @@ impl ReflectedStyle
 {
     pub(crate) fn equals(&self, other: &ReflectedStyle) -> Option<bool>
     {
-        let (Self::Value(this), Self::Value(other)) = (self, other) else { return Some(false); };
+        let (Self::Value(this), Self::Value(other)) = (self, other) else {
+            return Some(false);
+        };
         this.reflect_partial_eq(other.as_reflect())
     }
 
     pub(crate) fn get_value<T: ReflectableStyle>(&self, style_ref: &StyleRef) -> Option<T>
     {
-        match self
-        {
-            ReflectedStyle::Value(style) =>
-            {
-                let Some(new_value) = T::from_reflect(style.as_reflect())
-                else
-                {
+        match self {
+            ReflectedStyle::Value(style) => {
+                let Some(new_value) = T::from_reflect(style.as_reflect()) else {
                     let temp = T::default();
                     let hint = serde_json::to_string(&temp).unwrap();
                     tracing::error!("failed reflecting style {:?} at path {:?} in file {:?}\n\
@@ -125,8 +118,7 @@ impl ReflectedStyle
                 };
                 Some(new_value)
             }
-            ReflectedStyle::DeserializationFailed(err) =>
-            {
+            ReflectedStyle::DeserializationFailed(err) => {
                 let temp = T::default();
                 let hint = serde_json::to_string(&temp).unwrap();
                 tracing::error!("failed deserializing style {:?} at path {:?} in file {:?}, {:?}\n\
@@ -153,7 +145,7 @@ The stylesheet format has a short list of rules.
 - Each file must have one map at the base layer.
 ```json
 {
-    
+
 }
 ```
 - If the first map entry's key is `"using"`, then the value should be an array of full type names. This array
@@ -221,7 +213,8 @@ The stylesheet format has a short list of rules.
 ```
 */
 //TODO: add "MY_CONSTANT_X" references with "constants" section
-//TODO: add "imports" section that brings "using" and "constants" sections from other files (track dependencies in StyleSheet)
+//TODO: add "imports" section that brings "using" and "constants" sections from other files (track dependencies in
+// StyleSheet)
 // - warn if there are unresolved dependencies after all initial files have been loaded and handled
 #[derive(ReactResource)]
 pub struct StyleSheet
@@ -276,33 +269,29 @@ impl StyleSheet
         style_ref: &StyleRef,
         style: ReflectedStyle,
         type_id: TypeId,
-        full_type_name: &str
+        full_type_name: &str,
     ) -> bool
     {
-        match self.styles.entry(style_ref.clone())
-        {
-            std::collections::hash_map::Entry::Vacant(entry) =>
-            {
+        match self.styles.entry(style_ref.clone()) {
+            std::collections::hash_map::Entry::Vacant(entry) => {
                 let mut vec = SmallVec::default();
-                vec.push(ErasedStyle{ type_id, style: style.clone() });
+                vec.push(ErasedStyle { type_id, style: style.clone() });
                 entry.insert(vec);
             }
-            std::collections::hash_map::Entry::Occupied(mut entry) =>
-            {
+            std::collections::hash_map::Entry::Occupied(mut entry) => {
                 // Insert if the style value changed.
-                match entry.get()
+                match entry
+                    .get()
                     .iter()
                     .find(|e| e.type_id == type_id)
                     .map(|e| e.style.equals(&style))
                     .unwrap_or(Some(false))
                 {
-                    Some(true) => { return false },
-                    Some(false) =>
-                    {
-                        entry.get_mut().push(ErasedStyle{ type_id, style: style.clone() });
+                    Some(true) => return false,
+                    Some(false) => {
+                        entry.get_mut().push(ErasedStyle { type_id, style: style.clone() });
                     }
-                    None =>
-                    {
+                    None => {
                         tracing::error!("failed updating style {:?} at {:?}, its reflected value doesn't implement \
                             PartialEq", full_type_name, style_ref);
                         return false;
@@ -313,7 +302,9 @@ impl StyleSheet
 
         // Identify entites that should update.
         let Some(subscriptions) = self.subscriptions.get(&style_ref) else { return false };
-        if subscriptions.len() == 0 { return false }
+        if subscriptions.len() == 0 {
+            return false;
+        }
         let entry = self.needs_updates.entry(type_id).or_default();
         entry.push((style, style_ref.clone(), subscriptions.clone()));
 
@@ -328,8 +319,9 @@ impl StyleSheet
         entity: Entity,
         style_ref: StyleRef,
         c: &mut Commands,
-        callbacks: &StyleLoaderCallbacks
-    ){
+        callbacks: &StyleLoaderCallbacks,
+    )
+    {
         // Add to subscriptions.
         // - Note: don't check for duplicates for max efficiency.
         self.subscriptions.entry(style_ref.clone()).or_default().push(entity);
@@ -339,17 +331,15 @@ impl StyleSheet
         let Some(styles) = self.styles.get(&style_ref) else { return };
 
         // Schedule updates for each style.
-        for style in styles.iter()
-        {
+        for style in styles.iter() {
             let type_id = style.type_id;
-            self.needs_updates
-                .entry(type_id)
-                .or_default()
-                .push((style.style.clone(), style_ref.clone(), SmallVec::from_elem(entity, 1)));
+            self.needs_updates.entry(type_id).or_default().push((
+                style.style.clone(),
+                style_ref.clone(),
+                SmallVec::from_elem(entity, 1),
+            ));
 
-            let Some(syscommand) = callbacks.get(type_id)
-            else
-            {
+            let Some(syscommand) = callbacks.get(type_id) else {
                 tracing::warn!("found style at {:?} that wasn't registered as a loadable style", style_ref);
                 continue;
             };
@@ -358,8 +348,7 @@ impl StyleSheet
         }
 
         // Notify the entity that some of its styles have loaded.
-        if styles.len() > 0
-        {
+        if styles.len() > 0 {
             c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
         }
     }
@@ -376,8 +365,7 @@ impl StyleSheet
     /// Cleans up pending updates that failed to be processed.
     fn cleanup_pending(&mut self)
     {
-        if self.needs_updates.len() > 0
-        {
+        if self.needs_updates.len() > 0 {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
             // call `apply_deferred` before the cleanup system runs.
             warn_once!("The style sheet contains pending updates for types that weren't registered. This warning only \
@@ -390,13 +378,12 @@ impl StyleSheet
     pub(crate) fn update_styles<T: ReflectableStyle>(
         &mut self,
         mut callback: impl FnMut(Entity, &StyleRef, &ReflectedStyle),
-    ){
+    )
+    {
         let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
 
-        for (style, styleref, mut entities) in needs_updates.drain(..)
-        {
-            for entity in entities.drain(..)
-            {
+        for (style, styleref, mut entities) in needs_updates.drain(..) {
+            for entity in entities.drain(..) {
                 (callback)(entity, &styleref, &style);
             }
         }
@@ -407,7 +394,7 @@ impl Default for StyleSheet
 {
     fn default() -> Self
     {
-        Self{
+        Self {
             styles: HashMap::default(),
             pending: HashSet::default(),
             total_expected_sheets: 0,

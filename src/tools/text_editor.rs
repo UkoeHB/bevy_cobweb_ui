@@ -1,7 +1,8 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
-
 // Re-export this for `TextEditor::write`.
 pub use std::fmt::Write;
+
+use bevy::ecs::system::SystemParam;
+use bevy::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -26,11 +27,7 @@ impl<'w, 's> TextEditor<'w, 's>
     /// Overwrites the text on the first text section on an entity.
     ///
     /// Returns `false` if the text section could not be accessed or if the writer fails.
-    pub fn write<E>(
-        &mut self,
-        text_entity: Entity,
-        writer: impl FnOnce(&mut String) -> Result<(), E>
-    ) -> bool
+    pub fn write<E>(&mut self, text_entity: Entity, writer: impl FnOnce(&mut String) -> Result<(), E>) -> bool
     {
         self.write_section(text_entity, 0, writer)
     }
@@ -50,7 +47,7 @@ impl<'w, 's> TextEditor<'w, 's>
         &mut self,
         text_entity: Entity,
         section: usize,
-        writer: impl FnOnce(&mut String) -> Result<(), E>
+        writer: impl FnOnce(&mut String) -> Result<(), E>,
     ) -> bool
     {
         let Some(text) = self.section(text_entity, section) else { return false };

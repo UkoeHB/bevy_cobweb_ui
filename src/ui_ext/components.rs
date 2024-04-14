@@ -1,7 +1,8 @@
-use crate::*;
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use bevy::{ecs::system::EntityCommands, prelude::*};
-use serde::{Serialize, Deserialize};
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -44,12 +45,10 @@ impl Plugin for UiComponentsExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app
-            .register_type::<BgColor>()
+        app.register_type::<BgColor>()
             .register_type::<BrColor>()
             .register_derived_style::<BgColor>()
-            .register_derived_style::<BrColor>()
-            ;
+            .register_derived_style::<BrColor>();
     }
 }
 

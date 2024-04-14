@@ -2,7 +2,7 @@
 
 ## WIP
 
-- Major rework focused on adding ergonomics to `bevy_ui`.
+- Major rework focused on adding ergonomics to `bevy_ui` with `sickle_ui` integration.
 
 
 ## 0.0.3

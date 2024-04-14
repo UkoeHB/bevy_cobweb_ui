@@ -1,7 +1,9 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::{ui_builder::UiBuilder, FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
+use sickle_ui::ui_builder::UiBuilder;
+use sickle_ui::{FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
 use crate::*;
 
@@ -122,10 +124,8 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
         self.on_event::<PointerLeave>().r(callback)
     }
 
-    fn on_pressed<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
+        -> EntityCommands<'_>
     {
         self.on_event::<Pressed>().r(callback)
     }
@@ -179,11 +179,9 @@ impl Plugin for UiInteractionExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app
-            .register_type::<Interactive>()
+        app.register_type::<Interactive>()
             .register_derived_style::<Interactive>()
-            .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate))
-            ;
+            .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }
 

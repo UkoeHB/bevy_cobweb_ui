@@ -1,6 +1,6 @@
-use smol_str::SmolStr;
-
 use std::sync::Arc;
+
+use smol_str::SmolStr;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -29,14 +29,14 @@ impl StyleFile
     /// The file name should include the file extension (i.e. `.style.json`).
     pub fn new(file: &str) -> Self
     {
-        Self{ file: Arc::from(file) }
+        Self { file: Arc::from(file) }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the path to a specific style in a stylesheet file.
-/// 
+///
 /// Path extensions are stored as [`SmolStr`], so it is recommended for extensions to be <= 25 characters long.
 ///
 /// Example: `menu::header::title` for accessing the `title` style path in a stylesheet.
@@ -54,7 +54,7 @@ impl StylePath
         let mut path = Vec::default();
         Self::extend_inner(new_path, &mut path);
 
-        Self{ path: Arc::from(path) }
+        Self { path: Arc::from(path) }
     }
 
     /// Extends an existing style path with a path extension.
@@ -63,14 +63,15 @@ impl StylePath
         let mut path = Vec::from(&*self.path);
         Self::extend_inner(extension, &mut path);
 
-        Self{ path: Arc::from(path) }
+        Self { path: Arc::from(path) }
     }
 
     fn extend_inner(extension: &str, path: &mut Vec<SmolStr>)
     {
-        for path_element in extension.split(STYLE_PATH_SEPARATOR)
-        {
-            if path_element.is_empty() { continue; }
+        for path_element in extension.split(STYLE_PATH_SEPARATOR) {
+            if path_element.is_empty() {
+                continue;
+            }
             path.push(SmolStr::from(path_element));
         }
     }
@@ -103,16 +104,13 @@ impl StyleRef
     /// Creates a new style reference from a file name and path.
     pub fn new(file: &str, path: &str) -> Self
     {
-        Self{ file: StyleFile::new(file), path: StylePath::new(path) }
+        Self { file: StyleFile::new(file), path: StylePath::new(path) }
     }
 
     /// Extends an existing style reference with a path extension.
     pub fn extend(&self, extension: &str) -> Self
     {
-        Self{
-            file: self.file.clone(),
-            path: self.path.extend(extension)
-        }
+        Self { file: self.file.clone(), path: self.path.extend(extension) }
     }
 
     /// Shorthand method for [`Self::extend`].
@@ -140,7 +138,7 @@ impl FullStylePath
     /// which is used to identify the style in stylesheet files.
     pub fn new(path: StylePath, full_type_name: &'static str) -> Self
     {
-        Self{ path, full_type_name }
+        Self { path, full_type_name }
     }
 }
 
@@ -161,7 +159,7 @@ impl FullStyleRef
     /// Creates a full style reference.
     pub fn new(file: StyleFile, path: FullStylePath) -> Self
     {
-        Self{ file, path }
+        Self { file, path }
     }
 }
 

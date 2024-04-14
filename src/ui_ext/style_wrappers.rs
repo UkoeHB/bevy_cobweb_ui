@@ -1,10 +1,8 @@
-use crate::*;
-
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use serde::{Serialize, Deserialize};
-
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -36,7 +34,12 @@ impl Into<UiRect> for StyleRect
 {
     fn into(self) -> UiRect
     {
-        UiRect{ left: self.left, right: self.right, top: self.top, bottom: self.bottom }
+        UiRect {
+            left: self.left,
+            right: self.right,
+            top: self.top,
+            bottom: self.bottom,
+        }
     }
 }
 
@@ -44,7 +47,7 @@ impl Default for StyleRect
 {
     fn default() -> Self
     {
-        Self{
+        Self {
             top: Self::default_field(),
             bottom: Self::default_field(),
             left: Self::default_field(),
@@ -55,13 +58,14 @@ impl Default for StyleRect
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Controls cross-axis alignment of the parallel rectangular sections where lines of children are arranged after wrapping.
+/// Controls cross-axis alignment of the parallel rectangular sections where lines of children are arranged after
+/// wrapping.
 ///
 /// Does nothing if there are no wrapped lines.
 ///
 /// Mirrors [`AlignContent`].
-/// Excludes [`AlignContent::Start`] and [`AlignContent::End`] which are equivalent to the `FlexStart`/`FlexEnd` variants
-/// (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
+/// Excludes [`AlignContent::Start`] and [`AlignContent::End`] which are equivalent to the `FlexStart`/`FlexEnd`
+/// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -78,10 +82,11 @@ pub enum JustifyLines
     FlexEnd,
     /// Pack lines toward the center of the cross axis.
     Center,
-    /// Stretches the cross-axis lengths of lines of children. Lines are stretched to be equal in size if possible.
+    /// Stretches the cross-axis lengths of lines of children. Lines are stretched to be equal in size if
+    /// possible.
     ///
-    /// The 'pre-stretch' size of a section is equal in main-length to the parent, and equal in cross-length to its
-    /// largest pre-stretch child.
+    /// The 'pre-stretch' size of a section is equal in main-length to the parent, and equal in cross-length to
+    /// its largest pre-stretch child.
     Stretch,
     /// Even gaps between each line. No gap at the ends.
     SpaceBetween,
@@ -99,8 +104,7 @@ impl Into<AlignContent> for JustifyLines
 {
     fn into(self) -> AlignContent
     {
-        match self
-        {
+        match self {
             Self::FlexStart => AlignContent::FlexStart,
             Self::FlexEnd => AlignContent::FlexEnd,
             Self::Center => AlignContent::Center,
@@ -116,17 +120,17 @@ impl Into<AlignContent> for JustifyLines
 
 /// Controls alignment of children on the main axis within each wrapping line.
 ///
-/// Has no effect in a line if at least one child in the line has `SelfFlex::flex_grow > 0`, since all space will be
-/// taken up by flexing children.
+/// Has no effect in a line if at least one child in the line has `SelfFlex::flex_grow > 0`, since all space will
+/// be taken up by flexing children.
 ///
 /// Mirrors [`JustifyContent`].
 /// Excludes [`JustifyContent::Default`] which is equivalent to `FlexStart`.
 /// Excludes [`JustifyContent::Stretch`] which is only used for CSS Grid layouts (use [`SelfFlex::flex_grow`]/
 /// [`SelfFlex::flex_shrink`] instead).
-/// Excludes [`JustifyContent::Start`] and [`JustifyContent::End`], which are equivalent to the `FlexStart`/`FlexEnd`
-/// variants for everything except [`FlexDirection::RowReverse`], where the `Start`/`End` variants have the same behavior
-/// as for [`FlexDirection::Row`]. (There is additional complexity when [`FlexWrap::WrapReverse`] is used, but don't use
-/// that.)
+/// Excludes [`JustifyContent::Start`] and [`JustifyContent::End`], which are equivalent to the
+/// `FlexStart`/`FlexEnd` variants for everything except [`FlexDirection::RowReverse`], where the `Start`/`End`
+/// variants have the same behavior as for [`FlexDirection::Row`]. (There is additional complexity when
+/// [`FlexWrap::WrapReverse`] is used, but don't use that.)
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -177,8 +181,7 @@ impl Into<JustifyContent> for JustifyMain
 {
     fn into(self) -> JustifyContent
     {
-        match self
-        {
+        match self {
             Self::FlexStart => JustifyContent::FlexStart,
             Self::FlexEnd => JustifyContent::FlexEnd,
             Self::Center => JustifyContent::Center,
@@ -196,8 +199,8 @@ impl Into<JustifyContent> for JustifyMain
 /// Mirrors [`AlignItems`].
 /// Excludes [`AlignItems::Baseline`] which is too confusing to use easily.
 /// Excludes [`AlignItems::Auto`] which is usually [`Self::Stretch`] but sometimes [`Self::FlexStart`].
-/// Excludes [`AlignItems::Start`] and [`AlignItems::End`] which are equivalent to the `FlexStart`/`FlexEnd` variants
-/// (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
+/// Excludes [`AlignItems::Start`] and [`AlignItems::End`] which are equivalent to the `FlexStart`/`FlexEnd`
+/// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
@@ -210,14 +213,16 @@ pub enum JustifyCross
     FlexEnd,
     /// Align children to the center of the cross axis in each line.
     Center,
-    /// Children along the cross-axis are stretched to fill the available space on that axis (respecting min/max limits).
+    /// Children along the cross-axis are stretched to fill the available space on that axis (respecting min/max
+    /// limits).
     ///
-    /// If a cross-axis has multiple lines due to [`ContentFlex::flex_wrap`], stretching will only fill a given line
-    /// without overflow.
+    /// If a cross-axis has multiple lines due to [`ContentFlex::flex_wrap`], stretching will only fill a given
+    /// line without overflow.
     ///
     /// Stretch is applied after other sizing and positioning is calculated. It's a kind of 'bonus sizing'.
     ///
-    /// If using [`AbsoluteStyle`] and [`Dims::offset`] is set to all auto, then this falls back to [`Self::FlexStart`].
+    /// If using [`AbsoluteStyle`] and [`Dims::offset`] is set to all auto, then this falls back to
+    /// [`Self::FlexStart`].
     Stretch,
 }
 
@@ -225,8 +230,7 @@ impl Into<AlignItems> for JustifyCross
 {
     fn into(self) -> AlignItems
     {
-        match self
-        {
+        match self {
             Self::FlexStart => AlignItems::FlexStart,
             Self::FlexEnd => AlignItems::FlexEnd,
             Self::Center => AlignItems::Center,
@@ -265,8 +269,7 @@ impl Into<AlignSelf> for JustifySelfCross
 {
     fn into(self) -> AlignSelf
     {
-        match self
-        {
+        match self {
             Self::Auto => AlignSelf::Auto,
             Self::FlexStart => AlignSelf::FlexStart,
             Self::FlexEnd => AlignSelf::FlexEnd,
@@ -289,14 +292,14 @@ pub struct Dims
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
     ///
     /// If set to non-[`Val::Auto`], then the desired width will be overriden if:
-    /// - [`FlexStyle`]: If [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] is set and [`SelfFlex::flex_basis`]
-    ///   is set to non-auto.
+    /// - [`FlexStyle`]: If [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] is set and
+    ///   [`SelfFlex::flex_basis`] is set to non-auto.
     ///
     /// If set to [`Val::Auto`], then the desired width will be overriden if:
     /// - [`AbsoluteStyle`]: [`Dims::left`] and [`Dims::right`] are set.
     /// - [`FlexStyle`]: Parent is using [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and
-    ///   [`JustifyCross::Stretch`]. Or, if parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] and self
-    ///   is using [`SelfFlex::flex_grow`]/[`SelfFlex::flex_shrink`].
+    ///   [`JustifyCross::Stretch`]. Or, if parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`]
+    ///   and self is using [`SelfFlex::flex_grow`]/[`SelfFlex::flex_shrink`].
     #[reflect(default)]
     pub width: Val,
     /// Indicates the `desired` height of the node.
@@ -304,13 +307,14 @@ pub struct Dims
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
     ///
     /// If set to non-[`Val::Auto`], then the desired height will be overriden if:
-    /// - [`FlexStyle`]: If [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] is set and [`SelfFlex::flex_basis`]
-    ///   is set to non-auto.
+    /// - [`FlexStyle`]: If [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] is set and
+    ///   [`SelfFlex::flex_basis`] is set to non-auto.
     ///
     /// If set to [`Val::Auto`], then the desired height will be overriden if:
     /// - [`AbsoluteStyle`]: [`Dims::top`] and [`Dims::bottom`] are set.
-    /// - [`FlexStyle`]: Parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] and [`JustifyCross::Stretch`].
-    ///   Or, if the parent is using [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and self is using
+    /// - [`FlexStyle`]: Parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] and
+    ///   [`JustifyCross::Stretch`]. Or, if the parent is using
+    ///   [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and self is using
     ///   [`SelfFlex::flex_grow`]/[`SelfFlex::flex_shrink`].
     #[reflect(default)]
     pub height: Val,
@@ -338,10 +342,10 @@ pub struct Dims
     ///
     /// Only takes effect if at least one of [`Self::width`] or [`Self::height`] are set to [`Val::Auto`].
     ///
-    /// - [`AbsoluteStyle`]: If `width`/`height` are set to auto and all offset fields are set, then the
-    ///   offset's `bottom` parameter will be ignored and the aspect ratio will use the `left`/`right` controlled width.
-    /// - [`FlexStyle`]: [`SelfFlex::flex_basis`] can override the width/height, which affects whether they
-    ///   are considered 'auto'.
+    /// - [`AbsoluteStyle`]: If `width`/`height` are set to auto and all offset fields are set, then the offset's
+    ///   `bottom` parameter will be ignored and the aspect ratio will use the `left`/`right` controlled width.
+    /// - [`FlexStyle`]: [`SelfFlex::flex_basis`] can override the width/height, which affects whether they are
+    ///   considered 'auto'.
     #[reflect(default)]
     pub aspect_ratio: Option<f32>,
     /// Region between a node's boundary and its padding.
@@ -352,19 +356,22 @@ pub struct Dims
     #[reflect(default)]
     pub border: StyleRect,
     /// Position offsets applied to the edges of a node's margin.
-    /// - [`AbsoluteStyle`] (absolute): Relative to its parent's boundary (ignoring padding). Can be used to resize the node
-    ///   if `width`/`height` is set to auto and both `left`/`right` or `top`/`bottom` are set.
-    /// - [`FlexStyle`] (relative): Relative to the final position of the edges of its margin after layout is calculated.
-    ///   Does not affect the layout of other nodes. Cannot be used to resize the node (see note following).
+    /// - [`AbsoluteStyle`] (absolute): Relative to its parent's boundary (ignoring padding). Can be used to
+    ///   resize the node if `width`/`height` is set to auto and both `left`/`right` or `top`/`bottom` are set.
+    /// - [`FlexStyle`] (relative): Relative to the final position of the edges of its margin after layout is
+    ///   calculated. Does not affect the layout of other nodes. Cannot be used to resize the node (see note
+    ///   following).
     ///
-    /// If both `left` and `right` are set, then `right` will be overridden by the `width` field unless it is [`Val::Auto`].
-    /// The same goes for `top`/`bottom`/`height`. In practice this means [`FlexStyle`] cannot use both `left`/`right` or
-    /// `top`/`bottom` parameters since if `width`/`height` are auto then the layout algorithm will control the node size.
+    /// If both `left` and `right` are set, then `right` will be overridden by the `width` field unless it is
+    /// [`Val::Auto`]. The same goes for `top`/`bottom`/`height`. In practice this means [`FlexStyle`] cannot
+    /// use both `left`/`right` or `top`/`bottom` parameters since if `width`/`height` are auto then the
+    /// layout algorithm will control the node size.
     ///
-    /// Defaults to `StyleRect{ left: Val::Pixels(0.), top: Val::Pixels(0.), right: Val::Auto, left: Val::Auto }`. This
-    /// ensures [`AbsoluteStyle`] nodes will start in the upper left corner of their parents. If the offset is set to all
-    /// [`Val::Auto`] then the node's position will be controlled by its parent's [`ContentFlex`] parameters. You must set
-    /// the `left`/`top` fields to auto if using [`FlexStyle`] and you want to use `right`/`bottom`.
+    /// Defaults to `StyleRect{ left: Val::Pixels(0.), top: Val::Pixels(0.), right: Val::Auto, left: Val::Auto }`.
+    /// This ensures [`AbsoluteStyle`] nodes will start in the upper left corner of their parents. If the
+    /// offset is set to all [`Val::Auto`] then the node's position will be controlled by its parent's
+    /// [`ContentFlex`] parameters. You must set the `left`/`top` fields to auto if using [`FlexStyle`] and
+    /// you want to use `right`/`bottom`.
     #[reflect(default = "Dims::default_top")]
     pub top: Val,
     /// See [`Self::top`].
@@ -411,7 +418,7 @@ impl Default for Dims
 {
     fn default() -> Self
     {
-        Self{
+        Self {
             width: Default::default(),
             height: Default::default(),
             max_width: Default::default(),
@@ -450,7 +457,8 @@ pub struct ContentFlex
     ///
     /// - [`FlexDirection::Row`]: same direction as [`Self::text_direction`], flex wrapped lines are added down
     /// - [`FlexDirection::Column`]: top-to-bottom, flex wrapped rows are added in [`Self::text_direction`]
-    /// - [`FlexDirection::RowReverse`]: opposite direction to [`Self::text_direction`], flex wrapped rows are added down
+    /// - [`FlexDirection::RowReverse`]: opposite direction to [`Self::text_direction`], flex wrapped rows are
+    ///   added down
     /// - [`FlexDirection::ColumnReverse`]: bottom-to-top, flex wrapped rows are added in [`Self::text_direction`]
     #[reflect(default)]
     pub flex_direction: FlexDirection,
@@ -459,7 +467,8 @@ pub struct ContentFlex
     /// If children wrap, then wrapping lines can potentially overflow the cross axis.
     ///
     /// It is not recommended to use [`FlexWrap::WrapReverse`] unless you are prepared for the added complexity of
-    /// figuring out how [`JustifyMain`]/[`JustifyCross`]/[`JustifyLines`]/[`ContentFlex::text_direction`]/[`FlexDirection`]
+    /// figuring out how
+    /// [`JustifyMain`]/[`JustifyCross`]/[`JustifyLines`]/[`ContentFlex::text_direction`]/[`FlexDirection`]
     /// interlace with it to produce the final layout.
     ///
     /// Defaults to [`FlexWrap::NoWrap`].
@@ -467,7 +476,8 @@ pub struct ContentFlex
     pub flex_wrap: FlexWrap,
     /// Controls how lines containing wrapped children should be aligned within the space of the parent.
     ///
-    /// Line alignment is calculated after child nodes compute their target sizes, but before stretch factors are applied.
+    /// Line alignment is calculated after child nodes compute their target sizes, but before stretch factors are
+    /// applied.
     ///
     /// Has no effect if [`Self::flex_wrap`] is set to [`FlexWrap::NoWrap`].
     ///
@@ -477,18 +487,19 @@ pub struct ContentFlex
     /// Controls how children should be aligned on the main axis.
     ///
     /// Does nothing in a wrapped line if:
-    /// - Any child in the line has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the main axis, or has
-    ///   [`SelfFlex::flex_grow`] greater than `0.`.
+    /// - Any child in the line has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the main axis, or
+    ///   has [`SelfFlex::flex_grow`] greater than `0.`.
     ///
     /// Mirrors [`Style::justify_content`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
     /// Controls how children should be aligned on the cross axis.
     ///
-    /// Child cross-alignment is calculated after line alignment ([`Self::justify_lines`]), since line alignment affects
-    /// how wide the cross-axis of each line will be.
+    /// Child cross-alignment is calculated after line alignment ([`Self::justify_lines`]), since line alignment
+    /// affects how wide the cross-axis of each line will be.
     ///
-    /// Has no effect on a child if it has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the cross axis.
+    /// Has no effect on a child if it has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the cross
+    /// axis.
     ///
     /// Mirrors [`Style::align_items`].
     #[reflect(default)]
@@ -536,7 +547,7 @@ impl Default for ContentFlex
 {
     fn default() -> Self
     {
-        Self{
+        Self {
             flex_wrap: Self::default_flex_wrap(),
 
             overflow: Default::default(),
@@ -562,8 +573,8 @@ pub struct SelfFlex
 {
     /// Adds space outside the boundary of a node.
     ///
-    /// If the main-axis values are set to [`Val::Auto`] then [`JustifyMain`] will do nothing, and similarly for the
-    /// cross-axis with [`JustifyCross`].
+    /// If the main-axis values are set to [`Val::Auto`] then [`JustifyMain`] will do nothing, and similarly for
+    /// the cross-axis with [`JustifyCross`].
     ///
     /// Defaults to zero margin.
     #[reflect(default)]
@@ -575,8 +586,8 @@ pub struct SelfFlex
     pub flex_basis: Val,
     /// Controls automatic growing of a node up to its max size when its parent has excess space.
     ///
-    /// When a line in the parent contains extra space on the main axis, it is distributed to each child proportional to
-    /// `flex_grow / sum(flex_grow)`.
+    /// When a line in the parent contains extra space on the main axis, it is distributed to each child
+    /// proportional to `flex_grow / sum(flex_grow)`.
     ///
     /// Has no effect if the parent is using [`FlexWrap::Wrap`].
     ///
@@ -588,8 +599,8 @@ pub struct SelfFlex
     /// When a line in the parent overflows the main axis, shrinkage is distributed to each child proportional to
     /// `flex_shrink / sum(flex_shrink)`.
     /// If `sum(flex_shrink)` is zero then no nodes will shrink.
-    /// If a child shrinks all the way to its minimum size, then its remaining shrink-share is distributed to other children
-    /// with `flex_shrink`.
+    /// If a child shrinks all the way to its minimum size, then its remaining shrink-share is distributed to
+    /// other children with `flex_shrink`.
     ///
     /// Has no effect if the parent is using [`FlexWrap::Wrap`].
     ///
@@ -598,7 +609,8 @@ pub struct SelfFlex
     pub flex_shrink: f32,
     /// Controls how this node should be aligned on its parent's cross axis.
     ///
-    /// If not set to [`JustifyCross::Auto`], then this overrides the parent's [`ContentFlex::justify_cross`] setting.
+    /// If not set to [`JustifyCross::Auto`], then this overrides the parent's [`ContentFlex::justify_cross`]
+    /// setting.
     ///
     /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
     ///
@@ -626,7 +638,7 @@ impl Default for SelfFlex
 {
     fn default() -> Self
     {
-        Self{
+        Self {
             margin: Default::default(),
             flex_basis: Default::default(),
             flex_grow: Default::default(),
@@ -641,8 +653,8 @@ impl Default for SelfFlex
 /// UI style for absolute-positioned nodes.
 ///
 /// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Absolute`].
-/// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set the
-/// node's [`Dims::offset`] fields to [`Val::Auto`].
+/// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
+/// the node's [`Dims::offset`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -702,11 +714,12 @@ impl Into<Style> for FlexStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_absolute_style(
-    mut commands : Commands,
-    insertion    : InsertionEvent<AbsoluteStyle>,
-    mutation     : MutationEvent<AbsoluteStyle>,
-    node         : Query<&React<AbsoluteStyle>>,
-){
+    mut commands: Commands,
+    insertion: InsertionEvent<AbsoluteStyle>,
+    mutation: MutationEvent<AbsoluteStyle>,
+    node: Query<&React<AbsoluteStyle>>,
+)
+{
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
     let Ok(style) = node.get(entity) else { return };
     let style = Style::from((*style).clone().into());
@@ -716,19 +729,23 @@ fn detect_absolute_style(
 struct DetectAbsoluteStyle;
 impl WorldReactor for DetectAbsoluteStyle
 {
-    type StartingTriggers = (InsertionTrigger::<AbsoluteStyle>, MutationTrigger::<AbsoluteStyle>);
+    type StartingTriggers = (InsertionTrigger<AbsoluteStyle>, MutationTrigger<AbsoluteStyle>);
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_absolute_style) }
+    fn reactor(self) -> SystemCommandCallback
+    {
+        SystemCommandCallback::new(detect_absolute_style)
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_flex_style(
-    mut commands : Commands,
-    insertion    : InsertionEvent<FlexStyle>,
-    mutation     : MutationEvent<FlexStyle>,
-    node         : Query<&React<FlexStyle>>,
-){
+    mut commands: Commands,
+    insertion: InsertionEvent<FlexStyle>,
+    mutation: MutationEvent<FlexStyle>,
+    node: Query<&React<FlexStyle>>,
+)
+{
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
     let Ok(style) = node.get(entity) else { return };
     let style = Style::from((*style).clone().into());
@@ -738,9 +755,12 @@ fn detect_flex_style(
 struct DetectFlexStyle;
 impl WorldReactor for DetectFlexStyle
 {
-    type StartingTriggers = (InsertionTrigger::<FlexStyle>, MutationTrigger::<FlexStyle>);
+    type StartingTriggers = (InsertionTrigger<FlexStyle>, MutationTrigger<FlexStyle>);
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_flex_style) }
+    fn reactor(self) -> SystemCommandCallback
+    {
+        SystemCommandCallback::new(detect_flex_style)
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -751,8 +771,7 @@ impl Plugin for StyleWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app
-            .register_type::<StyleRect>()
+        app.register_type::<StyleRect>()
             .register_type::<JustifyLines>()
             .register_type::<JustifyMain>()
             .register_type::<JustifyCross>()
@@ -762,11 +781,13 @@ impl Plugin for StyleWrappersPlugin
             .register_type::<SelfFlex>()
             .register_type::<AbsoluteStyle>()
             .register_type::<FlexStyle>()
-            .add_reactor_with(DetectAbsoluteStyle, (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()))
+            .add_reactor_with(
+                DetectAbsoluteStyle,
+                (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
+            )
             .add_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
             .register_reactive_style::<AbsoluteStyle>()
-            .register_reactive_style::<FlexStyle>()
-            ;
+            .register_reactive_style::<FlexStyle>();
     }
 }
 

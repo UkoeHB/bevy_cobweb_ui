@@ -1,8 +1,12 @@
 use std::collections::HashMap;
 
-use bevy::{ecs::system::EntityCommands, prelude::*, text::TextLayoutInfo, ui::{widget::TextFlags, ContentSize}};
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
+use bevy::text::TextLayoutInfo;
+use bevy::ui::widget::TextFlags;
+use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::*;
 
@@ -12,8 +16,9 @@ fn insert_text_line(
     In((entity, line)): In<(Entity, TextLine)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut font_map: ResMut<FontMap>
-){
+    mut font_map: ResMut<FontMap>,
+)
+{
     let mut ec = commands.entity(entity);
     ec.try_insert((
         line.as_text(&asset_server, &mut font_map),
@@ -26,6 +31,7 @@ fn insert_text_line(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that stores handles to loaded fonts.
+//TODO: add font pre-loading and progress tracking
 #[derive(Resource, Default)]
 pub struct FontMap
 {
@@ -37,9 +43,7 @@ impl FontMap
     fn get(&mut self, font: Option<String>, asset_server: &AssetServer) -> Handle<Font>
     {
         let Some(font) = font else { return Default::default() };
-        let Some(entry) = self.map.get(&font)
-        else
-        {
+        let Some(entry) = self.map.get(&font) else {
             let entry = asset_server.load(&font);
             self.map.insert(font, entry.clone());
             return entry;
@@ -89,12 +93,13 @@ impl TextLine
     {
         Text::from_section(
             self.text,
-            TextStyle{
+            TextStyle {
                 font: font_map.get(self.font, asset_server),
                 font_size: self.size,
-                color: self.color
-            }
-        ).with_no_wrap()
+                color: self.color,
+            },
+        )
+        .with_no_wrap()
     }
 }
 
@@ -115,11 +120,9 @@ impl Plugin for UiTextExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app
-            .init_resource::<FontMap>()
+        app.init_resource::<FontMap>()
             .register_type::<TextLine>()
-            .register_derived_style::<TextLine>()
-            ;
+            .register_derived_style::<TextLine>();
     }
 }
 

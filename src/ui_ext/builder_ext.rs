@@ -1,7 +1,7 @@
-use crate::*;
-
 use bevy::prelude::*;
 use sickle_ui::ui_builder::*;
+
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ pub trait NodeLoadingExt<'w, 's>
     fn load<'a>(
         &'a mut self,
         style_ref: StyleRef,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         self.load_with(style_ref, NodeBundle::default(), callback)
@@ -31,7 +31,7 @@ pub trait NodeLoadingExt<'w, 's>
         &'a mut self,
         style_ref: StyleRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>;
 }
 
@@ -41,7 +41,7 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
         &'a mut self,
         style_ref: StyleRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut node = self.spawn(bundle);
@@ -57,7 +57,7 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
         &'a mut self,
         style_ref: StyleRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut child = self.spawn(bundle);
