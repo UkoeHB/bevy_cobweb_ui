@@ -9,7 +9,7 @@ mod plugin;
 mod primitives;
 mod react_ext;
 mod sickle_ext;
-mod style_ext;
+mod ui_ext;
 mod tools;
 
 pub use app_events::*;
@@ -19,7 +19,7 @@ pub use plugin::*;
 //pub use primitives::*;
 pub use react_ext::*;
 pub use sickle_ext::*;
-pub use style_ext::*;
+pub use ui_ext::*;
 pub use tools::*;
 
 //pub use bevy_cobweb_ui_derive::*;

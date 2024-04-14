@@ -33,6 +33,9 @@ impl StyleToBevy for BrColor
     }
 }
 
+//TODO: FocusPolicy
+//TODO: ZIndex
+
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) struct UiComponentsExtPlugin;

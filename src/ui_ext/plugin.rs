@@ -13,6 +13,7 @@ impl Plugin for StyleExtPlugin
         app
             .add_plugins(StyleWrappersPlugin)
             .add_plugins(UiComponentsExtPlugin)
+            .add_plugins(UiTextExtPlugin)
             ;
     }
 }

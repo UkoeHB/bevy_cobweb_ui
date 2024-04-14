@@ -38,21 +38,14 @@ fn build_ui(mut c: Commands)
                     counters.get_mut(&mut c, button_id).map(Counter::increment);
                 });
 
-            button.load_with(
-                path.e("text"),
-                TextBundle{
-                    text: Text::from_section("", TextStyle{ font_size: 25., ..default() }).with_no_wrap(),
-                    ..default()
-                },
-                |text, _path| {
-                    text.update_on(entity_mutation::<Counter>(button_id),
-                        |text_id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
-                            let Some(counter) = counters.get(button_id) else { return };
-                            editor.write(text_id, |t| write!(t, "Count: {}", **counter));
-                        }
-                    );
-                }
-            );
+            button.load(path.e("text"), |text, _path| {
+                text.update_on(entity_mutation::<Counter>(button_id),
+                    |text_id| move |mut editor: TextEditor, counters: Reactive<Counter>| {
+                        let Some(counter) = counters.get(button_id) else { return };
+                        editor.write(text_id, |t| write!(t, "Count: {}", **counter));
+                    }
+                );
+            });
         });
     });
 }
