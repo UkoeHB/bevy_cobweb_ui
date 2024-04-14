@@ -7,6 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 //third-party shortcuts
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
+use sickle_ui::ui_builder::*;
 
 //standard shortcuts
 
@@ -154,9 +155,9 @@ fn build_ui(mut cmds: Commands)
 {
     let file = StyleRef::from_file("examples/sample.style.json");
 
-    cmds.root_node(file.e("root"), |root, path| {
-        root.child_node(path.e("a"), |_n, _p|{})
-            .child_node(path.e("b"), |_n, _p|{})
+    cmds.ui_builder(UiRoot).load(file.e("root"), |root, path| {
+        root.load(path.e("a"), |_n, _p|{})
+            .load(path.e("b"), |_n, _p|{})
             .on_event::<u32>().r(||{})
             .update_on(despawn(Entity::PLACEHOLDER), |id| move || { println!("success {:?}", id); });
     });

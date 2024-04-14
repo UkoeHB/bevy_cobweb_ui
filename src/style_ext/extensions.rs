@@ -1,71 +1,53 @@
 use crate::*;
 
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::prelude::*;
+use sickle_ui::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for registering node root entities for style loading.
-pub trait NodeLoadingCommandsExt
+/// Helper trait for registering node entities for style loading.
+pub trait NodeLoadingExt<'w, 's>
 {
-    /// Spawns a new root node registers it to load styles from `style_ref`.
+    /// Spawns a new node registered to load styles from `style_ref`.
     ///
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback` for interacting with the entity.
-    fn root_node(
-        &mut self,
+    fn load<'a>(
+        &'a mut self,
         style_ref: StyleRef,
-        callback: impl FnOnce(&mut EntityCommands<'_>, StyleRef)
-    ) -> &mut Self;
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+    ) -> UiBuilder<'w, 's, 'a, Entity>;
 }
 
-impl NodeLoadingCommandsExt for Commands<'_, '_>
+impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 {
-    fn root_node(
+    fn load(
         &mut self,
         style_ref: StyleRef,
-        callback: impl FnOnce(&mut EntityCommands<'_>, StyleRef)
-    ) -> &mut Self
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+    ) -> UiBuilder<'w, 's, '_, Entity>
     {
         let mut node = self.spawn(NodeBundle::default());
-        node.load(style_ref.clone());
+        node.entity_commands().load_style(style_ref.clone());
         (callback)(&mut node, style_ref);
-        self
+        node
     }
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Helper trait for registering child node entities for style loading.
-pub trait NodeLoadingEntityCommandsExt
+impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
 {
-    /// Spawns a child node of the current node and registers it to load styles from `style_ref`.
-    ///
-    /// Inserts a [`NodeBundle::default()`] to the child entity.
-    ///
-    /// Includes a `child_callback` for interacting with the child entity.
-    fn child_node(
+    fn load(
         &mut self,
         style_ref: StyleRef,
-        child_callback: impl FnOnce(&mut EntityCommands<'_>, StyleRef)
-    ) -> EntityCommands<'_>;
-}
-
-impl NodeLoadingEntityCommandsExt for EntityCommands<'_>
-{
-    fn child_node(
-        &mut self,
-        style_ref: StyleRef,
-        child_callback: impl FnOnce(&mut EntityCommands<'_>, StyleRef)
-    ) -> EntityCommands<'_>
+        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef)
+    ) -> UiBuilder<'w, 's, '_, Entity>
     {
+        let mut child = self.spawn(NodeBundle::default());
+        child.entity_commands().load_style(style_ref.clone());
+        (callback)(&mut child, style_ref);
         let id = self.id();
-        let mut commands = self.commands();
-        let mut child = commands.spawn(NodeBundle::default());
-        child.set_parent(id);
-        child.load(style_ref.clone());
-        (child_callback)(&mut child, style_ref);
-        self.reborrow()
+        self.commands().ui_builder(id)
     }
 }
 

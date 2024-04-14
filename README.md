@@ -2,9 +2,7 @@
 
 **This crate is under development.**
 
-Tools and widgets for building UI with `bevy_cobweb`.
-
-This crate features simple, easy, code-driven UI for small-to-medium-scale games. UI layout/configuration can be specified in asset files, which can be hot-reloaded or edited from a UI editor (TODO) to support efficient fine-tuning in live apps.
+Provides a reactivity layer on top of `sickle_ui` using `bevy_cobweb`, with an optional asset-based workflow for building UI.
 
 
 
