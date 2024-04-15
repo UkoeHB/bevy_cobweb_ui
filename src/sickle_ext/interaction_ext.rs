@@ -2,6 +2,8 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_ui::animated_interaction::{AnimatedInteraction, AnimationConfig};
+use sickle_ui::interactions::InteractiveBackground;
 use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::{FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
@@ -173,6 +175,155 @@ impl StyleToBevy for Interactive
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Configuration for a specific interactive animation.
+///
+/// Mirrors [`AnimationConfig`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AnimateConfig
+{
+    /// Duration of the animation when moving into the 'activated' state.
+    #[reflect(default)]
+    pub duration: f32,
+    // Easing when moving into the 'activated' state.
+    //#[reflect(default)]
+    //pub easing: Ease,
+    /// Duration of the animation when moving out of the 'activated' state.
+    ///
+    /// If `None`, equals [`Self::duration`].
+    #[reflect(default)]
+    pub out_duration: Option<f32>,
+    // Easing when moving out of the 'activated' state.
+    //
+    // If `None`, equals [`Self::easing`].
+    //pub out_easing: Option<Ease>,
+}
+
+impl Into<AnimationConfig> for AnimateConfig
+{
+    fn into(self) -> AnimationConfig
+    {
+        AnimationConfig{
+            duration: self.duration,
+            easing: Default::default(),
+            out_duration: self.out_duration,
+            out_easing: None,
+        }
+    }
+}
+
+impl From<AnimationConfig> for AnimateConfig
+{
+    fn from(config: AnimationConfig) -> AnimateConfig
+    {
+        AnimateConfig{
+            duration: config.duration,
+            //easing: Default::default(),
+            out_duration: config.out_duration,
+            //out_easing: None,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Settings for an animatable attribute on a node.
+///
+/// Mirrors [`AnimatedInteraction`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AnimationSettings
+{
+    /// Default [`AnimationConfig`] for the attribute.
+    ///
+    /// Can be overridden by the `hover`/`press`/`cancel` fields respectively.
+    #[reflect(default = "AnimationSettings::default_default_field")]
+    pub default: AnimateConfig,
+    #[reflect(default = "AnimationSettings::default_hover_field")]
+    pub hover: Option<AnimateConfig>,
+    #[reflect(default = "AnimationSettings::default_press_field")]
+    pub press: Option<AnimateConfig>,
+    #[reflect(default = "AnimationSettings::default_cancel_field")]
+    pub cancel: Option<AnimateConfig>,
+    #[reflect(default = "AnimationSettings::default_reset_field")]
+    pub reset_delay: Option<f32>,
+}
+
+impl AnimationSettings
+{
+    fn default_default_field() -> AnimateConfig
+    {
+        AnimatedInteraction::<Node>::default().tween.into()
+    }
+
+    fn default_hover_field() -> Option<AnimateConfig>
+    {
+        AnimatedInteraction::<Node>::default().hover.map(AnimateConfig::from)
+    }
+
+    fn default_press_field() -> Option<AnimateConfig>
+    {
+        AnimatedInteraction::<Node>::default().press.map(AnimateConfig::from)
+    }
+
+    fn default_cancel_field() -> Option<AnimateConfig>
+    {
+        AnimatedInteraction::<Node>::default().cancel.map(AnimateConfig::from)
+    }
+
+    fn default_reset_field() -> Option<f32>
+    {
+        AnimatedInteraction::<Node>::default().reset_delay
+    }
+
+    /// Convers the settings to an [`AnimatedInteraction`].
+    pub fn to_sickle<T: Component>(self) -> AnimatedInteraction<T>
+    {
+        AnimatedInteraction::<T>{
+            tween: self.default.into(),
+            hover: self.hover.map(AnimateConfig::into),
+            press: self.press.map(AnimateConfig::into),
+            cancel: self.cancel.map(AnimateConfig::into),
+            reset_delay: self.reset_delay,
+            ..default()
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable version of [`InteractiveBackground`].
+///
+/// Applies the [`Interactive`] loadable automatically.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AnimatedBgColor
+{
+    #[reflect(default)]
+    pub highlight: Option<Color>,
+    #[reflect(default)]
+    pub pressed: Option<Color>,
+    #[reflect(default)]
+    pub cancel: Option<Color>,
+    #[reflect(default)]
+    pub animate: AnimationSettings,
+}
+
+impl StyleToBevy for AnimatedBgColor
+{
+    fn to_bevy(self, ec: &mut EntityCommands)
+    {
+        let interactive_bg = InteractiveBackground{
+            highlight: self.highlight,
+            pressed: self.pressed,
+            cancel: self.cancel,
+        };
+        let animated = self.animate.to_sickle::<InteractiveBackground>();
+
+        Interactive.to_bevy(ec);
+        ec.try_insert((interactive_bg, animated));
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct UiInteractionExtPlugin;
 
 impl Plugin for UiInteractionExtPlugin
@@ -180,7 +331,12 @@ impl Plugin for UiInteractionExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<Interactive>()
+            .register_type::<Option<Color>>()
+            .register_type::<AnimateConfig>()
+            .register_type::<AnimationSettings>()
+            .register_type::<AnimatedBgColor>()
             .register_derived_style::<Interactive>()
+            .register_derived_style::<AnimatedBgColor>()
             .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }
