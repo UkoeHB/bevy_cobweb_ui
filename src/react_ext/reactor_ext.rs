@@ -71,6 +71,16 @@ pub trait NodeReactEntityCommandsExt
     /// [`Reactive`]/[`ReactiveMut`] system parameters.
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self;
 
+    /// Inserts a derived value to the entity.
+    ///
+    /// Uses [`T::StyleToBevy`] to convert the value into entity mutations.
+    fn insert_derived<T: StyleToBevy>(&mut self, value: T) -> &mut Self;
+
+    /// Provides access to [`ReactCommands`].
+    ///
+    /// Equivalent to `self.commands().react()`.
+    fn react(&mut self) -> ReactCommands<'_, '_>;
+
     /// Registers an [`entity_event`] reactor for the current entity.
     ///
     /// Use [`OnEventExt::r`] to register the reactor.
@@ -96,6 +106,17 @@ impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
         let id = self.id();
         self.commands().react().insert(id, component);
         self
+    }
+
+    fn insert_derived<T: StyleToBevy>(&mut self, value: T) -> &mut Self
+    {
+        value.to_bevy(&mut self.entity_commands());
+        self
+    }
+
+    fn react(&mut self) -> ReactCommands<'_, '_>
+    {
+        self.commands().react()
     }
 
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>

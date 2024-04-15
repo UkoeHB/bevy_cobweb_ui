@@ -18,6 +18,21 @@ impl Counter
     {
         self.0 += 1;
     }
+
+    fn increment_on(entity: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
+    {
+        move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+            counters.get_mut(&mut c, entity).map(Counter::increment);
+        }
+    }
+
+    fn write(from: Entity, to: Entity) -> impl FnMut(TextEditor, Reactive<Counter>)
+    {
+        move |mut editor: TextEditor, counters: Reactive<Counter>| {
+            let Some(counter) = counters.get(from) else { return };
+            editor.write(to, |t| write!(t, "Count: {}", **counter));
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -29,18 +44,13 @@ fn build_ui(mut c: Commands)
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.load(path.e("button"), |button, path| {
             let button_id = button.id();
-            button.insert_reactive(Counter(0));
-            button.on_pressed(
-                move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-                    counters.get_mut(&mut c, button_id).map(Counter::increment);
-                }
-            );
+            button
+                .insert_reactive(Counter(0))
+                .on_pressed(Counter::increment_on(button_id));
+
             button.load(path.e("text"), |text, _path| {
                 text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    move |mut editor: TextEditor, counters: Reactive<Counter>| {
-                        let Some(counter) = counters.get(button_id) else { return };
-                        editor.write(text_id, |t| write!(t, "Count: {}", **counter));
-                    }
+                    Counter::write(button_id, text_id)
                 });
             });
         });

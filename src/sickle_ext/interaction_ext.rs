@@ -202,7 +202,7 @@ impl Into<AnimationConfig> for AnimateConfig
 {
     fn into(self) -> AnimationConfig
     {
-        AnimationConfig{
+        AnimationConfig {
             duration: self.duration,
             easing: Default::default(),
             out_duration: self.out_duration,
@@ -215,7 +215,7 @@ impl From<AnimationConfig> for AnimateConfig
 {
     fn from(config: AnimationConfig) -> AnimateConfig
     {
-        AnimateConfig{
+        AnimateConfig {
             duration: config.duration,
             //easing: Default::default(),
             out_duration: config.out_duration,
@@ -277,7 +277,7 @@ impl AnimationSettings
     /// Convers the settings to an [`AnimatedInteraction`].
     pub fn to_sickle<T: Component>(self) -> AnimatedInteraction<T>
     {
-        AnimatedInteraction::<T>{
+        AnimatedInteraction::<T> {
             tween: self.default.into(),
             hover: self.hover.map(AnimateConfig::into),
             press: self.press.map(AnimateConfig::into),
@@ -311,7 +311,7 @@ impl StyleToBevy for AnimatedBgColor
 {
     fn to_bevy(self, ec: &mut EntityCommands)
     {
-        let interactive_bg = InteractiveBackground{
+        let interactive_bg = InteractiveBackground {
             highlight: self.highlight,
             pressed: self.pressed,
             cancel: self.cancel,
