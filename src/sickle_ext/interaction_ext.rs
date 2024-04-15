@@ -292,10 +292,11 @@ impl AnimationSettings
 
 /// Loadable version of [`InteractiveBackground`].
 ///
-/// Applies the [`Interactive`] loadable automatically.
+/// Applies the [`BgColor`] and [`Interactive`] loadables automatically.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnimatedBgColor
 {
+    pub base: Color,
     #[reflect(default)]
     pub highlight: Option<Color>,
     #[reflect(default)]
@@ -318,6 +319,7 @@ impl StyleToBevy for AnimatedBgColor
         let animated = self.animate.to_sickle::<InteractiveBackground>();
 
         Interactive.to_bevy(ec);
+        BgColor(self.base).to_bevy(ec);
         ec.try_insert((interactive_bg, animated));
     }
 }

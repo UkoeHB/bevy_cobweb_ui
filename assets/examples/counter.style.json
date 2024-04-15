@@ -10,8 +10,8 @@
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
-        "BgColor": [{"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}}],
         "AnimatedBgColor": {
+            "base": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}},
             "highlight": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.26, "alpha": 0.8}},
             "pressed": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.19, "alpha": 0.8}}
         },
