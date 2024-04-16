@@ -105,7 +105,7 @@ impl ReflectedStyle
         this.reflect_partial_eq(other.as_reflect())
     }
 
-    pub(crate) fn get_value<T: ReflectableStyle>(&self, style_ref: &StyleRef) -> Option<T>
+    pub(crate) fn get_value<T: LoadableStyle>(&self, style_ref: &StyleRef) -> Option<T>
     {
         match self {
             ReflectedStyle::Value(style) => {
@@ -375,7 +375,7 @@ impl StyleSheet
     }
 
     /// Updates entities that subscribed to `T` found at recently-updated style paths.
-    pub(crate) fn update_styles<T: ReflectableStyle>(
+    pub(crate) fn update_styles<T: LoadableStyle>(
         &mut self,
         mut callback: impl FnMut(Entity, &StyleRef, &ReflectedStyle),
     )

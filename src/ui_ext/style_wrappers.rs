@@ -657,8 +657,6 @@ impl Default for SelfFlex
 /// the node's [`Dims::offset`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
-///
-/// Requires that [`Style`] already exists on an entity.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AbsoluteStyle
 {
@@ -688,8 +686,6 @@ impl Into<Style> for AbsoluteStyle
 /// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
-///
-/// Requires that [`Style`] already exists on an entity.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlexStyle
 {
@@ -718,15 +714,16 @@ impl Into<Style> for FlexStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_absolute_style(
+    mut commands: Commands,
     insertion: InsertionEvent<AbsoluteStyle>,
     mutation: MutationEvent<AbsoluteStyle>,
-    mut node: Query<(&mut Style, &React<AbsoluteStyle>)>,
+    node: Query<&React<AbsoluteStyle>>,
 )
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
-    let Ok((mut style, absolute_style)) = node.get_mut(entity) else { return };
-    let new_style = Style::from((*absolute_style).clone().into());
-    *style = new_style;
+    let Ok(style) = node.get(entity) else { return };
+    let style = Style::from((*style).clone().into());
+    commands.entity(entity).try_insert(style.clone());
 }
 
 struct DetectAbsoluteStyle;
@@ -743,15 +740,16 @@ impl WorldReactor for DetectAbsoluteStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_flex_style(
+    mut commands: Commands,
     insertion: InsertionEvent<FlexStyle>,
     mutation: MutationEvent<FlexStyle>,
-    mut node: Query<(&mut Style, &React<FlexStyle>)>,
+    node: Query<&React<FlexStyle>>,
 )
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
-    let Ok((mut style, flex_style)) = node.get_mut(entity) else { return };
-    let new_style = Style::from((*flex_style).clone().into());
-    *style = new_style;
+    let Ok(style) = node.get(entity) else { return };
+    let style = Style::from((*style).clone().into());
+    commands.entity(entity).try_insert(style.clone());
 }
 
 struct DetectFlexStyle;

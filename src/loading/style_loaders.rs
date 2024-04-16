@@ -40,7 +40,7 @@ fn register_style_impl<M, T: 'static>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates the style `React<T>` on entities.
-fn reactive_style_loader<T: ReactComponent + ReflectableStyle>(
+fn reactive_style_loader<T: ReactComponent + LoadableStyle>(
     mut c: Commands,
     mut styles: ReactResMut<StyleSheet>,
     mut entities: Query<Option<&mut React<T>>>,
@@ -66,7 +66,7 @@ fn reactive_style_loader<T: ReactComponent + ReflectableStyle>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates the style bundle `T` on entities.
-fn bundle_style_loader<T: Bundle + ReflectableStyle>(mut c: Commands, mut styles: ReactResMut<StyleSheet>)
+fn bundle_style_loader<T: Bundle + LoadableStyle>(mut c: Commands, mut styles: ReactResMut<StyleSheet>)
 {
     styles.get_noreact().update_styles::<T>(|entity, style_ref, style| {
         let Some(bundle) = style.get_value::<T>(style_ref) else { return };
@@ -80,7 +80,7 @@ fn bundle_style_loader<T: Bundle + ReflectableStyle>(mut c: Commands, mut styles
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Uses `T` to derive changes on subscribed entities.
-fn derived_style_loader<T: StyleToBevy + ReflectableStyle>(mut c: Commands, mut styles: ReactResMut<StyleSheet>)
+fn derived_style_loader<T: StyleToBevy + LoadableStyle>(mut c: Commands, mut styles: ReactResMut<StyleSheet>)
 {
     styles.get_noreact().update_styles::<T>(|entity, style_ref, style| {
         let Some(value) = style.get_value::<T>(style_ref) else { return };
@@ -174,26 +174,26 @@ pub trait StyleRegistrationAppExt
 {
     /// Registers a style type that will be inserted as [`T`] bundles on entities that subscribe to
     /// stylesheet paths containing the type.
-    fn register_style<T: Bundle + ReflectableStyle>(&mut self) -> &mut Self;
+    fn register_style<T: Bundle + LoadableStyle>(&mut self) -> &mut Self;
 
     /// Registers a style type that will be inserted as [`React<T>`] components on entities that subscribe to
     /// stylesheet paths containing the type.
-    fn register_reactive_style<T: ReactComponent + ReflectableStyle>(&mut self) -> &mut Self;
+    fn register_reactive_style<T: ReactComponent + LoadableStyle>(&mut self) -> &mut Self;
 
     /// Registers a style type that will be inserted as [`T`] bundles on entities that subscribe to
     /// stylesheet paths containing the type.
-    fn register_derived_style<T: StyleToBevy + ReflectableStyle>(&mut self) -> &mut Self;
+    fn register_derived_style<T: StyleToBevy + LoadableStyle>(&mut self) -> &mut Self;
 }
 
 impl StyleRegistrationAppExt for App
 {
-    fn register_style<T: Bundle + ReflectableStyle>(&mut self) -> &mut Self
+    fn register_style<T: Bundle + LoadableStyle>(&mut self) -> &mut Self
     {
         register_style_impl(self, bundle_style_loader::<T>, PhantomData::<T>::default(), "bundle");
         self
     }
 
-    fn register_reactive_style<T: ReactComponent + ReflectableStyle>(&mut self) -> &mut Self
+    fn register_reactive_style<T: ReactComponent + LoadableStyle>(&mut self) -> &mut Self
     {
         register_style_impl(
             self,
@@ -204,7 +204,7 @@ impl StyleRegistrationAppExt for App
         self
     }
 
-    fn register_derived_style<T: StyleToBevy + ReflectableStyle>(&mut self) -> &mut Self
+    fn register_derived_style<T: StyleToBevy + LoadableStyle>(&mut self) -> &mut Self
     {
         register_style_impl(self, derived_style_loader::<T>, PhantomData::<T>::default(), "derived");
         self
