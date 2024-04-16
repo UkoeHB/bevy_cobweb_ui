@@ -65,6 +65,9 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 /// Helper trait for registering reactors for node entities.
 pub trait NodeReactEntityCommandsExt
 {
+    /// Registers the current node with an [`EntityWorldReactor`].
+    fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local);
+
     /// Inserts a reactive component to the entity.
     ///
     /// The component can be accessed with the [`React<T>`] component, or with the
@@ -101,6 +104,11 @@ pub trait NodeReactEntityCommandsExt
 
 impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
 {
+    fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
+    {
+        self.entity_commands().add_reactor::<T>(data);
+    }
+
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
         let id = self.id();
