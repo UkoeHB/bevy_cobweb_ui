@@ -330,17 +330,17 @@ pub struct Dims
     pub max_height: Val,
     /// Controls the absolute minimum width of the node.
     ///
-    /// Defaults to [`Val::Auto`], which means 'content-sized'.
+    /// Defaults to [`Val::Auto`], which means 'same as `width`'.
     #[reflect(default)]
     pub min_width: Val,
     /// Controls the absolute minimum height of the node.
     ///
-    /// Defaults to [`Val::Auto`], which means 'content-sized'.
+    /// Defaults to [`Val::Auto`], which means 'same as `height`'.
     #[reflect(default)]
     pub min_height: Val,
     /// Forces a specific `width/height` ratio.
     ///
-    /// Only takes effect if at least one of [`Self::width`] or [`Self::height`] are set to [`Val::Auto`].
+    /// Only takes effect if at least one of [`Self::width`] or [`Self::height`] is set to [`Val::Auto`].
     ///
     /// - [`AbsoluteStyle`]: If `width`/`height` are set to auto and all offset fields are set, then the offset's
     ///   `bottom` parameter will be ignored and the aspect ratio will use the `left`/`right` controlled width.
@@ -657,6 +657,8 @@ impl Default for SelfFlex
 /// the node's [`Dims::offset`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
+///
+/// Requires that [`Style`] already exists on an entity.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AbsoluteStyle
 {
@@ -686,6 +688,8 @@ impl Into<Style> for AbsoluteStyle
 /// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
+///
+/// Requires that [`Style`] already exists on an entity.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlexStyle
 {
@@ -714,16 +718,15 @@ impl Into<Style> for FlexStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_absolute_style(
-    mut commands: Commands,
     insertion: InsertionEvent<AbsoluteStyle>,
     mutation: MutationEvent<AbsoluteStyle>,
-    node: Query<&React<AbsoluteStyle>>,
+    mut node: Query<(&mut Style, &React<AbsoluteStyle>)>,
 )
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
-    let Ok(style) = node.get(entity) else { return };
-    let style = Style::from((*style).clone().into());
-    commands.entity(entity).try_insert(style.clone());
+    let Ok((mut style, absolute_style)) = node.get_mut(entity) else { return };
+    let new_style = Style::from((*absolute_style).clone().into());
+    *style = new_style;
 }
 
 struct DetectAbsoluteStyle;
@@ -740,16 +743,15 @@ impl WorldReactor for DetectAbsoluteStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_flex_style(
-    mut commands: Commands,
     insertion: InsertionEvent<FlexStyle>,
     mutation: MutationEvent<FlexStyle>,
-    node: Query<&React<FlexStyle>>,
+    mut node: Query<(&mut Style, &React<FlexStyle>)>,
 )
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
-    let Ok(style) = node.get(entity) else { return };
-    let style = Style::from((*style).clone().into());
-    commands.entity(entity).try_insert(style.clone());
+    let Ok((mut style, flex_style)) = node.get_mut(entity) else { return };
+    let new_style = Style::from((*flex_style).clone().into());
+    *style = new_style;
 }
 
 struct DetectFlexStyle;

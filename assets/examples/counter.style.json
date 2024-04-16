@@ -18,9 +18,9 @@
 
         "text": {
             "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 13.0}, "right": {"Px": 13.0}}}
+                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
             },
-            "TextLine": {}
+            "TextLine": { "size": 50.0 }
         }
     }
 }

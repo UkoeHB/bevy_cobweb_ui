@@ -101,6 +101,7 @@ impl ReflectedStyle
         let (Self::Value(this), Self::Value(other)) = (self, other) else {
             return Some(false);
         };
+
         this.reflect_partial_eq(other.as_reflect())
     }
 
@@ -280,22 +281,21 @@ impl StyleSheet
             }
             std::collections::hash_map::Entry::Occupied(mut entry) => {
                 // Insert if the style value changed.
-                match entry
-                    .get()
-                    .iter()
-                    .find(|e| e.type_id == type_id)
-                    .map(|e| e.style.equals(&style))
-                    .unwrap_or(Some(false))
-                {
-                    Some(true) => return false,
-                    Some(false) => {
-                        entry.get_mut().push(ErasedStyle { type_id, style: style.clone() });
+                if let Some(erased_style) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
+                    match erased_style.style.equals(&style) {
+                        Some(true) => return false,
+                        Some(false) => {
+                            // Replace the existing value.
+                            *erased_style = ErasedStyle { type_id, style: style.clone() };
+                        }
+                        None => {
+                            tracing::error!("failed updating style {:?} at {:?}, its reflected value doesn't implement \
+                                PartialEq", full_type_name, style_ref);
+                            return false;
+                        }
                     }
-                    None => {
-                        tracing::error!("failed updating style {:?} at {:?}, its reflected value doesn't implement \
-                            PartialEq", full_type_name, style_ref);
-                        return false;
-                    }
+                } else {
+                    entry.get_mut().push(ErasedStyle { type_id, style: style.clone() });
                 }
             }
         }
