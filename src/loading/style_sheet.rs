@@ -111,20 +111,26 @@ impl ReflectedStyle
             ReflectedStyle::Value(style) => {
                 let Some(new_value) = T::from_reflect(style.as_reflect()) else {
                     let temp = T::default();
-                    let hint = serde_json::to_string(&temp).unwrap();
+                    let mut hint = serde_json::to_string_pretty(&temp).unwrap();
+                    if hint.len() > 250 {
+                        hint = serde_json::to_string(&temp).unwrap();
+                    }
                     tracing::error!("failed reflecting style {:?} at path {:?} in file {:?}\n\
-                        serialization hint: {:?}",
-                        type_name::<T>(), style_ref.path.path, style_ref.file, hint);
+                        serialization hint: {}",
+                        type_name::<T>(), style_ref.path.path, style_ref.file, hint.as_str());
                     return None;
                 };
                 Some(new_value)
             }
             ReflectedStyle::DeserializationFailed(err) => {
                 let temp = T::default();
-                let hint = serde_json::to_string(&temp).unwrap();
+                let mut hint = serde_json::to_string_pretty(&temp).unwrap();
+                if hint.len() > 250 {
+                    hint = serde_json::to_string(&temp).unwrap();
+                }
                 tracing::error!("failed deserializing style {:?} at path {:?} in file {:?}, {:?}\n\
-                    serialization hint: {:?}",
-                    type_name::<T>(), style_ref.path.path, style_ref.file, **err, hint);
+                    serialization hint: {}",
+                    type_name::<T>(), style_ref.path.path, style_ref.file, **err, hint.as_str());
                 None
             }
         }

@@ -387,7 +387,7 @@ pub struct Dims
 
 impl Dims
 {
-    /// Adds this structs contents to [`Style`].
+    /// Adds this struct's contents to [`Style`].
     pub fn set_in_style(&self, style: &mut Style)
     {
         style.width = self.width;
@@ -523,7 +523,7 @@ pub struct ContentFlex
 
 impl ContentFlex
 {
-    /// Adds this structs contents to [`Style`].
+    /// Adds this struct's contents to [`Style`].
     pub fn set_in_style(&self, style: &mut Style)
     {
         style.overflow = self.overflow;
@@ -623,7 +623,7 @@ pub struct SelfFlex
 
 impl SelfFlex
 {
-    /// Adds this structs contents to [`Style`].
+    /// Adds this struct's contents to [`Style`].
     pub fn set_in_style(&self, style: &mut Style)
     {
         style.margin = self.margin.into();
