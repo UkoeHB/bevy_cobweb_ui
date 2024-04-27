@@ -5,16 +5,16 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub struct CobwebUiPlugin;
+pub struct Cobweb2dUiPlugin;
 
-impl Plugin for CobwebUiPlugin
+impl Plugin for Cobweb2dUiPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(ReactPlugin)
-            .add_plugins(LoadingPlugin)
-            .add_plugins(CobwebBevyUiPlugin)
-            .add_plugins(Cobweb2dUiPlugin);
+        app
+            .add_plugins(PrimitivesPlugin)
+            .add_plugins(ParentsPlugin)
+            .add_plugins(LayoutPlugin);
     }
 }
 
