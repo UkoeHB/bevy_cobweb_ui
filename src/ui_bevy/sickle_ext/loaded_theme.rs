@@ -50,7 +50,7 @@ impl LoadedTheme
 {
     fn new<C: Component>() -> Self
     {
-        Self{ theme_marker: TypeId::of::<C>(), refresh: refresh_loaded_theme::<C>, pseudo_themes: Vec::default() }
+        Self{ theme_marker: TypeId::of::<C>(), refresh: refresh_loaded_theme::<C>, pseudo_themes: SmallVec::default() }
     }
 
     fn matches(&self, marker: TypeId) -> bool
@@ -105,7 +105,7 @@ impl LoadedThemes
     {
         Self{
             active_theme: 0,
-            themes: SmallVec::new(LoadedTheme::new::<C>()),
+            themes: SmallVec::from_elem(LoadedTheme::new::<C>(), 1),
         }
     }
 

@@ -87,6 +87,15 @@ struct ErasedLoadable
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Copy, Clone)]
+struct RefSubscription
+{
+    entity: Entity,
+    setter: ContextSetter,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Clone)]
 pub(crate) enum ReflectedLoadable
 {
@@ -236,13 +245,13 @@ pub struct LoadableSheet
     total_expected_sheets: usize,
 
     /// Tracks subscriptions to loadable paths.
-    subscriptions: HashMap<LoadableRef, SmallVec<[Entity; 1]>>,
+    subscriptions: HashMap<LoadableRef, SmallVec<[RefSubscription; 1]>>,
     /// Tracks entities for cleanup.
     subscriptions_rev: HashMap<Entity, LoadableRef>,
 
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[Entity; 1]>); 1]>>,
+    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[RefSubscription; 1]>); 1]>>,
 }
 
 impl LoadableSheet
@@ -324,13 +333,14 @@ impl LoadableSheet
         &mut self,
         entity: Entity,
         loadable_ref: LoadableRef,
+        setter: ContextSetter,
         c: &mut Commands,
         callbacks: &LoaderCallbacks,
     )
     {
         // Add to subscriptions.
-        // - Note: don't check for duplicates for max efficiency.
-        self.subscriptions.entry(loadable_ref.clone()).or_default().push(entity);
+        let subscription = RefSubscription{ entity, setter };
+        self.subscriptions.entry(loadable_ref.clone()).or_default().push(subscription);
         self.subscriptions_rev.insert(entity, loadable_ref.clone());
 
         // Get already-loaded loadables that the entity is subscribed to.
@@ -342,7 +352,7 @@ impl LoadableSheet
             self.needs_updates.entry(type_id).or_default().push((
                 loadable.loadable.clone(),
                 loadable_ref.clone(),
-                SmallVec::from_elem(entity, 1),
+                SmallVec::from_elem(subscription, 1),
             ));
 
             let Some(syscommand) = callbacks.get(type_id) else {
@@ -364,7 +374,7 @@ impl LoadableSheet
     {
         let Some(loadable_ref) = self.subscriptions_rev.remove(&dead_entity) else { return };
         let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { return };
-        let Some(dead) = subscribed.iter().position(|s| *s == dead_entity) else { return };
+        let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { return };
         subscribed.swap_remove(dead);
     }
 
@@ -383,14 +393,14 @@ impl LoadableSheet
     /// Updates entities that subscribed to `T` found at recently-updated loadable paths.
     pub(crate) fn update_loadables<T: Loadable>(
         &mut self,
-        mut callback: impl FnMut(Entity, &LoadableRef, &ReflectedLoadable),
+        mut callback: impl FnMut(Entity, ContextSetter, &LoadableRef, &ReflectedLoadable),
     )
     {
         let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
 
-        for (loadable, loadable_ref, mut entities) in needs_updates.drain(..) {
-            for entity in entities.drain(..) {
-                (callback)(entity, &loadable_ref, &loadable);
+        for (loadable, loadable_ref, mut subscriptions) in needs_updates.drain(..) {
+            for subscription in subscriptions.drain(..) {
+                (callback)(subscription.entity, subscription.setter, &loadable_ref, &loadable);
             }
         }
     }
