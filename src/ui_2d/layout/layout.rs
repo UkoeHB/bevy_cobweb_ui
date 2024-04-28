@@ -314,7 +314,7 @@ fn process_node_layout(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn layout_full_traversal(
-    root_nodes: Query<&Children, With<UiRoot>>,
+    root_nodes: Query<&Children, With<Ui2DRoot>>,
     mut params: ProcessNodeParams,
     nodes: Query<(), With<CobwebNode>>,
     source: Query<&React<SizeRefSource>, With<CobwebNode>>,
@@ -450,6 +450,9 @@ impl Plugin for LayoutAlgorithmPlugin
             // These systems are broken into separate steps to improve parallelism as much as possible. The improvement
             // is 'not much' because layout uses a `&World` reference, which will prevent most other systems from
             // running in parallel.
+            //
+            // Note that each step clears the dirty tracker, and then `apply_deferred` executes deferred updates
+            // that *may* result in more dirty nodes.
             .add_systems(PostUpdate,
                 (
                     apply_deferred,
@@ -457,14 +460,18 @@ impl Plugin for LayoutAlgorithmPlugin
                         layout_full_traversal,
                         apply_deferred,
                     )
+                        .chain()
                         .run_if(|t: Res<DirtyNodeTracker>| t.len() > 1),
                     (
                         layout_targeted_traversal,
                         apply_deferred,
                     )
+                        .chain()
                         .run_if(|t: Res<DirtyNodeTracker>| t.len() > 0),
                     layout_targeted_traversal_loop.run_if(|t: Res<DirtyNodeTracker>| t.len() > 0),
-                ).in_set(LayoutSetCompute));
+                )
+                    .chain()
+                    .in_set(LayoutSetCompute));
     }
 }
 

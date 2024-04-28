@@ -9,12 +9,12 @@ use bevy_cobweb::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component for UI root entities.
+/// Component for entities that own UI trees.
 ///
 /// Note that root entities are *not* UI nodes. Typically they are cameras, textures, or entities in world space.
 /// UI node trees sit on top of UI roots.
 #[derive(Component, Debug, Copy, Clone)]
-pub struct UiRoot
+pub struct Ui2DRoot
 {
     /// Defines the base z-offset applied between the entity and its node children.
     ///
@@ -33,6 +33,7 @@ pub struct UiRoot
 ///
 /// If one node is sorted above another, then the higher node's children will be sorted above all children of the lower,
 /// regardless of `ZLevel`.
+//todo: consider adding options for how nodes at the same z-level will be sorted (e.g. child-order, (+/-)(x/y)-order, etc.)
 #[derive(Component, Reflect, Debug, Default, Copy, Clone, Deref, DerefMut, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ZLevel(pub i32);
 
@@ -46,8 +47,8 @@ pub struct CobwebNode;
 
 /// Component with the [`SizeRef`] of the base ancestor of a node.
 ///
-/// The base ancestor of a node is the last ancestor before you reach the [`UiRoot`] (i.e. it's the first actual
-/// node in the tree that sits on a [`UiRoot`]).
+/// The base ancestor of a node is the last ancestor before you reach the [`Ui2DRoot`] (i.e. it's the first actual
+/// node in the tree that sits on a [`Ui2DRoot`]).
 ///
 /// This is updated in [`LayoutSetCompute`].
 #[derive(Component, Debug, PartialEq, Copy, Clone)]

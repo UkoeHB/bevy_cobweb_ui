@@ -138,7 +138,7 @@ fn update_z_order_children(
 
 fn update_z_order(
     mut cache      : Local<OrderingCache>,
-    roots          : Query<(&UiRoot, &Children)>,
+    roots          : Query<(&Ui2DRoot, &Children)>,
     mut transforms : Query<&mut Transform, With<CobwebNode>>,
     nodes          : Query<&Children, With<CobwebNode>>,
     levels         : Query<Option<&ZLevel>, With<CobwebNode>>,
@@ -154,9 +154,9 @@ fn update_z_order(
 
 /// Z-increment used for ordering UI nodes relative to their parents.
 ///
-/// All UI nodes are globally ordered by unique z-values separeted by `Z_INCREMENT`.
-/// The lowest node in a tree is positioned at [`UiRoot::base_z_offset`] + `Z_INCREMENT`, the next-lowest is at
-/// [`UiRoot::base_z_offset`] + `2 * Z_INCREMENT`, and so on.
+/// All UI nodes are globally ordered by unique z-values separated by `Z_INCREMENT`.
+/// The lowest node in a tree is positioned at [`Ui2DRoot::base_z_offset`] + `Z_INCREMENT`, the next-lowest is at
+/// [`Ui2DRoot::base_z_offset`] + `2 * Z_INCREMENT`, and so on.
 ///
 /// A node's non-node children should order themselves using z values smaller than this, otherwise they will
 /// z-fight with other nodes.

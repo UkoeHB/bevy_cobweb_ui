@@ -47,7 +47,9 @@ impl Plugin for LayoutPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(DimsPlugin)
+        app
+            .add_plugins(Val2dPlugin)
+            .add_plugins(Dims2dPlugin)
             .add_plugins(PositionPlugin)
             .add_plugins(SortingPlugin)
             .add_plugins(SizeRefSourcePlugin)
