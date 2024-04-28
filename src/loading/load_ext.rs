@@ -93,6 +93,18 @@ fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut loadables: R
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn load_from_ref(
+    In((id, loadable_ref)): In<(Entity, LoadableRef)>,
+    mut c: Commands,
+    loaders: Res<LoaderCallbacks>,
+    mut loadablesheet: ReactResMut<LoadableSheet>
+)
+{
+    loadablesheet.get_noreact().track_entity(id, loadable_ref, &mut c, &loaders);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Resource)]
 pub(crate) struct LoaderCallbacks
 {
@@ -112,36 +124,6 @@ impl Default for LoaderCallbacks
     fn default() -> Self
     {
         Self { callbacks: HashMap::default() }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Helper trait for registering entities for loadable loading.
-pub trait StyleLoadingEntityCommandsExt
-{
-    /// Registers the current entity to load loadables from `loadable_ref`.
-    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self;
-}
-
-impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
-{
-    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
-    {
-        self.insert(HasLoadables);
-
-        let id = self.id();
-        self.commands().syscall(
-            (id, loadable_ref),
-            |In((id, loadable_ref)): In<(Entity, LoadableRef)>,
-             mut c: Commands,
-             loaders: Res<LoaderCallbacks>,
-             mut loadablesheet: ReactResMut<LoadableSheet>| {
-                loadablesheet.get_noreact().track_entity(id, loadable_ref, &mut c, &loaders);
-            },
-        );
-
-        self
     }
 }
 
@@ -185,6 +167,27 @@ impl LoadableRegistrationAppExt for App
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, derived_loader::<T>, PhantomData::<T>::default(), "derived");
+        self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper trait for registering entities for loadable loading.
+pub trait StyleLoadingEntityCommandsExt
+{
+    /// Registers the current entity to load loadables from `loadable_ref`.
+    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+}
+
+impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
+{
+    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    {
+        self.insert(HasLoadables);
+
+        let id = self.id();
+        self.commands().syscall((id, loadable_ref), load_from_ref);
         self
     }
 }

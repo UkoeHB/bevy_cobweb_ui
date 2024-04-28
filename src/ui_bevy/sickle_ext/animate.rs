@@ -16,11 +16,11 @@ fn extract_animation_value<T: Animatable>(entity: Entity, state: AnimationState,
 fn update_animation<T: Animatable>(
     In((entity, animation)): In<(Entity, Animate<T>)>,
     mut commands: Commands,
-    mut query: Query<Option<&mut DynamicStyle>>,
+    mut query: Query<(Option<&mut DynamicStyle>, Option<&mut LoadedThemes>)>,
 )
 {
     // Store the AnimationBundle on the entity.
-    let Some(ec) = commands.get_entity(entity) else { return };
+    let Some(mut ec) = commands.get_entity(entity) else { return };
     ec.try_insert(CachedAnimationBundle::<T>{ cached: animation.values });
 
     // Prepare an updated DynamicStyleAttribute.
@@ -32,8 +32,18 @@ fn update_animation<T: Animatable>(
         controller,
     };
 
-    // Insert or update the attribute.
-    if let Ok(mut existing) = query.get_mut(entity) {
+    // Access the entity.
+    let Ok((mut maybe_style, mut maybe_themes)) = query.get_mut(entity) else { return };
+
+    // If there is a loaded theme, then add this animation to the theme.
+    if let Some(themes) = maybe_themes {
+        themes.update(animation.state, attribute);
+        commands.add(RefreshLoadedTheme{ entity })
+        return;
+    }
+
+    // If there is no loaded theme, add this animation directly.
+    if let Some(mut existing) = maybe_style {
         existing.merge(vec![attribute]);
     } else {
         let style = DynamicStyle::new(vec![attribute]);
@@ -46,7 +56,7 @@ fn update_animation<T: Animatable>(
 #[derive(Component, Debug)]
 struct CachedAnimationBundle<T: Animatable>
 {
-    cached: AnimationBundle<T::ValueType>
+    cached: AnimationBundle<T::Value>
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -55,32 +65,42 @@ struct CachedAnimationBundle<T: Animatable>
 pub trait Animatable: Loadable
 {
     /// Specifies the value-type that will be animated on the target (e.g. `f32`, `Color`, etc.).
-    type ValueType: Lerp + Copy + Loadable;
+    type Value: Lerp + Loadable;
+    /// Specifies the interactivity loadable used by this animatable.
+    ///
+    /// Can be used to hook target entities up to custom interactivity.
+    ///
+    /// For example: [`Interactive`] (for `bevy_ui`), [`Interactive2d`] (for 2d UI).
+    type Interactive: Default + ApplyLoadable;
 
     /// Specifies how values should be applied to an entity.
-    fn apply(entity: Entity, value: Self::ValueType, world: &mut World);
+    fn apply(entity: Entity, value: Self::Value, world: &mut World);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Lodable type for animatable values.
-///
-/// Automatically includes the [`Interactive`] loadable.
+/// Loadable type for animatable values.
 ///
 /// Note that the `AnimationBundle::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Animate<T: Animatable>
 {
-    values: AnimationBundle<T::ValueType>,
-    settings: StyleAnimation,
+    /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this animation to become active.
+    ///
+    /// Only used if this struct is applied to an entity with a loaded theme.
+    pub state: Option<Vec<PseudoState>>,
+    /// The values that are end-targets for each animation.
+    pub values: AnimationBundle<T::Value>,
+    /// Settings that control how values are interpolated.
+    pub settings: StyleAnimation,
 }
 
 impl<T: Animatable> ApplyLoadable for Animate<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        Interactive.apply(ec);
+        T::Interactive::default().apply(ec);
 
         let id = ec.id();
         ec.commands().syscall((id, self), update_animation::<T>);
@@ -88,3 +108,6 @@ impl<T: Animatable> ApplyLoadable for Animate<T>
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+// TODO: Respond<T>, same as Animate<T> but only toggles states
+// TODO: Themed<T>, just adds a value directly to the theme
