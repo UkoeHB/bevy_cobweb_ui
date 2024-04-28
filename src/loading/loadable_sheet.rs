@@ -11,22 +11,22 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup_stylesheet(sheet_list: Res<StyleSheetList>, mut stylesheet: ReactResMut<StyleSheet>)
+fn setup_loadablesheet(sheet_list: Res<LoadableSheetList>, mut loadablesheet: ReactResMut<LoadableSheet>)
 {
-    // begin tracking expected stylesheet files
+    // begin tracking expected loadablesheet files
     for file in sheet_list.iter_files() {
-        stylesheet.get_noreact().prepare_file(StyleFile::new(file.as_str()));
+        loadablesheet.get_noreact().prepare_file(LoadableFile::new(file.as_str()));
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_style_changes(
+fn load_loadable_changes(
     mut c: Commands,
-    mut events: EventReader<AssetEvent<StyleSheetAsset>>,
-    sheet_list: Res<StyleSheetList>,
-    mut assets: ResMut<Assets<StyleSheetAsset>>,
-    mut stylesheet: ReactResMut<StyleSheet>,
+    mut events: EventReader<AssetEvent<LoadableSheetAsset>>,
+    sheet_list: Res<LoadableSheetList>,
+    mut assets: ResMut<Assets<LoadableSheetAsset>>,
+    mut loadablesheet: ReactResMut<LoadableSheet>,
     types: Res<AppTypeRegistry>,
 )
 {
@@ -41,62 +41,62 @@ fn load_style_changes(
         let id = match event {
             AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
             _ => {
-                tracing::debug!("ignoring stylesheet asset event {:?}", event);
+                tracing::debug!("ignoring loadablesheet asset event {:?}", event);
                 continue;
             }
         };
 
         let Some(handle) = sheet_list.get_handle(*id) else {
-            tracing::warn!("encountered stylesheet asset event {:?} for an untracked asset", id);
+            tracing::warn!("encountered loadablesheet asset event {:?} for an untracked asset", id);
             continue;
         };
 
         let Some(asset) = assets.remove(handle) else {
-            tracing::error!("failed to remove stylesheet asset {:?}", handle);
+            tracing::error!("failed to remove loadablesheet asset {:?}", handle);
             continue;
         };
 
-        let stylesheet = stylesheet.get_noreact();
-        parse_stylesheet_file(&type_registry, stylesheet, asset.file, asset.data);
+        let loadablesheet = loadablesheet.get_noreact();
+        parse_loadablesheet_file(&type_registry, loadablesheet, asset.file, asset.data);
         need_reactions = true;
     }
 
     if need_reactions {
-        stylesheet.get_mut(&mut c);
+        loadablesheet.get_mut(&mut c);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn cleanup_stylesheet(mut stylesheet: ReactResMut<StyleSheet>, mut removed: RemovedComponents<LoadedStyles>)
+fn cleanup_loadablesheet(mut loadablesheet: ReactResMut<LoadableSheet>, mut removed: RemovedComponents<HasLoadables>)
 {
     for removed in removed.read() {
-        stylesheet.get_noreact().remove_entity(removed);
+        loadablesheet.get_noreact().remove_entity(removed);
     }
 
-    stylesheet.get_noreact().cleanup_pending();
+    loadablesheet.get_noreact().cleanup_pending();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct ErasedStyle
+struct ErasedLoadable
 {
     type_id: TypeId,
-    style: ReflectedStyle,
+    loadable: ReflectedLoadable,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Clone)]
-pub(crate) enum ReflectedStyle
+pub(crate) enum ReflectedLoadable
 {
     Value(Arc<Box<dyn Reflect + 'static>>),
     DeserializationFailed(Arc<serde_json::Error>),
 }
 
-impl ReflectedStyle
+impl ReflectedLoadable
 {
-    pub(crate) fn equals(&self, other: &ReflectedStyle) -> Option<bool>
+    pub(crate) fn equals(&self, other: &ReflectedLoadable) -> Option<bool>
     {
         let (Self::Value(this), Self::Value(other)) = (self, other) else {
             return Some(false);
@@ -105,32 +105,32 @@ impl ReflectedStyle
         this.reflect_partial_eq(other.as_reflect())
     }
 
-    pub(crate) fn get_value<T: LoadableStyle>(&self, style_ref: &StyleRef) -> Option<T>
+    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &LoadableRef) -> Option<T>
     {
         match self {
-            ReflectedStyle::Value(style) => {
-                let Some(new_value) = T::from_reflect(style.as_reflect()) else {
+            ReflectedLoadable::Value(loadable) => {
+                let Some(new_value) = T::from_reflect(loadable.as_reflect()) else {
                     let temp = T::default();
                     let mut hint = serde_json::to_string_pretty(&temp).unwrap();
                     if hint.len() > 250 {
                         hint = serde_json::to_string(&temp).unwrap();
                     }
-                    tracing::error!("failed reflecting style {:?} at path {:?} in file {:?}\n\
+                    tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
                         serialization hint: {}",
-                        type_name::<T>(), style_ref.path.path, style_ref.file, hint.as_str());
+                        type_name::<T>(), loadable_ref.path.path, loadable_ref.file, hint.as_str());
                     return None;
                 };
                 Some(new_value)
             }
-            ReflectedStyle::DeserializationFailed(err) => {
+            ReflectedLoadable::DeserializationFailed(err) => {
                 let temp = T::default();
                 let mut hint = serde_json::to_string_pretty(&temp).unwrap();
                 if hint.len() > 250 {
                     hint = serde_json::to_string(&temp).unwrap();
                 }
-                tracing::error!("failed deserializing style {:?} at path {:?} in file {:?}, {:?}\n\
+                tracing::error!("failed deserializing loadable {:?} at path {:?} in file {:?}, {:?}\n\
                     serialization hint: {}",
-                    type_name::<T>(), style_ref.path.path, style_ref.file, **err, hint.as_str());
+                    type_name::<T>(), loadable_ref.path.path, loadable_ref.file, **err, hint.as_str());
                 None
             }
         }
@@ -139,15 +139,15 @@ impl ReflectedStyle
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive resource for managing styles loaded from stylesheet assets.
+/// Reactive resource for managing loadables loaded from loadablesheet assets.
 ///
 /**
-### Stylesheet asset format
+### Loadablesheet asset format
 
-Stylesheets are written as JSON files with the extension `.style.json`. You must register stylesheets in your app with
-[`StyleSheetListAppExt::add_style_sheet`].
+Loadablesheets are written as JSON files with the extension `.loadable.json`. You must register loadablesheets in your app with
+[`LoadableSheetListAppExt::add_load_sheet`].
 
-The stylesheet format has a short list of rules.
+The loadablesheet format has a short list of rules.
 
 - Each file must have one map at the base layer.
 ```json
@@ -156,7 +156,7 @@ The stylesheet format has a short list of rules.
 }
 ```
 - If the first map entry's key is `"using"`, then the value should be an array of full type names. This array
-    should contain full type names for any [`Style`] that has an ambiguous short name (this will happen if there are
+    should contain full type names for any [`Loadable`] that has an ambiguous short name (this will happen if there are
     multiple `Reflect` types with the same short name). Note that currently we only support one version of a shortname
     per file.
 ```json
@@ -167,10 +167,10 @@ The stylesheet format has a short list of rules.
     ]
 }
 ```
-- All other map keys may either be [`CobwebStyle`] short type names or node path references.
-    A style short name is a marker for a style, and is followed by a map containing the serialized value of that style.
-    Node path references are used to locate specific styles in the map, and each node should be a map of styles and
-    other nodes. The leaf nodes of the overall structure will be styles.
+- All other map keys may either be [`Loadable`] short type names or node path references.
+    A loadable short name is a marker for a loadable, and is followed by a map containing the serialized value of that loadable.
+    Node path references are used to locate specific loadables in the overall structure, and each node should be a map of loadables and
+    other nodes. The leaf nodes of the overall structure will be loadables.
 ```json
 {
     "using": [ "bevy_cobweb_ui::layout::Dims" ],
@@ -184,8 +184,8 @@ The stylesheet format has a short list of rules.
     }
 }
 ```
-- A style name may be followed by the keyword `"inherited"`, which means the style value will be inherited from the most
-    recent instance of that style below it in the tree. Inheritance is ordering-dependent, so if you don't want a style
+- A loadable name may be followed by the keyword `"inherited"`, which means the loadable value will be inherited from the most
+    recent instance of that loadable below it in the tree. Inheritance is ordering-dependent, so if you don't want a loadable
     to be inherited, insert it below any child nodes.
 ```json
 {
@@ -200,7 +200,7 @@ The stylesheet format has a short list of rules.
     }
 }
 ```
-- Node path references may be combined into path segments, which can be used to reduce indentation. If a style is inherited
+- Node path references may be combined into path segments, which can be used to reduce indentation. If a loadable is inherited
     in an abbreviated path, it will inherit from the current scope, not its path-parent.
 ```json
 {
@@ -221,46 +221,46 @@ The stylesheet format has a short list of rules.
 */
 //TODO: add "MY_CONSTANT_X" references with "constants" section
 //TODO: add "imports" section that brings "using" and "constants" sections from other files (track dependencies in
-// StyleSheet)
+// LoadableSheet)
 // - warn if there are unresolved dependencies after all initial files have been loaded and handled
 #[derive(ReactResource)]
-pub struct StyleSheet
+pub struct LoadableSheet
 {
-    /// Tracks styles in all style files.
-    styles: HashMap<StyleRef, SmallVec<[ErasedStyle; 4]>>,
+    /// Tracks loadables in all loadable files.
+    loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks which files have not initialized yet.
-    pending: HashSet<StyleFile>,
-    /// Tracks the total number of style sheets that should load.
+    pending: HashSet<LoadableFile>,
+    /// Tracks the total number of loadable sheets that should load.
     ///
     /// Used for progress tracking on initial load.
     total_expected_sheets: usize,
 
-    /// Tracks subscriptions to style paths.
-    subscriptions: HashMap<StyleRef, SmallVec<[Entity; 1]>>,
+    /// Tracks subscriptions to loadable paths.
+    subscriptions: HashMap<LoadableRef, SmallVec<[Entity; 1]>>,
     /// Tracks entities for cleanup.
-    subscriptions_rev: HashMap<Entity, StyleRef>,
+    subscriptions_rev: HashMap<Entity, LoadableRef>,
 
-    /// Records entities that need style updates.
-    /// - We clear this at the end of every tick, so there should not be stale `ReflectedStyle` values.
-    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedStyle, StyleRef, SmallVec<[Entity; 1]>); 1]>>,
+    /// Records entities that need loadable updates.
+    /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
+    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[Entity; 1]>); 1]>>,
 }
 
-impl StyleSheet
+impl LoadableSheet
 {
-    /// Prepares a stylesheet file.
-    fn prepare_file(&mut self, file: StyleFile)
+    /// Prepares a loadablesheet file.
+    fn prepare_file(&mut self, file: LoadableFile)
     {
         let _ = self.pending.insert(file.clone());
         self.total_expected_sheets += 1;
     }
 
-    /// Initializes a stylesheet file.
-    pub(crate) fn initialize_file(&mut self, file: StyleFile)
+    /// Initializes a loadablesheet file.
+    pub(crate) fn initialize_file(&mut self, file: LoadableFile)
     {
         let _ = self.pending.remove(&file);
     }
 
-    /// Gets the stylesheet's loading progress on startup.
+    /// Gets the loadablesheet's loading progress on startup.
     ///
     /// Returns `(num uninitialized files, num total files)`.
     pub fn loading_progress(&self) -> (usize, usize)
@@ -268,51 +268,51 @@ impl StyleSheet
         (self.pending.len(), self.total_expected_sheets)
     }
 
-    /// Inserts a style at the specified path if its value will change.
+    /// Inserts a loadable at the specified path if its value will change.
     ///
     /// Returns `true` if this method added any pending subscriber updates.
     pub(crate) fn insert(
         &mut self,
-        style_ref: &StyleRef,
-        style: ReflectedStyle,
+        loadable_ref: &LoadableRef,
+        loadable: ReflectedLoadable,
         type_id: TypeId,
         full_type_name: &str,
     ) -> bool
     {
-        match self.styles.entry(style_ref.clone()) {
+        match self.loadables.entry(loadable_ref.clone()) {
             std::collections::hash_map::Entry::Vacant(entry) => {
                 let mut vec = SmallVec::default();
-                vec.push(ErasedStyle { type_id, style: style.clone() });
+                vec.push(ErasedLoadable { type_id, loadable: loadable.clone() });
                 entry.insert(vec);
             }
             std::collections::hash_map::Entry::Occupied(mut entry) => {
-                // Insert if the style value changed.
-                if let Some(erased_style) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
-                    match erased_style.style.equals(&style) {
+                // Insert if the loadable value changed.
+                if let Some(erased_loadable) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
+                    match erased_loadable.loadable.equals(&loadable) {
                         Some(true) => return false,
                         Some(false) => {
                             // Replace the existing value.
-                            *erased_style = ErasedStyle { type_id, style: style.clone() };
+                            *erased_loadable = ErasedLoadable { type_id, loadable: loadable.clone() };
                         }
                         None => {
-                            tracing::error!("failed updating style {:?} at {:?}, its reflected value doesn't implement \
-                                PartialEq", full_type_name, style_ref);
+                            tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
+                                PartialEq", full_type_name, loadable_ref);
                             return false;
                         }
                     }
                 } else {
-                    entry.get_mut().push(ErasedStyle { type_id, style: style.clone() });
+                    entry.get_mut().push(ErasedLoadable { type_id, loadable: loadable.clone() });
                 }
             }
         }
 
         // Identify entites that should update.
-        let Some(subscriptions) = self.subscriptions.get(&style_ref) else { return false };
+        let Some(subscriptions) = self.subscriptions.get(&loadable_ref) else { return false };
         if subscriptions.len() == 0 {
             return false;
         }
         let entry = self.needs_updates.entry(type_id).or_default();
-        entry.push((style, style_ref.clone(), subscriptions.clone()));
+        entry.push((loadable, loadable_ref.clone(), subscriptions.clone()));
 
         true
     }
@@ -323,47 +323,47 @@ impl StyleSheet
     pub(crate) fn track_entity(
         &mut self,
         entity: Entity,
-        style_ref: StyleRef,
+        loadable_ref: LoadableRef,
         c: &mut Commands,
-        callbacks: &StyleLoaderCallbacks,
+        callbacks: &LoaderCallbacks,
     )
     {
         // Add to subscriptions.
         // - Note: don't check for duplicates for max efficiency.
-        self.subscriptions.entry(style_ref.clone()).or_default().push(entity);
-        self.subscriptions_rev.insert(entity, style_ref.clone());
+        self.subscriptions.entry(loadable_ref.clone()).or_default().push(entity);
+        self.subscriptions_rev.insert(entity, loadable_ref.clone());
 
-        // Get already-loaded styles that the entity is subscribed to.
-        let Some(styles) = self.styles.get(&style_ref) else { return };
+        // Get already-loaded loadables that the entity is subscribed to.
+        let Some(loadables) = self.loadables.get(&loadable_ref) else { return };
 
-        // Schedule updates for each style.
-        for style in styles.iter() {
-            let type_id = style.type_id;
+        // Schedule updates for each loadable.
+        for loadable in loadables.iter() {
+            let type_id = loadable.type_id;
             self.needs_updates.entry(type_id).or_default().push((
-                style.style.clone(),
-                style_ref.clone(),
+                loadable.loadable.clone(),
+                loadable_ref.clone(),
                 SmallVec::from_elem(entity, 1),
             ));
 
             let Some(syscommand) = callbacks.get(type_id) else {
-                tracing::warn!("found style at {:?} that wasn't registered as a loadable style", style_ref);
+                tracing::warn!("found loadable at {:?} that wasn't registered as a loadable loadable", loadable_ref);
                 continue;
             };
 
             c.add(syscommand);
         }
 
-        // Notify the entity that some of its styles have loaded.
-        if styles.len() > 0 {
-            c.react().entity_event::<StylesLoaded>(entity, StylesLoaded);
+        // Notify the entity that some of its loadables have loaded.
+        if loadables.len() > 0 {
+            c.react().entity_event(entity, Loaded);
         }
     }
 
     /// Cleans up despawned entities.
     fn remove_entity(&mut self, dead_entity: Entity)
     {
-        let Some(style_ref) = self.subscriptions_rev.remove(&dead_entity) else { return };
-        let Some(subscribed) = self.subscriptions.get_mut(&style_ref) else { return };
+        let Some(loadable_ref) = self.subscriptions_rev.remove(&dead_entity) else { return };
+        let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { return };
         let Some(dead) = subscribed.iter().position(|s| *s == dead_entity) else { return };
         subscribed.swap_remove(dead);
     }
@@ -374,34 +374,34 @@ impl StyleSheet
         if self.needs_updates.len() > 0 {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
             // call `apply_deferred` before the cleanup system runs.
-            warn_once!("The style sheet contains pending updates for types that weren't registered. This warning only \
+            warn_once!("The loadable sheet contains pending updates for types that weren't registered. This warning only \
                 prints once, and may print spuriously if you spawn loaded entities in Last.");
         }
         self.needs_updates.clear();
     }
 
-    /// Updates entities that subscribed to `T` found at recently-updated style paths.
-    pub(crate) fn update_styles<T: LoadableStyle>(
+    /// Updates entities that subscribed to `T` found at recently-updated loadable paths.
+    pub(crate) fn update_loadables<T: Loadable>(
         &mut self,
-        mut callback: impl FnMut(Entity, &StyleRef, &ReflectedStyle),
+        mut callback: impl FnMut(Entity, &LoadableRef, &ReflectedLoadable),
     )
     {
         let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
 
-        for (style, styleref, mut entities) in needs_updates.drain(..) {
+        for (loadable, loadable_ref, mut entities) in needs_updates.drain(..) {
             for entity in entities.drain(..) {
-                (callback)(entity, &styleref, &style);
+                (callback)(entity, &loadable_ref, &loadable);
             }
         }
     }
 }
 
-impl Default for StyleSheet
+impl Default for LoadableSheet
 {
     fn default() -> Self
     {
         Self {
-            styles: HashMap::default(),
+            loadables: HashMap::default(),
             pending: HashSet::default(),
             total_expected_sheets: 0,
             subscriptions: HashMap::default(),
@@ -413,17 +413,17 @@ impl Default for StyleSheet
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Plugin that enables style loading.
-pub(crate) struct StyleSheetPlugin;
+/// Plugin that enables loading.
+pub(crate) struct LoadableSheetPlugin;
 
-impl Plugin for StyleSheetPlugin
+impl Plugin for LoadableSheetPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_react_resource::<StyleSheet>()
-            .add_systems(PreStartup, setup_stylesheet)
-            .add_systems(First, load_style_changes)
-            .add_systems(Last, cleanup_stylesheet);
+        app.init_react_resource::<LoadableSheet>()
+            .add_systems(PreStartup, setup_loadablesheet)
+            .add_systems(First, load_loadable_changes)
+            .add_systems(Last, cleanup_loadablesheet);
     }
 }
 

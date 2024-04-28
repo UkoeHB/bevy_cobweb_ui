@@ -14,7 +14,8 @@ impl Plugin for CobwebUiPlugin
         app.add_plugins(ReactPlugin)
             .add_plugins(LoadingPlugin)
             .add_plugins(CobwebBevyUiPlugin)
-            .add_plugins(Cobweb2dUiPlugin);
+            //.add_plugins(Cobweb2DUiPlugin)
+            ;
     }
 }
 

@@ -15,8 +15,8 @@ pub trait NodeLoadingExt<'w, 's>
     /// Includes a `callback` for interacting with the entity.
     fn load<'a>(
         &'a mut self,
-        style_ref: StyleRef,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
+        style_ref: LoadableRef,
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         self.load_with(style_ref, NodeBundle::default(), callback)
@@ -29,9 +29,9 @@ pub trait NodeLoadingExt<'w, 's>
     /// Includes a `callback` for interacting with the entity.
     fn load_with<'a>(
         &'a mut self,
-        style_ref: StyleRef,
+        style_ref: LoadableRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>;
 }
 
@@ -39,13 +39,13 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 {
     fn load_with<'a>(
         &'a mut self,
-        style_ref: StyleRef,
+        style_ref: LoadableRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut node = self.spawn(bundle);
-        node.entity_commands().load_style(style_ref.clone());
+        node.entity_commands().load(style_ref.clone());
         (callback)(&mut node, style_ref);
         node
     }
@@ -55,13 +55,13 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
 {
     fn load_with<'a>(
         &'a mut self,
-        style_ref: StyleRef,
+        style_ref: LoadableRef,
         bundle: impl Bundle,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, StyleRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut child = self.spawn(bundle);
-        child.entity_commands().load_style(style_ref.clone());
+        child.entity_commands().load(style_ref.clone());
         (callback)(&mut child, style_ref);
         let id = self.id();
         self.commands().ui_builder(id)

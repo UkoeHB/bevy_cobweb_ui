@@ -10,13 +10,13 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct StyleSheetAssetLoader;
+struct LoadableSheetAssetLoader;
 
-impl AssetLoader for StyleSheetAssetLoader
+impl AssetLoader for LoadableSheetAssetLoader
 {
-    type Asset = StyleSheetAsset;
+    type Asset = LoadableSheetAsset;
     type Settings = ();
-    type Error = StyleSheetAssetLoaderError;
+    type Error = LoadableSheetAssetLoaderError;
 
     fn load<'a>(
         &'a self,
@@ -30,8 +30,8 @@ impl AssetLoader for StyleSheetAssetLoader
             reader.read_to_end(&mut bytes).await?;
             //todo: replace this with custom parsing that only allocates where absolutely necessary
             let data: serde_json::Value = from_slice(&bytes)?;
-            Ok(StyleSheetAsset {
-                file: StyleFile::new(&load_context.asset_path().path().to_string_lossy()),
+            Ok(LoadableSheetAsset {
+                file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),
                 data,
             })
         })
@@ -39,14 +39,14 @@ impl AssetLoader for StyleSheetAssetLoader
 
     fn extensions(&self) -> &[&str]
     {
-        &[".style.json"]
+        &[".load.json"]
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instructs the asset server to load all stylesheet files.
-fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetServer>)
+/// Instructs the asset server to load all loadablesheet files.
+fn load_sheets(mut sheets: ResMut<LoadableSheetList>, asset_server: Res<AssetServer>)
 {
     let mut handles = HashMap::default();
 
@@ -60,49 +60,49 @@ fn load_stylesheets(mut sheets: ResMut<StyleSheetList>, asset_server: Res<AssetS
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Possible errors that can be produced by the internal `StyleSheetAssetLoader`.
+/// Possible errors that can be produced by the internal `LoadableSheetAssetLoader`.
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum StyleSheetAssetLoaderError
+pub enum LoadableSheetAssetLoaderError
 {
     /// An [IO Error](std::io::Error).
-    #[error("Could not read the stylesheet file: {0}")]
+    #[error("Could not read the loadablesheet file: {0}")]
     Io(#[from] std::io::Error),
     /// A [JSON Error](serde_json::error::Error).
-    #[error("Could not parse the stylesheet JSON: {0}")]
+    #[error("Could not parse the loadablesheet JSON: {0}")]
     JsonError(#[from] serde_json::error::Error),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A partially-deserialized stylesheet file.
+/// A partially-deserialized loadablesheet file.
 #[derive(Debug, Asset, TypePath)]
-pub(crate) struct StyleSheetAsset
+pub(crate) struct LoadableSheetAsset
 {
-    pub(crate) file: StyleFile,
+    pub(crate) file: LoadableFile,
     pub(crate) data: serde_json::Value,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores asset paths for all stylesheets that should be loaded.
+/// Stores asset paths for all loadablesheets that should be loaded.
 #[derive(Resource)]
-pub(crate) struct StyleSheetList
+pub(crate) struct LoadableSheetList
 {
     files: Vec<String>,
-    handles: HashMap<AssetId<StyleSheetAsset>, Handle<StyleSheetAsset>>,
+    handles: HashMap<AssetId<LoadableSheetAsset>, Handle<LoadableSheetAsset>>,
 }
 
-impl StyleSheetList
+impl LoadableSheetList
 {
     fn add_file(&mut self, file: impl Into<String>)
     {
         let file = file.into();
-        tracing::info!("registered stylesheet file \"{:?}\"", file);
+        tracing::info!("registered loadablesheet file \"{:?}\"", file);
         self.files.push(file);
     }
 
-    fn set_handles(&mut self, handles: HashMap<AssetId<StyleSheetAsset>, Handle<StyleSheetAsset>>)
+    fn set_handles(&mut self, handles: HashMap<AssetId<LoadableSheetAsset>, Handle<LoadableSheetAsset>>)
     {
         self.handles = handles;
     }
@@ -112,13 +112,13 @@ impl StyleSheetList
         self.files.iter()
     }
 
-    pub(crate) fn get_handle(&self, id: AssetId<StyleSheetAsset>) -> Option<&Handle<StyleSheetAsset>>
+    pub(crate) fn get_handle(&self, id: AssetId<LoadableSheetAsset>) -> Option<&Handle<LoadableSheetAsset>>
     {
         self.handles.get(&id)
     }
 }
 
-impl Default for StyleSheetList
+impl Default for LoadableSheetList
 {
     fn default() -> Self
     {
@@ -128,42 +128,42 @@ impl Default for StyleSheetList
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`StyleSheet`] use.
-pub trait StyleSheetListAppExt
+/// Extends `App` with methods supporting [`LoadableSheet`] use.
+pub trait LoadableSheetListAppExt
 {
-    /// Registers a style sheet file to be loaded as a stylesheet asset.
-    fn add_style_sheet(&mut self, file: impl Into<String>) -> &mut Self;
+    /// Registers a loadable sheet file to be loaded as a loadablesheet asset.
+    fn add_load_sheet(&mut self, file: impl Into<String>) -> &mut Self;
 }
 
-impl StyleSheetListAppExt for App
+impl LoadableSheetListAppExt for App
 {
-    fn add_style_sheet(&mut self, file: impl Into<String>) -> &mut Self
+    fn add_load_sheet(&mut self, file: impl Into<String>) -> &mut Self
     {
-        if !self.world.contains_resource::<StyleSheetList>() {
-            self.init_resource::<StyleSheetList>();
+        if !self.world.contains_resource::<LoadableSheetList>() {
+            self.init_resource::<LoadableSheetList>();
         }
 
-        self.world.resource_mut::<StyleSheetList>().add_file(file);
+        self.world.resource_mut::<LoadableSheetList>().add_file(file);
         self
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Plugin to load [`StyleSheet`] files into [`StyleSheetAssets`](StyleSheetAsset).
-pub(crate) struct StyleSheetAssetLoaderPlugin;
+/// Plugin to load [`LoadableSheet`] files into [`LoadableSheetAssets`](LoadableSheetAsset).
+pub(crate) struct LoadableSheetAssetLoaderPlugin;
 
-impl Plugin for StyleSheetAssetLoaderPlugin
+impl Plugin for LoadableSheetAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        if !app.world.contains_resource::<StyleSheetList>() {
-            app.init_resource::<StyleSheetList>();
+        if !app.world.contains_resource::<LoadableSheetList>() {
+            app.init_resource::<LoadableSheetList>();
         }
 
-        app.init_asset::<StyleSheetAsset>()
-            .register_asset_loader(StyleSheetAssetLoader)
-            .add_systems(PreStartup, load_stylesheets);
+        app.init_asset::<LoadableSheetAsset>()
+            .register_asset_loader(LoadableSheetAssetLoader)
+            .add_systems(PreStartup, load_sheets);
     }
 }
 

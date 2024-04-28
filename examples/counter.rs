@@ -73,12 +73,12 @@ impl CounterWidget
     }
 }
 
-impl StyleToBevy for CounterWidget
+impl ApplyLoadable for CounterWidget
 {
     /// Inserts a counter widget to the entity.
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
-        let file = StyleRef::from_file("examples/counter.style.json");
+        let file = LoadableRef::from_file("examples/counter.load.json");
 
         c.ui_builder(ec.id()).load(file.e("button"), |button, path| {
             let button_id = button.id();
@@ -102,7 +102,7 @@ impl StyleToBevy for CounterWidget
 
 fn build_ui(mut c: Commands)
 {
-    let file = StyleRef::from_file("examples/counter.style.json");
+    let file = LoadableRef::from_file("examples/counter.load.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.load(path.e("button"), |button, path| {
@@ -141,7 +141,7 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
-        .add_style_sheet("examples/counter.style.json")
+        .add_load_sheet("examples/counter.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();

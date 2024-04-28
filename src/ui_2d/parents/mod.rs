@@ -4,6 +4,6 @@ mod parent;
 mod plugin;
 
 //API exports
-pub use crate::parents::camera2d::*;
-pub use crate::parents::parent::*;
-pub(crate) use crate::parents::plugin::*;
+pub use camera2d::*;
+pub use parent::*;
+pub(crate) use plugin::*;

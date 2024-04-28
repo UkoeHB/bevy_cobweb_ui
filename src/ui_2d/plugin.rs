@@ -5,9 +5,9 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub struct Cobweb2dUiPlugin;
+pub struct Cobweb2DUiPlugin;
 
-impl Plugin for Cobweb2dUiPlugin
+impl Plugin for Cobweb2DUiPlugin
 {
     fn build(&self, app: &mut App)
     {

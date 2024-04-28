@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::ui_builder::*;
 
 use crate::*;
 
@@ -12,12 +11,12 @@ use crate::*;
 fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     In((entity, syscommand, triggers)): In<(Entity, SystemCommand, Triggers)>,
     mut c: Commands,
-    loaded: Query<(), With<LoadedStyles>>,
+    loaded: Query<(), With<HasLoadables>>,
 )
 {
-    // Detect styles loaded if appropriate.
+    // Detect loadables if appropriate.
     let revoke_token = if loaded.contains(entity) {
-        let triggers = (triggers, entity_event::<StylesLoaded>(entity));
+        let triggers = (triggers, entity_event::<Loaded>(entity));
         c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
     } else {
         c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
@@ -29,10 +28,9 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper struct returned by [`on_event`](NodeReactEntityCommandsExt::on_event).
+/// Helper struct returned by [`on_event`](UiReactEntityCommandsExt::on_event).
 ///
 /// Call [`Self::r`] to add a reactor.
-//todo: Use UiBuilder once reborrowing is implemented
 pub struct OnEventExt<'a, T: Send + Sync + 'static>
 {
     ec: EntityCommands<'a>,
@@ -41,12 +39,12 @@ pub struct OnEventExt<'a, T: Send + Sync + 'static>
 
 impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 {
-    fn new(ec: EntityCommands<'a>) -> OnEventExt<'a, T>
+    pub(crate) fn new(ec: EntityCommands<'a>) -> OnEventExt<'a, T>
     {
         Self { ec, _p: PhantomData::default() }
     }
 
-    /// Adds a reactor to an [`on_event`](NodeReactEntityCommandsExt::on_event) request.
+    /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.
     pub fn r<M>(mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'a>
     {
         let syscommand = self.ec.commands().spawn_system_command(callback);
@@ -63,11 +61,8 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering reactors for node entities.
-pub trait NodeReactEntityCommandsExt
+pub trait UiReactEntityCommandsExt
 {
-    /// Registers the current node with an [`EntityWorldReactor`].
-    fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local);
-
     /// Inserts a reactive component to the entity.
     ///
     /// The component can be accessed with the [`React<T>`] component, or with the
@@ -76,13 +71,8 @@ pub trait NodeReactEntityCommandsExt
 
     /// Inserts a derived value to the entity.
     ///
-    /// Uses [`T::StyleToBevy`] to convert the value into entity mutations.
-    fn insert_derived<T: StyleToBevy>(&mut self, value: T) -> &mut Self;
-
-    /// Provides access to [`ReactCommands`].
-    ///
-    /// Equivalent to `self.commands().react()`.
-    fn react(&mut self) -> ReactCommands<'_, '_>;
+    /// Uses [`T::ApplyLoadable`] to convert the value into entity mutations.
+    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self;
 
     /// Registers an [`entity_event`] reactor for the current entity.
     ///
@@ -94,7 +84,7 @@ pub trait NodeReactEntityCommandsExt
     /// The system runs:
     /// - Immediately after being registered.
     /// - Whenever the triggers fire.
-    /// - When entities with loaded styles receive [`StylesLoaded`] events.
+    /// - When an entity with [`HasLoadables`] receives [`Loaded`] events.
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
         &mut self,
         triggers: impl ReactionTriggerBundle,
@@ -102,13 +92,8 @@ pub trait NodeReactEntityCommandsExt
     ) -> &mut Self;
 }
 
-impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
+impl UiReactEntityCommandsExt for EntityCommands<'_>
 {
-    fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
-    {
-        self.entity_commands().add_reactor::<T>(data);
-    }
-
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
         let id = self.id();
@@ -116,20 +101,15 @@ impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
         self
     }
 
-    fn insert_derived<T: StyleToBevy>(&mut self, value: T) -> &mut Self
+    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self
     {
-        value.to_bevy(&mut self.entity_commands());
+        value.apply(self);
         self
-    }
-
-    fn react(&mut self) -> ReactCommands<'_, '_>
-    {
-        self.commands().react()
     }
 
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
     {
-        OnEventExt::new(self.entity_commands())
+        OnEventExt::new(self.reborrow())
     }
 
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(

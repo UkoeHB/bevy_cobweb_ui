@@ -4,29 +4,29 @@ use smol_str::SmolStr;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// The token that separates parts of a style path.
+/// The token that separates parts of a loadable path.
 ///
 /// Example: `menu::header::title`, where `menu`, `header`, and `title` are path extensions.
-pub const STYLE_PATH_SEPARATOR: &'static str = "::";
+pub const LOADABLE_PATH_SEPARATOR: &'static str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the path to a stylesheet file in the `asset` directory.
+/// Represents the path to a loadable-sheet file in the `asset` directory.
 ///
-/// Stylesheet files use the `.style.json` extension.
+/// Loadable-sheet files use the `.loadable.json` extension.
 ///
-/// Example: `ui/home.style.json` for a `home` stylesheet in `assets/ui`.
+/// Example: `ui/home.loadable.json` for a `home` loadable-sheet in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct StyleFile
+pub struct LoadableFile
 {
     pub(crate) file: Arc<str>,
 }
 
-impl StyleFile
+impl LoadableFile
 {
-    /// Creates a new style file reference from a file name.
+    /// Creates a new loadable file reference from a file name.
     ///
-    /// The file name should include the file extension (i.e. `.style.json`).
+    /// The file name should include the file extension (i.e. `.loadable.json`).
     pub fn new(file: &str) -> Self
     {
         Self { file: Arc::from(file) }
@@ -35,20 +35,20 @@ impl StyleFile
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the path to a specific style in a stylesheet file.
+/// Represents the path to a specific loadable in a loadable-sheet file.
 ///
 /// Path extensions are stored as [`SmolStr`], so it is recommended for extensions to be <= 25 characters long.
 ///
-/// Example: `menu::header::title` for accessing the `title` style path in a stylesheet.
+/// Example: `menu::header::title` for accessing the `title` loadable path in a loadable-sheet.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct StylePath
+pub struct LoadablePath
 {
     pub(crate) path: Arc<[SmolStr]>,
 }
 
-impl StylePath
+impl LoadablePath
 {
-    /// Creates a new style path.
+    /// Creates a new loadable path.
     pub fn new(new_path: &str) -> Self
     {
         let mut path = Vec::default();
@@ -57,7 +57,7 @@ impl StylePath
         Self { path: Arc::from(path) }
     }
 
-    /// Extends an existing style path with a path extension.
+    /// Extends an existing loadable path with a path extension.
     pub fn extend(&self, extension: &str) -> Self
     {
         let mut path = Vec::from(&*self.path);
@@ -68,7 +68,7 @@ impl StylePath
 
     fn extend_inner(extension: &str, path: &mut Vec<SmolStr>)
     {
-        for path_element in extension.split(STYLE_PATH_SEPARATOR) {
+        for path_element in extension.split(LOADABLE_PATH_SEPARATOR) {
             if path_element.is_empty() {
                 continue;
             }
@@ -79,35 +79,35 @@ impl StylePath
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents a complete reference to a style instance in a stylesheet asset.
+/// Represents a complete reference to a loadable instance in a loadable-sheet asset.
 ///
 /// Example:
-/// - File: `ui/home.style.json` for a `home` stylesheet in `assets/ui`.
-/// - Path: `menu::header::title` for accessing the `title` style path in the `home` stylesheet.
+/// - File: `ui/home.loadable.json` for a `home` loadable-sheet in `assets/ui`.
+/// - Path: `menu::header::title` for accessing the `title` loadable path in the `home` loadable-sheet.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct StyleRef
+pub struct LoadableRef
 {
-    /// See [`StyleFile`].
-    pub file: StyleFile,
-    /// See [`StylePath`].
-    pub path: StylePath,
+    /// See [`LoadableFile`].
+    pub file: LoadableFile,
+    /// See [`LoadablePath`].
+    pub path: LoadablePath,
 }
 
-impl StyleRef
+impl LoadableRef
 {
-    /// Creates a new style reference from a file name.
+    /// Creates a new loadable reference from a file name.
     pub fn from_file(file: &str) -> Self
     {
         Self::new(file, "")
     }
 
-    /// Creates a new style reference from a file name and path.
+    /// Creates a new loadable reference from a file name and path.
     pub fn new(file: &str, path: &str) -> Self
     {
-        Self { file: StyleFile::new(file), path: StylePath::new(path) }
+        Self { file: LoadableFile::new(file), path: LoadablePath::new(path) }
     }
 
-    /// Extends an existing style reference with a path extension.
+    /// Extends an existing loadable reference with a path extension.
     pub fn extend(&self, extension: &str) -> Self
     {
         Self { file: self.file.clone(), path: self.path.extend(extension) }
@@ -122,21 +122,21 @@ impl StyleRef
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores a complete [`StylePath`] in addition to the style's [`type_path`](bevy::reflect::TypePath::type_path).
+/// Stores a complete [`LoadablePath`] in addition to the loadable's [`type_path`](bevy::reflect::TypePath::type_path).
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct FullStylePath
+pub struct FullLoadablePath
 {
-    /// See [`StylePath`].
-    pub path: StylePath,
+    /// See [`LoadablePath`].
+    pub path: LoadablePath,
     /// See [`type_path`](bevy::reflect::TypePath::type_path).
     pub full_type_name: &'static str,
 }
 
-impl FullStylePath
+impl FullLoadablePath
 {
-    /// Finalizes a [`StylePath`] by specifying the style's [`type_path`](bevy::reflect::TypePath::type_path),
-    /// which is used to identify the style in stylesheet files.
-    pub fn new(path: StylePath, full_type_name: &'static str) -> Self
+    /// Finalizes a [`LoadablePath`] by specifying the loadable's [`type_path`](bevy::reflect::TypePath::type_path),
+    /// which is used to identify the loadable in loadable-sheet files.
+    pub fn new(path: LoadablePath, full_type_name: &'static str) -> Self
     {
         Self { path, full_type_name }
     }
@@ -144,20 +144,20 @@ impl FullStylePath
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores a fully-specified reference to a style.
+/// Stores a fully-specified reference to a loadable.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct FullStyleRef
+pub struct FullLoadableRef
 {
-    /// See [`StyleFile`].
-    pub file: StyleFile,
-    /// See [`FullStylePath`].
-    pub path: FullStylePath,
+    /// See [`LoadableFile`].
+    pub file: LoadableFile,
+    /// See [`FullLoadablePath`].
+    pub path: FullLoadablePath,
 }
 
-impl FullStyleRef
+impl FullLoadableRef
 {
-    /// Creates a full style reference.
-    pub fn new(file: StyleFile, path: FullStylePath) -> Self
+    /// Creates a full loadable reference.
+    pub fn new(file: LoadableFile, path: FullLoadablePath) -> Self
     {
         Self { file, path }
     }

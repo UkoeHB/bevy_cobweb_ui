@@ -786,8 +786,8 @@ impl Plugin for StyleWrappersPlugin
                 (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
             )
             .add_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
-            .register_reactive_style::<AbsoluteStyle>()
-            .register_reactive_style::<FlexStyle>();
+            .register_reactive_loadable::<AbsoluteStyle>()
+            .register_reactive_loadable::<FlexStyle>();
     }
 }
 

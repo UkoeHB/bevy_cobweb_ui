@@ -103,9 +103,9 @@ impl TextLine
     }
 }
 
-impl StyleToBevy for TextLine
+impl ApplyLoadable for TextLine
 {
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
         let entity = ec.id();
         ec.commands().syscall((entity, self), insert_text_line);
@@ -122,7 +122,7 @@ impl Plugin for UiTextExtPlugin
     {
         app.init_resource::<FontMap>()
             .register_type::<TextLine>()
-            .register_derived_style::<TextLine>();
+            .register_derived_loadable::<TextLine>();
     }
 }
 

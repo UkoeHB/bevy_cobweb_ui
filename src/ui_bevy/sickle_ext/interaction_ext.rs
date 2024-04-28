@@ -165,9 +165,9 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Interactive;
 
-impl StyleToBevy for Interactive
+impl ApplyLoadable for Interactive
 {
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
         ec.try_insert((Interaction::default(), TrackedInteraction::default()));
     }
@@ -307,9 +307,9 @@ pub struct AnimatedBgColor
     pub animate: AnimationSettings,
 }
 
-impl StyleToBevy for AnimatedBgColor
+impl ApplyLoadable for AnimatedBgColor
 {
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
         let interactive_bg = InteractiveBackground {
             highlight: self.highlight,
@@ -318,8 +318,8 @@ impl StyleToBevy for AnimatedBgColor
         };
         let animated = self.animate.to_sickle::<InteractiveBackground>();
 
-        Interactive.to_bevy(ec);
-        BgColor(self.base).to_bevy(ec);
+        Interactive.apply(ec);
+        BgColor(self.base).apply(ec);
         ec.try_insert((interactive_bg, animated));
     }
 }
@@ -337,8 +337,8 @@ impl Plugin for UiInteractionExtPlugin
             .register_type::<AnimateConfig>()
             .register_type::<AnimationSettings>()
             .register_type::<AnimatedBgColor>()
-            .register_derived_style::<Interactive>()
-            .register_derived_style::<AnimatedBgColor>()
+            .register_derived_loadable::<Interactive>()
+            .register_derived_loadable::<AnimatedBgColor>()
             .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }

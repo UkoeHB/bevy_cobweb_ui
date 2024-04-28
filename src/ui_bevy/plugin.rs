@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
 
 use crate::*;
 

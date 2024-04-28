@@ -10,10 +10,10 @@ use crate::*;
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BgColor(pub Color);
 
-impl StyleToBevy for BgColor
+impl ApplyLoadable for BgColor
 {
     /// Converts to a [`BackgroundColor`].
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
         ec.try_insert(BackgroundColor(self.0.clone()));
     }
@@ -25,10 +25,10 @@ impl StyleToBevy for BgColor
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrColor(pub Color);
 
-impl StyleToBevy for BrColor
+impl ApplyLoadable for BrColor
 {
     /// Converts to a [`BorderColor`].
-    fn to_bevy(self, ec: &mut EntityCommands)
+    fn apply(self, ec: &mut EntityCommands)
     {
         ec.try_insert(BorderColor(self.0.clone()));
     }
@@ -52,8 +52,8 @@ impl Plugin for UiComponentsExtPlugin
     {
         app.register_type::<BgColor>()
             .register_type::<BrColor>()
-            .register_derived_style::<BgColor>()
-            .register_derived_style::<BrColor>();
+            .register_derived_loadable::<BgColor>()
+            .register_derived_loadable::<BrColor>();
     }
 }
 
