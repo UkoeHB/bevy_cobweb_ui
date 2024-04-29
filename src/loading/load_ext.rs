@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
+use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 
 use crate::*;
@@ -166,6 +167,9 @@ pub trait LoadableRegistrationAppExt
     /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
     /// loadablesheet paths containing the type.
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
+
+    /// Combined [`App::register_type`] with [`Self::register_derived_loadable`].
+    fn register_derived<T: GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 }
 
 impl LoadableRegistrationAppExt for App
@@ -186,6 +190,11 @@ impl LoadableRegistrationAppExt for App
     {
         register_loadable_impl(self, derived_loader::<T>, PhantomData::<T>::default(), "derived");
         self
+    }
+
+    fn register_derived<T: GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self
+    {
+        self.register_type::<T>().register_derived_loadable::<T>()
     }
 }
 

@@ -187,16 +187,9 @@ impl Plugin for UiStyleFieldWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<WithAbsoluteStyle>()
-            .register_derived_loadable::<WithAbsoluteStyle>()
-            .register_type::<WithFlexStyle>()
-            .register_derived_loadable::<WithFlexStyle>()
-            .register_type::<Width>()
-            .register_type::<Responsive<Width>>()
-            .register_type::<Animated<Width>>()
-            .register_derived_loadable::<Width>()
-            .register_derived_loadable::<Responsive<Width>>()
-            .register_derived_loadable::<Animated<Width>>();
+        app.register_derived::<WithAbsoluteStyle>()
+            .register_derived::<WithFlexStyle>()
+            .register_animatable::<Width>();
     }
 }
 
