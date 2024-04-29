@@ -103,13 +103,16 @@ impl CounterWidget
         self
     }
 
+    fn default_ref() -> LoadableRef
+    {
+        LoadableRef::new("examples/counter.load.json", "counter_base_config")
+    }
+
     /// Builds the widget on an entity.
     //todo: use BuildWidget trait and extension method on UiBuilder?
     fn build(self, ec: &mut EntityCommands)
     {
-        let base = self
-            .config
-            .unwrap_or_else(|| LoadableRef::new("examples/counter.load.json", "counter_default_config"));
+        let base = self.config.unwrap_or_else(|| Self::default_ref());
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
         let entity = ec.id();
@@ -161,7 +164,7 @@ fn build_ui(mut c: Commands)
             .build(&mut root.entity_commands());
 
         // Manual counter
-        root.load(path.e("counter_small_config"), |button, path| {
+        root.load(CounterWidget::default_ref(), |button, path| {
             let button_id = button.id();
             button
                 .insert(CounterButtonTheme)
