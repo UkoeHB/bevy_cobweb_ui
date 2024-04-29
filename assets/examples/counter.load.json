@@ -56,18 +56,18 @@
             },
             "settings": {
                 "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                "press": {"duration": 0.4, "easing": "OutExpo"}
+                "press": {"duration": 0.2, "easing": "OutExpo"}
             }
         },
-        "Animated<Width>": {
+        "Animated<Padding>": {
             "values": {
-                "idle": {"Px": 255.0},
-                "hover": {"Px": 260.0},
-                "press": {"Px": 250.0}
+                "idle": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}},
+                "hover": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
+                "press": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}}
             },
             "settings": {
                 "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                "press": {"duration": 0.4, "easing": "OutExpo"}
+                "press": {"duration": 0.2, "easing": "OutExpo"}
             }
         }
     }

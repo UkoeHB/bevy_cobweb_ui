@@ -28,6 +28,7 @@ impl Plugin for SickleExtPlugin
             .register_type::<AnimatedVals<Color>>()
             .register_type::<AnimatedVals<Val>>()
             .register_type::<AnimatedVals<UiRect>>()
+            .register_type::<AnimatedVals<StyleRect>>()
             .add_plugins(UiInteractionExtPlugin);
     }
 }

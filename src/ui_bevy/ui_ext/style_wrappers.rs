@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_ui::lerp::Lerp;
 
 use crate::*;
 
@@ -52,6 +53,45 @@ impl Default for StyleRect
             bottom: Self::default_field(),
             left: Self::default_field(),
             right: Self::default_field(),
+        }
+    }
+}
+
+impl Lerp for StyleRect
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self {
+            left: self.left.lerp(to.left, t),
+            right: self.right.lerp(to.right, t),
+            top: self.top.lerp(to.top, t),
+            bottom: self.bottom.lerp(to.bottom, t),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`Overflow`] for stylesheet serialization.
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Clipping
+{
+    #[default]
+    None,
+    ClipX,
+    ClipY,
+    ClipXY,
+}
+
+impl Into<Overflow> for Clipping
+{
+    fn into(self) -> Overflow
+    {
+        match self {
+            Self::None => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Visible },
+            Self::ClipX => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Visible },
+            Self::ClipY => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Clip },
+            Self::ClipXY => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Clip },
         }
     }
 }
@@ -447,7 +487,7 @@ pub struct ContentFlex
     ///
     /// Defaults to no clipping.
     #[reflect(default)]
-    pub overflow: Overflow,
+    pub clipping: Clipping,
     /// Inserts space between the node's [`Dims::border`] and its contents.
     ///
     /// Defaults to zero padding.
@@ -526,7 +566,7 @@ impl ContentFlex
     /// Adds this struct's contents to [`Style`].
     pub fn set_in_style(&self, style: &mut Style)
     {
-        style.overflow = self.overflow;
+        style.overflow = self.clipping.into();
         style.padding = self.padding.into();
         style.flex_direction = self.flex_direction;
         style.align_content = self.justify_lines.into();
@@ -550,7 +590,7 @@ impl Default for ContentFlex
         Self {
             flex_wrap: Self::default_flex_wrap(),
 
-            overflow: Default::default(),
+            clipping: Default::default(),
             padding: Default::default(),
             flex_direction: Default::default(),
             justify_lines: Default::default(),
@@ -772,6 +812,8 @@ impl Plugin for StyleWrappersPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<StyleRect>()
+            .register_type::<Option<StyleRect>>()
+            .register_type::<Clipping>()
             .register_type::<JustifyLines>()
             .register_type::<JustifyMain>()
             .register_type::<JustifyCross>()
