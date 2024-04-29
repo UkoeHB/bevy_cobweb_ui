@@ -33,6 +33,14 @@ impl LoadableFile
     }
 }
 
+impl Default for LoadableFile
+{
+    fn default() -> Self
+    {
+        Self::new("")
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the path to a specific loadable in a loadable-sheet file.
@@ -77,6 +85,14 @@ impl LoadablePath
     }
 }
 
+impl Default for LoadablePath
+{
+    fn default() -> Self
+    {
+        Self::new("")
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents a complete reference to a loadable instance in a loadable-sheet asset.
@@ -84,7 +100,7 @@ impl LoadablePath
 /// Example:
 /// - File: `ui/home.loadable.json` for a `home` loadable-sheet in `assets/ui`.
 /// - Path: `menu::header::title` for accessing the `title` loadable path in the `home` loadable-sheet.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
 pub struct LoadableRef
 {
     /// See [`LoadableFile`].
@@ -144,10 +160,18 @@ impl FullLoadablePath
     }
 }
 
+impl Default for FullLoadablePath
+{
+    fn default() -> Self
+    {
+        Self::new(LoadablePath::default(), "")
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Stores a fully-specified reference to a loadable.
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
 pub struct FullLoadableRef
 {
     /// See [`LoadableFile`].

@@ -1,5 +1,6 @@
 //! Demonstrates building a simple counter.
 
+use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
@@ -20,6 +21,7 @@ impl Counter
         self.0 += 1;
     }
 
+    /// Makes callback for incrementing the counter on `target`.
     fn increment(target: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
     {
         move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
@@ -27,6 +29,7 @@ impl Counter
         }
     }
 
+    /// Makes callback for writing the counter value when it changes.
     fn write(
         pre_text: impl Into<String>,
         post_text: impl Into<String>,
@@ -36,6 +39,7 @@ impl Counter
     {
         let pre_text = pre_text.into();
         let post_text = post_text.into();
+
         move |mut editor: TextEditor, counters: Reactive<Counter>| {
             let Some(counter) = counters.get(from) else { return };
             editor.write(to, |t| {
@@ -45,62 +49,90 @@ impl Counter
     }
 }
 
-//TODO: the design will depend on sickle_ui theming since we want the loaded-from-file stuff to be the base theme,
-// and CounterWidget-derived stuff to sit on top of the theme
-/*
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component)]
+struct CounterButtonTheme;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Default)]
 struct CounterWidget
 {
-    /// Overrides the background color loaded from file.
-    #[reflect(default)]
-    bg: Option<AnimatedBgColor>,
-    /// Overrides the text line loaded from file.
-    #[reflect(default)]
-    text: Option<TextLine>,
-    /// Overrides the text style loaded from file.
-    #[reflect(default)]
-    text_margin: Option<UiRect>,
-    #[reflect(default = "CounterWidget::default_pre_text")]
-    pre_text: String,
-    #[reflect(default)]
-    post_text: String,
+    config: Option<LoadableRef>,
+    theme: Option<LoadableRef>,
+    pre_text: Option<String>,
+    post_text: Option<String>,
 }
 
 impl CounterWidget
 {
-    fn default_pre_text() -> String
+    /// Makes a default counter widget.
+    fn new() -> Self
     {
-        "Count: ".into()
+        Self::default()
     }
-}
 
-impl ApplyLoadable for CounterWidget
-{
-    /// Inserts a counter widget to the entity.
-    fn apply(self, ec: &mut EntityCommands)
+    /// Adds config adjustments on top of the default config.
+    ///
+    /// The loaded structure must match the default config's structure.
+    fn config(mut self, config: LoadableRef) -> Self
     {
-        let file = LoadableRef::from_file("examples/counter.load.json");
+        self.config = config.into();
+        self
+    }
 
-        c.ui_builder(ec.id()).load(file.e("button"), |button, path| {
+    /// Adds theme adjustments on top of the default theme.
+    fn theme(mut self, theme: LoadableRef) -> Self
+    {
+        self.theme = theme.into();
+        self
+    }
+
+    /// Sets the pre-counter text.
+    fn pre_text(mut self, pre_text: impl Into<String>) -> Self
+    {
+        self.pre_text = pre_text.into().into();
+        self
+    }
+
+    /// Sets the post-counter text.
+    fn _post_text(mut self, post_text: impl Into<String>) -> Self
+    {
+        self.post_text = post_text.into().into();
+        self
+    }
+
+    /// Builds the widget on an entity.
+    //todo: use BuildWidget trait and extension method on UiBuilder?
+    fn build(self, ec: &mut EntityCommands)
+    {
+        let base = self
+            .config
+            .unwrap_or_else(|| LoadableRef::new("examples/counter.load.json", "counter_default_config"));
+        let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
+        let post_text = self.post_text.unwrap_or_else(|| "".into());
+        let entity = ec.id();
+
+        ec.commands().ui_builder(entity).load(base, |button, path| {
+            if let Some(theme) = self.theme {
+                button.entity_commands().load_theme::<CounterButtonTheme>(theme);
+            }
+
             let button_id = button.id();
             button
+                .insert(CounterButtonTheme)
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
             button.load(path.e("text"), |text, _path| {
                 text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    Counter::write(self.pre_text, self.post_text, button_id, text_id)
+                    Counter::write(pre_text, post_text, button_id, text_id)
                 });
             });
         });
-
-        ec.try_insert(BackgroundColor(self.0.clone()));
     }
 }
-*/
-
-#[derive(Component)]
-struct CounterButtonTheme;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -110,23 +142,38 @@ fn build_ui(mut c: Commands)
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
         root.entity_commands()
-            .load_theme::<CounterButtonTheme>(file.e("counter_theme"));
+            .load_theme::<CounterButtonTheme>(file.e("counter_base_theme"));
 
-        for _ in 0..3 {
-            root.load(path.e("button"), |button, path| {
-                let button_id = button.id();
-                button
-                    .insert(CounterButtonTheme)
-                    .insert_reactive(Counter(0))
-                    .on_pressed(Counter::increment(button_id));
+        // Default widget
+        CounterWidget::new().build(&mut root.entity_commands());
 
-                button.load(path.e("text"), |text, _path| {
-                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                        Counter::write("Counter: ", "", button_id, text_id)
-                    });
+        // Widget with custom config
+        CounterWidget::new()
+            .config(path.e("counter_small_config"))
+            .pre_text("Small: ")
+            .build(&mut root.entity_commands());
+
+        // Widget with theme adjustments
+        CounterWidget::new()
+            .theme(path.e("counter_bonus_theme"))
+            .config(path.e("counter_bonus_config"))
+            .pre_text("Themed: ")
+            .build(&mut root.entity_commands());
+
+        // Manual counter
+        root.load(path.e("counter_small_config"), |button, path| {
+            let button_id = button.id();
+            button
+                .insert(CounterButtonTheme)
+                .insert_reactive(Counter(0))
+                .on_pressed(Counter::increment(button_id));
+
+            button.load(path.e("text"), |text, _path| {
+                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                    Counter::write("Manual: ", "", button_id, text_id)
                 });
             });
-        }
+        });
     });
 }
 
