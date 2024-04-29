@@ -15,6 +15,7 @@ impl Plugin for SickleExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<Option<Val>>()
+            .register_type::<Option<Color>>()
             .register_type::<Ease>()
             .register_type::<Option<Ease>>()
             .register_type::<PseudoState>()
