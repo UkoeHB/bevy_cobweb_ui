@@ -13,7 +13,7 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: Animatable>(entity: Entity, state: AnimationState, world: &mut World)
+fn extract_animation_value<T: AnimatableAttribute>(entity: Entity, state: AnimationState, world: &mut World)
 {
     // Get the animation bundle if possible.
     let Some(bundle) = world.get_entity(entity).and_then(|e| e.get::<CachedAnimatedVals<T>>()) else { return };
@@ -31,7 +31,7 @@ fn extract_animation_value<T: Animatable>(entity: Entity, state: AnimationState,
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn update_animation<T: Animatable>(
+fn update_animation<T: AnimatableAttribute>(
     In((entity, animation)): In<(Entity, Animated<T>)>,
     mut commands: Commands,
     mut query: Query<(Option<&mut DynamicStyle>, Option<&mut LoadedThemes>)>,
@@ -74,7 +74,7 @@ fn update_animation<T: Animatable>(
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Debug)]
-struct CachedAnimatedVals<T: Animatable>
+struct CachedAnimatedVals<T: AnimatableAttribute>
 {
     cached: AnimatedVals<T::Value>,
 }
@@ -82,7 +82,7 @@ struct CachedAnimatedVals<T: Animatable>
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that can be animated in response to interactions.
-pub trait Animatable: Loadable + TypePath
+pub trait AnimatableAttribute: Loadable + TypePath
 {
     /// Specifies the value-type that will be animated on the target (e.g. `f32`, `Color`, etc.).
     type Value: Lerp + Loadable + TypePath;
@@ -104,7 +104,7 @@ pub trait Animatable: Loadable + TypePath
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Animated<T: Animatable>
+pub struct Animated<T: AnimatableAttribute>
 {
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this animation to become active.
     ///
@@ -116,7 +116,7 @@ pub struct Animated<T: Animatable>
     pub settings: AnimationSettings,
 }
 
-impl<T: Animatable> ApplyLoadable for Animated<T>
+impl<T: AnimatableAttribute> ApplyLoadable for Animated<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {

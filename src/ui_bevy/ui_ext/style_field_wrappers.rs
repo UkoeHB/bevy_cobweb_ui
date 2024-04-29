@@ -162,17 +162,35 @@ impl ApplyLoadable for Width
     }
 }
 
-/*
-impl Animatable for Width
+impl AnimatableAttribute for Width
 {
     type Value = Val;
-    type Interaction = Interaction;
+    type Interactive = Interactive;
 
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
         Width(value).apply(ec);
     }
 }
-*/
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct UiStyleFieldWrappersPlugin;
+
+impl Plugin for UiStyleFieldWrappersPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app
+            .register_type::<WithAbsoluteStyle>()
+            .register_derived_loadable::<WithAbsoluteStyle>()
+            .register_type::<WithFlexStyle>()
+            .register_derived_loadable::<WithFlexStyle>()
+            .register_type::<Width>()
+            .register_type::<Animated<Width>>()
+            .register_derived_loadable::<Width>()
+            .register_derived_loadable::<Animated<Width>>();
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------

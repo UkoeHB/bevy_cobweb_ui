@@ -252,7 +252,7 @@ pub struct LoadableSheet
     /// Tracks subscriptions to loadable paths.
     subscriptions: HashMap<LoadableRef, SmallVec<[RefSubscription; 1]>>,
     /// Tracks entities for cleanup.
-    subscriptions_rev: HashMap<Entity, LoadableRef>,
+    subscriptions_rev: HashMap<Entity, SmallVec<[LoadableRef; 1]>>,
 
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
@@ -352,12 +352,12 @@ impl LoadableSheet
             .entry(loadable_ref.clone())
             .or_default()
             .push(subscription);
-        self.subscriptions_rev.insert(entity, loadable_ref.clone());
+        self.subscriptions_rev.entry(entity).or_default().push(loadable_ref.clone());
 
-        // Get already-loaded loadables that the entity is subscribed to.
+        // Get already-loaded values that the entity is subscribed to.
         let Some(loadables) = self.loadables.get(&loadable_ref) else { return };
 
-        // Schedule updates for each loadable.
+        // Schedule updates for each loadable so they will be applied to the entity.
         for loadable in loadables.iter() {
             let type_id = loadable.type_id;
             self.needs_updates.entry(type_id).or_default().push((
@@ -383,10 +383,13 @@ impl LoadableSheet
     /// Cleans up despawned entities.
     fn remove_entity(&mut self, dead_entity: Entity)
     {
-        let Some(loadable_ref) = self.subscriptions_rev.remove(&dead_entity) else { return };
-        let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { return };
-        let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { return };
-        subscribed.swap_remove(dead);
+        let Some(loadable_refs) = self.subscriptions_rev.remove(&dead_entity) else { return };
+        for loadable_ref in loadable_refs
+        {
+            let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { continue };
+            let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { continue };
+            subscribed.swap_remove(dead);
+        }
     }
 
     /// Cleans up pending updates that failed to be processed.
