@@ -1,6 +1,6 @@
 {
 
-"counter_base_theme" : {
+"counter_theme" : {
     "Animated<BgColor>": {
         "values": {
             "idle": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}},
@@ -14,7 +14,7 @@
     }
 },
 
-"counter_base_config": {
+"counter_config": {
     "FlexStyle": {
         "content": {"justify_main": "Center", "justify_cross": "Center"}
     },
@@ -33,34 +33,21 @@
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     },
 
-    "counter_small_config": {
+    "counter_config_text_small": {
         "FlexStyle": {
-            "content": {"justify_main": "Center", "justify_cross": "Center"}
+            "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
         },
-
-        "text": {
-            "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
-            },
-            "TextLine": { "size": 25.0 }
-        }
+        "TextLine": { "size": 25.0 }
     },
 
-    "counter_bonus_config": {
+    "counter_config_button_bonus": {
         "FlexStyle": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
             "content": {"justify_main": "Center", "justify_cross": "Center"}
-        },
-
-        "text": {
-            "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
-            },
-            "TextLine": { "size": 50.0 }
         }
     },
 
-    "counter_bonus_theme" : {
+    "counter_theme_bonus" : {
         "Animated<BrColor>": {
             "values": {
                 "idle": {"Hsla": {"hue": 24.0, "saturation": 0.74, "lightness": 0.5, "alpha": 1.0}},
