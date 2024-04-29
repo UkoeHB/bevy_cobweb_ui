@@ -181,8 +181,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app
-            .register_type::<WithAbsoluteStyle>()
+        app.register_type::<WithAbsoluteStyle>()
             .register_derived_loadable::<WithAbsoluteStyle>()
             .register_type::<WithFlexStyle>()
             .register_derived_loadable::<WithFlexStyle>()

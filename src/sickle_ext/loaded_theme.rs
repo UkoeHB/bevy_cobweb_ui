@@ -265,7 +265,7 @@ impl LoadedThemeEntityCommandsExt for EntityCommands<'_>
         let entity = self.id();
         self.commands().add(AddLoadedTheme::<C>::new(entity));
         self.load_with_context_setter(loadable_ref, set_context_for_load_theme::<C>);
-        self.commands().add(RefreshLoadedTheme{ entity });
+        self.commands().add(RefreshLoadedTheme { entity });
         self
     }
 }

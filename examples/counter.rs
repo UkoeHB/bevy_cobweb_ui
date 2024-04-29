@@ -109,7 +109,8 @@ fn build_ui(mut c: Commands)
     let file = LoadableRef::from_file("examples/counter.load.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.entity_commands().load_theme::<CounterButtonTheme>(file.e("counter_theme"));
+        root.entity_commands()
+            .load_theme::<CounterButtonTheme>(file.e("counter_theme"));
 
         for _ in 0..3 {
             root.load(path.e("button"), |button, path| {

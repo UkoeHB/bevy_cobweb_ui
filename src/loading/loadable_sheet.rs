@@ -352,7 +352,10 @@ impl LoadableSheet
             .entry(loadable_ref.clone())
             .or_default()
             .push(subscription);
-        self.subscriptions_rev.entry(entity).or_default().push(loadable_ref.clone());
+        self.subscriptions_rev
+            .entry(entity)
+            .or_default()
+            .push(loadable_ref.clone());
 
         // Get already-loaded values that the entity is subscribed to.
         let Some(loadables) = self.loadables.get(&loadable_ref) else { return };
@@ -384,8 +387,7 @@ impl LoadableSheet
     fn remove_entity(&mut self, dead_entity: Entity)
     {
         let Some(loadable_refs) = self.subscriptions_rev.remove(&dead_entity) else { return };
-        for loadable_ref in loadable_refs
-        {
+        for loadable_ref in loadable_refs {
             let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { continue };
             let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { continue };
             subscribed.swap_remove(dead);

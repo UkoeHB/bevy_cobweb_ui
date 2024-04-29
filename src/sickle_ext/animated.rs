@@ -13,7 +13,9 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatableAttribute>(vals: AnimatedVals<T::Value>) -> impl Fn(Entity, AnimationState, &mut World)
+fn extract_animation_value<T: AnimatableAttribute>(
+    vals: AnimatedVals<T::Value>,
+) -> impl Fn(Entity, AnimationState, &mut World)
 {
     move |entity: Entity, state: AnimationState, world: &mut World| {
         // Compute new value.
@@ -46,9 +48,9 @@ fn update_animation<T: AnimatableAttribute>(
     controller.animation = animation.settings;
 
     let attribute = DynamicStyleAttribute::Animated {
-        attribute: AnimatedStyleAttribute::Custom(
-            CustomAnimatedStyleAttribute::new(extract_animation_value::<T>(animation.values))
-        ),
+        attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
+            extract_animation_value::<T>(animation.values),
+        )),
         controller,
     };
 
