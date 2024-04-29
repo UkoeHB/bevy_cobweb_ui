@@ -19,15 +19,22 @@ impl ApplyLoadable for BgColor
     }
 }
 
-impl AnimatableAttribute for BgColor
+impl ThemedAttribute for BgColor
 {
     type Value = Color;
-    type Interactive = Interactive;
-
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
         BgColor(value).apply(ec);
     }
+}
+
+impl ResponsiveAttribute for BgColor
+{
+    type Interactive = Interactive;
+}
+impl AnimatableAttribute for BgColor
+{
+    type Interactive = Interactive;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -45,15 +52,22 @@ impl ApplyLoadable for BrColor
     }
 }
 
-impl AnimatableAttribute for BrColor
+impl ThemedAttribute for BrColor
 {
     type Value = Color;
-    type Interactive = Interactive;
-
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
         BrColor(value).apply(ec);
     }
+}
+
+impl ResponsiveAttribute for BrColor
+{
+    type Interactive = Interactive;
+}
+impl AnimatableAttribute for BrColor
+{
+    type Interactive = Interactive;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -73,12 +87,20 @@ impl Plugin for UiComponentWrappersPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<BgColor>()
+            .register_type::<Themed<BgColor>>()
+            .register_type::<Responsive<BgColor>>()
             .register_type::<Animated<BgColor>>()
             .register_derived_loadable::<BgColor>()
+            .register_derived_loadable::<Themed<BgColor>>()
+            .register_derived_loadable::<Responsive<BgColor>>()
             .register_derived_loadable::<Animated<BgColor>>()
             .register_type::<BrColor>()
+            .register_type::<Themed<BrColor>>()
+            .register_type::<Responsive<BrColor>>()
             .register_type::<Animated<BrColor>>()
             .register_derived_loadable::<BrColor>()
+            .register_derived_loadable::<Responsive<BrColor>>()
+            .register_derived_loadable::<Themed<BrColor>>()
             .register_derived_loadable::<Animated<BrColor>>();
     }
 }

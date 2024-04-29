@@ -58,6 +58,17 @@
                 "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
                 "press": {"duration": 0.4, "easing": "OutExpo"}
             }
+        },
+        "Animated<Width>": {
+            "values": {
+                "idle": {"Px": 255.0},
+                "hover": {"Px": 260.0},
+                "press": {"Px": 250.0}
+            },
+            "settings": {
+                "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
+                "press": {"duration": 0.4, "easing": "OutExpo"}
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use sickle_ui::theme::Theme;
+use sickle_ui::theme::ComponentThemePlugin;
 use sickle_ui::ui_builder::*;
 use sickle_ui::SickleUiPlugin;
 
@@ -212,10 +212,10 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
+        .add_plugins(ComponentThemePlugin::<CounterButtonTheme>::new())
         .add_load_sheet("examples/counter.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
-        .add_systems(PostUpdate, Theme::<CounterButtonTheme>::post_update())
         .run();
 }
 

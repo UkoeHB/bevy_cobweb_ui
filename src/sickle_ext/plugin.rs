@@ -14,7 +14,8 @@ impl Plugin for SickleExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<Ease>()
+        app.register_type::<Option<Val>>()
+            .register_type::<Ease>()
             .register_type::<Option<Ease>>()
             .register_type::<PseudoState>()
             .register_type::<AnimationSettings>()

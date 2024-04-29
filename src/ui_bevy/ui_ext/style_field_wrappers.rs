@@ -162,15 +162,21 @@ impl ApplyLoadable for Width
     }
 }
 
-impl AnimatableAttribute for Width
+impl ThemedAttribute for Width
 {
     type Value = Val;
-    type Interactive = Interactive;
-
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
         Width(value).apply(ec);
     }
+}
+impl ResponsiveAttribute for Width
+{
+    type Interactive = Interactive;
+}
+impl AnimatableAttribute for Width
+{
+    type Interactive = Interactive;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -186,8 +192,10 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_type::<WithFlexStyle>()
             .register_derived_loadable::<WithFlexStyle>()
             .register_type::<Width>()
+            .register_type::<Responsive<Width>>()
             .register_type::<Animated<Width>>()
             .register_derived_loadable::<Width>()
+            .register_derived_loadable::<Responsive<Width>>()
             .register_derived_loadable::<Animated<Width>>();
     }
 }
