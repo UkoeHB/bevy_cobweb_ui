@@ -9,7 +9,7 @@ use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
 use sickle_ui::ui_style::{
     AnimatedStyleAttribute, AnimatedVals, CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute,
-    CustomStaticStyleAttribute, InteractiveStyleAttribute, StaticStyleAttribute, StaticVals,
+    CustomStaticStyleAttribute, InteractiveStyleAttribute, InteractiveVals, StaticStyleAttribute,
 };
 use sickle_ui::FluxInteraction;
 
@@ -64,7 +64,7 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 //-------------------------------------------------------------------------------------------------------------------
 
 fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
-    vals: StaticVals<T::Value>,
+    vals: InteractiveVals<T::Value>,
 ) -> impl Fn(Entity, FluxInteraction, &mut World)
 {
     move |entity: Entity, state: FluxInteraction, world: &mut World| {
@@ -177,8 +177,8 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
 
 /// Loadable type for responsive values.
 ///
-/// Note that the `StaticVals::idle` field must always be set, which means it is effectively the 'default' value
-/// for `T` that will be applied to the entity and override any value you set elsewhere.
+/// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
+/// value for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
 {
@@ -188,7 +188,7 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     #[reflect(default)]
     pub state: Option<Vec<PseudoState>>,
     /// The values that are toggled in response to interaction changes.
-    pub values: StaticVals<T::Value>,
+    pub values: InteractiveVals<T::Value>,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>

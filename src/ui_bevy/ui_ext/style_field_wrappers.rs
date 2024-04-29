@@ -26,6 +26,56 @@ trait ApplyToSelfFlex: Send + Sync + 'static
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn initialize_absolute_style(
+    In(entity): In<Entity>,
+    mut c: Commands,
+    query: Query<(Has<React<AbsoluteStyle>>, Has<React<FlexStyle>>)>,
+)
+{
+    let Ok((maybe_absolute, maybe_flex)) = query.get(entity) else { return };
+
+    // Check absolute style.
+    if maybe_absolute {
+        return;
+    }
+
+    // Check flex style.
+    if maybe_flex {
+        tracing::warn!("tried initializing absolute style on entity {:?} that has flex style", entity);
+        return;
+    }
+
+    // Insert absolute style.
+    c.react().insert(entity, AbsoluteStyle::default());
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn initialize_flex_style(
+    In(entity): In<Entity>,
+    mut c: Commands,
+    query: Query<(Has<React<AbsoluteStyle>>, Has<React<FlexStyle>>)>,
+)
+{
+    let Ok((maybe_absolute, maybe_flex)) = query.get(entity) else { return };
+
+    // Check flex style.
+    if maybe_flex {
+        return;
+    }
+
+    // Check absolute style.
+    if maybe_absolute {
+        tracing::warn!("tried initializing flex style on entity {:?} that has absolute style", entity);
+        return;
+    }
+
+    // Insert flex style.
+    c.react().insert(entity, FlexStyle::default());
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn apply_to_dims<T: ApplyToDims>(
     In((entity, param)): In<(Entity, T)>,
     mut c: Commands,
@@ -112,6 +162,8 @@ fn _apply_to_self_flex<T: ApplyToSelfFlex>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Initializes [`AbsoluteStyle`] on an entity.
+///
+/// Should be inserted before all other style field wrappers.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithAbsoluteStyle;
 
@@ -120,13 +172,23 @@ impl ApplyLoadable for WithAbsoluteStyle
     fn apply(self, ec: &mut EntityCommands)
     {
         let id = ec.id();
-        ec.react().insert(id, AbsoluteStyle::default());
+        ec.commands().syscall(id, initialize_absolute_style);
+    }
+}
+impl ThemedAttribute for WithAbsoluteStyle
+{
+    type Value = ();
+    fn update(ec: &mut EntityCommands, _value: Self::Value)
+    {
+        Self.apply(ec);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Initializes [`FlexStyle`] on an entity.
+///
+/// Should be inserted before all other style field wrappers.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithFlexStyle;
 
@@ -135,7 +197,15 @@ impl ApplyLoadable for WithFlexStyle
     fn apply(self, ec: &mut EntityCommands)
     {
         let id = ec.id();
-        ec.react().insert(id, FlexStyle::default());
+        ec.commands().syscall(id, initialize_flex_style);
+    }
+}
+impl ThemedAttribute for WithFlexStyle
+{
+    type Value = ();
+    fn update(ec: &mut EntityCommands, _value: Self::Value)
+    {
+        Self.apply(ec);
     }
 }
 
@@ -187,8 +257,8 @@ impl Plugin for UiStyleFieldWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_derived::<WithAbsoluteStyle>()
-            .register_derived::<WithFlexStyle>()
+        app.register_themed::<WithAbsoluteStyle>()
+            .register_themed::<WithFlexStyle>()
             .register_animatable::<Width>();
     }
 }
