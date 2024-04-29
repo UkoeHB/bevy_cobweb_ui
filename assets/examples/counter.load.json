@@ -9,7 +9,7 @@
         },
         "settings": {
             "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-            "press": {"duration": 0.2, "easing": "OutExpo"}
+            "press": {"duration": 0.4, "easing": "OutExpo"}
         }
     }
 },

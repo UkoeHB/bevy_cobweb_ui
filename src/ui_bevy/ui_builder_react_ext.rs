@@ -7,7 +7,7 @@ use crate::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering reactors for node entities using [`UiBuilder`].
-pub trait NodeReactEntityCommandsExt
+pub trait UiBuilderReactExt
 {
     /// Mirrors [`ReactEntityCommandsExt::add_reactor`].
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local);
@@ -32,7 +32,7 @@ pub trait NodeReactEntityCommandsExt
     ) -> &mut Self;
 }
 
-impl NodeReactEntityCommandsExt for UiBuilder<'_, '_, '_, Entity>
+impl UiBuilderReactExt for UiBuilder<'_, '_, '_, Entity>
 {
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
     {

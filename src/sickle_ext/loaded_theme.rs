@@ -60,9 +60,6 @@ struct LoadedTheme
     refresh: fn(SmallVec<[EditablePseudoTheme; 1]>, &mut EntityCommands),
 
     /// Themes that are loaded from file.
-    ///
-    /// Currently entries are only updated if `state` is exactly equal, not ordering-independent-equal.
-    //todo: use sorting to enforce more robust equality
     pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
 }
 
@@ -82,8 +79,12 @@ impl LoadedTheme
         self.theme_marker == marker
     }
 
-    fn update(&mut self, state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
+    fn update(&mut self, mut state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
     {
+        if let Some(states) = state.as_deref_mut() {
+            states.sort_unstable();
+        }
+
         match self.pseudo_themes.iter_mut().find(|t| t.state == state) {
             Some(pseudo_theme) => {
                 let mut temp = DynamicStyle::new(Vec::default());
