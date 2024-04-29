@@ -19,6 +19,19 @@ impl ApplyLoadable for BgColor
     }
 }
 
+/*
+impl Animatable for BgColor
+{
+    type Value = Color;
+    type Interaction = Interaction;
+
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        BgColor(value).apply(ec);
+    }
+}
+*/
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BorderColor`], can be loaded as a style.

@@ -54,8 +54,8 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
-        let mut node = self.spawn(NodeBundle::default());/*
-        node.entity_commands().load_theme::<C>(loadable_ref.clone());*/
+        let mut node = self.spawn(NodeBundle::default());
+        node.entity_commands().load_theme::<C>(loadable_ref.clone());
         (callback)(&mut node, loadable_ref);
         node
     }
@@ -82,8 +82,8 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
-        let mut child = self.spawn(NodeBundle::default());/*
-        child.entity_commands().load_theme::<C>(loadable_ref.clone());*/
+        let mut child = self.spawn(NodeBundle::default());
+        child.entity_commands().load_theme::<C>(loadable_ref.clone());
         (callback)(&mut child, loadable_ref);
         let id = self.id();
         self.commands().ui_builder(id)

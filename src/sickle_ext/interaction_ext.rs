@@ -2,8 +2,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::animated_interaction::{AnimatedInteraction, AnimationConfig};
-use sickle_ui::interactions::InteractiveBackground;
+use sickle_ui::animated_interaction::AnimationConfig;
 use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::{FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
@@ -157,6 +156,8 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
     }
 }
 
+// TODO: same extensions for UiBuilder2d
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Loadable that indicates a node is interactable.
@@ -172,6 +173,8 @@ impl ApplyLoadable for Interactive
         ec.try_insert((Interaction::default(), TrackedInteraction::default()));
     }
 }
+
+// TODO: Interactive2d
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -225,7 +228,7 @@ impl From<AnimationConfig> for AnimateConfig
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-
+/*
 /// Settings for an animatable attribute on a node.
 ///
 /// Mirrors [`AnimatedInteraction`].
@@ -323,7 +326,7 @@ impl ApplyLoadable for AnimatedBgColor
         ec.try_insert((interactive_bg, animated));
     }
 }
-
+ */
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) struct UiInteractionExtPlugin;
@@ -335,10 +338,10 @@ impl Plugin for UiInteractionExtPlugin
         app.register_type::<Interactive>()
             .register_type::<Option<Color>>()
             .register_type::<AnimateConfig>()
-            .register_type::<AnimationSettings>()
-            .register_type::<AnimatedBgColor>()
+            //.register_type::<AnimationSettings>()
+            //.register_type::<AnimatedBgColor>()
             .register_derived_loadable::<Interactive>()
-            .register_derived_loadable::<AnimatedBgColor>()
+            //.register_derived_loadable::<AnimatedBgColor>()
             .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }
