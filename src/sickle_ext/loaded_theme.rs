@@ -262,9 +262,10 @@ impl LoadedThemeEntityCommandsExt for EntityCommands<'_>
 {
     fn load_theme<C: Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
-        let id = self.id();
-        self.commands().add(AddLoadedTheme::<C>::new(id));
+        let entity = self.id();
+        self.commands().add(AddLoadedTheme::<C>::new(entity));
         self.load_with_context_setter(loadable_ref, set_context_for_load_theme::<C>);
+        self.commands().add(RefreshLoadedTheme{ entity });
         self
     }
 }

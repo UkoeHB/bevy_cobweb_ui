@@ -10,7 +10,7 @@ impl Plugin for CobwebBevyUiPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(StyleExtPlugin).add_plugins(SickleExtPlugin);
+        app.add_plugins(StyleExtPlugin);
     }
 }
 

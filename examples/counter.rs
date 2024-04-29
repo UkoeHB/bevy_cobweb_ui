@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
+use sickle_ui::theme::Theme;
 use sickle_ui::ui_builder::*;
 use sickle_ui::SickleUiPlugin;
 
@@ -98,6 +99,9 @@ impl ApplyLoadable for CounterWidget
 }
 */
 
+#[derive(Component)]
+struct CounterButtonTheme;
+
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_ui(mut c: Commands)
@@ -105,18 +109,23 @@ fn build_ui(mut c: Commands)
     let file = LoadableRef::from_file("examples/counter.load.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load(path.e("button"), |button, path| {
-            let button_id = button.id();
-            button
-                .insert_reactive(Counter(0))
-                .on_pressed(Counter::increment(button_id));
+        root.entity_commands().load_theme::<CounterButtonTheme>(file.e("counter_theme"));
 
-            button.load(path.e("text"), |text, _path| {
-                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    Counter::write("Counter: ", "", button_id, text_id)
+        for _ in 0..3 {
+            root.load(path.e("button"), |button, path| {
+                let button_id = button.id();
+                button
+                    .insert(CounterButtonTheme)
+                    .insert_reactive(Counter(0))
+                    .on_pressed(Counter::increment(button_id));
+
+                button.load(path.e("text"), |text, _path| {
+                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                        Counter::write("Counter: ", "", button_id, text_id)
+                    });
                 });
             });
-        });
+        }
     });
 }
 
@@ -144,6 +153,7 @@ fn main()
         .add_load_sheet("examples/counter.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
+        .add_systems(PostUpdate, Theme::<CounterButtonTheme>::post_update())
         .run();
 }
 

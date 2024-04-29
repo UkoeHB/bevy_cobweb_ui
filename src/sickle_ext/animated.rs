@@ -7,26 +7,27 @@ use sickle_ui::theme::dynamic_style::DynamicStyle;
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
-use sickle_ui::ui_style::{AnimatedStyleAttribute, AnimatedVals};
+use sickle_ui::ui_style::{AnimatedStyleAttribute, AnimatedVals, CustomAnimatedStyleAttribute};
 
 use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatableAttribute>(entity: Entity, state: AnimationState, world: &mut World)
+fn extract_animation_value<T: AnimatableAttribute>(vals: AnimatedVals<T::Value>) -> impl Fn(Entity, AnimationState, &mut World)
 {
-    // Get the animation bundle if possible.
-    let Some(bundle) = world.get_entity(entity).and_then(|e| e.get::<CachedAnimatedVals<T>>()) else { return };
-    let new_value = bundle.cached.to_value(&state);
+    move |entity: Entity, state: AnimationState, world: &mut World| {
+        // Compute new value.
+        let new_value = vals.to_value(&state);
 
-    // Apply the value to the entity.
-    world.syscall(
-        (entity, new_value),
-        |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
-            let Some(mut ec) = c.get_entity(entity) else { return };
-            T::update(&mut ec, new_val);
-        },
-    );
+        // Apply the value to the entity.
+        world.syscall(
+            (entity, new_value),
+            |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
+                let Some(mut ec) = c.get_entity(entity) else { return };
+                T::update(&mut ec, new_val);
+            },
+        );
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -39,14 +40,15 @@ fn update_animation<T: AnimatableAttribute>(
 {
     // Store the AnimatedVals on the entity.
     let Some(mut ec) = commands.get_entity(entity) else { return };
-    ec.try_insert(CachedAnimatedVals::<T> { cached: animation.values });
 
     // Prepare an updated DynamicStyleAttribute.
     let mut controller = DynamicStyleController::default();
     controller.animation = animation.settings;
 
     let attribute = DynamicStyleAttribute::Animated {
-        attribute: AnimatedStyleAttribute::Custom(extract_animation_value::<T>),
+        attribute: AnimatedStyleAttribute::Custom(
+            CustomAnimatedStyleAttribute::new(extract_animation_value::<T>(animation.values))
+        ),
         controller,
     };
 
@@ -69,14 +71,6 @@ fn update_animation<T: AnimatableAttribute>(
     } else {
         ec.try_insert(style);
     }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Component, Debug)]
-struct CachedAnimatedVals<T: AnimatableAttribute>
-{
-    cached: AnimatedVals<T::Value>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -109,6 +103,7 @@ pub struct Animated<T: AnimatableAttribute>
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this animation to become active.
     ///
     /// Only used if this struct is applied to an entity with a loaded theme.
+    #[reflect(default)]
     pub state: Option<Vec<PseudoState>>,
     /// The values that are end-targets for each animation.
     pub values: AnimatedVals<T::Value>,

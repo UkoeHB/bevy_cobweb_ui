@@ -1,5 +1,19 @@
 {
 
+"counter_theme" : {
+    "Animated<BgColor>": {
+        "values": {
+            "idle": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}},
+            "hover": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.26, "alpha": 0.8}},
+            "press": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.19, "alpha": 0.8}}
+        },
+        "settings": {
+            "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
+            "press": {"duration": 0.2, "easing": "OutExpo"}
+        }
+    }
+},
+
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
@@ -9,11 +23,6 @@
     "button": {
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
-        },
-        "AnimatedBgColor": {
-            "base": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.4, "alpha": 0.8}},
-            "highlight": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.26, "alpha": 0.8}},
-            "pressed": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.19, "alpha": 0.8}}
         },
 
         "text": {

@@ -40,7 +40,7 @@ smallvec    = { version = "1.13" }
 thiserror   = { version = "1.0" }
 tracing     = { version = "0.1" }
 
-sickle_ui = { rev = "847d720", git = "https://github.com/UkoeHB/sickle_ui" }
+sickle_ui = { rev = "f72bba2", git = "https://github.com/UkoeHB/sickle_ui" }
 
 [dev-dependencies]
 bevy               = { version = "0.13", default-features = true, features = ["dynamic_linking", "file_watcher"] }
