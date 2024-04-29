@@ -179,6 +179,8 @@ impl LoadedThemes
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Command for calling [`LoadedThemes::add`] on an entity.
+///
+/// Inserts a [`LoadedThemes`] component if the entity doesn't have one.
 pub struct AddLoadedTheme<C: Component>
 {
     entity: Entity,
@@ -213,6 +215,14 @@ pub struct SetActiveLoadedTheme
 {
     pub entity: Entity,
     pub marker: TypeId,
+}
+
+impl SetActiveLoadedTheme
+{
+    pub fn new<C: Component>(entity: Entity) -> Self
+    {
+        Self { entity, marker: TypeId::of::<C>() }
+    }
 }
 
 impl Command for SetActiveLoadedTheme
