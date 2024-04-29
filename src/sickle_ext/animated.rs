@@ -44,14 +44,11 @@ fn update_animation<T: AnimatableAttribute>(
     let Some(mut ec) = commands.get_entity(entity) else { return };
 
     // Prepare an updated DynamicStyleAttribute.
-    let mut controller = DynamicStyleController::default();
-    controller.animation = animation.settings;
-
     let attribute = DynamicStyleAttribute::Animated {
         attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
             extract_animation_value::<T>(animation.values),
         )),
-        controller,
+        controller: DynamicStyleController::new(animation.settings, AnimationState::default()),
     };
 
     // Access the entity.
@@ -65,6 +62,7 @@ fn update_animation<T: AnimatableAttribute>(
     }
 
     // If there is no loaded theme, add this animation directly.
+    // - NOTE: If the entity has a theme ancestor, then these changes MAY be overwritten.
     let style = DynamicStyle::new(vec![attribute]);
     if let Some(mut existing) = maybe_style {
         let mut temp = DynamicStyle::new(Vec::default());
