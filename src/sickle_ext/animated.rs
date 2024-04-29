@@ -1,9 +1,15 @@
-use crate::*;
-
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::{lerp::Lerp, theme::{dynamic_style::DynamicStyle, dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController}, pseudo_state::PseudoState, style_animation::{AnimationSettings, AnimationState}}, ui_style::{AnimatedStyleAttribute, AnimatedVals}};
+use sickle_ui::lerp::Lerp;
+use sickle_ui::theme::dynamic_style::DynamicStyle;
+use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+use sickle_ui::theme::pseudo_state::PseudoState;
+use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
+use sickle_ui::ui_style::{AnimatedStyleAttribute, AnimatedVals};
+
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -14,10 +20,13 @@ fn extract_animation_value<T: Animatable>(entity: Entity, state: AnimationState,
     let new_value = bundle.cached.to_value(&state);
 
     // Apply the value to the entity.
-    world.syscall((entity, new_value), |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
-        let Some(mut ec) = c.get_entity(entity) else { return };
-        T::update(&mut ec, new_val);
-    });
+    world.syscall(
+        (entity, new_value),
+        |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
+            let Some(mut ec) = c.get_entity(entity) else { return };
+            T::update(&mut ec, new_val);
+        },
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -30,7 +39,7 @@ fn update_animation<T: Animatable>(
 {
     // Store the AnimatedVals on the entity.
     let Some(mut ec) = commands.get_entity(entity) else { return };
-    ec.try_insert(CachedAnimatedVals::<T>{ cached: animation.values });
+    ec.try_insert(CachedAnimatedVals::<T> { cached: animation.values });
 
     // Prepare an updated DynamicStyleAttribute.
     let mut controller = DynamicStyleController::default();
@@ -47,7 +56,7 @@ fn update_animation<T: Animatable>(
     // If there is a loaded theme, then add this animation to the theme.
     if let Some(mut themes) = maybe_themes {
         themes.update(animation.state, attribute);
-        commands.add(RefreshLoadedTheme{ entity });
+        commands.add(RefreshLoadedTheme { entity });
         return;
     }
 
@@ -67,7 +76,7 @@ fn update_animation<T: Animatable>(
 #[derive(Component, Debug)]
 struct CachedAnimatedVals<T: Animatable>
 {
-    cached: AnimatedVals<T::Value>
+    cached: AnimatedVals<T::Value>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------

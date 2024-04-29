@@ -169,7 +169,8 @@ fn handle_loadable_entry(
     let loadable_entry = loadable_stack.entry(short_name).or_insert_with(|| Vec::default());
     let starting_len = loadable_entry.len();
 
-    let Some(loadable_value) = get_loadable_value(file, current_path, short_name, value, &loadable_entry, deserializer)
+    let Some(loadable_value) =
+        get_loadable_value(file, current_path, short_name, value, &loadable_entry, deserializer)
     else {
         return;
     };

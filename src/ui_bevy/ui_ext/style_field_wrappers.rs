@@ -1,6 +1,7 @@
 use std::any::type_name;
 
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 

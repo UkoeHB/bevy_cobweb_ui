@@ -122,7 +122,8 @@ impl LoadableRef
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores a complete [`LoadablePath`] in addition to the loadable's [`type_path`](bevy::reflect::TypePath::type_path).
+/// Stores a complete [`LoadablePath`] in addition to the loadable's
+/// [`type_path`](bevy::reflect::TypePath::type_path).
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct FullLoadablePath
 {
@@ -134,8 +135,9 @@ pub struct FullLoadablePath
 
 impl FullLoadablePath
 {
-    /// Finalizes a [`LoadablePath`] by specifying the loadable's [`type_path`](bevy::reflect::TypePath::type_path),
-    /// which is used to identify the loadable in loadable-sheet files.
+    /// Finalizes a [`LoadablePath`] by specifying the loadable's
+    /// [`type_path`](bevy::reflect::TypePath::type_path), which is used to identify the loadable in
+    /// loadable-sheet files.
     pub fn new(path: LoadablePath, full_type_name: &'static str) -> Self
     {
         Self { path, full_type_name }

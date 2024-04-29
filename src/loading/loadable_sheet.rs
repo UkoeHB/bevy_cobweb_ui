@@ -15,7 +15,9 @@ fn setup_loadablesheet(sheet_list: Res<LoadableSheetList>, mut loadablesheet: Re
 {
     // begin tracking expected loadablesheet files
     for file in sheet_list.iter_files() {
-        loadablesheet.get_noreact().prepare_file(LoadableFile::new(file.as_str()));
+        loadablesheet
+            .get_noreact()
+            .prepare_file(LoadableFile::new(file.as_str()));
     }
 }
 
@@ -68,7 +70,10 @@ fn load_loadable_changes(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn cleanup_loadablesheet(mut loadablesheet: ReactResMut<LoadableSheet>, mut removed: RemovedComponents<HasLoadables>)
+fn cleanup_loadablesheet(
+    mut loadablesheet: ReactResMut<LoadableSheet>,
+    mut removed: RemovedComponents<HasLoadables>,
+)
 {
     for removed in removed.read() {
         loadablesheet.get_noreact().remove_entity(removed);
@@ -251,7 +256,8 @@ pub struct LoadableSheet
 
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[RefSubscription; 1]>); 1]>>,
+    needs_updates:
+        HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[RefSubscription; 1]>); 1]>>,
 }
 
 impl LoadableSheet
@@ -310,7 +316,9 @@ impl LoadableSheet
                         }
                     }
                 } else {
-                    entry.get_mut().push(ErasedLoadable { type_id, loadable: loadable.clone() });
+                    entry
+                        .get_mut()
+                        .push(ErasedLoadable { type_id, loadable: loadable.clone() });
                 }
             }
         }
@@ -339,8 +347,11 @@ impl LoadableSheet
     )
     {
         // Add to subscriptions.
-        let subscription = RefSubscription{ entity, setter };
-        self.subscriptions.entry(loadable_ref.clone()).or_default().push(subscription);
+        let subscription = RefSubscription { entity, setter };
+        self.subscriptions
+            .entry(loadable_ref.clone())
+            .or_default()
+            .push(subscription);
         self.subscriptions_rev.insert(entity, loadable_ref.clone());
 
         // Get already-loaded loadables that the entity is subscribed to.

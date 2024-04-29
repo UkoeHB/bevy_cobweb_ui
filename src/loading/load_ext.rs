@@ -46,24 +46,26 @@ fn reactive_loader<T: ReactComponent + Loadable>(
     mut entities: Query<Option<&mut React<T>>>,
 )
 {
-    loadables.get_noreact().update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-        let Ok(component) = entities.get_mut(entity) else { return };
-        let Some(new_val) = loadable.get_value(loadable_ref) else { return };
+    loadables
+        .get_noreact()
+        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
+            let Ok(component) = entities.get_mut(entity) else { return };
+            let Some(new_val) = loadable.get_value(loadable_ref) else { return };
 
-        let mut ec = c.entity(entity);
-        (context_setter.setter)(&mut ec);
+            let mut ec = c.entity(entity);
+            (context_setter.setter)(&mut ec);
 
-        match component {
-            Some(mut component) => {
-                *component.get_mut(&mut c) = new_val;
+            match component {
+                Some(mut component) => {
+                    *component.get_mut(&mut c) = new_val;
+                }
+                None => {
+                    c.react().insert(entity, new_val);
+                }
             }
-            None => {
-                c.react().insert(entity, new_val);
-            }
-        }
 
-        c.react().entity_event::<Loaded>(entity, Loaded);
-    });
+            c.react().entity_event::<Loaded>(entity, Loaded);
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -71,15 +73,17 @@ fn reactive_loader<T: ReactComponent + Loadable>(
 /// Updates the loadable bundle `T` on entities.
 fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
 {
-    loadables.get_noreact().update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-        let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
-        let Some(mut ec) = c.get_entity(entity) else { return };
+    loadables
+        .get_noreact()
+        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
+            let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
+            let Some(mut ec) = c.get_entity(entity) else { return };
 
-        (context_setter.setter)(&mut ec);
-        ec.try_insert(bundle);
+            (context_setter.setter)(&mut ec);
+            ec.try_insert(bundle);
 
-        c.react().entity_event::<Loaded>(entity, Loaded);
-    });
+            c.react().entity_event::<Loaded>(entity, Loaded);
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -87,15 +91,17 @@ fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResM
 /// Uses `T` to derive changes on subscribed entities.
 fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
 {
-    loadables.get_noreact().update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-        let Some(value) = loadable.get_value::<T>(loadable_ref) else { return };
-        let Some(mut ec) = c.get_entity(entity) else { return };
+    loadables
+        .get_noreact()
+        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
+            let Some(value) = loadable.get_value::<T>(loadable_ref) else { return };
+            let Some(mut ec) = c.get_entity(entity) else { return };
 
-        (context_setter.setter)(&mut ec);
-        value.apply(&mut ec);
+            (context_setter.setter)(&mut ec);
+            value.apply(&mut ec);
 
-        c.react().entity_event::<Loaded>(entity, Loaded);
-    });
+            c.react().entity_event::<Loaded>(entity, Loaded);
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -104,10 +110,12 @@ fn load_from_ref(
     In((id, loadable_ref, setter)): In<(Entity, LoadableRef, ContextSetter)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
-    mut loadablesheet: ReactResMut<LoadableSheet>
+    mut loadablesheet: ReactResMut<LoadableSheet>,
 )
 {
-    loadablesheet.get_noreact().track_entity(id, loadable_ref, setter, &mut c, &loaders);
+    loadablesheet
+        .get_noreact()
+        .track_entity(id, loadable_ref, setter, &mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -170,12 +178,7 @@ impl LoadableRegistrationAppExt for App
 
     fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self
     {
-        register_loadable_impl(
-            self,
-            reactive_loader::<T>,
-            PhantomData::<T>::default(),
-            "reactive",
-        );
+        register_loadable_impl(self, reactive_loader::<T>, PhantomData::<T>::default(), "reactive");
         self
     }
 
@@ -196,23 +199,30 @@ pub trait StyleLoadingEntityCommandsExt
 
     /// Registers the current entity to load loadables from `loadable_ref`.
     ///
-    /// The `setter` callback will be called every time a loadable is applied from the `loadable_ref` for this entity.
-    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(&mut EntityCommands)) -> &mut Self;
+    /// The `setter` callback will be called every time a loadable is applied from the `loadable_ref` for this
+    /// entity.
+    fn load_with_context_setter(
+        &mut self,
+        loadable_ref: LoadableRef,
+        setter: fn(&mut EntityCommands),
+    ) -> &mut Self;
 }
 
 impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
 {
     fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
-        self.load_with_context_setter(loadable_ref, |_|{})
+        self.load_with_context_setter(loadable_ref, |_| {})
     }
 
-    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(&mut EntityCommands)) -> &mut Self
+    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(&mut EntityCommands))
+        -> &mut Self
     {
         self.insert(HasLoadables);
 
         let id = self.id();
-        self.commands().syscall((id, loadable_ref, ContextSetter{ setter }), load_from_ref);
+        self.commands()
+            .syscall((id, loadable_ref, ContextSetter { setter }), load_from_ref);
         self
     }
 }

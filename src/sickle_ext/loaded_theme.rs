@@ -1,11 +1,16 @@
-use std::{any::TypeId, marker::PhantomData};
+use std::any::TypeId;
+use std::marker::PhantomData;
+
+use bevy::ecs::system::{Command, EntityCommands};
+use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
+use sickle_ui::theme::dynamic_style::DynamicStyle;
+use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
+use sickle_ui::theme::pseudo_state::PseudoState;
+use sickle_ui::theme::{DynamicStyleBuilder, PseudoTheme, Theme};
+use smallvec::SmallVec;
 
 use crate::*;
-
-use bevy::{ecs::system::{Command, EntityCommands}, prelude::*};
-use bevy_cobweb::prelude::*;
-use sickle_ui::theme::{dynamic_style::DynamicStyle, dynamic_style_attribute::DynamicStyleAttribute, pseudo_state::PseudoState, DynamicStyleBuilder, PseudoTheme, Theme};
-use smallvec::SmallVec;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -20,7 +25,7 @@ impl EditablePseudoTheme
 {
     fn new(state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute) -> Self
     {
-        Self{ state, style: DynamicStyle::new(vec![attribute]) }
+        Self { state, style: DynamicStyle::new(vec![attribute]) }
     }
 }
 
@@ -34,7 +39,10 @@ impl Into<PseudoTheme> for EditablePseudoTheme
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn refresh_loaded_theme<C: Component>(mut pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>, ec: &mut EntityCommands)
+fn refresh_loaded_theme<C: Component>(
+    mut pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
+    ec: &mut EntityCommands,
+)
 {
     let themes: Vec<PseudoTheme> = pseudo_themes.drain(..).map(|t| t.into()).collect();
     ec.insert(Theme::<C>::new(themes));
@@ -52,7 +60,7 @@ struct LoadedTheme
     refresh: fn(SmallVec<[EditablePseudoTheme; 1]>, &mut EntityCommands),
 
     /// Themes that are loaded from file.
-    /// 
+    ///
     /// Currently entries are only updated if `state` is exactly equal, not ordering-independent-equal.
     //todo: use sorting to enforce more robust equality
     pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
@@ -62,7 +70,11 @@ impl LoadedTheme
 {
     fn new<C: Component>() -> Self
     {
-        Self{ theme_marker: TypeId::of::<C>(), refresh: refresh_loaded_theme::<C>, pseudo_themes: SmallVec::default() }
+        Self {
+            theme_marker: TypeId::of::<C>(),
+            refresh: refresh_loaded_theme::<C>,
+            pseudo_themes: SmallVec::default(),
+        }
     }
 
     fn matches(&self, marker: TypeId) -> bool
@@ -70,11 +82,7 @@ impl LoadedTheme
         self.theme_marker == marker
     }
 
-    fn update(
-        &mut self,
-        state: Option<Vec<PseudoState>>,
-        attribute: DynamicStyleAttribute,
-    )
+    fn update(&mut self, state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
     {
         match self.pseudo_themes.iter_mut().find(|t| t.state == state) {
             Some(pseudo_theme) => {
@@ -98,15 +106,15 @@ fn set_context_for_load_theme<C: Component>(ec: &mut EntityCommands)
 {
     let entity = ec.id();
     let marker = TypeId::of::<C>();
-    ec.commands().add(SetActiveLoadedTheme{ entity, marker });
+    ec.commands().add(SetActiveLoadedTheme { entity, marker });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Stores themes loaded to an entity.
 ///
-/// Multiple themes can be loaded, but only one can be 'active' at a time. [`Self::update`] will add style attributes
-/// to the active theme.
+/// Multiple themes can be loaded, but only one can be 'active' at a time. [`Self::update`] will add style
+/// attributes to the active theme.
 #[derive(Component)]
 pub struct LoadedThemes
 {
@@ -123,7 +131,7 @@ impl LoadedThemes
     /// Makes a new loaded themes for a specific theme.
     pub fn new<C: Component>() -> Self
     {
-        Self{
+        Self {
             active_theme: 0,
             themes: SmallVec::from_elem(LoadedTheme::new::<C>(), 1),
         }
@@ -133,8 +141,7 @@ impl LoadedThemes
     pub fn add<C: Component>(&mut self)
     {
         let marker = TypeId::of::<C>();
-        match self.themes.iter().position(|t| t.matches(marker))
-        {
+        match self.themes.iter().position(|t| t.matches(marker)) {
             Some(index) => {
                 self.active_theme = index;
             }
@@ -156,11 +163,7 @@ impl LoadedThemes
     }
 
     /// Updates the active theme with a specific style attribute.
-    pub fn update(
-        &mut self,
-        state: Option<Vec<PseudoState>>,
-        attribute: DynamicStyleAttribute,
-    )
+    pub fn update(&mut self, state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
     {
         self.themes[self.active_theme].update(state, attribute);
     }
@@ -185,7 +188,7 @@ impl<C: Component> AddLoadedTheme<C>
 {
     pub fn new(entity: Entity) -> Self
     {
-        Self{ entity, _p: PhantomData::default() }
+        Self { entity, _p: PhantomData::default() }
     }
 }
 
@@ -196,7 +199,7 @@ impl<C: Component> Command for AddLoadedTheme<C>
         let Some(mut entity) = world.get_entity_mut(self.entity) else { return };
         let Some(mut themes) = entity.get_mut::<LoadedThemes>() else {
             entity.insert(LoadedThemes::new::<C>());
-            return
+            return;
         };
         themes.add::<C>();
     }
@@ -233,10 +236,13 @@ impl Command for RefreshLoadedTheme
 {
     fn apply(self, world: &mut World)
     {
-        world.syscall(self.entity, |In(entity): In<Entity>, mut c: Commands, q: Query<&LoadedThemes>|{
-            let Ok(themes) = q.get(entity) else { return };
-            themes.refresh(&mut c.entity(entity));
-        });
+        world.syscall(
+            self.entity,
+            |In(entity): In<Entity>, mut c: Commands, q: Query<&LoadedThemes>| {
+                let Ok(themes) = q.get(entity) else { return };
+                themes.refresh(&mut c.entity(entity));
+            },
+        );
     }
 }
 
@@ -247,8 +253,8 @@ pub trait LoadedThemeEntityCommandsExt
     /// Loads [`Theme<C>`] into the current entity from the loadable reference.
     ///
     /// After this is called, the theme will be 'active' on the entity, which means it can be updated with
-    /// [`LoadedThemes::update`]. The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers will call update
-    /// automatically when applied to an entity with [`ApplyLoadable::apply`].
+    /// [`LoadedThemes::update`]. The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers will
+    /// call update automatically when applied to an entity with [`ApplyLoadable::apply`].
     fn load_theme<C: Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
 }
 
