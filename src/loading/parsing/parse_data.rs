@@ -11,20 +11,6 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-const IMPORT_KEYWORD: &str = "#import";
-const USING_KEYWORD: &str = "#using";
-const CONSTANTS_KEYWORD: &str = "#constants";
-const COMMENT_KEYWORD: &str = "#c:";
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn is_keyword(key: &str) -> bool
-{
-    key == IMPORT_KEYWORD || key == USING_KEYWORD || key == CONSTANTS_KEYWORD || key.starts_with(COMMENT_KEYWORD)
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn is_loadable_entry(key: &str) -> bool
 {
     // Check if camelcase
@@ -107,50 +93,13 @@ fn get_loadable_value(
 ) -> Option<ReflectedLoadable>
 {
     match &value {
-        Value::String(stringvalue) if (stringvalue.as_str() == "inherited") => {
+        Value::String(stringvalue) if (stringvalue.as_str() == INHERITED_KEYWORD) => {
             get_inherited_loadable_value(file, current_path, short_name, loadable_entry)
         }
         _ => match deserializer.deserialize(value) {
             Ok(value) => Some(ReflectedLoadable::Value(Arc::new(value))),
             Err(err) => Some(ReflectedLoadable::DeserializationFailed(Arc::new(err))),
         },
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn try_handle_using_entry(
-    type_registry: &TypeRegistry,
-    file: &LoadableFile,
-    map: &Map<String, Value>,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
-)
-{
-    let Some(using_section) = map.get(&String::from(USING_KEYWORD)) else {
-        return;
-    };
-
-    let Value::Array(longnames) = using_section else {
-        tracing::error!("failed parsing 'using' section in {:?}, it is not an Array", file);
-        return;
-    };
-
-    for longname in longnames.iter() {
-        let Value::String(longname) = longname else {
-            tracing::error!("failed parsing longname {:?} in 'using' section of {:?}, it is not a String",
-                longname, file);
-            continue;
-        };
-
-        let Some(registration) = type_registry.get_with_type_path(longname.as_str()) else {
-            tracing::error!("longname {:?} in 'using' section of {:?} not found in type registry",
-                longname, file);
-            continue;
-        };
-        let short_name = registration.type_info().type_path_table().short_path();
-        let long_name = registration.type_info().type_path_table().path(); //get static version
-
-        name_shortcuts.insert(short_name, long_name);
     }
 }
 
@@ -232,7 +181,7 @@ fn handle_branch_entry(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn parse_branch(
+pub(crate) fn parse_branch(
     type_registry: &TypeRegistry,
     loadablesheet: &mut LoadableSheet,
     file: &LoadableFile,
@@ -247,7 +196,7 @@ fn parse_branch(
 
     for (key, value) in data.iter_mut() {
         // Skip keyword map entries.
-        if is_keyword(key) {
+        if key_is_keyword(key) {
             continue;
         }
 
@@ -285,65 +234,6 @@ fn parse_branch(
         loadable_stack.get_mut(&shortname).unwrap().truncate(initial_size);
     }
     stack_trackers.push(stack_tracker);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Consumes a loadablesheet file's data and loads it into [`LoadableSheet`].
-pub(crate) fn parse_loadablesheet_file(
-    type_registry: &TypeRegistry,
-    loadablesheet: &mut LoadableSheet,
-    file: LoadableFile,
-    data: Value,
-) -> bool
-{
-    tracing::info!("parsing loadablesheet {:?}", file.file);
-    loadablesheet.initialize_file(file.clone());
-
-    let Value::Object(data) = data else {
-        tracing::error!("failed parsing loadablesheet {:?}, data base layer is not an Object", file);
-        return false;
-    };
-
-    // [ shortname : longname ]
-    let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
-    // [ shortname : [ loadable value ] ]
-    let mut loadable_stack: HashMap<&'static str, Vec<ReflectedLoadable>> = HashMap::default();
-    // [ {shortname, top index into loadablestack when first stack added this frame} ]
-    let mut stack_trackers: Vec<Vec<(&'static str, usize)>> = Vec::default();
-
-    // TODO: handle imports
-
-    // - get imports section
-    // - check if imports available, else cache for parsing later
-    // - copy saved using and constants from imported
-
-    // Extract using section.
-    try_handle_using_entry(type_registry, &file, &data, &mut name_shortcuts);
-
-    // Extract constants section.
-    // - build constants map and check for $$ constant references
-
-    // TODO: save using and constants in case this file is imported by another file
-
-    // Search and replace constants.
-
-    // Recursively consume the file contents.
-    parse_branch(
-        type_registry,
-        loadablesheet,
-        &file,
-        &LoadablePath::new(""),
-        data,
-        &mut name_shortcuts,
-        &mut loadable_stack,
-        &mut stack_trackers,
-    );
-
-    // On return true, load any files that depend on it.
-    // TODO: use a cfg_if on the file_watcher feature to decide whether to discard all file contents once all
-    // registerd sheets are done loading
-    true
 }
 
 //-------------------------------------------------------------------------------------------------------------------

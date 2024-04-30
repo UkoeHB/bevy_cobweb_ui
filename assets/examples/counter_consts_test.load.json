@@ -23,7 +23,7 @@
             "hover": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.26, "alpha": 0.8}},
             "press": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.19, "alpha": 0.8}}
         },
-        "settings": "$base::animation_settings::*"
+        "settings": "$base::animation_settings"
     }
 },
 
@@ -63,7 +63,7 @@
                 "hover": {"Hsla": {"hue": 24.0, "saturation": 0.82, "lightness": 0.35, "alpha": 1.0}},
                 "press": {"Hsla": {"hue": 24.0, "saturation": 0.90, "lightness": 0.25, "alpha": 1.0}}
             },
-            "settings": "$base::animation_settings::*"
+            "settings": "$base::animation_settings"
         },
         "Animated<Padding>": {
             "values": {
@@ -71,7 +71,7 @@
                 "hover": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
                 "press": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}}
             },
-            "settings": "$base::animation_settings::*"
+            "settings": "$base::animation_settings"
         }
     }
 }

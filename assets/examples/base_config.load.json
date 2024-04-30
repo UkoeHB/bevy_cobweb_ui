@@ -10,8 +10,8 @@
         "$press": {"duration": 0.2, "easing": "OutExpo"}
     },
     "$animation_settings" : {
-        "pointer_enter": "$$animation_settings_f::pointer_enter::*",
-        "press": "$$animation_settings_f::press::*"
+        "pointer_enter": "$$animation_settings_f::pointer_enter",
+        "press": "$$animation_settings_f::press"
     }
 },
 

@@ -1,5 +1,10 @@
 {
 
+"#constants" : {
+    "#c: constants test": { },
+    "$path" : {}
+},
+
 "counter_theme" : {
     "Animated<BgColor>": {
         "values": {
