@@ -1,5 +1,21 @@
 {
 
+"#import" : {
+    "examples/base_configs.load.json": "base"
+},
+
+"#constants" : {
+    "$counter" : {
+        "$button": {
+            "$FlexStyle": {"content": {"justify_main": "Center", "justify_cross": "Center"}}
+        },
+        "$text": {
+            "$FlexStyle": {"flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}},
+            "$TextLine": {"size": 50.0}
+        }
+    },
+},
+
 "counter_theme" : {
     "Animated<BgColor>": {
         "values": {
@@ -7,23 +23,16 @@
             "hover": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.26, "alpha": 0.8}},
             "press": {"Hsla": {"hue": 80.0, "saturation": 0.7, "lightness": 0.19, "alpha": 0.8}}
         },
-        "settings": {
-            "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-            "press": {"duration": 0.4, "easing": "OutExpo"}
-        }
+        "settings": "$base::animation_settings::*"
     }
 },
 
 "counter_config": {
-    "FlexStyle": {
-        "content": {"justify_main": "Center", "justify_cross": "Center"}
-    },
+    "$counter::button::*": {},
 
     "text": {
-        "FlexStyle": {
-            "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
-        },
-        "TextLine": { "size": 50.0 }
+        "$counter::text::FlexStyle": {},
+        "$counter::text::TextLine": {}
     }
 },
 
@@ -54,20 +63,15 @@
                 "hover": {"Hsla": {"hue": 24.0, "saturation": 0.82, "lightness": 0.35, "alpha": 1.0}},
                 "press": {"Hsla": {"hue": 24.0, "saturation": 0.90, "lightness": 0.25, "alpha": 1.0}}
             },
-            "settings": {
-                "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                "press": {"duration": 0.2, "easing": "OutExpo"}
-            }
+            "settings": "$base::animation_settings::*"
         },
         "Animated<Padding>": {
             "values": {
-                "idle": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
+                "idle": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}},
+                "hover": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
                 "press": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}}
             },
-            "settings": {
-                "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                "press": {"duration": 0.2, "easing": "OutExpo"}
-            }
+            "settings": "$base::animation_settings::*"
         }
     }
 }

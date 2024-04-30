@@ -4,17 +4,13 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub struct StyleExtPlugin;
+pub(crate) struct BevyExtPlugin;
 
-impl Plugin for StyleExtPlugin
+impl Plugin for BevyExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(StyleWrappersPlugin)
-            .add_plugins(UiComponentWrappersPlugin)
-            .add_plugins(UiStyleFieldWrappersPlugin)
-            .add_plugins(UiTextExtPlugin)
-            .add_plugins(UiImageExtPlugin);
+        app.add_plugins(BevySpriteExtPlugin);
     }
 }
 

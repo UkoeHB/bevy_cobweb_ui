@@ -2,6 +2,7 @@
 #[allow(unused_imports)]
 use crate as bevy_cobweb_ui;
 
+mod bevy_ext;
 mod loading;
 mod plugin;
 mod react_ext;
@@ -10,6 +11,7 @@ mod tools;
 //mod ui_2d;
 mod ui_bevy;
 
+pub use bevy_ext::*;
 pub use loading::*;
 pub use plugin::*;
 pub use react_ext::*;

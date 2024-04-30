@@ -120,9 +120,7 @@ impl Plugin for UiTextExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<FontMap>()
-            .register_type::<TextLine>()
-            .register_derived_loadable::<TextLine>();
+        app.init_resource::<FontMap>().register_derived::<TextLine>();
     }
 }
 
