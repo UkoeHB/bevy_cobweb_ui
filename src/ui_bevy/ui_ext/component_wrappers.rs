@@ -2,6 +2,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use serde::{Deserialize, Serialize};
+use sickle_ui::lerp::Lerp;
 
 use crate::*;
 
@@ -65,6 +66,67 @@ impl ResponsiveAttribute for BrColor
     type Interactive = Interactive;
 }
 impl AnimatableAttribute for BrColor
+{
+    type Interactive = Interactive;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`Outline`], can be loaded as a style.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NodeOutline
+{
+    pub width: Val,
+    /// Space added between the outline and the node's border edge.
+    #[reflect(default)]
+    pub offset: Val,
+    pub color: Color,
+}
+
+impl Into<Outline> for NodeOutline
+{
+    fn into(self) -> Outline
+    {
+        Outline { width: self.width, offset: self.offset, color: self.color }
+    }
+}
+
+//todo: consider separate lerps for each of the outline fields
+impl Lerp for NodeOutline
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self {
+            width: self.width.lerp(to.width, t),
+            offset: self.offset.lerp(to.offset, t),
+            color: self.color.lerp(to.color, t),
+        }
+    }
+}
+
+impl ApplyLoadable for NodeOutline
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let outline: Outline = self.into();
+        ec.try_insert(outline);
+    }
+}
+
+impl ThemedAttribute for NodeOutline
+{
+    type Value = Self;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        value.apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for NodeOutline
+{
+    type Interactive = Interactive;
+}
+impl AnimatableAttribute for NodeOutline
 {
     type Interactive = Interactive;
 }
@@ -174,6 +236,7 @@ impl Plugin for UiComponentWrappersPlugin
     {
         app.register_animatable::<BgColor>()
             .register_animatable::<BrColor>()
+            .register_animatable::<NodeOutline>()
             .register_responsive::<SetFocusPolicy>()
             .register_responsive::<SetZIndex>();
     }
