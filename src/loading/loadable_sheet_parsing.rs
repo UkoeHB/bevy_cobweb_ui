@@ -11,10 +11,16 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn is_using_entry(depth: usize, count: usize, key: &str) -> bool
+const IMPORT_KEYWORD: &str = "#import";
+const USING_KEYWORD: &str = "#using";
+const CONSTANTS_KEYWORD: &str = "#constants";
+const COMMENT_KEYWORD: &str = "#c:";
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn is_keyword(key: &str) -> bool
 {
-    // Check if the very first key is "using".
-    depth == 0 && count == 0 && key == "using"
+    key == IMPORT_KEYWORD || key == USING_KEYWORD || key == CONSTANTS_KEYWORD || key.starts_with(COMMENT_KEYWORD)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -113,14 +119,18 @@ fn get_loadable_value(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn handle_using_entry(
+fn try_handle_using_entry(
     type_registry: &TypeRegistry,
     file: &LoadableFile,
-    value: Value,
+    map: &Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
-    let Value::Array(longnames) = value else {
+    let Some(using_section) = map.get(&String::from(USING_KEYWORD)) else {
+        return;
+    };
+
+    let Value::Array(longnames) = using_section else {
         tracing::error!("failed parsing 'using' section in {:?}, it is not an Array", file);
         return;
     };
@@ -196,7 +206,6 @@ fn handle_branch_entry(
     current_path: &LoadablePath,
     key: &str,
     value: Value,
-    depth: usize,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
     loadable_stack: &mut HashMap<&'static str, Vec<ReflectedLoadable>>,
     stack_trackers: &mut Vec<Vec<(&'static str, usize)>>,
@@ -215,7 +224,6 @@ fn handle_branch_entry(
         &file,
         &extended_path,
         data,
-        depth + 1,
         name_shortcuts,
         loadable_stack,
         stack_trackers,
@@ -230,7 +238,6 @@ fn parse_branch(
     file: &LoadableFile,
     current_path: &LoadablePath,
     mut data: Map<String, Value>,
-    depth: usize,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
     loadable_stack: &mut HashMap<&'static str, Vec<ReflectedLoadable>>,
     stack_trackers: &mut Vec<Vec<(&'static str, usize)>>,
@@ -238,12 +245,15 @@ fn parse_branch(
 {
     let mut stack_tracker = stack_trackers.pop().unwrap_or_default();
 
-    for (count, (key, value)) in data.iter_mut().enumerate() {
+    for (key, value) in data.iter_mut() {
+        // Skip keyword map entries.
+        if is_keyword(key) {
+            continue;
+        }
+
         let value = value.take();
 
-        if is_using_entry(depth, count, key) {
-            handle_using_entry(type_registry, file, value, name_shortcuts);
-        } else if is_loadable_entry(key) {
+        if is_loadable_entry(key) {
             handle_loadable_entry(
                 type_registry,
                 loadablesheet,
@@ -263,7 +273,6 @@ fn parse_branch(
                 current_path,
                 key.as_str(),
                 value,
-                depth,
                 name_shortcuts,
                 loadable_stack,
                 stack_trackers,
@@ -286,14 +295,14 @@ pub(crate) fn parse_loadablesheet_file(
     loadablesheet: &mut LoadableSheet,
     file: LoadableFile,
     data: Value,
-)
+) -> bool
 {
     tracing::info!("parsing loadablesheet {:?}", file.file);
     loadablesheet.initialize_file(file.clone());
 
     let Value::Object(data) = data else {
         tracing::error!("failed parsing loadablesheet {:?}, data base layer is not an Object", file);
-        return;
+        return false;
     };
 
     // [ shortname : longname ]
@@ -303,6 +312,22 @@ pub(crate) fn parse_loadablesheet_file(
     // [ {shortname, top index into loadablestack when first stack added this frame} ]
     let mut stack_trackers: Vec<Vec<(&'static str, usize)>> = Vec::default();
 
+    // TODO: handle imports
+
+    // - get imports section
+    // - check if imports available, else cache for parsing later
+    // - copy saved using and constants from imported
+
+    // Extract using section.
+    try_handle_using_entry(type_registry, &file, &data, &mut name_shortcuts);
+
+    // Extract constants section.
+    // - build constants map and check for $$ constant references
+
+    // TODO: save using and constants in case this file is imported by another file
+
+    // Search and replace constants.
+
     // Recursively consume the file contents.
     parse_branch(
         type_registry,
@@ -310,11 +335,15 @@ pub(crate) fn parse_loadablesheet_file(
         &file,
         &LoadablePath::new(""),
         data,
-        0,
         &mut name_shortcuts,
         &mut loadable_stack,
         &mut stack_trackers,
     );
+
+    // On return true, load any files that depend on it.
+    // TODO: use a cfg_if on the file_watcher feature to decide whether to discard all file contents once all
+    // registerd sheets are done loading
+    true
 }
 
 //-------------------------------------------------------------------------------------------------------------------
