@@ -10,7 +10,7 @@ fn get_constants_set<'a>(
     file: &LoadableFile,
     prefix: &'static str,
     value_str: &'a String,
-    constants: &'a HashMap<String, Map<String, Value>>
+    constants: &'a HashMap<String, Map<String, Value>>,
 ) -> Option<(&'a str, &'a Map<String, Value>)>
 {
     let Some(("", path_ref)) = value_str.split_once(prefix) else { return None };
@@ -40,7 +40,7 @@ fn try_replace_string_with_constant(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<String, Map<String, Value>>
+    constants: &HashMap<String, Map<String, Value>>,
 )
 {
     let Value::String(value_str) = &value else { return };
@@ -64,7 +64,7 @@ fn try_replace_map_key_with_constant(
     prefix: &'static str,
     key: String,
     map: &mut Map<String, Value>,
-    constants: &HashMap<String, Map<String, Value>>
+    constants: &HashMap<String, Map<String, Value>>,
 )
 {
     let Some((terminator, constants_set)) = get_constants_set(file, prefix, &key, constants) else {
@@ -99,16 +99,14 @@ fn search_and_replace_constants(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<String, Map<String, Value>>
+    constants: &HashMap<String, Map<String, Value>>,
 )
 {
     match value {
-        Value::Null |
-        Value::Bool(_) |
-        Value::Number(_) => (),
+        Value::Null | Value::Bool(_) | Value::Number(_) => (),
         Value::String(_) => {
             try_replace_string_with_constant(file, prefix, value, constants);
-        },
+        }
         Value::Array(vec) => {
             for value in vec.iter_mut() {
                 search_and_replace_constants(file, prefix, value, constants);
@@ -133,7 +131,7 @@ pub(crate) fn constants_builder_recurse_into_value(
     key: &String,
     value: &mut Value,
     path: &mut Vec<String>,
-    constants: &mut HashMap<String, Map<String, Value>>
+    constants: &mut HashMap<String, Map<String, Value>>,
 )
 {
     // Add path stack.
@@ -145,10 +143,7 @@ pub(crate) fn constants_builder_recurse_into_value(
 
     // Parse constants from the value.
     match value {
-        Value::Null |
-        Value::Bool(_) |
-        Value::Number(_) |
-        Value::String(_) => (),
+        Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => (),
         Value::Array(vec) => {
             for value in vec.iter_mut() {
                 search_and_replace_constants(file, "$$", value, constants);
@@ -198,7 +193,10 @@ pub(crate) fn constants_builder_recurse_into_value(
             tracing::warn!("overwriting duplicate terminal path segment {:?} in constants map at {:?}", key, file);
         }
     };
-    let base_path = path.iter().fold(String::default(), |mut prev, val| { prev.push_str(val); prev});
+    let base_path = path.iter().fold(String::default(), |mut prev, val| {
+        prev.push_str(val);
+        prev
+    });
 
     if let Some(inner) = constants.get_mut(&base_path) {
         insert(inner);
@@ -218,7 +216,7 @@ pub(crate) fn constants_builder_recurse_into_value(
 pub(crate) fn extract_constants_section(
     file: &LoadableFile,
     data: &mut Map<String, Value>,
-    constants: &mut HashMap<String, Map<String, Value>>
+    constants: &mut HashMap<String, Map<String, Value>>,
 )
 {
     let Some(constants_section) = data.get_mut(&String::from(CONSTANTS_KEYWORD)) else {
