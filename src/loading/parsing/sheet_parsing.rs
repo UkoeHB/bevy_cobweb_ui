@@ -48,6 +48,7 @@ pub(crate) fn parse_loadablesheet_file(
     // TODO: save using and constants in case this file is imported by another file
 
     // Search and replace constants.
+    search_and_replace_map_constants(&file, "$", &mut data, &constants);
 
     // Recursively consume the file contents.
     parse_branch(

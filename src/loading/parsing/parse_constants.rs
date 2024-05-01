@@ -95,7 +95,37 @@ fn try_replace_map_key_with_constant(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn search_and_replace_constants(
+/// Replaces constants throughout a map, ignoring sections that start with keywords.
+pub(crate) fn search_and_replace_map_constants(
+    file: &LoadableFile,
+    prefix: &'static str,
+    map: &mut Map<String, Value>,
+    constants: &HashMap<String, Map<String, Value>>,
+)
+{
+    for key in map
+        .keys()
+        .filter(|k| !key_is_keyword(k))
+        .cloned()
+        .collect::<Vec<String>>()
+        .drain(..)
+    {
+        try_replace_map_key_with_constant(file, prefix, key, map, constants);
+    }
+
+    for (key, value) in map.iter_mut() {
+        // Ignore sections that start with a keyword.
+        if key_is_keyword(key) {
+            continue;
+        }
+        search_and_replace_constants(file, prefix, value, constants);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Replaces constants throughout a value.
+pub(crate) fn search_and_replace_constants(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
@@ -113,13 +143,7 @@ fn search_and_replace_constants(
             }
         }
         Value::Object(map) => {
-            for key in map.keys().cloned().collect::<Vec<String>>().drain(..) {
-                try_replace_map_key_with_constant(file, prefix, key, map, constants);
-            }
-
-            for value in map.values_mut() {
-                search_and_replace_constants(file, prefix, value, constants);
-            }
+            search_and_replace_map_constants(file, prefix, map, constants);
         }
     }
 }
@@ -134,9 +158,6 @@ pub(crate) fn constants_builder_recurse_into_value(
     constants: &mut HashMap<String, Map<String, Value>>,
 )
 {
-    // Add path stack.
-    path.push(key.clone());
-
     // Update the value if it references a constant.
     // - We do this in a separate step in case expanding the constant introduces more constants/path segments.
     try_replace_string_with_constant(file, "$$", value, constants);
@@ -151,6 +172,9 @@ pub(crate) fn constants_builder_recurse_into_value(
         }
         //todo: it's ugly
         Value::Object(map) => {
+            // Add path stack.
+            path.push(key.clone());
+
             let mut is_normal_segment = false;
             let mut is_constants_segment = false;
 
@@ -178,9 +202,10 @@ pub(crate) fn constants_builder_recurse_into_value(
                 }
             }
 
+            // End this path stack.
+            path.pop();
+
             if is_constants_segment {
-                // End this path stack.
-                path.pop();
                 return;
             }
         }
@@ -205,9 +230,6 @@ pub(crate) fn constants_builder_recurse_into_value(
         insert(&mut inner);
         constants.insert(base_path.clone(), inner);
     }
-
-    // End this path stack.
-    path.pop();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -231,7 +253,13 @@ pub(crate) fn extract_constants_section(
     let mut path: Vec<String> = Vec::default();
 
     // Replace map keys with constants.
-    for key in data.keys().cloned().collect::<Vec<String>>().drain(..) {
+    for key in data
+        .keys()
+        .filter(|k| !key_is_keyword(k))
+        .cloned()
+        .collect::<Vec<String>>()
+        .drain(..)
+    {
         try_replace_map_key_with_constant(file, "$$", key, data, constants);
     }
 
