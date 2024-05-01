@@ -17,9 +17,13 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     // Detect loadables if appropriate.
     let revoke_token = if loaded.contains(entity) {
         let triggers = (triggers, entity_event::<Loaded>(entity));
-        c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
+        c.react()
+            .with(triggers, syscommand, ReactorMode::Revokable)
+            .unwrap()
     } else {
-        c.react().with(triggers, syscommand, ReactorMode::Revokable).unwrap()
+        c.react()
+            .with(triggers, syscommand, ReactorMode::Revokable)
+            .unwrap()
     };
 
     //todo: more efficient cleanup mechanism

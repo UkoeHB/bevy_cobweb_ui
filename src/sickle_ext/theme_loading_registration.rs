@@ -33,7 +33,8 @@ impl ThemedRegistrationExt for App
         &mut self,
     ) -> &mut Self
     {
-        self.register_themed::<T>().register_derived::<Responsive<T>>()
+        self.register_themed::<T>()
+            .register_derived::<Responsive<T>>()
     }
 
     fn register_animatable<
@@ -44,7 +45,8 @@ impl ThemedRegistrationExt for App
     where
         <T as ThemedAttribute>::Value: Lerp,
     {
-        self.register_responsive::<T>().register_derived::<Animated<T>>()
+        self.register_responsive::<T>()
+            .register_derived::<Animated<T>>()
     }
 }
 

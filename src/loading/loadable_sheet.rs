@@ -371,7 +371,12 @@ impl LoadableSheet
             }
 
             // Check if preprocessed.
-            if self.preprocessed.iter().find(|p| p.file == *import).is_some() {
+            if self
+                .preprocessed
+                .iter()
+                .find(|p| p.file == *import)
+                .is_some()
+            {
                 continue;
             }
 

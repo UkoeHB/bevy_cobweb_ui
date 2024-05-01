@@ -25,7 +25,9 @@ impl Counter
     fn increment(target: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
     {
         move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-            counters.get_mut(&mut c, target).map(Counter::increment_inner);
+            counters
+                .get_mut(&mut c, target)
+                .map(Counter::increment_inner);
         }
     }
 
@@ -125,28 +127,34 @@ impl CounterWidget
     fn build(self, ec: &mut EntityCommands)
     {
         let button_ref = self.button_config.unwrap_or_else(|| Self::default_ref());
-        let text_ref = self.text_config.unwrap_or_else(|| Self::default_ref().e("text"));
+        let text_ref = self
+            .text_config
+            .unwrap_or_else(|| Self::default_ref().e("text"));
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
         let entity = ec.id();
 
-        ec.commands().ui_builder(entity).load(button_ref, |button, _path| {
-            if let Some(theme) = self.theme {
-                button.entity_commands().load_theme::<CounterButtonTheme>(theme);
-            }
+        ec.commands()
+            .ui_builder(entity)
+            .load(button_ref, |button, _path| {
+                if let Some(theme) = self.theme {
+                    button
+                        .entity_commands()
+                        .load_theme::<CounterButtonTheme>(theme);
+                }
 
-            let button_id = button.id();
-            button
-                .insert(CounterButtonTheme)
-                .insert_reactive(Counter(0))
-                .on_pressed(Counter::increment(button_id));
+                let button_id = button.id();
+                button
+                    .insert(CounterButtonTheme)
+                    .insert_reactive(Counter(0))
+                    .on_pressed(Counter::increment(button_id));
 
-            button.load(text_ref, |text, _path| {
-                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    Counter::write(pre_text, post_text, button_id, text_id)
+                button.load(text_ref, |text, _path| {
+                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                        Counter::write(pre_text, post_text, button_id, text_id)
+                    });
                 });
             });
-        });
     }
 }
 

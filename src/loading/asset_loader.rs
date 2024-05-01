@@ -143,7 +143,9 @@ impl LoadableSheetListAppExt for App
             self.init_resource::<LoadableSheetList>();
         }
 
-        self.world.resource_mut::<LoadableSheetList>().add_file(file);
+        self.world
+            .resource_mut::<LoadableSheetList>()
+            .add_file(file);
         self
     }
 }

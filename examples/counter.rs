@@ -23,7 +23,9 @@ impl Counter
     fn increment(target: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
     {
         move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-            counters.get_mut(&mut c, target).map(Counter::increment_inner);
+            counters
+                .get_mut(&mut c, target)
+                .map(Counter::increment_inner);
         }
     }
 

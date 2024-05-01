@@ -91,7 +91,9 @@ impl LoadedTheme
                 std::mem::swap(&mut pseudo_theme.style, &mut temp);
                 pseudo_theme.style = temp.merge(DynamicStyle::new(vec![attribute]));
             }
-            None => self.pseudo_themes.push(EditablePseudoTheme::new(state, attribute)),
+            None => self
+                .pseudo_themes
+                .push(EditablePseudoTheme::new(state, attribute)),
         }
     }
 

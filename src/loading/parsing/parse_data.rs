@@ -125,7 +125,9 @@ fn handle_loadable_entry(
     };
 
     // Get the loadable's value.
-    let loadable_entry = loadable_stack.entry(short_name).or_insert_with(|| Vec::default());
+    let loadable_entry = loadable_stack
+        .entry(short_name)
+        .or_insert_with(|| Vec::default());
     let starting_len = loadable_entry.len();
 
     let Some(loadable_value) =
@@ -231,7 +233,10 @@ pub(crate) fn parse_branch(
 
     // Clear loadables tracked for inheritance.
     for (shortname, initial_size) in stack_tracker.drain(..) {
-        loadable_stack.get_mut(&shortname).unwrap().truncate(initial_size);
+        loadable_stack
+            .get_mut(&shortname)
+            .unwrap()
+            .truncate(initial_size);
     }
     stack_trackers.push(stack_tracker);
 }
