@@ -1,8 +1,7 @@
 {
 
 "#import": {
-    "examples/counter_widget_config.load.json": "base",
-    "examples/counter_widget.load.json": "self"
+    "examples/counter_widget_config.load.json": "base"
 },
 
 "#c: Base theme for CounterWidgets.":1,

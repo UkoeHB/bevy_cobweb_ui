@@ -398,6 +398,7 @@ impl LoadableSheet
                     .find(|i| !self.processed.contains_key(i))
                     .is_some()
                 {
+                    self.preprocessed.push(preprocessed);
                     continue;
                 }
 
@@ -478,14 +479,15 @@ impl LoadableSheet
         // Check for circular dependencies.
         if self.pending.len() == 0 && self.preprocessed.len() > 0 {
             for preproc in self.preprocessed.drain(..) {
-                tracing::error!("loadable file {:?} failed to resolve imports; it probably has recursive \
-                    dependencies", preproc.file.file);
+                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it probably has a dependency cycle; \
+                    fix the cycle and restart your app", preproc.file.file);
             }
         }
 
         // Clean up memory once all files are loaded and processed.
         #[cfg(not(feature = "hot_reload"))]
         {
+            tracing::info!("done loading (enable hot_reload feature if you want to reload files)");
             if self.pending.len() == 0 && self.preprocessed.len() == 0 {
                 let _ = std::mem::replace(&mut self.pending, HashSet::default());
                 let _ = std::mem::replace(&mut self.preprocessed, Vec::default());
