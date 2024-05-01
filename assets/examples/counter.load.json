@@ -1,11 +1,13 @@
 {
 
+"#c: Sets up a root node that covers the window.":1,
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     },
 
+    "#c: Sets up a button with centered content, that animates its background in response to hovers/presses.":1,
     "button": {
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
@@ -22,6 +24,7 @@
             }
         },
 
+        "#c: Sets up the button's text as a single line of text with margin to control the edges of the button.":1,
         "text": {
             "FlexStyle": {
                 "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
