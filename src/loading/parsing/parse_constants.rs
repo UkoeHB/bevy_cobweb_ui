@@ -6,6 +6,19 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn path_to_string(path: &Vec<String>) -> String
+{
+    path.iter().fold(String::default(), |mut prev, val| {
+        if prev.as_str() != "" {
+            prev.push_str("::");
+        }
+        prev.push_str(val);
+        prev
+    })
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn get_constants_set<'a>(
     file: &LoadableFile,
     prefix: &'static str,
@@ -218,10 +231,7 @@ pub(crate) fn constants_builder_recurse_into_value(
             tracing::warn!("overwriting duplicate terminal path segment {:?} in constants map at {:?}", key, file);
         }
     };
-    let base_path = path.iter().fold(String::default(), |mut prev, val| {
-        prev.push_str(val);
-        prev
-    });
+    let base_path = path_to_string(&path);
 
     if let Some(inner) = constants.get_mut(&base_path) {
         insert(inner);

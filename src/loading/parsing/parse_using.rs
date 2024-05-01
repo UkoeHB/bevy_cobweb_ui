@@ -38,6 +38,8 @@ pub(crate) fn extract_using_section(
         let short_name = registration.type_info().type_path_table().short_path();
         let long_name = registration.type_info().type_path_table().path(); //get static version
 
+        // Note: This overwrites existing entries for a shortname, which allows files to overload type names
+        // imported from other files.
         name_shortcuts.insert(short_name, long_name);
     }
 }

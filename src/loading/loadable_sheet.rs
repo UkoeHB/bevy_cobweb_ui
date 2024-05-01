@@ -3,8 +3,10 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy::reflect::TypeRegistry;
 use bevy::utils::warn_once;
 use bevy_cobweb::prelude::*;
+use serde_json::{Map, Value};
 use smallvec::SmallVec;
 
 use crate::*;
@@ -23,21 +25,16 @@ fn setup_loadablesheet(sheet_list: Res<LoadableSheetList>, mut loadablesheet: Re
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_loadable_changes(
-    mut c: Commands,
+fn preprocess_loadable_files(
     mut events: EventReader<AssetEvent<LoadableSheetAsset>>,
     sheet_list: Res<LoadableSheetList>,
     mut assets: ResMut<Assets<LoadableSheetAsset>>,
     mut loadablesheet: ReactResMut<LoadableSheet>,
-    types: Res<AppTypeRegistry>,
 )
 {
     if events.is_empty() {
         return;
     }
-
-    let type_registry = types.read();
-    let mut need_reactions = false;
 
     for event in events.read() {
         let id = match event {
@@ -59,11 +56,21 @@ fn load_loadable_changes(
         };
 
         let loadablesheet = loadablesheet.get_noreact();
-        parse_loadablesheet_file(&type_registry, loadablesheet, asset.file, asset.data);
-        need_reactions = true;
+        preprocess_loadablesheet_file(loadablesheet, asset.file, asset.data);
     }
+}
 
-    if need_reactions {
+//-------------------------------------------------------------------------------------------------------------------
+
+fn process_loadable_files(
+    mut c: Commands,
+    mut loadablesheet: ReactResMut<LoadableSheet>,
+    types: Res<AppTypeRegistry>,
+)
+{
+    let type_registry = types.read();
+
+    if loadablesheet.get_noreact().process_sheets(&type_registry) {
         loadablesheet.get_mut(&mut c);
     }
 }
@@ -79,7 +86,49 @@ fn cleanup_loadablesheet(
         loadablesheet.get_noreact().remove_entity(removed);
     }
 
-    loadablesheet.get_noreact().cleanup_pending();
+    loadablesheet.get_noreact().cleanup_pending_updates();
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Default)]
+struct PreprocessedLoadableFile
+{
+    /// This file.
+    file: LoadableFile,
+    /// Imports for detecting when a re-load is required.
+    imports: HashSet<LoadableFile>,
+    /// Data cached for re-loading when dependencies are reloaded.
+    data: Map<String, Value>,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+impl PreprocessedLoadableFile
+{
+    /// Converts an already-processed file back to a preprocessed file.
+    #[cfg(feature = "bevy/file_watcher")]
+    fn new(file: LoadableFile, processed: ProcessedLoadableFile) -> Self
+    {
+        Self { file, imports: processed.imports, data: processed.data }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Default)]
+struct ProcessedLoadableFile
+{
+    /// Using info cached for use by dependents.
+    using: HashMap<&'static str, &'static str>,
+    /// Constants info cached for use by dependents.
+    constants: HashMap<String, Map<String, Value>>,
+    /// Imports for detecting when a re-load is required.
+    #[cfg(feature = "bevy/file_watcher")]
+    imports: HashSet<LoadableFile>,
+    /// Data cached for re-loading when dependencies are reloaded.
+    #[cfg(feature = "bevy/file_watcher")]
+    data: Map<String, Value>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -158,8 +207,8 @@ impl ReflectedLoadable
 /**
 ### Loadablesheet asset format
 
-Loadablesheets are written as JSON files with the extension `.loadable.json`. You must register loadablesheets in your app with
-[`LoadableSheetListAppExt::add_load_sheet`].
+Loadablesheets are written as JSON files with the extension `.loadable.json`. You must register loadablesheets in your
+app with [`LoadableSheetListAppExt::add_load_sheet`].
 
 The loadablesheet format has a short list of rules.
 
@@ -182,9 +231,10 @@ The loadablesheet format has a short list of rules.
 }
 ```
 - All other map keys may either be [`Loadable`] short type names or node path references.
-    A loadable short name is a marker for a loadable, and is followed by a map containing the serialized value of that loadable.
-    Node path references are used to locate specific loadables in the overall structure, and each node should be a map of loadables and
-    other nodes. The leaf nodes of the overall structure will be loadables.
+    A loadable short name is a marker for a loadable, and is followed by a map containing the serialized value of
+    that loadable.
+    Node path references are used to locate specific loadables in the overall structure, and each node should be a map
+    of loadables and other nodes. The leaf nodes of the overall structure will be loadables.
 ```json
 {
     "using": [ "bevy_cobweb_ui::layout::Dims" ],
@@ -198,9 +248,9 @@ The loadablesheet format has a short list of rules.
     }
 }
 ```
-- A loadable name may be followed by the keyword `"inherited"`, which means the loadable value will be inherited from the most
-    recent instance of that loadable below it in the tree. Inheritance is ordering-dependent, so if you don't want a loadable
-    to be inherited, insert it below any child nodes.
+- A loadable name may be followed by the keyword `"inherited"`, which means the loadable value will be inherited
+    from the most recent instance of that loadable below it in the tree. Inheritance is ordering-dependent, so if
+    you don't want a loadable to be inherited, insert it below any child nodes.
 ```json
 {
     "using": [ "bevy_cobweb_ui::layout::Dims" ],
@@ -214,8 +264,8 @@ The loadablesheet format has a short list of rules.
     }
 }
 ```
-- Node path references may be combined into path segments, which can be used to reduce indentation. If a loadable is inherited
-    in an abbreviated path, it will inherit from the current scope, not its path-parent.
+- Node path references may be combined into path segments, which can be used to reduce indentation. If a loadable
+    is inherited in an abbreviated path, it will inherit from the current scope, not its path-parent.
 ```json
 {
     "using": [ "bevy_cobweb_ui::layout::Dims" ],
@@ -233,21 +283,24 @@ The loadablesheet format has a short list of rules.
 }
 ```
 */
-//TODO: add "MY_CONSTANT_X" references with "constants" section
-//TODO: add "imports" section that brings "using" and "constants" sections from other files (track dependencies in
-// LoadableSheet)
-// - warn if there are unresolved dependencies after all initial files have been loaded and handled
 #[derive(ReactResource)]
 pub struct LoadableSheet
 {
-    /// Tracks loadables in all loadable files.
-    loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks which files have not initialized yet.
     pending: HashSet<LoadableFile>,
     /// Tracks the total number of loadable sheets that should load.
     ///
     /// Used for progress tracking on initial load.
     total_expected_sheets: usize,
+
+    /// Tracks pre-processed files.
+    preprocessed: Vec<PreprocessedLoadableFile>,
+
+    /// Records processed files.
+    processed: HashMap<LoadableFile, ProcessedLoadableFile>,
+
+    /// Tracks loadables from all loaded files.
+    loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
 
     /// Tracks subscriptions to loadable paths.
     subscriptions: HashMap<LoadableRef, SmallVec<[RefSubscription; 1]>>,
@@ -270,9 +323,9 @@ impl LoadableSheet
     }
 
     /// Initializes a loadablesheet file.
-    pub(crate) fn initialize_file(&mut self, file: LoadableFile)
+    pub(crate) fn initialize_file(&mut self, file: &LoadableFile)
     {
-        let _ = self.pending.remove(&file);
+        let _ = self.pending.remove(file);
     }
 
     /// Gets the loadablesheet's loading progress on startup.
@@ -281,6 +334,172 @@ impl LoadableSheet
     pub fn loading_progress(&self) -> (usize, usize)
     {
         (self.pending.len(), self.total_expected_sheets)
+    }
+
+    /// Gets the number of files waiting to be processed.
+    fn num_preprocessed_pending(&self) -> usize
+    {
+        self.preprocessed.len()
+    }
+
+    /// Inserts a preprocessed file for later processing.
+    pub(crate) fn add_preprocessed_file(
+        &mut self,
+        file: LoadableFile,
+        mut imports: HashSet<LoadableFile>,
+        data: Map<String, Value>,
+    )
+    {
+        // The file should not reference itself.
+        if imports.remove(&file) {
+            tracing::warn!("loadable file {:?} tried to import itself", file.file);
+        }
+
+        // Check that all dependencies are known.
+        // - Note: We don't need to check for circular dependencies here. It can be checked after processing files
+        //   by seeing if there are any pending files remaining. Once all pending files are loaded, if a file fails
+        //   to process that implies it has circular dependencies.
+        for import in imports.iter() {
+            // Check if pending.
+            if self.pending.contains(import) {
+                continue;
+            }
+
+            // Check if processed.
+            if self.processed.contains_key(import) {
+                continue;
+            }
+
+            // Check if preprocessed.
+            if self.preprocessed.iter().find(|p| p.file == *import).is_some() {
+                continue;
+            }
+
+            tracing::error!("ignoring loadable file {:?} that has unregistered import {:?}", file.file, import.file);
+            return;
+        }
+
+        let preprocessed = PreprocessedLoadableFile { file, imports, data };
+        self.preprocessed.push(preprocessed);
+    }
+
+    /// Converts preprocessed files to processed files.
+    ///
+    /// Returns `true` if at least one sheet was processed.
+    fn process_sheets(&mut self, type_registry: &TypeRegistry) -> bool
+    {
+        // Loop preprocessed until nothing can be processed.
+        let mut num_processed = 0;
+        let mut preprocessed = Vec::new();
+
+        while self.preprocessed.len() > 0 {
+            let num_already_processed = num_processed;
+            preprocessed.clear();
+            std::mem::swap(&mut self.preprocessed, &mut preprocessed);
+
+            for preprocessed in preprocessed.drain(..) {
+                // Check if dependencies are ready.
+                if preprocessed
+                    .imports
+                    .iter()
+                    .find(|i| !self.processed.contains_key(i))
+                    .is_some()
+                {
+                    continue;
+                }
+
+                // Initialize using/constants maps from dependencies.
+                // [ shortname : longname ]
+                let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
+                // [ path : [ terminal identifier : constant value ] ]
+                let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
+
+                for dependency in preprocessed.imports.iter() {
+                    let processed = self.processed.get(dependency).unwrap();
+
+                    for (k, v) in processed.using.iter() {
+                        name_shortcuts.insert(k, v);
+                    }
+                    for (k, v) in processed.constants.iter() {
+                        constants.insert(k.clone(), v.clone());
+                    }
+                }
+
+                // Prepare to process the file.
+                let mut processed = ProcessedLoadableFile::default();
+
+                #[cfg(feature = "bevy/file_watcher")]
+                {
+                    processed.imports = preprocessed.imports;
+                    processed.data = preprocessed.data.clone();
+                }
+
+                // Process the file.
+                // - This updates the using/constants maps with info extracted from the file.
+                parse_loadablesheet_file(
+                    type_registry,
+                    self,
+                    preprocessed.file.clone(),
+                    preprocessed.data,
+                    &mut constants,
+                    &mut name_shortcuts,
+                );
+
+                // Save final using/constants maps.
+                processed.using = name_shortcuts;
+                processed.constants = constants;
+
+                self.processed.insert(preprocessed.file.clone(), processed);
+
+                // Check for already-processed files that need to rebuild since they depend on this file.
+                #[cfg(feature = "bevy/file_watcher")]
+                {
+                    let needs_rebuild = self
+                        .processed
+                        .iter()
+                        .filter_map(|(file, processed)| {
+                            if processed.imports.contains(&preprocessed.file) {
+                                Some(file)
+                            }
+                            None
+                        })
+                        .collect();
+
+                    for needs_rebuild in needs_rebuild {
+                        let processed = self.processed.remove(&needs_rebuild).unwrap();
+                        // Add via API to check for recursive dependencies.
+                        self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
+                    }
+                }
+
+                num_processed += 1;
+            }
+
+            // Exit if no changes made.
+            if num_already_processed == num_processed {
+                break;
+            }
+        }
+
+        // Check for circular dependencies.
+        if self.pending.len() == 0 && self.preprocessed.len() > 0 {
+            for preproc in self.preprocessed.drain(..) {
+                tracing::error!("loadable file {:?} failed to resolve imports; it probably has recursive \
+                    dependencies", preproc.file.file);
+            }
+        }
+
+        // Clean up memory once all files are loaded and processed.
+        #[cfg(not(feature = "file_watcher"))]
+        {
+            if self.pending.len() == 0 && self.preprocessed.len() == 0 {
+                let _ = std::mem::replace(&mut self.pending, HashSet::default());
+                let _ = std::mem::replace(&mut self.preprocessed, Vec::default());
+                let _ = std::mem::replace(&mut self.processed, HashMap::default());
+            }
+        }
+
+        num_processed > 0
     }
 
     /// Inserts a loadable at the specified path if its value will change.
@@ -395,7 +614,7 @@ impl LoadableSheet
     }
 
     /// Cleans up pending updates that failed to be processed.
-    fn cleanup_pending(&mut self)
+    fn cleanup_pending_updates(&mut self)
     {
         if self.needs_updates.len() > 0 {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
@@ -427,9 +646,11 @@ impl Default for LoadableSheet
     fn default() -> Self
     {
         Self {
-            loadables: HashMap::default(),
             pending: HashSet::default(),
             total_expected_sheets: 0,
+            preprocessed: Vec::default(),
+            processed: HashMap::default(),
+            loadables: HashMap::default(),
             subscriptions: HashMap::default(),
             subscriptions_rev: HashMap::default(),
             needs_updates: HashMap::default(),
@@ -448,7 +669,14 @@ impl Plugin for LoadableSheetPlugin
     {
         app.init_react_resource::<LoadableSheet>()
             .add_systems(PreStartup, setup_loadablesheet)
-            .add_systems(First, load_loadable_changes)
+            .add_systems(
+                First,
+                (
+                    preprocess_loadable_files,
+                    process_loadable_files.run_if(|s: ReactRes<LoadableSheet>| s.num_preprocessed_pending() > 0),
+                )
+                    .chain(),
+            )
             .add_systems(Last, cleanup_loadablesheet);
     }
 }
