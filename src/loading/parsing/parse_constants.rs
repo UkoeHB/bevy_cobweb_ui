@@ -8,9 +8,8 @@ use crate::*;
 
 fn path_to_string(path: &Vec<String>) -> String
 {
-    path.iter().fold(String::default(), |prev, val| {
-        append_constant_extension(prev, val)
-    })
+    path.iter()
+        .fold(String::default(), |prev, val| append_constant_extension(prev, val))
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -134,26 +134,23 @@ impl CounterWidget
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
 
-        builder
-            .load(button_ref, |button, _path| {
-                if let Some(theme) = self.theme {
-                    button
-                        .entity_commands()
-                        .load_theme::<CounterButton>(theme);
-                }
+        builder.load(button_ref, |button, _path| {
+            if let Some(theme) = self.theme {
+                button.entity_commands().load_theme::<CounterButton>(theme);
+            }
 
-                let button_id = button.id();
-                button
-                    .insert(CounterButton)
-                    .insert_reactive(Counter(0))
-                    .on_pressed(Counter::increment(button_id));
+            let button_id = button.id();
+            button
+                .insert(CounterButton)
+                .insert_reactive(Counter(0))
+                .on_pressed(Counter::increment(button_id));
 
-                button.load(text_ref, |text, _path| {
-                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                        Counter::write(pre_text, post_text, button_id, text_id)
-                    });
+            button.load(text_ref, |text, _path| {
+                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                    Counter::write(pre_text, post_text, button_id, text_id)
                 });
             });
+        });
     }
 }
 
@@ -163,26 +160,27 @@ fn build_ui(mut c: Commands)
 {
     let file = LoadableRef::from_file("examples/counter_widget.load.json");
 
-    c.ui_builder(UiRoot).load(file.e("root"), |mut root, _path| {
-        root.entity_commands()
-            .load_theme::<CounterButton>(file.e("counter_theme"));
+    c.ui_builder(UiRoot)
+        .load(file.e("root"), |mut root, _path| {
+            root.entity_commands()
+                .load_theme::<CounterButton>(file.e("counter_theme"));
 
-        // Default widget
-        CounterWidget::new().build(&mut root);
+            // Default widget
+            CounterWidget::new().build(&mut root);
 
-        // Widget with custom text structure.
-        CounterWidget::new()
-            .text_config(file.e("counter_widget_text_small"))
-            .pre_text("Small: ")
-            .build(&mut root);
+            // Widget with custom text structure.
+            CounterWidget::new()
+                .text_config(file.e("counter_widget_text_small"))
+                .pre_text("Small: ")
+                .build(&mut root);
 
-        // Widget with theme adjustments
-        CounterWidget::new()
-            .theme(file.e("counter_theme_flexible"))
-            .button_config(file.e("counter_widget_button_flexible"))
-            .pre_text("Themed: ")
-            .build(&mut root);
-    });
+            // Widget with theme adjustments
+            CounterWidget::new()
+                .theme(file.e("counter_theme_flexible"))
+                .button_config(file.e("counter_widget_button_flexible"))
+                .pre_text("Themed: ")
+                .build(&mut root);
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
