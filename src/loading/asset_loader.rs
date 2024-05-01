@@ -132,12 +132,12 @@ impl Default for LoadableSheetList
 pub trait LoadableSheetListAppExt
 {
     /// Registers a loadable sheet file to be loaded as a loadablesheet asset.
-    fn add_load_sheet(&mut self, file: impl Into<String>) -> &mut Self;
+    fn load_sheet(&mut self, file: impl Into<String>) -> &mut Self;
 }
 
 impl LoadableSheetListAppExt for App
 {
-    fn add_load_sheet(&mut self, file: impl Into<String>) -> &mut Self
+    fn load_sheet(&mut self, file: impl Into<String>) -> &mut Self
     {
         if !self.world.contains_resource::<LoadableSheetList>() {
             self.init_resource::<LoadableSheetList>();

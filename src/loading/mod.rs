@@ -1,3 +1,7 @@
+#![doc = include_str!("LOADING.md")]
+#[allow(unused_imports)]
+use crate as bevy_cobweb_ui;
+
 mod asset_loader;
 mod load_ext;
 mod loadable;

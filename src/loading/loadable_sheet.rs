@@ -191,86 +191,6 @@ impl ReflectedLoadable
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive resource for managing loadables loaded from loadablesheet assets.
-///
-/**
-### Loadablesheet asset format
-
-Loadablesheets are written as JSON files with the extension `.loadable.json`. You must register loadablesheets in your
-app with [`LoadableSheetListAppExt::add_load_sheet`].
-
-The loadablesheet format has a short list of rules.
-
-- Each file must have one map at the base layer.
-```json
-{
-
-}
-```
-- If the first map entry's key is `"using"`, then the value should be an array of full type names. This array
-    should contain full type names for any [`Loadable`] that has an ambiguous short name (this will happen if there are
-    multiple `Reflect` types with the same short name). Note that currently we only support one version of a shortname
-    per file.
-```json
-{
-    "using": [
-        "crate::my_module::Color",
-        "bevy_cobweb_ui::layout::Layout"
-    ]
-}
-```
-- All other map keys may either be [`Loadable`] short type names or node path references.
-    A loadable short name is a marker for a loadable, and is followed by a map containing the serialized value of
-    that loadable.
-    Node path references are used to locate specific loadables in the overall structure, and each node should be a map
-    of loadables and other nodes. The leaf nodes of the overall structure will be loadables.
-```json
-{
-    "using": [ "bevy_cobweb_ui::layout::Dims" ],
-
-    "node1": {
-        "Dims": {"Percent": [50.0, 50.0]},
-
-        "node2": {
-            "Dims": {"Percent": [50.0, 50.0]}
-        }
-    }
-}
-```
-- A loadable name may be followed by the keyword `"inherited"`, which means the loadable value will be inherited
-    from the most recent instance of that loadable below it in the tree. Inheritance is ordering-dependent, so if
-    you don't want a loadable to be inherited, insert it below any child nodes.
-```json
-{
-    "using": [ "bevy_cobweb_ui::layout::Dims" ],
-
-    "node1": {
-        "Dims": {"Percent": [50.0, 50.0]},
-
-        "node2": {
-            "Dims": "inherited"
-        }
-    }
-}
-```
-- Node path references may be combined into path segments, which can be used to reduce indentation. If a loadable
-    is inherited in an abbreviated path, it will inherit from the current scope, not its path-parent.
-```json
-{
-    "using": [ "bevy_cobweb_ui::layout::Dims" ],
-
-    "Dims": {"Percent": [25.0, 25.0]},
-
-    "node1": {
-        "Dims": {"Percent": [50.0, 50.0]}
-    },
-
-    "node1::node2": {
-        // This inherits {25.0, 25.0}.
-        "Dims": "inherited"
-    }
-}
-```
-*/
 #[derive(ReactResource)]
 pub struct LoadableSheet
 {
@@ -479,8 +399,8 @@ impl LoadableSheet
         // Check for circular dependencies.
         if self.pending.len() == 0 && self.preprocessed.len() > 0 {
             for preproc in self.preprocessed.drain(..) {
-                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it probably has a dependency cycle; \
-                    fix the cycle and restart your app", preproc.file.file);
+                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it probably has a \
+                    dependency cycle; fix the cycle and restart your app", preproc.file.file);
             }
         }
 

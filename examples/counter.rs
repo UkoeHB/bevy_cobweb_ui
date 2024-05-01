@@ -92,7 +92,7 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
-        .add_load_sheet("examples/counter.load.json")
+        .load_sheet("examples/counter.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();
