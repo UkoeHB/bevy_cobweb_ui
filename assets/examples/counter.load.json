@@ -1,7 +1,8 @@
 {
 
-"#c: Sets up a root node that covers the window.":1,
+"#c: Custom node structure for the app.":1,
 "root": {
+    "#c: Root node covers the window.":1,
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}

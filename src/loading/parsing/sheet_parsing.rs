@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use bevy::reflect::TypeRegistry;
 use serde_json::{Map, Value};
@@ -20,7 +20,7 @@ pub(crate) fn preprocess_loadablesheet_file(loadablesheet: &mut LoadableSheet, f
     };
 
     // Extract imports.
-    let mut imports: HashSet<LoadableFile> = HashSet::default();
+    let mut imports: HashMap<LoadableFile, String> = HashMap::default();
     extract_import_section(&file, &data, &mut imports);
 
     // Save this file for processing once its import dependencies are ready.

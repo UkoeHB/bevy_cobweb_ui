@@ -1,9 +1,5 @@
 {
 
-"#using" : [
-    "bevy_cobweb_ui::ui_bevy::ui_ext::style_wrappers::FlexStyle"
-],
-
 "#constants" : {
     "$animation_settings_f" : {
         "$pointer_enter": {"duration": 0.15, "easing": "OutExpo"},

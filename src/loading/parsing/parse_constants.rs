@@ -8,12 +8,8 @@ use crate::*;
 
 fn path_to_string(path: &Vec<String>) -> String
 {
-    path.iter().fold(String::default(), |mut prev, val| {
-        if prev.as_str() != "" {
-            prev.push_str("::");
-        }
-        prev.push_str(val);
-        prev
+    path.iter().fold(String::default(), |prev, val| {
+        append_constant_extension(prev, val)
     })
 }
 
@@ -104,6 +100,22 @@ fn try_replace_map_key_with_constant(
             map.insert(terminator.into(), constant_data.clone());
         }
     }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) const CONSTANT_SEPARATOR: &str = "::";
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn append_constant_extension(mut path: String, ext: &str) -> String
+{
+    path.reserve(CONSTANT_SEPARATOR.len() + ext.len());
+    if path.as_str() != "" && ext != "" {
+        path.push_str(CONSTANT_SEPARATOR);
+    }
+    path.push_str(ext);
+    path
 }
 
 //-------------------------------------------------------------------------------------------------------------------

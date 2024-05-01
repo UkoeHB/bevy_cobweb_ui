@@ -30,6 +30,16 @@ doctest = false
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+# Default features.
+default = []
+
+# Enables hot-reloading.
+hot_reload = ["bevy/file_watcher"]
+
+# Dev features. Enables hot-reloading.
+dev = ["hot_reload", "bevy/dynamic_linking"]
+
 [dependencies]
 bevy        = { version = "0.13", default-features = true, features = ["serialize"] }
 bevy_cobweb = { version = "0.6" }
@@ -44,5 +54,4 @@ sickle_ui = { rev = "30d4215", git = "https://github.com/UmbraLuminosa/sickle_ui
 #sickle_ui = { rev = "ccf01e5", git = "https://github.com/UkoeHB/sickle_ui" }
 
 [dev-dependencies]
-bevy               = { version = "0.13", default-features = true, features = ["dynamic_linking", "file_watcher"] }
 tracing-subscriber = { version = "0.3" }

@@ -91,32 +91,20 @@ fn cleanup_loadablesheet(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct PreprocessedLoadableFile
 {
     /// This file.
     file: LoadableFile,
     /// Imports for detecting when a re-load is required.
-    imports: HashSet<LoadableFile>,
+    imports: HashMap<LoadableFile, String>,
     /// Data cached for re-loading when dependencies are reloaded.
     data: Map<String, Value>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl PreprocessedLoadableFile
-{
-    /// Converts an already-processed file back to a preprocessed file.
-    #[cfg(feature = "bevy/file_watcher")]
-    fn new(file: LoadableFile, processed: ProcessedLoadableFile) -> Self
-    {
-        Self { file, imports: processed.imports, data: processed.data }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct ProcessedLoadableFile
 {
     /// Using info cached for use by dependents.
@@ -124,10 +112,10 @@ struct ProcessedLoadableFile
     /// Constants info cached for use by dependents.
     constants: HashMap<String, Map<String, Value>>,
     /// Imports for detecting when a re-load is required.
-    #[cfg(feature = "bevy/file_watcher")]
-    imports: HashSet<LoadableFile>,
+    #[cfg(feature = "hot_reload")]
+    imports: HashMap<LoadableFile, String>,
     /// Data cached for re-loading when dependencies are reloaded.
-    #[cfg(feature = "bevy/file_watcher")]
+    #[cfg(feature = "hot_reload")]
     data: Map<String, Value>,
 }
 
@@ -346,12 +334,12 @@ impl LoadableSheet
     pub(crate) fn add_preprocessed_file(
         &mut self,
         file: LoadableFile,
-        mut imports: HashSet<LoadableFile>,
+        mut imports: HashMap<LoadableFile, String>,
         data: Map<String, Value>,
     )
     {
         // The file should not reference itself.
-        if imports.remove(&file) {
+        if imports.remove(&file).is_some() {
             tracing::warn!("loadable file {:?} tried to import itself", file.file);
         }
 
@@ -359,7 +347,7 @@ impl LoadableSheet
         // - Note: We don't need to check for circular dependencies here. It can be checked after processing files
         //   by seeing if there are any pending files remaining. Once all pending files are loaded, if a file fails
         //   to process that implies it has circular dependencies.
-        for import in imports.iter() {
+        for import in imports.keys() {
             // Check if pending.
             if self.pending.contains(import) {
                 continue;
@@ -406,7 +394,7 @@ impl LoadableSheet
                 // Check if dependencies are ready.
                 if preprocessed
                     .imports
-                    .iter()
+                    .keys()
                     .find(|i| !self.processed.contains_key(i))
                     .is_some()
                 {
@@ -419,21 +407,22 @@ impl LoadableSheet
                 // [ path : [ terminal identifier : constant value ] ]
                 let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
 
-                for dependency in preprocessed.imports.iter() {
+                for (dependency, alias) in preprocessed.imports.iter() {
                     let processed = self.processed.get(dependency).unwrap();
 
                     for (k, v) in processed.using.iter() {
                         name_shortcuts.insert(k, v);
                     }
                     for (k, v) in processed.constants.iter() {
-                        constants.insert(k.clone(), v.clone());
+                        // Prepend the import alias.
+                        constants.insert(append_constant_extension(alias.clone(), k.as_str()), v.clone());
                     }
                 }
 
                 // Prepare to process the file.
                 let mut processed = ProcessedLoadableFile::default();
 
-                #[cfg(feature = "bevy/file_watcher")]
+                #[cfg(feature = "hot_reload")]
                 {
                     processed.imports = preprocessed.imports;
                     processed.data = preprocessed.data.clone();
@@ -457,14 +446,14 @@ impl LoadableSheet
                 self.processed.insert(preprocessed.file.clone(), processed);
 
                 // Check for already-processed files that need to rebuild since they depend on this file.
-                #[cfg(feature = "bevy/file_watcher")]
+                #[cfg(feature = "hot_reload")]
                 {
-                    let needs_rebuild = self
+                    let needs_rebuild: Vec<LoadableFile> = self
                         .processed
                         .iter()
                         .filter_map(|(file, processed)| {
-                            if processed.imports.contains(&preprocessed.file) {
-                                Some(file)
+                            if processed.imports.contains_key(&preprocessed.file) {
+                                return Some(file.clone());
                             }
                             None
                         })
@@ -495,7 +484,7 @@ impl LoadableSheet
         }
 
         // Clean up memory once all files are loaded and processed.
-        #[cfg(not(feature = "file_watcher"))]
+        #[cfg(not(feature = "hot_reload"))]
         {
             if self.pending.len() == 0 && self.preprocessed.len() == 0 {
                 let _ = std::mem::replace(&mut self.pending, HashSet::default());
