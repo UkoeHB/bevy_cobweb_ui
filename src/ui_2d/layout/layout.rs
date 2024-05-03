@@ -11,17 +11,11 @@
 //! passes are only partial traversals that start at dirty nodes.
 //! Note that this may cause nodes to be updated redundantly, which may also cause redundant reactions to those nodes.
 
-
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
-
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
@@ -29,7 +23,7 @@ use bevy_cobweb::prelude::*;
 #[derive(SystemParam)]
 struct ProcessNodeParamsReact<'w, 's>
 {
-    rc: ReactCommands<'w, 's>,
+    c: Commands<'w, 's>,
     nodesize: Query<'w, 's, &'static mut React<NodeSize>, With<CobwebNode>>,
 }
 
@@ -44,7 +38,7 @@ impl<'w, 's> ProcessNodeParamsReact<'w, 's>
             tracing::warn!("failed setting NodeSize on {:?}, NodeSize component is missing", node);
             return None;
         };
-        nodesize.set_if_not_eq(&mut self.rc, new_nodesize)
+        nodesize.set_if_neq(&mut self.c, new_nodesize)
     }
 }
 
@@ -161,7 +155,7 @@ fn update_node_position(
     node: Entity,
     sizeref: SizeRef,
     nodesize: NodeSize,
-    position: &Position,
+    position: &Position2d,
 ){
     let mut query = params.transform();
     let Ok(mut transform) = query.get_mut(node)
@@ -179,23 +173,19 @@ fn update_node_position(
 
 fn update_node_size(
     params: &mut ProcessNodeParams,
-    dims: &Query<&React<Dims>, With<CobwebNode>>,
-    //mindims: &Query<&React<MinDims>, With<CobwebNode>>,
-    //maxdims: &Query<&React<MaxDims>, With<CobwebNode>>,
+    dims: &Query<&React<Dims2d>, With<CobwebNode>>,
     //adjuster: &Query<&React<NodeSizeAdjuster>, With<CobwebNode>>,
-    position: &Query<&React<Position>, With<CobwebNode>>,
+    position: &Query<&React<Position2d>, With<CobwebNode>>,
     node: Entity,
     _base_sizeref: BaseSizeRef,
     sizeref: SizeRef,
 ) -> ProcessNodeResult
 {
     // Compute `NodeSizeEstimate` for the node.
-    // - Uses `Dims::default()` if the node has no `Dims`.
-    //todo include MinDims, MaxDims
-    let new_nodesize = NodeSize(dims.get(node).map(|d| **d).unwrap_or_default().compute(*sizeref));
+    let new_nodesize = NodeSize(dims.get(node).map(|d| **d).unwrap().compute(*sizeref));
 
     //todo: Get NodeSizeAdjustment
-    // - NodeSizeAdjuster enum with optional callback: fn(&world, entity, base_sizeref, size_estimate, min, max)
+    // - NodeSizeAdjuster enum with optional callback: fn(&world, entity, base_sizeref, size_estimate, dims)
     //   - (also FnMut boxed option)
     // - Default to zero.
 
@@ -205,7 +195,7 @@ fn update_node_size(
     // Update the node's `NodeSize` component.
     let prev_nodesize = params.react().set_nodesize(node, new_nodesize);
 
-    // Update position if this is a `Position` node.
+    // Update position if this is a `Position2d` node.
     if let Ok(position) = position.get(node)
     {
         update_node_position(params, node, sizeref, new_nodesize, &*position);
@@ -224,13 +214,11 @@ fn update_node_size(
 fn process_node_layout(
     is_full_traversal: bool,
     params: &mut ProcessNodeParams,
-    nodes: &Query<(), With<CobwebNode>>,
+    nodes: &Query<(), (With<CobwebNode>, With<React<Dims2d>>)>,
     source: &Query<&React<SizeRefSource>, With<CobwebNode>>,
-    dims: &Query<&React<Dims>, With<CobwebNode>>,
-    //mindims: &Query<&React<MinDims>, With<CobwebNode>>,
-    //maxdims: &Query<&React<MaxDims>, With<CobwebNode>>,
+    dims: &Query<&React<Dims2d>, With<CobwebNode>>,
     //adjuster: &Query<&React<NodeSizeAdjuster>, With<CobwebNode>>,
-    position: &Query<&React<Position>, With<CobwebNode>>,
+    position: &Query<&React<Position2d>, With<CobwebNode>>,
     children: &Query<&Children, With<CobwebNode>>,
     //frame: &Query<&React<Frame>, With<CobwebNode>>,
     //inframe: &Query<&React<InFrame>, With<CobwebNode>>,
@@ -286,8 +274,6 @@ fn process_node_layout(
             nodes,
             source,
             dims,
-            //mindims,
-            //maxdims,
             //adjuster,
             position,
             children,
@@ -318,9 +304,7 @@ fn layout_full_traversal(
     mut params: ProcessNodeParams,
     nodes: Query<(), With<CobwebNode>>,
     source: Query<&React<SizeRefSource>, With<CobwebNode>>,
-    dims: Query<&React<Dims>, With<CobwebNode>>,
-    //mindims: Query<&React<MinDims>, With<CobwebNode>>,
-    //maxdims: Query<&React<MaxDims>, With<CobwebNode>>,
+    dims: Query<&React<Dims2d>, With<CobwebNode>>,
     //adjuster: Query<&React<NodeSizeAdjuster>, With<CobwebNode>>,
     position: Query<&React<Position>, With<CobwebNode>>,
     children: Query<&Children, With<CobwebNode>>,
@@ -337,8 +321,6 @@ fn layout_full_traversal(
             &nodes,
             &source,
             &dims,
-            //&mindims,
-            //&maxdims,
             //&adjuster,
             &position,
             &children,
@@ -362,11 +344,9 @@ fn layout_targeted_traversal(
     mut params: ProcessNodeParams,
     nodes: Query<(), With<CobwebNode>>,
     source: Query<&React<SizeRefSource>, With<CobwebNode>>,
-    dims: Query<&React<Dims>, With<CobwebNode>>,
-    //mindims: Query<&React<MinDims>, With<CobwebNode>>,
-    //maxdims: Query<&React<MaxDims>, With<CobwebNode>>,
+    dims: Query<&React<Dims2d>, With<CobwebNode>>,
     //adjuster: Query<&React<NodeSizeAdjuster>, With<CobwebNode>>,
-    position: Query<&React<Position>, With<CobwebNode>>,
+    position: Query<&React<Position2d>, With<CobwebNode>>,
     children: Query<&Children, With<CobwebNode>>,
     //frame: Query<&React<Frame>, With<CobwebNode>>,
     //inframe: Query<&React<InFrame>, With<CobwebNode>>,
@@ -391,8 +371,6 @@ fn layout_targeted_traversal(
             &nodes,
             &source,
             &dims,
-            //&mindims,
-            //&maxdims,
             //&adjuster,
             &position,
             &children,
@@ -417,7 +395,7 @@ fn layout_targeted_traversal(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-const LAYOUT_TRAVERSAL_CAP: usize = 10_000;
+const LAYOUT_TRAVERSAL_CAP: usize = 1_000;
 
 fn layout_targeted_traversal_loop(world: &mut World)
 {

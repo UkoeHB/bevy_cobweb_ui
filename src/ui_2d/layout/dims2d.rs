@@ -1,14 +1,9 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::ecs::entity::Entities;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-
-//standard shortcuts
-
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
@@ -42,7 +37,7 @@ fn update_dims2d(
 ){
     // Insert or update.
     if let Ok(mut existing) = query.get_mut(entity) {
-        existing.set_if_not_eq(&mut c, dims);
+        existing.set_if_neq(&mut c, dims);
     } else {
         c.react().insert(entity, dims);
     }
@@ -51,9 +46,105 @@ fn update_dims2d(
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents a transformation between two rectangles.
-///
-/// `Dims2d` is used a node's [`SizeRef`] into a [`NodeSizeEstimate`].
+/// Records an aspect ratio policy for a node.
+#[derive(ReactComponent, Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AspectRatio2d
+{
+    /// The node's dimensions are fixed to a certain (x/y) ratio, with the node's width used to control scaling.
+    ///
+    /// If set, then [`Dims2d::height`] will be ignored.
+    WidthDominant(u32, u32),
+    /// The node's dimensions are fixed to a certain (x/y) ratio, with the node's height used to control scaling.
+    ///
+    /// If set, then [`Dims2d::width`] will be ignored.
+    HeightDominant(u32, u32),
+    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are inside the parent's dimensions
+    /// (with at least one dimension equal to the parent's corresponding dimension).
+    ///
+    /// Ratio parameters are clamped to `>= 1`.
+    ///
+    /// If set, then [`Dims2d::width`] and [`Dims2d::height`] will be ignored.
+    SolidInFill(u32, u32),
+    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are outside the parent's dimensions
+    /// (with at least one dimension equal to the parent's corresponding dimension).
+    ///
+    /// Ratio parameters are clamped to `>= 1`.
+    ///
+    /// If set, then [`Dims2d::width`] and [`Dims2d::height`] will be ignored.
+    SolidOutFill(u32, u32),
+}
+
+impl AspectRatio2d
+{
+    pub fn get_adjusted_size(&self, desired_size: Vec2, parent_size: Vec2) -> Vec2
+    {
+        let desired_x = desired_size.x.max(0.);
+        let desired_y = desired_size.y.max(0.);
+        let parent_x = parent_size.x.max(0.);
+        let parent_y = parent_size.y.max(0.);
+
+        match *self {
+            WidthDominant(ratio_x, ratio_y) => {
+                let ratio_x = ratio_x.max(1) as f32;
+                let ratio_y = ratio_y.max(1) as f32;
+
+                let y = (ratio_y / ratio_x) * desired_x;
+                Vec2{ desired_x, y }
+            }
+            HeightDominant(ratio_x, ratio_y) => {
+                let ratio_x = ratio_x.max(1) as f32;
+                let ratio_y = ratio_y.max(1) as f32;
+
+                let x = (ratio_x / ratio_y) * desired_y;
+                Vec2{ x, desired_y }
+            }
+            SolidInFill(ratio_x, ratio_y) => {
+                let ratio_x = ratio_x.max(1) as f32;
+                let ratio_y = ratio_y.max(1) as f32;
+
+                // Case: this node is flatter than its parent.
+                if (ratio_x * parent_y) >= (ratio_y * parent_x)
+                {
+                    Vec2{
+                        x: parent_x,
+                        y: parent_x * (ratio_y / ratio_x),
+                    }
+                }
+                // Case: this node is thinner than its parent.
+                else
+                {
+                    Vec2{
+                        x: parent_y * (ratio_x / ratio_y),
+                        y: parent_y,
+                    }
+                }
+            }
+            SolidOutFill(ratio_x, ratio_y) => {
+                let ratio_x = ratio_x.max(1) as f32;
+                let ratio_y = ratio_y.max(1) as f32;
+
+                // Case: this node is flatter than its parent.
+                if (ratio_x * parent_y) >= (ratio_y * parent_x)
+                {
+                    Vec2{
+                        x: parent_y * (ratio_x / ratio_y),
+                        y: parent_y,
+                    }
+                }
+                // Case: this node is thinner than its parent.
+                else
+                {
+                    Vec2{
+                        x: parent_x,
+                        y: parent_x * (ratio_y / ratio_x),
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Represents a transformation to get a node's size from a parent size.
 ///
 /// Mutating `Dims2d` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 ///
@@ -63,14 +154,10 @@ pub struct Dims2d
 {
     /// Indicates the desired width of the node.
     ///
-    /// Does nothing if [`Self::solid_in_fill`] or [`Self::solid_out_fill`] is set.
-    ///
     /// Defaults to [`Val2d::Percent(100.)`].
     #[reflect(default = "Dims2d::width_height_default")]
     pub width: Val2d,
     /// Indicates the desired height of the node.
-    ///
-    /// Does nothing if [`Self::solid_in_fill`] or [`Self::solid_out_fill`] is set.
     ///
     /// Defaults to [`Val2d::Percent(100.)`].
     #[reflect(default = "Dims2d::width_height_default")]
@@ -87,34 +174,25 @@ pub struct Dims2d
     pub max_height: Val2d,
     /// Controls the absolute minimum width of the node.
     ///
+    /// Takes precedence over [`Self::max_width`].
+    ///
     /// Defaults to [`Val2d::Px(0.)`].
     #[reflect(default)]
     pub min_width: Val2d,
     /// Controls the absolute minimum height of the node.
     ///
+    /// Takes precedence over [`Self::max_height`].
+    ///
     /// Defaults to [`Val2d::Px(0.)`].
     #[reflect(default)]
     pub min_height: Val2d,
-    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are inside the parent's dimensions
-    /// (with at least one dimension equal to the parent's corresponding dimension).
+    /// The node's dimensions are fixed to a certain (x/y) ratio.
     ///
-    /// Ratio parameters are clamped to `>= 1`.
-    ///
-    /// If set, then [`Self::width`] and [`Self::height`] will be ignored. Takes precedence over [`Self::sold_out_fill`].
+    /// See [`AspectRatio2d`].
     ///
     /// Defaults to `None`.
     #[reflect(default)]
-    pub solid_in_fill: Option<(u32, u32)>,
-    /// The node's dimensions are fixed to a certain (x/y) ratio, and both dimensions are outside the parent's dimensions
-    /// (with at least one dimension equal to the parent's corresponding dimension).
-    ///
-    /// Ratio parameters are clamped to `>= 1`.
-    ///
-    /// If set, then [`Self::width`] and [`Self::height`] will be ignored. Does nothing if [`Self::solid_in_fill`] is set.
-    ///
-    /// Defaults to `None`.
-    #[reflect(default)]
-    pub solid_out_fill: Option<(u32, u32)>,
+    pub aspect_ratio: Option<AspectRatio2d>,
 /*
     /// Region between a node's boundary and its padding.
     ///
@@ -151,63 +229,10 @@ impl Dims2d
         parent_size.y = fix_nan(parent_size.y);
 
         // Get desired size.
-        let desired_size = match (self.solid_in_fill, self.solid_out_fill) {
-            // Solid in fill
-            (Some((ratio_x, ratio_y)), _) => {
-                let ratio_x = ratio_x.max(1) as f32;
-                let ratio_y = ratio_y.max(1) as f32;
-                let parent_x = parent_size.x.max(0.);
-                let parent_y = parent_size.y.max(0.);
-
-                // Case: this node is flatter than its parent.
-                if (ratio_x * parent_y) >= (ratio_y * parent_x)
-                {
-                    Vec2{
-                        x: parent_x,
-                        y: parent_x * (ratio_y / ratio_x),
-                    }
-                }
-                // Case: this node is thinner than its parent.
-                else
-                {
-                    Vec2{
-                        x: parent_y * (ratio_x / ratio_y),
-                        y: parent_y,
-                    }
-                }
-            }
-            // Solid out fill
-            (None, Some((ratio_x, ratio_y))) => {
-                let ratio_x = ratio_x.max(1) as f32;
-                let ratio_y = ratio_y.max(1) as f32;
-                let parent_x = parent_size.x.max(0.);
-                let parent_y = parent_size.y.max(0.);
-
-                // Case: this node is flatter than its parent.
-                if (ratio_x * parent_y) >= (ratio_y * parent_x)
-                {
-                    Vec2{
-                        x: parent_y * (ratio_x / ratio_y),
-                        y: parent_y,
-                    }
-                }
-                // Case: this node is thinner than its parent.
-                else
-                {
-                    Vec2{
-                        x: parent_x,
-                        y: parent_x * (ratio_y / ratio_x),
-                    }
-                }
-            }
-            // Normal width/height
-            _ => {
-                Vec2{
-                    x: self.width.compute(parent_size.x).max(0.),
-                    y: self.height.compute(parent_size.y).max(0.),
-                }
-            }
-        }
+        let mut desired_size = Vec2{
+            x: self.width.compute(parent_size.x).max(0.),
+            y: self.height.compute(parent_size.y).max(0.),
+        };
 
         // Apply min/max constraints.
         let min_width = self.min_width.compute(parent_size.x).max(0.);
@@ -215,12 +240,28 @@ impl Dims2d
         let min_height = self.min_height.compute(parent_size.y).max(0.);
         let max_height = self.max_height.compute(parent_size.y).max(min_height);
 
-        let clamped_size = Vec2{
+        desired_size = Vec2{
             x: desired_size.x.clamp(min_width, max_width),
             y: desired_size.y.clamp(min_height, max_height)
         };
 
-        clamped_size
+        // Make aspect ratio adjustment.
+        if let Some(aspect_ratio) = self.aspect_ratio {
+            desired_size = aspect_ratio.get_adjusted_size(desired_size, parent_size);
+        }
+
+        // Apply min/max constraints again.
+        let min_width = self.min_width.compute(parent_size.x).max(0.);
+        let max_width = self.max_width.compute(parent_size.x).max(min_width);
+        let min_height = self.min_height.compute(parent_size.y).max(0.);
+        let max_height = self.max_height.compute(parent_size.y).max(min_height);
+
+        let final_size = Vec2{
+            x: desired_size.x.clamp(min_width, max_width),
+            y: desired_size.y.clamp(min_height, max_height)
+        };
+
+        final_size
     }
 }
 
@@ -235,8 +276,7 @@ impl Default for Dims2d
             max_height: Dims2d::max_width_height_default(),
             min_width: Val2d::Px(0.),
             min_height: Val2d::Px(0.),
-            solid_in_fill: None,
-            solid_out_fill: None,
+            aspect_ratio: None,
         }
     }
 }
@@ -260,6 +300,7 @@ impl Plugin for Dims2dPlugin
     {
         app.register_type::<Dims2d>()
             .register_type::<(u32, u32)>()
+            .register_type::<Option<(u32, u32)>>()
             .add_reactor_with(DetectDims2dReactor, mutation::<Dims2d>());
     }
 }

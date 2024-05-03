@@ -1,29 +1,24 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::ecs::entity::Entities;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
-//standard shortcuts
-
-
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Updates [`Position`] whenever [`Justified`] changes on the same entity.
+/// Updates [`Position2d`] whenever [`Justified`] changes on the same entity.
 fn detect_justified(
     event         : MutationEvent<Justified>,
-    mut rc        : ReactCommands,
-    mut justified : Query<(&mut React<Position>, &React<Justified>)>
+    mut c         : Commands,
+    mut justified : Query<(&mut React<Position2d>, &React<Justified>)>
 ){
     let justified_entity = event.read().unwrap();
     let Ok((mut position, justified)) = justified.get_mut(justified_entity)
     else { tracing::debug!("position entity {:?} missing on justified position mutation", justified_entity); return; };
 
-    position.set_if_not_eq(&mut rc, Position::from(**justified));
+    position.set_if_neq(&mut c, Position2d::from(**justified));
 }
 
 struct DetectJustified;
@@ -38,7 +33,7 @@ impl WorldReactor for DetectJustified
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_position(
-    mutation    : MutationEvent<Position>,
+    mutation    : MutationEvent<Position2d>,
     entities    : &Entities,
     mut tracker : ResMut<DirtyNodeTracker>
 ){
@@ -47,10 +42,10 @@ fn detect_position(
     tracker.insert(entity);
 }
 
-struct DetectPosition;
-impl WorldReactor for DetectPosition
+struct DetectPosition2d;
+impl WorldReactor for DetectPosition2d
 {
-    type StartingTriggers = MutationTrigger::<Position>;
+    type StartingTriggers = MutationTrigger::<Position2d>;
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback { SystemCommandCallback::new(detect_position) }
 }
@@ -61,7 +56,7 @@ impl WorldReactor for DetectPosition
 pub(crate) fn compute_new_transform(
     sizeref   : SizeRef,
     nodesize  : NodeSize,
-    position  : &Position,
+    position  : &Position2d,
     transform : &mut Mut<Transform>,
 ){
     // Get the offset between our node's anchor and the parent node's anchor.
@@ -71,8 +66,8 @@ pub(crate) fn compute_new_transform(
 
     // Convert the offset to a translation between the parent and node origins.
     // - Offset = [vector to parent top left corner]
-    //          + [anchor offset vector (convert y)]
-    //          + [node corner to node origin (convert y)]
+    //          + [anchor offset vector (invert y)]
+    //          + [node corner to node origin (invert y)]
     offset.x = (-parent_size.x / 2.) + offset.x + (size.x / 2.);
     offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
 
@@ -109,21 +104,25 @@ pub enum Justify
 
 /// Represents the position of a rectangle within another rectangle.
 ///
-/// When added as a [`UiInstruction`] to a node, this will control the node's [`Transform`] using the node's
+/// This control's a 2d UI node's [`Transform`] using the node's
 /// automatically-computed [`NodeSize`] and [`SizeRef`].
 ///
-/// Mutating `Position` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
+/// Mutating `Position2d` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Position
+pub struct Position2d
 {
     /// Justification of the node on the parent's x-axis.
+    ///
+    /// Defaults to the left side (x = 0.0).
     pub x_justify: Justify,
     /// Justification of the node on the parent's y-axis.
+    ///
+    /// Defaults to the top side (y = 0.0).
     pub y_justify: Justify,
-    /// Offset from the node's anchor-point within its parent, in [`Transform`] coordinates.
-    pub pixels: Vec2,
-    /// Offset from the node's anchor-point within its parent, as percentages of the parent dimensions.
-    pub percent: Vec2,
+    /// Horizontal offset from the node's anchor-point within its parent.
+    pub x_offset: Val2d,
+    /// Vertical offset from the node's anchor-point within its parent.
+    pub y_offset: Val2d,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
@@ -131,7 +130,7 @@ pub struct Position
     pub rotation: f32,
 }
 
-impl Position
+impl Position2d
 {
     fn new_justified(x_justify: Justify, y_justify: Justify) -> Self
     {
@@ -192,17 +191,17 @@ impl Position
         Self::new_justified(Justify::Max, Justify::Max)
     }
 
-    /// Sets the absolute offset.
-    pub fn pixels(mut self, offset: Vec2) -> Self
+    /// Sets the horizontal offset.
+    pub fn x_offset(mut self, offset: Val2d) -> Self
     {
-        self.pixels = offset;
+        self.x_offset = offset;
         self
     }
 
-    /// Sets the percentage offset.
-    pub fn percent(mut self, offset: Vec2) -> Self
+    /// Sets the vertical offset.
+    pub fn y_offset(mut self, offset: Val2d) -> Self
     {
-        self.percent = offset;
+        self.y_offset = offset;
         self
     }
 
@@ -216,36 +215,39 @@ impl Position
     /// Gets the offset between our node and the parent in 2D [`Transform`] coordinates.
     pub fn offset(&self, size: Vec2, parent_size: Vec2) -> Vec2
     {
+        let size_x = fix_nan(size.x).max(0.);
+        let size_y = fix_nan(size.y).max(0.);
+        let parent_x = fix_nan(parent.x).max(0.);
+        let parent_y = fix_nan(parent.y).max(0.);
+
         let mut x_offset = match self.x_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_size.x / 2.) - (size.x / 2.),
-            Justify::Max    => parent_size.x - size.x,
+            Justify::Center => (parent_x / 2.) - (size_x / 2.),
+            Justify::Max    => parent_x - size_x,
         };
-        x_offset += self.pixels.x;
-        x_offset += self.percent.x * parent_size.x.max(0.) / 100.;
+        x_offset += self.x_offset.compute(parent_x).max(0.);
 
         let mut y_offset = match self.y_justify
         {
             Justify::Min    => 0.,
-            Justify::Center => (parent_size.y / 2.) - (size.y / 2.),
-            Justify::Max    => parent_size.y - size.y,
+            Justify::Center => (parent_y / 2.) - (size_y / 2.),
+            Justify::Max    => parent_y - size_y,
         };
-        y_offset += self.pixels.y;
-        y_offset += self.percent.y * parent_size.y.max(0.) / 100.;
+        y_offset += self.y_offset.compute(parent_y).max(0.);
 
         Vec2{ x: x_offset, y: y_offset }
     }
 }
 
-impl CobwebStyle for Position
+impl CobwebStyle for Position2d
 {
     fn apply_style(&self, _rc: &mut ReactCommands, _node: Entity) { }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A [`CobwebStyle`] that wraps [`Position`] with simple justification-based settings.
+/// A [`CobwebStyle`] that wraps [`Position2d`] with simple justification-based settings.
 ///
 /// Defaults to [`Self::Center`].
 #[derive(ReactComponent, Reflect, Debug, Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -263,21 +265,21 @@ pub enum Justified
     BottomRight,
 }
 
-impl From<Justified> for Position
+impl From<Justified> for Position2d
 {
     fn from(justified: Justified) -> Self
     {
         match justified
         {
-            Justified::TopLeft      => Position::topleft(),
-            Justified::TopCenter    => Position::topcenter(),
-            Justified::TopRight     => Position::topright(),
-            Justified::CenterLeft   => Position::centerleft(),
-            Justified::Center       => Position::center(),
-            Justified::CenterRight  => Position::centerright(),
-            Justified::BottomLeft   => Position::bottomleft(),
-            Justified::BottomCenter => Position::bottomcenter(),
-            Justified::BottomRight  => Position::bottomright(),
+            Justified::TopLeft      => Position2d::topleft(),
+            Justified::TopCenter    => Position2d::topcenter(),
+            Justified::TopRight     => Position2d::topright(),
+            Justified::CenterLeft   => Position2d::centerleft(),
+            Justified::Center       => Position2d::center(),
+            Justified::CenterRight  => Position2d::centerright(),
+            Justified::BottomLeft   => Position2d::bottomleft(),
+            Justified::BottomCenter => Position2d::bottomcenter(),
+            Justified::BottomRight  => Position2d::bottomright(),
         }
     }
 }
@@ -286,23 +288,23 @@ impl CobwebStyle for Justified
 {
     fn apply_style(&self, rc: &mut ReactCommands, node: Entity)
     {
-        Position::from(*self).apply(rc, node);
+        Position2d::from(*self).apply(rc, node);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct PositionPlugin;
+pub(crate) struct Position2dPlugin;
 
-impl Plugin for PositionPlugin
+impl Plugin for Position2dPlugin
 {
     fn build(&self, app: &mut App)
     {
         app
-            .register_type::<Position>()
+            .register_type::<Position2d>()
             .register_type::<Justified>()
             .add_reactor_with(DetectJustified, mutation::<Justified>())
-            .add_reactor_with(DetectPosition, mutation::<Position>());
+            .add_reactor_with(DetectPosition2d, mutation::<Position2d>());
     }
 }
 

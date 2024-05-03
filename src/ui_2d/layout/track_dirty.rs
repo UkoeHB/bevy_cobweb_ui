@@ -1,13 +1,8 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::ecs::entity::EntityHashSet;
 use bevy::hierarchy::HierarchyEvent;
-
-//standard shortcuts
-
 
 //-------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------

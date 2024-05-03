@@ -1,17 +1,12 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::transform::TransformSystem::TransformPropagate;
 
-//standard shortcuts
-
-
 //-------------------------------------------------------------------------------------------------------------------
 
-/// [`SystemSet`] containing layout systems that run immediately before [`TransformPropagate`], which updates
-/// [`GlobalTransforms`](GlobalTransform).
+/// [`SystemSet`] containing layout systems that run in [`PostUpdate`] immediately before [`TransformPropagate`], which
+/// updates [`GlobalTransforms`](GlobalTransform).
 ///
 /// UI-updating systems should run before this system set to ensure layout handling systems
 /// see changes before they update transforms.
@@ -50,7 +45,7 @@ impl Plugin for LayoutPlugin
         app
             .add_plugins(Val2dPlugin)
             .add_plugins(Dims2dPlugin)
-            .add_plugins(PositionPlugin)
+            .add_plugins(Position2dPlugin)
             .add_plugins(SortingPlugin)
             .add_plugins(SizeRefSourcePlugin)
             .add_plugins(TrackDirtyPlugin)

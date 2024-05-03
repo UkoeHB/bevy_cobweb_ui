@@ -1,10 +1,5 @@
-//local shortcuts
-
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -34,12 +29,13 @@ pub struct Ui2DRoot
 /// If one node is sorted above another, then the higher node's children will be sorted above all children of the lower,
 /// regardless of `ZLevel`.
 //todo: consider adding options for how nodes at the same z-level will be sorted (e.g. child-order, (+/-)(x/y)-order, etc.)
+//todo: consider adding option to insert artificial gap into the hierarchy for 3D effects
 #[derive(Component, Reflect, Debug, Default, Copy, Clone, Deref, DerefMut, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ZLevel(pub i32);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for UI nodes.
+/// Marker component for 2d UI nodes.
 #[derive(Component, Default, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub struct CobwebNode;
 
