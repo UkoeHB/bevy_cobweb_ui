@@ -1,11 +1,7 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -19,18 +15,18 @@ fn compute_camera_size_ref(
 {
     // Get world coordinates of the camera's viewport.
     let Some(rect) = camera.logical_viewport_rect()
-    else { tracing::debug!(?camera_entity, "camera entity logical viewport rect unavailable"); return None; };
+    else { tracing::debug!("camera entity {:?} logical viewport rect unavailable", camera_entity); return None; };
 
     let topleft = rect.min;
     let bottomleft = Vec2{ x: rect.min.x, y: rect.max.y };
     let bottomright = rect.max;
 
     let Some(topleft) = camera.viewport_to_world(camera_transform, topleft)
-    else { tracing::error!(?camera_entity, "camera entity viewport transformation broken"); return None; };
+    else { tracing::error!("camera entity {:?} viewport transformation broken", camera_entity); return None; };
     let Some(bottomleft) = camera.viewport_to_world(camera_transform, bottomleft)
-    else { tracing::error!(?camera_entity, "camera entity viewport transformation broken"); return None; };
+    else { tracing::error!("camera entity {:?} viewport transformation broken", camera_entity); return None; };
     let Some(bottomright) = camera.viewport_to_world(camera_transform, bottomright)
-    else { tracing::error!(?camera_entity, "camera entity viewport transformation broken"); return None; };
+    else { tracing::error!("camera entity {:?} viewport transformation broken", camera_entity); return None; };
 
     // Compute dimensions in worldspace.
     let x = bottomleft.origin.distance(bottomright.origin);
@@ -114,13 +110,13 @@ pub const DEFAULT_CAMERA_Z_OFFSET: f32 = -100.0;
 ///
 /// This can be added to existing camera entities.
 #[derive(Bundle)]
-pub struct UiCameraRoot
+pub struct UiCameraRootBundle
 {
     pub vis  : InheritedVisibility,
     pub root : UiRoot,
 }
 
-impl Default for UiCameraRoot
+impl Default for UiCameraRootBundle
 {
     fn default() -> Self
     {
@@ -135,15 +131,15 @@ impl Default for UiCameraRoot
 
 /// Bundle for creating a 2D camera as a UI root node.
 ///
-/// This creates a completely new camera. Use [`UiCameraRoot`] if you already have a camera.
+/// This creates a completely new camera. Use [`UiCameraRootBundle`] if you already have a camera.
 #[derive(Bundle)]
-pub struct UiCamera2D
+pub struct UiCamera2DBundle
 {
     pub camera : Camera2dBundle,
-    pub root   : UiCameraRoot,
+    pub root   : UiCameraRootBundle,
 }
 
-impl Default for UiCamera2D
+impl Default for UiCamera2DBundle
 {
     fn default() -> Self
     {
@@ -152,7 +148,7 @@ impl Default for UiCamera2D
                 transform: Transform{ translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
                 ..default()
             },
-            root: UiCameraRoot::default(),
+            root: UiCameraRootBundle::default(),
         }
     }
 }
@@ -168,7 +164,7 @@ impl Default for UiCamera2D
 ///
 /// [`BaseSizeRef`] for nodes on cameras will typically equal [`SizeRef`] unless the camera is also a node.
 ///
-/// This currently only works for 2D UI cameras. See [`UiCamera2D`] and [`UiCameraRoot`] for setting up a camera.
+/// This currently only works for 2D UI cameras. See [`UiCamera2DBundle`] and [`UiCameraRootBundle`] for setting up a camera.
 //todo: support 3D cameras ???
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Deref, DerefMut)]
 pub struct InCamera(pub Entity);

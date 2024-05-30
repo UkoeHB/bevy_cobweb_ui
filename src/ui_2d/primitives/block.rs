@@ -1,13 +1,10 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
-//standard shortcuts
 use std::collections::HashMap;
 
 //-------------------------------------------------------------------------------------------------------------------

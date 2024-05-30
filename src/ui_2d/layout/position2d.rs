@@ -71,12 +71,16 @@ pub(crate) fn compute_new_transform(
     offset.x = (-parent_size.x / 2.) + offset.x + (size.x / 2.);
     offset.y = (parent_size.y / 2.) + -offset.y + (-size.y / 2.);
 
+    // Get the scaling to apply.
+    let scaling = position.scaling();
+
     // Update this node's transform.
     // - Avoid triggering change detection needlessly.
     let rotation = Quat::from_rotation_z(position.rotation);
     if transform.translation.x != offset.x { transform.translation.x = offset.x; }
     if transform.translation.y != offset.y { transform.translation.y = offset.y; }
     if transform.rotation      != rotation { transform.rotation      = rotation; }
+    if transform.scaling       != scaling  { transform.scaling       = scaling; }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -101,6 +105,20 @@ pub enum Justify
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+/*
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Scaling2d
+{
+    /// No scaling (default to 1.0 scaling).
+    #[default]
+    None,
+    /// Scale around the node origin.
+    Scale(f32),
+    /// Scale around a point that is offset from the node origin on the unscaled node.
+    ScaleOffset(f32, Vec2),
+}
+*/
+//-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the position of a rectangle within another rectangle.
 ///
@@ -108,26 +126,38 @@ pub enum Justify
 /// automatically-computed [`NodeSize`] and [`SizeRef`].
 ///
 /// Mutating `Position2d` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Position2d
 {
     /// Justification of the node on the parent's x-axis.
     ///
     /// Defaults to the left side (x = 0.0).
+    #[reflect(default)]
     pub x_justify: Justify,
     /// Justification of the node on the parent's y-axis.
     ///
     /// Defaults to the top side (y = 0.0).
+    #[reflect(default)]
     pub y_justify: Justify,
     /// Horizontal offset from the node's anchor-point within its parent.
+    #[reflect(default)]
     pub x_offset: Val2d,
     /// Vertical offset from the node's anchor-point within its parent.
+    #[reflect(default)]
     pub y_offset: Val2d,
     /// The node's rotation around its z-axis in radians.
     ///
     /// Note that rotation is applied after other position calculations, and that the center of rotation is the node origin
     /// not the node anchor (i.e. the node's centerpoint, not the anchor defined by justify constraints).
+    #[reflect(default)]
     pub rotation: f32,
+    /// Scaling applied to adjust the node's apparent size.
+    ///
+    /// Scaling occurs around the node origin and is applied via [`Transform::scale`].
+    ///
+    /// Defaults to `1.0`.
+    #[reflect(default = "Position2d::default_scaling")]
+    pub scaling: f32,
 }
 
 impl Position2d
@@ -135,6 +165,11 @@ impl Position2d
     fn new_justified(x_justify: Justify, y_justify: Justify) -> Self
     {
         Self { x_justify, y_justify, ..Default::default() }
+    }
+
+    fn default_scaling() -> f32
+    {
+        1.0
     }
 
     /// Creates a centered node, whose midpoint will be directly on top of the parent's midpoint.
@@ -212,13 +247,19 @@ impl Position2d
         self
     }
 
+    /// Gets the scaling of the node.
+    pub fn scaling(&self) -> f32
+    {
+        fix_nan(self.scaling).max(0.)
+    }
+
     /// Gets the offset between our node and the parent in 2D [`Transform`] coordinates.
     pub fn offset(&self, size: Vec2, parent_size: Vec2) -> Vec2
     {
         let size_x = fix_nan(size.x).max(0.);
         let size_y = fix_nan(size.y).max(0.);
-        let parent_x = fix_nan(parent.x).max(0.);
-        let parent_y = fix_nan(parent.y).max(0.);
+        let parent_x = fix_nan(parent_size.x).max(0.);
+        let parent_y = fix_nan(parent_size.y).max(0.);
 
         let mut x_offset = match self.x_justify
         {
@@ -237,6 +278,21 @@ impl Position2d
         y_offset += self.y_offset.compute(parent_y).max(0.);
 
         Vec2{ x: x_offset, y: y_offset }
+    }
+}
+
+impl Default for Position2d
+{
+    fn default() -> Self
+    {
+        Self{
+            x_justify: Default::default(),
+            y_justify: Default::default(),
+            x_offset: Default::default(),
+            y_offset: Default::default(),
+            rotation: Default::default(),
+            scaling: Self::default_scaling(),
+        }
     }
 }
 

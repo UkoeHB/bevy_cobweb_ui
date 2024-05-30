@@ -1,10 +1,6 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------

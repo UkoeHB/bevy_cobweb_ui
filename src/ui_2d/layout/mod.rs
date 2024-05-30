@@ -7,6 +7,7 @@ mod size_ref_source;
 mod sorting;
 mod track_dirty;
 mod val2d;
+mod zlevel;
 
 pub use components::*;
 pub use dims2d::*;
@@ -17,3 +18,4 @@ pub use size_ref_source::*;
 pub use sorting::*;
 pub use track_dirty::*;
 pub use val2d::*;
+pub use zlevel::*;

@@ -28,11 +28,13 @@ fn insert_ui_image(
 
     // Insert
     let mut ec = commands.entity(entity);
-    ec.try_insert((ui_image, UiImageSize::default(), content_size));
+    let bundle = (ui_image, UiImageSize::default(), content_size);
 
     if let Some(scale_mode) = maybe_scale_mode {
         let scale_mode: ImageScaleMode = scale_mode.into();
-        ec.try_insert(scale_mode);
+        ec.try_insert((scale_mode, bundle));
+    } else {
+        ec.try_insert(bundle);
     }
 }
 

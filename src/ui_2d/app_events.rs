@@ -1,13 +1,9 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::render::camera::CameraUpdateSystem;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -1,11 +1,7 @@
-//local shortcuts
 use crate::*;
 
-//third-party shortcuts
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-
-//standard shortcuts
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -20,7 +16,6 @@ pub(crate) fn get_parent_size_ref(world: &World, parent: Entity) -> SizeRef
         return SizeRef::default();
     };
 
-    // Update the target node with the parent's size.
     SizeRef(***parent_node_size)
 }
 

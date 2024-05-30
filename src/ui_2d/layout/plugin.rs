@@ -47,6 +47,7 @@ impl Plugin for LayoutPlugin
             .add_plugins(Dims2dPlugin)
             .add_plugins(Position2dPlugin)
             .add_plugins(SortingPlugin)
+            .add_plugins(ZLevelPlugin)
             .add_plugins(SizeRefSourcePlugin)
             .add_plugins(TrackDirtyPlugin)
             .add_plugins(LayoutAlgorithmPlugin)

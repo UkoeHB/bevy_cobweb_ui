@@ -30,8 +30,6 @@ impl WorldReactor for DetectSizeRefSource
 
 /// Reactive component that controls how [`SizeRefs`](SizeRef) are derived during layout computation.
 ///
-/// This component is designed for use in [`UiInstructions`](UiInstruction), not in user code.
-///
 /// Mutating `SizeRefSource` on a node will automatically mark it [dirty](DirtyNodeTracker) (but not inserting/removing it).
 ///
 /// Includes built-in sources for efficieny. The [`Self::Custom`] variant can be used if designing a custom source.
