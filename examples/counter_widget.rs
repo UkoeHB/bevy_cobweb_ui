@@ -21,13 +21,13 @@ impl Counter
     }
 
     /// Makes callback for incrementing the counter on `target`.
-    fn increment(target: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
+    fn increment(target: Entity) -> impl IntoSystem<(), (), ()>
     {
-        move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+        IntoSystem::into_system(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
             counters
                 .get_mut(&mut c, target)
                 .map(Counter::increment_inner);
-        }
+        })
     }
 
     /// Makes callback for writing the counter value when it changes.
@@ -36,17 +36,17 @@ impl Counter
         post_text: impl Into<String>,
         from: Entity,
         to: Entity,
-    ) -> impl FnMut(TextEditor, Reactive<Counter>)
+    ) -> impl IntoSystem<(), (), ()>
     {
         let pre_text = pre_text.into();
         let post_text = post_text.into();
 
-        move |mut editor: TextEditor, counters: Reactive<Counter>| {
+        IntoSystem::into_system(move |mut editor: TextEditor, counters: Reactive<Counter>| {
             let Some(counter) = counters.get(from) else { return };
             editor.write(to, |t| {
                 write!(t, "{}{}{}", pre_text.as_str(), **counter, post_text.as_str())
             });
-        }
+        })
     }
 }
 
