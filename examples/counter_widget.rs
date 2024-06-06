@@ -148,13 +148,19 @@ impl CounterWidget
         let post_text = self.post_text.unwrap_or_else(|| "".into());
 
         builder.load(button_ref, |button, _path| {
-            if let Some(theme) = self.theme {
-                button.entity_commands().load_theme::<CounterButton>(theme);
+            match self.theme {
+                Some(theme) => {
+                    button.entity_commands().load_theme::<CounterButton>(theme);
+                }
+                None => {
+                    button.entity_commands().manual_theme::<CounterButton>();
+                }
             }
 
             let button_id = button.id();
             button
                 .insert(CounterButton)
+                .insert(PropagateInteractions)
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
@@ -185,6 +191,12 @@ fn build_ui(mut c: Commands)
             CounterWidget::new()
                 .text_config(file.e("counter_widget_text_small"))
                 .pre_text("Small: ")
+                .build(&mut root);
+
+            // Widget with animated text structure.
+            CounterWidget::new()
+                .text_config(file.e("counter_widget_text_responsive"))
+                .pre_text("Responsive: ")
                 .build(&mut root);
 
             // Widget with theme adjustments

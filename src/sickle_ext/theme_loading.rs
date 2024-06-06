@@ -56,7 +56,7 @@ fn add_attribute_to_theme_inner(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_theme(
-    In((entity, inherit_interaction, state, attribute)): In<(
+    In((entity, inherit_interactions, state, attribute)): In<(
         Entity,
         bool,
         Option<Vec<PseudoState>>,
@@ -72,7 +72,7 @@ fn add_attribute_to_theme(
     )>,
 )
 {
-    if !inherit_interaction {
+    if !inherit_interactions {
         // Insert directly to this entity.
         let Some((store_entity, maybe_style, maybe_themes, _)) = query.get_mut(entity).ok() else { return };
         add_attribute_to_theme_inner(
@@ -262,14 +262,14 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     ///
     /// `false` by default.
     #[reflect(default)]
-    pub inherit_interaction: bool,
+    pub inherit_interactions: bool,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_interaction {
+        if !self.inherit_interactions {
             T::Interactive::default().apply(ec);
         }
 
@@ -280,7 +280,7 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 
         let id = ec.id();
         ec.commands().syscall(
-            (id, self.inherit_interaction, self.state, attribute),
+            (id, self.inherit_interactions, self.state, attribute),
             add_attribute_to_theme,
         );
     }
@@ -310,7 +310,7 @@ where
     ///
     /// `false` by default.
     #[reflect(default)]
-    pub inherit_interaction: bool,
+    pub inherit_interactions: bool,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
@@ -319,7 +319,7 @@ where
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_interaction {
+        if !self.inherit_interactions {
             T::Interactive::default().apply(ec);
         }
 
@@ -333,7 +333,7 @@ where
 
         let id = ec.id();
         ec.commands().syscall(
-            (id, self.inherit_interaction, self.state, attribute),
+            (id, self.inherit_interactions, self.state, attribute),
             add_attribute_to_theme,
         );
     }

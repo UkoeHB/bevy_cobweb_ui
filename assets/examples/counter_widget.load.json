@@ -57,6 +57,23 @@
     "TextLine": { "size": 25.0 }
 },
 
+"#c: Text node for CounterWidgets with responsive text.":1,
+"counter_widget_text_responsive": {
+    "FlexStyle": {
+        "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
+    },
+    "TextLine": { "size": 50.0 },
+    "Animated<TextLineColor>": {
+        "values": {
+            "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
+            "hover": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.45, "alpha": 1.0}},
+            "press": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.35, "alpha": 1.0}}
+        },
+        "settings": "$base::animation_settings",
+        "inherit_interactions": true
+    }
+},
+
 "#c: Button node for flexible CounterWidgets.":1,
 "counter_widget_button_flexible": {
     "FlexStyle": {
