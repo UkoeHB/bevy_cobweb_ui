@@ -4,10 +4,9 @@ use std::marker::PhantomData;
 use bevy::ecs::system::{Command, EntityCommands};
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::theme::dynamic_style::DynamicStyle;
-use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
+use sickle_ui::theme::dynamic_style::{ContextStyleAttribute, DynamicStyle};
 use sickle_ui::theme::pseudo_state::PseudoState;
-use sickle_ui::theme::{DynamicStyleBuilder, PseudoTheme, Theme};
+use sickle_ui::theme::{DefaultTheme, DynamicStyleBuilder, PseudoTheme, Theme};
 use smallvec::SmallVec;
 
 use crate::*;
@@ -23,9 +22,9 @@ struct EditablePseudoTheme
 
 impl EditablePseudoTheme
 {
-    fn new(state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute) -> Self
+    fn new(state: Option<Vec<PseudoState>>, attribute: ContextStyleAttribute) -> Self
     {
-        Self { state, style: DynamicStyle::new(vec![attribute]) }
+        Self { state, style: DynamicStyle::copy_from(vec![attribute]) }
     }
 }
 
@@ -39,7 +38,7 @@ impl Into<PseudoTheme> for EditablePseudoTheme
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn refresh_loaded_theme<C: Component>(
+fn refresh_loaded_theme<C: DefaultTheme>(
     mut pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
     ec: &mut EntityCommands,
 )
@@ -65,7 +64,7 @@ struct LoadedTheme
 
 impl LoadedTheme
 {
-    fn new<C: Component>() -> Self
+    fn new<C: DefaultTheme>() -> Self
     {
         Self {
             theme_marker: TypeId::of::<C>(),
@@ -79,7 +78,7 @@ impl LoadedTheme
         self.theme_marker == marker
     }
 
-    fn update(&mut self, mut state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
+    fn update(&mut self, mut state: Option<Vec<PseudoState>>, attribute: ContextStyleAttribute)
     {
         if let Some(states) = state.as_deref_mut() {
             states.sort_unstable();
@@ -89,7 +88,7 @@ impl LoadedTheme
             Some(pseudo_theme) => {
                 let mut temp = DynamicStyle::new(Vec::default());
                 std::mem::swap(&mut pseudo_theme.style, &mut temp);
-                pseudo_theme.style = temp.merge(DynamicStyle::new(vec![attribute]));
+                pseudo_theme.style = temp.merge(DynamicStyle::copy_from(vec![attribute]));
             }
             None => self
                 .pseudo_themes
@@ -132,7 +131,7 @@ pub struct LoadedThemes
 impl LoadedThemes
 {
     /// Makes a new loaded themes for a specific theme.
-    pub fn new<C: Component>() -> Self
+    pub fn new<C: DefaultTheme>() -> Self
     {
         Self {
             active_theme: 0,
@@ -141,7 +140,7 @@ impl LoadedThemes
     }
 
     /// Adds a theme if it's missing and updates the active theme index.
-    pub fn add<C: Component>(&mut self)
+    pub fn add<C: DefaultTheme>(&mut self)
     {
         let marker = TypeId::of::<C>();
         match self.themes.iter().position(|t| t.matches(marker)) {
@@ -166,7 +165,7 @@ impl LoadedThemes
     }
 
     /// Updates the active theme with a specific style attribute.
-    pub fn update(&mut self, state: Option<Vec<PseudoState>>, attribute: DynamicStyleAttribute)
+    pub fn update(&mut self, state: Option<Vec<PseudoState>>, attribute: ContextStyleAttribute)
     {
         self.themes[self.active_theme].update(state, attribute);
     }
@@ -183,13 +182,13 @@ impl LoadedThemes
 /// Command for calling [`LoadedThemes::add`] on an entity.
 ///
 /// Inserts a [`LoadedThemes`] component if the entity doesn't have one.
-pub struct AddLoadedTheme<C: Component>
+pub struct AddLoadedTheme<C: DefaultTheme>
 {
     entity: Entity,
     _p: PhantomData<C>,
 }
 
-impl<C: Component> AddLoadedTheme<C>
+impl<C: DefaultTheme> AddLoadedTheme<C>
 {
     pub fn new(entity: Entity) -> Self
     {
@@ -197,7 +196,7 @@ impl<C: Component> AddLoadedTheme<C>
     }
 }
 
-impl<C: Component> Command for AddLoadedTheme<C>
+impl<C: DefaultTheme> Command for AddLoadedTheme<C>
 {
     fn apply(self, world: &mut World)
     {
@@ -268,12 +267,12 @@ pub trait LoadedThemeEntityCommandsExt
     /// After this is called, the theme will be 'active' on the entity, which means it can be updated with
     /// [`LoadedThemes::update`]. The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers will
     /// call update automatically when applied to an entity with [`ApplyLoadable::apply`].
-    fn load_theme<C: Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
 }
 
 impl LoadedThemeEntityCommandsExt for EntityCommands<'_>
 {
-    fn load_theme<C: Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
         let entity = self.id();
         self.commands().add(AddLoadedTheme::<C>::new(entity));

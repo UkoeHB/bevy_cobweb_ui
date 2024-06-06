@@ -9,23 +9,8 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Entity event emitted when [`FluxInteraction::PointerEnter`] is set on an entity.
-pub struct PointerEnter;
-/// Entity event emitted when [`FluxInteraction::PointerLeave`] is set on an entity.
-pub struct PointerLeave;
-/// Entity event emitted when [`FluxInteraction::Pressed`] is set on an entity.
-pub struct Pressed;
-/// Entity event emitted when [`FluxInteraction::Released`] is set on an entity.
-pub struct Released;
-/// Entity event emitted when [`FluxInteraction::PressCanceled`] is set on an entity.
-pub struct PressCanceled;
-/// Entity event emitted when [`FluxInteraction::Disabled`] is set on an entity.
-pub struct Disabled;
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Converts `sickle_ui` flux events to reactive entity events (see [`ReactCommand::entity_event`]).
-pub(crate) fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Changed<FluxInteraction>>)
+fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Changed<FluxInteraction>>)
 {
     for (entity, flux) in fluxes.iter() {
         match *flux {
@@ -51,6 +36,21 @@ pub(crate) fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxIntera
         }
     }
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Entity event emitted when [`FluxInteraction::PointerEnter`] is set on an entity.
+pub struct PointerEnter;
+/// Entity event emitted when [`FluxInteraction::PointerLeave`] is set on an entity.
+pub struct PointerLeave;
+/// Entity event emitted when [`FluxInteraction::Pressed`] is set on an entity.
+pub struct Pressed;
+/// Entity event emitted when [`FluxInteraction::Released`] is set on an entity.
+pub struct Released;
+/// Entity event emitted when [`FluxInteraction::PressCanceled`] is set on an entity.
+pub struct PressCanceled;
+/// Entity event emitted when [`FluxInteraction::Disabled`] is set on an entity.
+pub struct Disabled;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -159,8 +159,17 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable that indicates a node is interactable.
+/// Marker component for entities that control the animations of descendents.
 ///
+/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
+/// around entity updates in the loader. Specifically, it's possible for a child with [`InheritInteractions`] to
+/// load its animations before its parent with `PropagateInteractions` is loaded, in which case the child's
+/// animations would fail to load since they need to be saved in the propagator's theme.
+#[derive(Component)]
+pub struct PropagateInteractions;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Interactive;

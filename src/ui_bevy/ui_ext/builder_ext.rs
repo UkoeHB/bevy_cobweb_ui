@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use sickle_ui::theme::DefaultTheme;
 use sickle_ui::ui_builder::*;
 
 use crate::*;
@@ -27,7 +28,7 @@ pub trait NodeLoadingExt<'w, 's>
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback` for interacting with the entity.
-    fn load_theme<'a, C: Component>(
+    fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
@@ -48,7 +49,7 @@ pub trait NodeLoadingExt<'w, 's>
 
 impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 {
-    fn load_theme<'a, C: Component>(
+    fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
@@ -76,7 +77,7 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 
 impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
 {
-    fn load_theme<'a, C: Component>(
+    fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),

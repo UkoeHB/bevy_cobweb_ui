@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::lerp::Lerp;
-use sickle_ui::theme::dynamic_style::DynamicStyle;
+use sickle_ui::theme::dynamic_style::{ContextStyleAttribute, DynamicStyle};
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
@@ -17,31 +17,100 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_attribute_to_theme(
-    In((entity, state, attribute)): In<(Entity, Option<Vec<PseudoState>>, DynamicStyleAttribute)>,
-    mut commands: Commands,
-    mut query: Query<(Option<&mut DynamicStyle>, Option<&mut LoadedThemes>)>,
+fn add_attribute_to_theme_inner(
+    entity: Entity,
+    state: Option<Vec<PseudoState>>,
+    attribute: DynamicStyleAttribute,
+    commands: &mut Commands,
+    store_entity: Entity,
+    maybe_style: Option<&mut DynamicStyle>,
+    maybe_themes: Option<&mut LoadedThemes>,
 )
 {
-    // Access the entity.
-    let Ok((maybe_style, maybe_themes)) = query.get_mut(entity) else { return };
-
     // If there is a loaded theme, then add this attribute to the theme.
-    if let Some(mut themes) = maybe_themes {
-        themes.update(state, attribute);
-        commands.add(RefreshLoadedTheme { entity });
+    let context = if entity != store_entity {
+        Some(entity)
+    } else {
+        None
+    };
+    let contextual_attribute = ContextStyleAttribute::new(context, attribute);
+
+    if let Some(themes) = maybe_themes {
+        themes.update(state, contextual_attribute);
+        commands.add(RefreshLoadedTheme { entity: store_entity });
         return;
     }
 
     // If there is no loaded theme, add this attribute directly.
     // - NOTE: If the entity has a theme ancestor, then these changes MAY be overwritten.
-    let style = DynamicStyle::new(vec![attribute]);
-    if let Some(mut existing) = maybe_style {
+    let style = DynamicStyle::copy_from(vec![contextual_attribute]);
+    if let Some(existing) = maybe_style {
         let mut temp = DynamicStyle::new(Vec::default());
         std::mem::swap(&mut *existing, &mut temp);
         *existing = temp.merge(style);
     } else {
-        commands.entity(entity).try_insert(style);
+        commands.entity(store_entity).try_insert(style);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn add_attribute_to_theme(
+    In((entity, inherit_interaction, state, attribute)): In<(
+        Entity,
+        bool,
+        Option<Vec<PseudoState>>,
+        DynamicStyleAttribute,
+    )>,
+    mut commands: Commands,
+    parents: Query<&Parent>,
+    mut query: Query<(
+        Entity,
+        Option<&mut DynamicStyle>,
+        Option<&mut LoadedThemes>,
+        Has<PropagateInteractions>,
+    )>,
+)
+{
+    if !inherit_interaction {
+        // Insert directly to this entity.
+        let Some((store_entity, maybe_style, maybe_themes, _)) = query.get_mut(entity).ok() else { return };
+        add_attribute_to_theme_inner(
+            entity,
+            state,
+            attribute,
+            &mut commands,
+            store_entity,
+            maybe_style.map(|i| i.into_inner()),
+            maybe_themes.map(|i| i.into_inner()),
+        );
+    } else {
+        // Find parent where attribute should be saved.
+        let mut count = 0;
+        for parent in parents.iter_ancestors(entity) {
+            count += 1;
+            let Some((store_entity, maybe_style, maybe_themes, has_propagate)) = query.get_mut(parent).ok() else {
+                continue;
+            };
+            if !has_propagate {
+                continue;
+            }
+            add_attribute_to_theme_inner(
+                entity,
+                state,
+                attribute,
+                &mut commands,
+                store_entity,
+                maybe_style.map(|i| i.into_inner()),
+                maybe_themes.map(|i| i.into_inner()),
+            );
+            return;
+        }
+
+        if count > 0 {
+            tracing::warn!("failed adding theme attribute with inherited interaction to {entity:?}, \
+                no ancestor with PropagateInteractions");
+        }
     }
 }
 
@@ -169,7 +238,7 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
 
         let id = ec.id();
         ec.commands()
-            .syscall((id, self.state, attribute), add_attribute_to_theme);
+            .syscall((id, false, self.state, attribute), add_attribute_to_theme);
     }
 }
 
@@ -189,13 +258,20 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The values that are toggled in response to interaction changes.
     pub values: InteractiveVals<T::Value>,
+    /// Controls whether this value should respond to inherited interactions.
+    ///
+    /// `false` by default.
+    #[reflect(default)]
+    pub inherit_interaction: bool,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        T::Interactive::default().apply(ec);
+        if !self.inherit_interaction {
+            T::Interactive::default().apply(ec);
+        }
 
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
@@ -203,8 +279,10 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
         ));
 
         let id = ec.id();
-        ec.commands()
-            .syscall((id, self.state, attribute), add_attribute_to_theme);
+        ec.commands().syscall(
+            (id, self.inherit_interaction, self.state, attribute),
+            add_attribute_to_theme,
+        );
     }
 }
 
@@ -228,6 +306,11 @@ where
     pub values: AnimatedVals<T::Value>,
     /// Settings that control how values are interpolated.
     pub settings: AnimationSettings,
+    /// Controls whether this value should respond to inherited interactions.
+    ///
+    /// `false` by default.
+    #[reflect(default)]
+    pub inherit_interaction: bool,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
@@ -236,7 +319,9 @@ where
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        T::Interactive::default().apply(ec);
+        if !self.inherit_interaction {
+            T::Interactive::default().apply(ec);
+        }
 
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
@@ -247,8 +332,10 @@ where
         };
 
         let id = ec.id();
-        ec.commands()
-            .syscall((id, self.state, attribute), add_attribute_to_theme);
+        ec.commands().syscall(
+            (id, self.inherit_interaction, self.state, attribute),
+            add_attribute_to_theme,
+        );
     }
 }
 
