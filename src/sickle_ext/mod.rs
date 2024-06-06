@@ -10,7 +10,8 @@ pub(crate) use plugin::*;
 pub use theme_loading::*;
 pub use theme_loading_registration::*;
 
-pub mod sickle {
+pub mod sickle
+{
     // Re-export sickle_ui so the dependency doesn't need to be tracked by users of this crate.
     pub use sickle_ui::*;
 }

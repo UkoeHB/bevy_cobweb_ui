@@ -70,7 +70,7 @@
             "press": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.35, "alpha": 1.0}}
         },
         "settings": "$base::animation_settings",
-        "inherit_interactions": true
+        "inherit_control": true
     }
 },
 

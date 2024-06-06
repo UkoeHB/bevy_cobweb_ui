@@ -159,17 +159,6 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for entities that control the animations of descendents.
-///
-/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
-/// around entity updates in the loader. Specifically, it's possible for a child with [`InheritInteractions`] to
-/// load its animations before its parent with `PropagateInteractions` is loaded, in which case the child's
-/// animations would fail to load since they need to be saved in the propagator's theme.
-#[derive(Component)]
-pub struct PropagateInteractions;
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Interactive;

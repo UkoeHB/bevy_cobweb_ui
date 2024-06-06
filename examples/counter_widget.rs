@@ -160,7 +160,7 @@ impl CounterWidget
             let button_id = button.id();
             button
                 .insert(CounterButton)
-                .insert(PropagateInteractions)
+                .insert(PropagateControl)
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 

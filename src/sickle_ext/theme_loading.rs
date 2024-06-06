@@ -56,7 +56,7 @@ fn add_attribute_to_theme_inner(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_theme(
-    In((entity, inherit_interactions, state, attribute)): In<(
+    In((entity, inherit_control, state, attribute)): In<(
         Entity,
         bool,
         Option<Vec<PseudoState>>,
@@ -68,11 +68,11 @@ fn add_attribute_to_theme(
         Entity,
         Option<&mut DynamicStyle>,
         Option<&mut LoadedThemes>,
-        Has<PropagateInteractions>,
+        Has<PropagateControl>,
     )>,
 )
 {
-    if !inherit_interactions {
+    if !inherit_control {
         // Insert directly to this entity.
         let Some((store_entity, maybe_style, maybe_themes, _)) = query.get_mut(entity).ok() else { return };
         add_attribute_to_theme_inner(
@@ -109,7 +109,7 @@ fn add_attribute_to_theme(
 
         if count > 0 {
             tracing::warn!("failed adding theme attribute with inherited interaction to {entity:?}, \
-                no ancestor with PropagateInteractions");
+                no ancestor with PropagateControl");
         }
     }
 }
@@ -214,6 +214,17 @@ pub trait AnimatableAttribute: Loadable + TypePath
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Marker component for entities that control the dynamic styles of descendents.
+///
+/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
+/// around entity updates in the loader. Specifically, it's possible for a child to
+/// load its dynamic styles before its parent with `PropagateControl` is loaded, in which case the child's
+/// styles would fail to load since they need to be saved in the propagator's theme.
+#[derive(Component)]
+pub struct PropagateControl;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Loadable type for theme values.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Themed<T: ThemedAttribute>
@@ -225,6 +236,11 @@ pub struct Themed<T: ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The value that will be applied to the entity with `T`.
     pub value: T::Value,
+    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
+    ///
+    /// `false` by default.
+    #[reflect(default)]
+    pub inherit_control: bool,
 }
 
 impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
@@ -237,8 +253,10 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
         ));
 
         let id = ec.id();
-        ec.commands()
-            .syscall((id, false, self.state, attribute), add_attribute_to_theme);
+        ec.commands().syscall(
+            (id, self.inherit_control, self.state, attribute),
+            add_attribute_to_theme,
+        );
     }
 }
 
@@ -258,18 +276,18 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The values that are toggled in response to interaction changes.
     pub values: InteractiveVals<T::Value>,
-    /// Controls whether this value should respond to inherited interactions.
+    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
     ///
     /// `false` by default.
     #[reflect(default)]
-    pub inherit_interactions: bool,
+    pub inherit_control: bool,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_interactions {
+        if !self.inherit_control {
             T::Interactive::default().apply(ec);
         }
 
@@ -280,7 +298,7 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 
         let id = ec.id();
         ec.commands().syscall(
-            (id, self.inherit_interactions, self.state, attribute),
+            (id, self.inherit_control, self.state, attribute),
             add_attribute_to_theme,
         );
     }
@@ -306,11 +324,11 @@ where
     pub values: AnimatedVals<T::Value>,
     /// Settings that control how values are interpolated.
     pub settings: AnimationSettings,
-    /// Controls whether this value should respond to inherited interactions.
+    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
     ///
     /// `false` by default.
     #[reflect(default)]
-    pub inherit_interactions: bool,
+    pub inherit_control: bool,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
@@ -319,7 +337,7 @@ where
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_interactions {
+        if !self.inherit_control {
             T::Interactive::default().apply(ec);
         }
 
@@ -333,7 +351,7 @@ where
 
         let id = ec.id();
         ec.commands().syscall(
-            (id, self.inherit_interactions, self.state, attribute),
+            (id, self.inherit_control, self.state, attribute),
             add_attribute_to_theme,
         );
     }
