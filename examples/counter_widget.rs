@@ -4,9 +4,9 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use sickle_ui::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
-use sickle_ui::ui_builder::*;
-use sickle_ui::SickleUiPlugin;
+use bevy_cobweb_ui::sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
+use bevy_cobweb_ui::sickle::ui_builder::*;
+use bevy_cobweb_ui::sickle::SickleUiPlugin;
 
 //-------------------------------------------------------------------------------------------------------------------
 
