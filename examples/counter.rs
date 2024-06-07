@@ -60,6 +60,7 @@ fn build_ui(mut c: Commands)
             let button_id = button.id();
             button
                 .insert_reactive(Counter(0))
+                .entity_commands()
                 .on_pressed(Counter::increment(button_id));
 
             button.load(path.e("text"), |text, _path| {

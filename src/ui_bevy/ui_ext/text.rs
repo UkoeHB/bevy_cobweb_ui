@@ -60,7 +60,7 @@ impl FontMap
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Sets up an entity with a [`Text`] component and one text section.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLine
 {
     /// The starting text string.
@@ -114,6 +114,50 @@ impl ApplyLoadable for TextLine
     }
 }
 
+impl Default for TextLine
+{
+    fn default() -> Self
+    {
+        Self {
+            text: Self::default_text(),
+            font: None,
+            size: Self::default_font_size(),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable for setting the font size of a [`TextLine`] on an entity.
+//todo: hook this up to TextLine or find a better abstraction
+#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TextLineSize(pub f32);
+
+impl ApplyLoadable for TextLineSize
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.commands().syscall(
+            (id, self.0),
+            |In((id, size)): In<(Entity, f32)>, mut editor: TextEditor| {
+                let Some(style) = editor.style(id) else { return };
+                style.font_size = size;
+            },
+        );
+        ec.try_insert(self);
+    }
+}
+
+impl ThemedAttribute for TextLineSize
+{
+    type Value = f32;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        TextLineSize(value).apply(ec);
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Loadable for setting the color of a [`TextLine`] on an entity.
@@ -164,6 +208,7 @@ impl Plugin for UiTextExtPlugin
     {
         app.init_resource::<FontMap>()
             .register_derived::<TextLine>()
+            .register_themed::<TextLineSize>()
             .register_animatable::<TextLineColor>();
     }
 }

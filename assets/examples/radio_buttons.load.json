@@ -1,0 +1,41 @@
+{
+
+"#import": {
+    "examples/widgets/radio_button.load.json": "base"
+},
+
+"root": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+    },
+    "BgColor": [{"Hsla": {"hue": 26.0, "saturation": 0.53, "lightness": 0.68, "alpha": 1.0}}],
+
+    "display": {
+        "FlexStyle": {
+            "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
+            "content": {"justify_main": "Center", "justify_cross": "Center"}
+        },
+        "BgColor": [{"Hsla": {"hue": 210.0, "saturation": 1.0, "lightness": 0.5, "alpha": 1.0}}],
+        "BrColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
+
+        "text": {
+            "FlexStyle": {
+                "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
+            },
+            "#c: TODO FIXME": {"TextLine": {"size": 50.0}}
+        }
+    },
+
+    "radio_frame": {
+        "FlexStyle": {
+            "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
+            "content": {"flex_direction": "Column", "justify_main": "SpaceEvenly", "justify_cross": "Center"},
+            "flex": {"margin": {"top": {"Px": 20.0}}}
+        },
+        "BgColor": [{"Hsla": {"hue": 343.0, "saturation": 0.53, "lightness": 0.6, "alpha": 1.0}}],
+        "BrColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}]
+    }
+}
+
+}

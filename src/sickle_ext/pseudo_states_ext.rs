@@ -2,10 +2,9 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::theme::pseudo_state::PseudoState;
-use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::ui_commands::ManagePseudoStateExt;
 
-use crate::UiBuilderReactExt;
+use crate::UiReactEntityCommandsExt;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -243,7 +242,7 @@ pub trait PseudoStateExt
     fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>;
 }
 
-impl PseudoStateExt for UiBuilder<'_, '_, '_, Entity>
+impl PseudoStateExt for EntityCommands<'_>
 {
     fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
         -> EntityCommands<'_>

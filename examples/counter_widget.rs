@@ -154,6 +154,7 @@ impl CounterWidget
                 .insert(CounterButton)
                 .insert(PropagateControl)
                 .insert_reactive(Counter(0))
+                .entity_commands()
                 .on_pressed(Counter::increment(button_id));
 
             button.load(text_ref, |text, _path| {
@@ -172,8 +173,10 @@ fn build_ui(mut c: Commands)
     let widget = LoadableRef::from_file("examples/widgets/counter.load.json");
     let example = LoadableRef::from_file("examples/counter_widget.load.json");
 
-    c.ui_builder(UiRoot)
-        .load_theme::<CounterButton>(widget.e("counter_theme"), example.e("root"), |mut root, _path| {
+    c.ui_builder(UiRoot).load_theme::<CounterButton>(
+        widget.e("counter_theme"),
+        example.e("root"),
+        |mut root, _path| {
             // Default widget
             CounterWidget::new().build(&mut root);
 
@@ -195,7 +198,8 @@ fn build_ui(mut c: Commands)
                 .button_config(example.e("counter_widget_button_flexible"))
                 .pre_text("Themed: ")
                 .build(&mut root);
-        });
+        },
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------

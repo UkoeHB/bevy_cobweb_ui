@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
-use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::{FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
 use crate::*;
@@ -117,7 +116,7 @@ pub trait UiInteractionExt
     ) -> EntityCommands<'_>;
 }
 
-impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
+impl UiInteractionExt for EntityCommands<'_>
 {
     fn on_pointer_enter<M>(
         &mut self,

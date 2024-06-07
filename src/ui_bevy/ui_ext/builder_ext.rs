@@ -90,9 +90,7 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut child = self.spawn(NodeBundle::default());
-        child
-            .entity_commands()
-            .load_theme::<C>(theme_ref.clone());
+        child.entity_commands().load_theme::<C>(theme_ref.clone());
         if theme_ref != loadable_ref {
             child.entity_commands().load(loadable_ref.clone());
         }
