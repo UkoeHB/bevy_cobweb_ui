@@ -2,6 +2,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::{FluxInteraction, FluxInteractionUpdate, TrackedInteraction};
 
@@ -10,9 +11,19 @@ use crate::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts `sickle_ui` flux events to reactive entity events (see [`ReactCommand::entity_event`]).
-fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Changed<FluxInteraction>>)
+fn flux_ui_events(
+    mut c: Commands,
+    fluxes: Query<(Entity, &FluxInteraction, Option<&PseudoStates>), Changed<FluxInteraction>>,
+)
 {
-    for (entity, flux) in fluxes.iter() {
+    for (entity, flux, maybe_pseudo_states) in fluxes.iter() {
+        // Ignore disabled entities.
+        if let Some(pseudo_states) = maybe_pseudo_states {
+            if pseudo_states.has(&PseudoState::Disabled) {
+                continue;
+            }
+        }
+
         match *flux {
             FluxInteraction::None => (),
             FluxInteraction::PointerEnter => {
@@ -31,7 +42,7 @@ fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Cha
                 c.react().entity_event(entity, PressCanceled);
             }
             FluxInteraction::Disabled => {
-                c.react().entity_event(entity, Disabled);
+                // No flux interaction event for disabled. See the `Disable` entity event.
             }
         }
     }
@@ -40,17 +51,25 @@ fn flux_ui_events(mut c: Commands, fluxes: Query<(Entity, &FluxInteraction), Cha
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Entity event emitted when [`FluxInteraction::PointerEnter`] is set on an entity.
+///
+/// Not emitted if the entity has [`PseudoState::Disabled`].
 pub struct PointerEnter;
 /// Entity event emitted when [`FluxInteraction::PointerLeave`] is set on an entity.
+///
+/// Not emitted if the entity has [`PseudoState::Disabled`].
 pub struct PointerLeave;
 /// Entity event emitted when [`FluxInteraction::Pressed`] is set on an entity.
+///
+/// Not emitted if the entity has [`PseudoState::Disabled`].
 pub struct Pressed;
 /// Entity event emitted when [`FluxInteraction::Released`] is set on an entity.
+///
+/// Not emitted if the entity has [`PseudoState::Disabled`].
 pub struct Released;
 /// Entity event emitted when [`FluxInteraction::PressCanceled`] is set on an entity.
+///
+/// Not emitted if the entity has [`PseudoState::Disabled`].
 pub struct PressCanceled;
-/// Entity event emitted when [`FluxInteraction::Disabled`] is set on an entity.
-pub struct Disabled;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -96,14 +115,6 @@ pub trait UiInteractionExt
         &mut self,
         callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
     ) -> EntityCommands<'_>;
-
-    /// Adds a reactor to a [`Disabled`] entity event.
-    ///
-    /// Equivalent to `entity_builder.on_event::<Disabled>().r(callback)`.
-    fn on_disabled<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
 }
 
 impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
@@ -144,14 +155,6 @@ impl UiInteractionExt for UiBuilder<'_, '_, '_, Entity>
     ) -> EntityCommands<'_>
     {
         self.on_event::<PressCanceled>().r(callback)
-    }
-
-    fn on_disabled<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
-    {
-        self.on_event::<Disabled>().r(callback)
     }
 }
 

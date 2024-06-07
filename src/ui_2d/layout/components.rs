@@ -20,21 +20,6 @@ pub struct Ui2DRoot
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that controls the z-order of nodes relative to their siblings on the same parent.
-///
-/// Sibling nodes are sorted by `ZLevel` so higher levels are positioned above lower levels.
-/// Within a level, sibling nodes are ordered based on their index in the parent's [`Children`] list so that newer
-/// nodes default to sorting above older nodes.
-///
-/// If one node is sorted above another, then the higher node's children will be sorted above all children of the lower,
-/// regardless of `ZLevel`.
-//todo: consider adding options for how nodes at the same z-level will be sorted (e.g. child-order, (+/-)(x/y)-order, etc.)
-//todo: consider adding option to insert artificial gap into the hierarchy for 3D effects
-#[derive(Component, Reflect, Debug, Default, Copy, Clone, Deref, DerefMut, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ZLevel(pub i32);
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Marker component for 2d UI nodes.
 #[derive(Component, Default, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub struct CobwebNode;
