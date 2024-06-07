@@ -268,16 +268,6 @@ pub trait LoadedThemeEntityCommandsExt
     /// [`LoadedThemes::update`]. The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers will
     /// call update automatically when applied to an entity with [`ApplyLoadable::apply`].
     fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
-
-    /// Adds [`Theme<C>`] on the current entity without loading any attributes from file.
-    ///
-    /// After this is called, the theme will be 'active' on the entity, which means it can be updated with
-    /// [`LoadedThemes::update`]. The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers will
-    /// call update automatically when applied to an entity with [`ApplyLoadable::apply`].
-    ///
-    /// This is useful for the case where you have a widget with a base entity that doesn't need custom
-    /// theming but *may* control its childrens' animations via [`PropagateAnimations`].
-    fn manual_theme<C: DefaultTheme>(&mut self) -> &mut Self;
 }
 
 impl LoadedThemeEntityCommandsExt for EntityCommands<'_>
@@ -287,14 +277,6 @@ impl LoadedThemeEntityCommandsExt for EntityCommands<'_>
         let entity = self.id();
         self.commands().add(AddLoadedTheme::<C>::new(entity));
         self.load_with_context_setter(loadable_ref, set_context_for_load_theme::<C>);
-        self.commands().add(RefreshLoadedTheme { entity });
-        self
-    }
-
-    fn manual_theme<C: DefaultTheme>(&mut self) -> &mut Self
-    {
-        let entity = self.id();
-        self.commands().add(AddLoadedTheme::<C>::new(entity));
         self.commands().add(RefreshLoadedTheme { entity });
         self
     }

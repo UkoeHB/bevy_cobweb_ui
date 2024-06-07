@@ -30,6 +30,7 @@ pub trait NodeLoadingExt<'w, 's>
     /// Includes a `callback` for interacting with the entity.
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        theme_ref: LoadableRef,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>;
@@ -51,12 +52,16 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 {
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        theme_ref: LoadableRef,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut node = self.spawn(NodeBundle::default());
-        node.entity_commands().load_theme::<C>(loadable_ref.clone());
+        node.entity_commands().load_theme::<C>(theme_ref.clone());
+        if theme_ref != loadable_ref {
+            node.entity_commands().load(loadable_ref.clone());
+        }
         (callback)(&mut node, loadable_ref);
         node
     }
@@ -79,6 +84,7 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
 {
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        theme_ref: LoadableRef,
         loadable_ref: LoadableRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
@@ -86,7 +92,10 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
         let mut child = self.spawn(NodeBundle::default());
         child
             .entity_commands()
-            .load_theme::<C>(loadable_ref.clone());
+            .load_theme::<C>(theme_ref.clone());
+        if theme_ref != loadable_ref {
+            child.entity_commands().load(loadable_ref.clone());
+        }
         (callback)(&mut child, loadable_ref);
         let id = self.id();
         self.commands().ui_builder(id)

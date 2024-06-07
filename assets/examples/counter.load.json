@@ -1,14 +1,14 @@
 {
 
-"#c: Custom node structure for the app.":1,
+"#c: Custom node structure for the example app.":0,
 "root": {
-    "#c: Root node covers the window.":1,
+    "#c: Root node covers the window.":0,
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     },
 
-    "#c: Sets up a button with centered content, that animates its background in response to hovers/presses.":1,
+    "#c: Sets up a button with centered content, that animates its background in response to hovers/presses.":0,
     "button": {
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
@@ -25,7 +25,7 @@
             }
         },
 
-        "#c: Sets up the button's text as a single line of text with margin to control the edges of the button.":1,
+        "#c: Sets up the button's text as a single line of text with margin to control the edges of the button.":0,
         "text": {
             "FlexStyle": {
                 "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}

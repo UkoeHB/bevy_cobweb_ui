@@ -128,7 +128,7 @@ impl CounterWidget
     /// Returns a reference to the base node of the counter widget (the button node).
     fn default_ref() -> LoadableRef
     {
-        LoadableRef::new("examples/counter_widget.load.json", "counter_widget")
+        LoadableRef::new("examples/widgets/counter.load.json", "counter_widget")
     }
 
     /// Builds the widget on an entity.
@@ -147,16 +147,8 @@ impl CounterWidget
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
 
-        builder.load(button_ref, |button, _path| {
-            match self.theme {
-                Some(theme) => {
-                    button.entity_commands().load_theme::<CounterButton>(theme);
-                }
-                None => {
-                    button.entity_commands().manual_theme::<CounterButton>();
-                }
-            }
-
+        let theme_ref = self.theme.unwrap_or_else(|| button_ref.clone());
+        builder.load_theme::<CounterButton>(theme_ref, button_ref, |button, _path| {
             let button_id = button.id();
             button
                 .insert(CounterButton)
@@ -177,32 +169,30 @@ impl CounterWidget
 
 fn build_ui(mut c: Commands)
 {
-    let file = LoadableRef::from_file("examples/counter_widget.load.json");
+    let widget = LoadableRef::from_file("examples/widgets/counter.load.json");
+    let example = LoadableRef::from_file("examples/counter_widget.load.json");
 
     c.ui_builder(UiRoot)
-        .load(file.e("root"), |mut root, _path| {
-            root.entity_commands()
-                .load_theme::<CounterButton>(file.e("counter_theme"));
-
+        .load_theme::<CounterButton>(widget.e("counter_theme"), example.e("root"), |mut root, _path| {
             // Default widget
             CounterWidget::new().build(&mut root);
 
             // Widget with custom text structure.
             CounterWidget::new()
-                .text_config(file.e("counter_widget_text_small"))
+                .text_config(example.e("counter_widget_text_small"))
                 .pre_text("Small: ")
                 .build(&mut root);
 
             // Widget with animated text structure.
             CounterWidget::new()
-                .text_config(file.e("counter_widget_text_responsive"))
+                .text_config(example.e("counter_widget_text_responsive"))
                 .pre_text("Responsive: ")
                 .build(&mut root);
 
             // Widget with theme adjustments
             CounterWidget::new()
-                .theme(file.e("counter_theme_flexible"))
-                .button_config(file.e("counter_widget_button_flexible"))
+                .theme(example.e("counter_theme_flexible"))
+                .button_config(example.e("counter_widget_button_flexible"))
                 .pre_text("Themed: ")
                 .build(&mut root);
         });
@@ -230,8 +220,8 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<CounterButton>::new())
+        .load_sheet("examples/widgets/counter.load.json")
         .load_sheet("examples/counter_widget.load.json")
-        .load_sheet("examples/counter_widget_config.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
         .run();

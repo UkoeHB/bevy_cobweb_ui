@@ -1,22 +1,10 @@
 {
 
 "#import": {
-    "examples/counter_widget_config.load.json": "base"
+    "examples/widgets/counter.load.json": "base"
 },
 
-"#c: Base theme for CounterWidgets.":1,
-"counter_theme" : {
-    "Animated<BgColor>": {
-        "values": {
-            "idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-            "hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.46, "alpha": 0.8}},
-            "press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}}
-        },
-        "settings": "$base::animation_settings"
-    }
-},
-
-"#c: Theme override for flexible CounterWidgets.":1,
+"#c: Theme override for flexible CounterWidgets.":0,
 "counter_theme_flexible" : {
     "Animated<BrColor>": {
         "values": {
@@ -35,21 +23,7 @@
     }
 },
 
-"#c: Base node structure for CounterWidgets.":1,
-"counter_widget": {
-    "FlexStyle": {
-        "content": {"justify_main": "Center", "justify_cross": "Center"}
-    },
-
-    "text": {
-        "FlexStyle": {
-            "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
-        },
-        "TextLine": { "size": 50.0 }
-    }
-},
-
-"#c: Text node for small CounterWidgets.":1,
+"#c: Text node for small CounterWidgets.":0,
 "counter_widget_text_small": {
     "FlexStyle": {
         "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
@@ -57,7 +31,7 @@
     "TextLine": { "size": 25.0 }
 },
 
-"#c: Text node for CounterWidgets with responsive text.":1,
+"#c: Text node for CounterWidgets with responsive text.":0,
 "counter_widget_text_responsive": {
     "FlexStyle": {
         "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
@@ -74,7 +48,7 @@
     }
 },
 
-"#c: Button node for flexible CounterWidgets.":1,
+"#c: Button node for flexible CounterWidgets.":0,
 "counter_widget_button_flexible": {
     "FlexStyle": {
         "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
@@ -82,9 +56,9 @@
     }
 },
 
-"#c: Custom node structure for the app.":1,
+"#c: Custom node structure for the example app.":0,
 "root": {
-    "#c: Root node covers the window.":1,
+    "#c: Root node covers the window.":0,
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
