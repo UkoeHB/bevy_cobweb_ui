@@ -11,42 +11,6 @@ use sickle::{DefaultTheme, SickleUiPlugin, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct RadioButtonSelected
-{
-    button: Entity,
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn detect_radio_button_selection(
-    event: EntityEvent<RadioButtonSelected>,
-    mut c: Commands,
-    mut managers: Query<&mut RadioButtonManager>,
-)
-{
-    let (manager_entity, RadioButtonSelected { button }) = event.read().unwrap();
-    let Ok(mut manager) = managers.get_mut(manager_entity) else { return };
-
-    // Save the newly-selected button and deselect the previously selected.
-    if let Some(prev) = manager.selected {
-        c.react().entity_event(prev, Deselect);
-    }
-    manager.selected = Some(*button);
-}
-
-struct HandleRadioButtonSelection;
-impl WorldReactor for HandleRadioButtonSelection
-{
-    type StartingTriggers = AnyEntityEventTrigger<RadioButtonSelected>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_radio_button_selection)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 #[derive(Component)]
 struct RadioButtonManager
 {
@@ -109,19 +73,28 @@ impl RadioButtonBuilder
                 .entity_commands()
                 // Note: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
-                .on_pressed(move |mut c: Commands, states: Query<&PseudoStates>| {
-                    if let Ok(states) = states.get(core_entity) {
-                        if states.has(&PseudoState::Selected) {
-                            return;
+                .on_pressed(
+                    // Select this button.
+                    move |mut c: Commands, states: Query<&PseudoStates>| {
+                        if let Ok(states) = states.get(core_entity) {
+                            if states.has(&PseudoState::Selected) {
+                                return;
+                            }
                         }
-                    }
 
-                    c.react().entity_event(core_entity, Select);
-                })
-                .on_select(move |mut c: Commands| {
-                    c.react()
-                        .entity_event(manager_entity, RadioButtonSelected { button: core_entity });
-                });
+                        c.react().entity_event(core_entity, Select);
+                    },
+                )
+                .on_select(
+                    // Save the newly-selected button and deselect the previously selected.
+                    move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {
+                        let Ok(mut manager) = managers.get_mut(manager_entity) else { return };
+                        if let Some(prev) = manager.selected {
+                            c.react().entity_event(prev, Deselect);
+                        }
+                        manager.selected = Some(core_entity);
+                    },
+                );
 
             core.load(path.e("outline"), |outline, path| {
                 outline.load(path.e("indicator"), |_, _| {});
@@ -206,7 +179,6 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<RadioButton>::new())
-        .add_reactor_with(HandleRadioButtonSelection, any_entity_event::<RadioButtonSelected>())
         .load_sheet("examples/widgets/radio_button.load.json")
         .load_sheet("examples/radio_buttons.load.json")
         .add_systems(PreStartup, setup)
