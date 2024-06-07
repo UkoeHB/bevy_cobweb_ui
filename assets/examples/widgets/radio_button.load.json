@@ -1,7 +1,14 @@
 {
 
-"#constants": {
-
+"#constants" : {
+    "$animation_settings_f" : {
+        "$pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
+        "$press": {"duration": 0.15, "easing": "OutExpo"}
+    },
+    "$animation_settings" : {
+        "pointer_enter": "$$animation_settings_f::pointer_enter",
+        "press": "$$animation_settings_f::press"
+    }
 },
 
 "core": {
@@ -10,7 +17,25 @@
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"},
         "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
     },
-    "BgColor": [{"Hsla": {"hue": 343.0, "saturation": 0.53, "lightness": 1.0, "alpha": 1.0}}],
+    "Multi<Animated<BgColor>>": [[
+        {
+            "values": {
+                "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
+                "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}},
+                "press": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}}
+            },
+            "settings": "$animation_settings"
+        },
+        {
+            "state": ["Selected"],
+            "values": {
+                "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}},
+                "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}},
+                "press": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.7, "alpha": 1.0}}
+            },
+            "settings": "$animation_settings"
+        }
+    ]],
     "BrColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
     "Interactive": [],
 
@@ -27,14 +52,22 @@
                 "dims": {"width": {"Px": 10.0}, "height": {"Px": 10.0}},
                 "flex": {"margin": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}}
             },
-            "Multi<Themed<BgColor>>": [[
+            "Multi<Animated<BgColor>>": [[
                 {
-                    "value": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+                    "values": {
+                        "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
+                    },
+                    "settings": "$animation_settings",
                     "inherit_control": true
                 },
                 {
                     "state": ["Selected"],
-                    "value": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.5, "alpha": 1.0}},
+                    "values": {
+                        "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.2, "alpha": 1.0}},
+                        "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.15, "alpha": 1.0}},
+                        "press": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.1, "alpha": 1.0}}
+                    },
+                    "settings": "$animation_settings",
                     "inherit_control": true
                 }
             ]]
@@ -46,7 +79,7 @@
             "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
         },
         "TextLine": {"size": 40.0},
-        "TextLineColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.25, "alpha": 1.0}}]
+        "TextLineColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.1, "alpha": 1.0}}]
     }
 }
 
