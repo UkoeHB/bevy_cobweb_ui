@@ -7,6 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
+use sickle::{DefaultTheme, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -53,21 +54,8 @@ impl Counter
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Marker component for the counter theme.
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, DefaultTheme, UiContext, Copy, Clone, Debug)]
 struct CounterButton;
-
-impl UiContext for CounterButton
-{
-    fn get(&self, _target: &str) -> Result<Entity, String>
-    {
-        Err("no contexts in counter button".into())
-    }
-    fn contexts(&self) -> Vec<&'static str>
-    {
-        Vec::default()
-    }
-}
-impl DefaultTheme for CounterButton {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

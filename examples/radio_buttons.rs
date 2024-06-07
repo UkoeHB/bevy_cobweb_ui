@@ -7,7 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 use sickle::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use sickle::ui_builder::*;
-use sickle::SickleUiPlugin;
+use sickle::{DefaultTheme, SickleUiPlugin, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -73,21 +73,8 @@ impl RadioButtonManager
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Marker component for the radio button theme.
-#[derive(Component, Copy, Clone, Debug)]
+#[derive(Component, DefaultTheme, UiContext, Copy, Clone, Debug)]
 struct RadioButton;
-
-impl UiContext for RadioButton
-{
-    fn get(&self, _target: &str) -> Result<Entity, String>
-    {
-        Err("no contexts in radio button".into())
-    }
-    fn contexts(&self) -> Vec<&'static str>
-    {
-        Vec::default()
-    }
-}
-impl DefaultTheme for RadioButton {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
