@@ -6,8 +6,9 @@
 
 "core": {
     "FlexStyle": {
-        "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
-        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
+        "dims": {"border": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}},
+        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"},
+        "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
     },
     "BgColor": [{"Hsla": {"hue": 343.0, "saturation": 0.53, "lightness": 1.0, "alpha": 1.0}}],
     "BrColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
@@ -17,16 +18,26 @@
         "FlexStyle": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
             "content": {"justify_main": "Center", "justify_cross": "Center"},
-            "flex": {"margin": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}}
+            "flex": {"margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 8.0}, "right": {"Px": 1.0}}}
         },
         "BrColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
 
         "indicator": {
             "FlexStyle": {
-                "dims": {"width": {"Px": 5.0}, "height": {"Px": 5.0}},
+                "dims": {"width": {"Px": 10.0}, "height": {"Px": 10.0}},
                 "flex": {"margin": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}}
             },
-            "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.5, "alpha": 1.0}}]
+            "Multi<Themed<BgColor>>": [[
+                {
+                    "value": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+                    "inherit_control": true
+                },
+                {
+                    "state": ["Selected"],
+                    "value": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.5, "alpha": 1.0}},
+                    "inherit_control": true
+                }
+            ]]
         }
     },
 
@@ -34,7 +45,7 @@
         "FlexStyle": {
             "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
         },
-        "TextLine": {"size": 50.0},
+        "TextLine": {"size": 40.0},
         "TextLineColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.25, "alpha": 1.0}}]
     }
 }

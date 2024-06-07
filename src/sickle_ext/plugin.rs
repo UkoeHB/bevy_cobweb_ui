@@ -19,6 +19,8 @@ impl Plugin for SickleExtPlugin
             .register_type::<Ease>()
             .register_type::<Option<Ease>>()
             .register_type::<PseudoState>()
+            .register_type::<Vec<PseudoState>>()
+            .register_type::<Option<Vec<PseudoState>>>()
             .register_type::<AnimationSettings>()
             .register_type::<AnimationConfig>()
             .register_type::<Option<AnimationConfig>>()

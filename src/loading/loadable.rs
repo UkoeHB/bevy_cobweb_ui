@@ -44,6 +44,22 @@ impl ApplyLoadableExt for EntityCommands<'_>
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Helper loadable for cases where an entity can load multiple values of the same loadable.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Multi<T>(Vec<T>);
+
+impl<T: ApplyLoadable + TypePath> ApplyLoadable for Multi<T>
+{
+    fn apply(mut self, ec: &mut EntityCommands)
+    {
+        for item in self.0.drain(..) {
+            item.apply(ec);
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Component added to nodes that load loadables from the loadablesheet.
 #[derive(Component)]
 pub(crate) struct HasLoadables;

@@ -30,7 +30,12 @@
     "radio_frame": {
         "FlexStyle": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
-            "content": {"flex_direction": "Column", "justify_main": "SpaceEvenly", "justify_cross": "Center"},
+            "content": {
+                "flex_direction": "Column",
+                "justify_main": "SpaceEvenly",
+                "justify_cross": "Center",
+                "padding": {"top": {"Px": 8.0}, "bottom": {"Px": 8.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}
+            },
             "flex": {"margin": {"top": {"Px": 20.0}}}
         },
         "BgColor": [{"Hsla": {"hue": 343.0, "saturation": 0.53, "lightness": 0.6, "alpha": 1.0}}],

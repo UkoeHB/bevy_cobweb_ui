@@ -169,7 +169,7 @@ pub trait LoadableRegistrationAppExt
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 
     /// Combined [`App::register_type`] with [`Self::register_derived_loadable`].
-    fn register_derived<T: GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
+    fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 }
 
 impl LoadableRegistrationAppExt for App
@@ -192,9 +192,13 @@ impl LoadableRegistrationAppExt for App
         self
     }
 
-    fn register_derived<T: GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self
+    fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self
     {
-        self.register_type::<T>().register_derived_loadable::<T>()
+        self.register_type::<T>()
+            .register_type::<Vec<T>>()
+            .register_type::<Multi<T>>()
+            .register_derived_loadable::<T>()
+            .register_derived_loadable::<Multi<T>>()
     }
 }
 
