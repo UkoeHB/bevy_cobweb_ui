@@ -2,10 +2,12 @@
 
 "#constants" : {
     "$animation_settings_f" : {
-        "$pointer_enter": {"duration": 0.01, "easing": "OutExpo"},
-        "$press": {"duration": 0.01, "easing": "OutExpo"}
+        "$enter": {"duration": 1.0, "easing": "OutExpo"},
+        "$pointer_enter": {"duration": 1.0, "easing": "OutExpo"},
+        "$press": {"duration": 1.0, "easing": "OutExpo"}
     },
     "$animation_settings" : {
+        "enter": "$$animation_settings_f::enter",
         "pointer_enter": "$$animation_settings_f::pointer_enter",
         "press": "$$animation_settings_f::press"
     }
@@ -13,16 +15,47 @@
 
 "core": {
     "FlexStyle": {
-        "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"},
         "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
     },
+    "Multi<Animated<Border>>": [[
+        {
+            "values": {
+                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
+                "press": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}
+            },
+            "settings": "$animation_settings"
+        },
+        {
+            "state": ["Selected"],
+            "values": {
+                "idle": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}
+            },
+            "settings": "$animation_settings"
+        }
+    ]],
+    "Multi<Animated<Padding>>": [[
+        {
+            "values": {
+                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
+                "press": {"top": {"Px": 1.0}, "bottom": {"Px": 1.0}, "left": {"Px": 1.0}, "right": {"Px": 1.0}}
+            },
+            "settings": "$animation_settings"
+        },
+        {
+            "state": ["Selected"],
+            "values": {
+                "idle": {"top": {"Px": 1.0}, "bottom": {"Px": 1.0}, "left": {"Px": 1.0}, "right": {"Px": 1.0}}
+            },
+            "settings": "$animation_settings"
+        }
+    ]],
     "Multi<Animated<BgColor>>": [[
         {
             "values": {
                 "idle": {"Hsla": {"hue": 160.0, "saturation": 0.05, "lightness": 0.94, "alpha": 1.0}},
                 "hover": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
-                "press": {"Hsla": {"hue": 220.0, "saturation": 0.05, "lightness": 0.80, "alpha": 1.0}}
+                "press": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
             },
             "settings": "$animation_settings"
         },
@@ -30,8 +63,7 @@
             "state": ["Selected"],
             "values": {
                 "idle": {"Hsla": {"hue": 197.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
-                "hover": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}},
-                "press": {"Hsla": {"hue": 220.0, "saturation": 0.05, "lightness": 0.80, "alpha": 1.0}}
+                "hover": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
             },
             "settings": "$animation_settings"
         }
@@ -64,8 +96,8 @@
                     "state": ["Selected"],
                     "values": {
                         "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
-                        "hover": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.14, "alpha": 1.0}},
-                        "press": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.10, "alpha": 1.0}}
+                        "enter_from": {"Hsla": {"hue": 174.0, "saturation": 0.80, "lightness": 0.60, "alpha": 1.0}},
+                        "press": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
                     },
                     "settings": "$animation_settings",
                     "inherit_control": true

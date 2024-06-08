@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use sickle_ui::ease::Ease;
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
-use sickle_ui::ui_style::AnimatedVals;
+use sickle_ui::ui_style::{AnimatedVals, InteractiveVals};
 
 use crate::*;
 
@@ -26,6 +26,11 @@ impl Plugin for SickleExtPlugin
             .register_type::<Option<AnimationConfig>>()
             .register_type::<AnimationLoop>()
             .register_type::<Option<AnimationLoop>>()
+            .register_type::<InteractiveVals<f32>>()
+            .register_type::<InteractiveVals<Color>>()
+            .register_type::<InteractiveVals<Val>>()
+            .register_type::<InteractiveVals<UiRect>>()
+            .register_type::<InteractiveVals<StyleRect>>()
             .register_type::<AnimatedVals<f32>>()
             .register_type::<AnimatedVals<Color>>()
             .register_type::<AnimatedVals<Val>>()

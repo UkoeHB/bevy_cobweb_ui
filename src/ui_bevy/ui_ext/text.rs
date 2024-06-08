@@ -208,7 +208,9 @@ impl Plugin for UiTextExtPlugin
     {
         app.init_resource::<FontMap>()
             .register_derived::<TextLine>()
+            // IMPORTANT: This must be added after TextLine so the line size will overwrite TextLine defaults.
             .register_themed::<TextLineSize>()
+            // IMPORTANT: This must be added after TextLine so the line color will overwrite TextLine defaults.
             .register_animatable::<TextLineColor>();
     }
 }
