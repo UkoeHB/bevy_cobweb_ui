@@ -1,15 +1,11 @@
 {
 
 "#constants" : {
-    "$animation_settings_f" : {
-        "$enter": {"duration": 1.0, "easing": "OutExpo"},
-        "$pointer_enter": {"duration": 1.0, "easing": "OutExpo"},
-        "$press": {"duration": 1.0, "easing": "OutExpo"}
-    },
+    "$animation_settings_shared" : {"duration": 1.0, "easing": "OutExpo"},
     "$animation_settings" : {
-        "enter": "$$animation_settings_f::enter",
-        "pointer_enter": "$$animation_settings_f::pointer_enter",
-        "press": "$$animation_settings_f::press"
+        "enter": "$$animation_settings_shared",
+        "pointer_enter": "$$animation_settings_shared",
+        "press": "$$animation_settings_shared"
     }
 },
 
@@ -96,8 +92,8 @@
                     "state": ["Selected"],
                     "values": {
                         "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
-                        "enter_from": {"Hsla": {"hue": 174.0, "saturation": 0.80, "lightness": 0.60, "alpha": 1.0}},
-                        "press": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
+                        "press": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
+                        "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
                     },
                     "settings": "$animation_settings",
                     "inherit_control": true

@@ -55,3 +55,9 @@ sickle_ui = { rev = "a548517", git = "https://github.com/UmbraLuminosa/sickle_ui
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3" }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
