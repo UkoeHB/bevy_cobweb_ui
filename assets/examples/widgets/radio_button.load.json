@@ -1,11 +1,23 @@
 {
 
 "#constants" : {
-    "$animation_settings_shared" : {"duration": 1.0, "easing": "OutExpo"},
-    "$animation_settings" : {
-        "enter": "$$animation_settings_shared",
-        "pointer_enter": "$$animation_settings_shared",
-        "press": "$$animation_settings_shared"
+    "$animation_settings_shared_slow" : {"duration": 0.04, "easing": "Linear"},
+    "$animation_settings_shared_medium" : {"duration": 0.0265, "easing": "Linear"},
+    "$animation_settings_shared_fast" : {"duration": 0.025, "easing": "Linear"},
+    "$animation_settings_slow" : {
+        "enter": "$$animation_settings_shared_slow",
+        "pointer_enter": "$$animation_settings_shared_slow",
+        "press": "$$animation_settings_shared_slow"
+    },
+    "$animation_settings_medium" : {
+        "enter": "$$animation_settings_shared_medium",
+        "pointer_enter": "$$animation_settings_shared_medium",
+        "press": "$$animation_settings_shared_medium"
+    },
+    "$animation_settings_fast" : {
+        "enter": "$$animation_settings_shared_fast",
+        "pointer_enter": "$$animation_settings_shared_fast",
+        "press": "$$animation_settings_shared_fast"
     }
 },
 
@@ -17,51 +29,51 @@
     "Multi<Animated<Border>>": [[
         {
             "values": {
-                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
-                "press": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}
+                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_fast"
         },
         {
             "state": ["Selected"],
             "values": {
+                "enter_from": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
                 "idle": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_fast"
         }
     ]],
     "Multi<Animated<Padding>>": [[
         {
             "values": {
-                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
-                "press": {"top": {"Px": 1.0}, "bottom": {"Px": 1.0}, "left": {"Px": 1.0}, "right": {"Px": 1.0}}
+                "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_fast"
         },
         {
             "state": ["Selected"],
             "values": {
+                "enter_from": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
                 "idle": {"top": {"Px": 1.0}, "bottom": {"Px": 1.0}, "left": {"Px": 1.0}, "right": {"Px": 1.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_fast"
         }
     ]],
     "Multi<Animated<BgColor>>": [[
         {
             "values": {
                 "idle": {"Hsla": {"hue": 160.0, "saturation": 0.05, "lightness": 0.94, "alpha": 1.0}},
-                "hover": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
-                "press": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
+                "hover": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_slow"
         },
         {
             "state": ["Selected"],
             "values": {
+                "enter_from": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
                 "idle": {"Hsla": {"hue": 197.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
                 "hover": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
             },
-            "settings": "$animation_settings"
+            "settings": "$animation_settings_slow"
         }
     ]],
     "BrColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
@@ -85,17 +97,16 @@
                     "values": {
                         "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
                     },
-                    "settings": "$animation_settings",
+                    "settings": "$animation_settings_medium",
                     "inherit_control": true
                 },
                 {
                     "state": ["Selected"],
                     "values": {
                         "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
-                        "press": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
                         "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
                     },
-                    "settings": "$animation_settings",
+                    "settings": "$animation_settings_medium",
                     "inherit_control": true
                 }
             ]]
