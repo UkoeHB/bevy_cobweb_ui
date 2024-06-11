@@ -6,7 +6,7 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn path_to_string(path: &Vec<String>) -> String
+fn path_to_string(path: &[String]) -> String
 {
     path.iter()
         .fold(String::default(), |prev, val| append_constant_extension(prev, val))
@@ -23,7 +23,7 @@ fn get_constants_set<'a>(
 {
     let Some(("", path_ref)) = value_str.split_once(prefix) else { return None };
 
-    if path_ref.len() == 0 {
+    if path_ref.is_empty() {
         tracing::warn!("ignoring zero-length constant reference {:?} in {:?}", value_str, file);
         return None;
     }
@@ -110,7 +110,7 @@ pub(crate) const CONSTANT_SEPARATOR: &str = "::";
 pub(crate) fn append_constant_extension(mut path: String, ext: &str) -> String
 {
     path.reserve(CONSTANT_SEPARATOR.len() + ext.len());
-    if path.as_str() != "" && ext != "" {
+    if !path.is_empty() && !ext.is_empty() {
         path.push_str(CONSTANT_SEPARATOR);
     }
     path.push_str(ext);
@@ -203,7 +203,7 @@ pub(crate) fn constants_builder_recurse_into_value(
             let mut is_constants_segment = false;
 
             for (key, value) in map.iter_mut() {
-                if let Some(("", key)) = key.split_once("$") {
+                if let Some(("", key)) = key.split_once('$') {
                     if is_normal_segment {
                         tracing::error!("ignoring constant section at {:?} in {:?}, constant path mixed up with value map",
                             path, file);
@@ -238,11 +238,11 @@ pub(crate) fn constants_builder_recurse_into_value(
     // If value was not a map of constant path segments, then the value is a *value* and can be saved.
     let insert = |inner: &mut Map<String, Value>| {
         let prev = inner.insert(key.into(), value.clone());
-        if !prev.is_none() {
+        if prev.is_some() {
             tracing::warn!("overwriting duplicate terminal path segment {:?} in constants map at {:?}", key, file);
         }
     };
-    let base_path = path_to_string(&path);
+    let base_path = path_to_string(path);
 
     if let Some(inner) = constants.get_mut(&base_path) {
         insert(inner);
@@ -285,9 +285,9 @@ pub(crate) fn extract_constants_section(
     }
 
     // Iterate into the map to replace values.
-    for (key, mut value) in data.iter_mut() {
+    for (key, value) in data.iter_mut() {
         // Check if value.
-        let Some(("", key)) = key.split_once("$") else {
+        let Some(("", key)) = key.split_once('$') else {
             // Don't warn for comments.
             if !key.starts_with(COMMENT_KEYWORD) {
                 tracing::warn!("ignoring non-path in base level of constants section in {:?}", file);
@@ -295,7 +295,7 @@ pub(crate) fn extract_constants_section(
             continue;
         };
 
-        constants_builder_recurse_into_value(file, &key.into(), &mut value, &mut path, constants);
+        constants_builder_recurse_into_value(file, &key.into(), value, &mut path, constants);
     }
 }
 

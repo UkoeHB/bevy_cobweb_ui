@@ -7,29 +7,64 @@ use smol_str::SmolStr;
 /// The token that separates parts of a loadable path.
 ///
 /// Example: `menu::header::title`, where `menu`, `header`, and `title` are path extensions.
-pub const LOADABLE_PATH_SEPARATOR: &'static str = "::";
+pub const LOADABLE_PATH_SEPARATOR: &str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the path to a loadable-sheet file in the `asset` directory.
+/// Represents the path to a loadable-sheet file in the `asset` directory, or a manifest key for that file.
 ///
-/// Loadable-sheet files use the `.loadable.json` extension.
+/// Loadable-sheet files use the `.load.json` extension.
 ///
-/// Example: `ui/home.loadable.json` for a `home` loadable-sheet in `assets/ui`.
+/// Example: `ui/home.load.json` for a `home` loadable-sheet in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct LoadableFile
+pub enum LoadableFile
 {
-    pub(crate) file: Arc<str>,
+    File(Arc<str>),
+    ManifestKey(Arc<str>),
 }
 
 impl LoadableFile
 {
     /// Creates a new loadable file reference from a file name.
     ///
-    /// The file name should include the file extension (i.e. `.loadable.json`).
+    /// If the file name does not include a file extension (i.e. `.load.json`), then it will be treated as a
+    /// manifest key.
     pub fn new(file: &str) -> Self
     {
-        Self { file: Arc::from(file) }
+        match file.ends_with(".load.json") {
+            true => Self::File(Arc::from(file)),
+            false => Self::ManifestKey(Arc::from(file)),
+        }
+    }
+
+    /// Gets the internal string representation.
+    pub fn as_str(&self) -> &str
+    {
+        match self {
+            Self::File(file) => file,
+            Self::ManifestKey(key) => key,
+        }
+    }
+
+    /// Gets the internal `Arc<str>` representation.
+    pub fn inner(&self) -> &Arc<str>
+    {
+        match self {
+            Self::File(file) => file,
+            Self::ManifestKey(key) => key,
+        }
+    }
+
+    /// Returns `true` if this file reference is a file path.
+    pub fn is_file_path(&self) -> bool
+    {
+        matches!(*self, Self::File(_))
+    }
+
+    /// Returns `true` if this file reference is a manifest key pointing to the actual file path.
+    pub fn is_manifest_key(&self) -> bool
+    {
+        matches!(*self, Self::ManifestKey(_))
     }
 }
 
@@ -98,7 +133,7 @@ impl Default for LoadablePath
 /// Represents a complete reference to a loadable instance in a loadable-sheet asset.
 ///
 /// Example:
-/// - File: `ui/home.loadable.json` for a `home` loadable-sheet in `assets/ui`.
+/// - File: `ui/home.load.json` for a `home` loadable-sheet in `assets/ui`.
 /// - Path: `menu::header::title` for accessing the `title` loadable path in the `home` loadable-sheet.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
 pub struct LoadableRef

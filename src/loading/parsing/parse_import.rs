@@ -28,7 +28,13 @@ pub(crate) fn extract_import_section(
             continue;
         };
 
-        imports.insert(LoadableFile::new(import.as_str()), alias.clone());
+        let import = LoadableFile::new(import.as_str());
+        if !import.is_file_path() {
+            tracing::error!("ignoring import entry in {:?} that does not have a valid file path {:?}",
+                file, import.as_str());
+            continue;
+        }
+        imports.insert(import, alias.clone());
     }
 }
 

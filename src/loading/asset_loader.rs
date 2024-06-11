@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 use serde_json::from_slice;
 use thiserror::Error;
 
@@ -45,17 +46,16 @@ impl AssetLoader for LoadableSheetAssetLoader
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instructs the asset server to load all loadablesheet files.
-fn load_sheets(mut sheets: ResMut<LoadableSheetList>, asset_server: Res<AssetServer>)
+/// Instructs the asset server to load all pre-set loadablesheet files.
+fn load_sheets(
+    mut sheets: ResMut<LoadableSheetList>,
+    mut loadablesheet: ReactResMut<LoadableSheet>,
+    asset_server: Res<AssetServer>,
+)
 {
-    let mut handles = HashMap::default();
-
-    for sheet in sheets.iter_files() {
-        let handle = asset_server.load(sheet.clone());
-        handles.insert(handle.id(), handle);
+    for sheet in sheets.take_preset_files() {
+        sheets.start_loading_sheet(sheet, loadablesheet.get_noreact(), &asset_server);
     }
-
-    sheets.set_handles(handles);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -86,43 +86,41 @@ pub(crate) struct LoadableSheetAsset
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Stores asset paths for all loadablesheets that should be loaded.
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub(crate) struct LoadableSheetList
 {
-    files: Vec<String>,
+    preset_files: Vec<LoadableFile>,
     handles: HashMap<AssetId<LoadableSheetAsset>, Handle<LoadableSheetAsset>>,
 }
 
 impl LoadableSheetList
 {
-    fn add_file(&mut self, file: impl Into<String>)
+    fn add_preset_file(&mut self, file: &str)
     {
-        let file = file.into();
         tracing::info!("registered loadablesheet file \"{:?}\"", file);
-        self.files.push(file);
+        self.preset_files.push(LoadableFile::new(file));
     }
 
-    fn set_handles(&mut self, handles: HashMap<AssetId<LoadableSheetAsset>, Handle<LoadableSheetAsset>>)
+    fn take_preset_files(&mut self) -> Vec<LoadableFile>
     {
-        self.handles = handles;
+        std::mem::take(&mut self.preset_files)
     }
 
-    pub(crate) fn iter_files(&self) -> impl Iterator<Item = &String> + '_
+    pub(crate) fn start_loading_sheet(
+        &mut self,
+        file: LoadableFile,
+        loadablesheet: &mut LoadableSheet,
+        asset_server: &AssetServer,
+    )
     {
-        self.files.iter()
+        loadablesheet.prepare_file(file.clone());
+        let handle = asset_server.load(String::from(file.as_str()));
+        self.handles.insert(handle.id(), handle);
     }
 
     pub(crate) fn get_handle(&self, id: AssetId<LoadableSheetAsset>) -> Option<&Handle<LoadableSheetAsset>>
     {
         self.handles.get(&id)
-    }
-}
-
-impl Default for LoadableSheetList
-{
-    fn default() -> Self
-    {
-        Self { files: Vec::default(), handles: HashMap::default() }
     }
 }
 
@@ -132,12 +130,12 @@ impl Default for LoadableSheetList
 pub trait LoadableSheetListAppExt
 {
     /// Registers a loadable sheet file to be loaded as a loadablesheet asset.
-    fn load_sheet(&mut self, file: impl Into<String>) -> &mut Self;
+    fn load_sheet(&mut self, file: impl AsRef<str>) -> &mut Self;
 }
 
 impl LoadableSheetListAppExt for App
 {
-    fn load_sheet(&mut self, file: impl Into<String>) -> &mut Self
+    fn load_sheet(&mut self, file: impl AsRef<str>) -> &mut Self
     {
         if !self.world.contains_resource::<LoadableSheetList>() {
             self.init_resource::<LoadableSheetList>();
@@ -145,7 +143,7 @@ impl LoadableSheetListAppExt for App
 
         self.world
             .resource_mut::<LoadableSheetList>()
-            .add_file(file);
+            .add_preset_file(file.as_ref());
         self
     }
 }

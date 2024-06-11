@@ -103,8 +103,8 @@
                 {
                     "state": ["Selected"],
                     "values": {
-                        "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
-                        "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
+                        "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+                        "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}
                     },
                     "settings": "$animation_settings_medium",
                     "inherit_control": true

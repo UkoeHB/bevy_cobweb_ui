@@ -1,4 +1,5 @@
 use std::any::{type_name, TypeId};
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -13,21 +14,10 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup_loadablesheet(sheet_list: Res<LoadableSheetList>, mut loadablesheet: ReactResMut<LoadableSheet>)
-{
-    // begin tracking expected loadablesheet files
-    for file in sheet_list.iter_files() {
-        loadablesheet
-            .get_noreact()
-            .prepare_file(LoadableFile::new(file.as_str()));
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn preprocess_loadable_files(
+    asset_server: Res<AssetServer>,
     mut events: EventReader<AssetEvent<LoadableSheetAsset>>,
-    sheet_list: Res<LoadableSheetList>,
+    mut sheet_list: ResMut<LoadableSheetList>,
     mut assets: ResMut<Assets<LoadableSheetAsset>>,
     mut loadablesheet: ReactResMut<LoadableSheet>,
 )
@@ -56,7 +46,7 @@ fn preprocess_loadable_files(
         };
 
         let loadablesheet = loadablesheet.get_noreact();
-        preprocess_loadablesheet_file(loadablesheet, asset.file, asset.data);
+        preprocess_loadablesheet_file(&asset_server, &mut sheet_list, loadablesheet, asset.file, asset.data);
     }
 }
 
@@ -191,7 +181,7 @@ impl ReflectedLoadable
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive resource for managing loadables loaded from loadablesheet assets.
-#[derive(ReactResource)]
+#[derive(ReactResource, Default)]
 pub struct LoadableSheet
 {
     /// Tracks which files have not initialized yet.
@@ -200,6 +190,11 @@ pub struct LoadableSheet
     ///
     /// Used for progress tracking on initial load.
     total_expected_sheets: usize,
+
+    /// Tracks manifest data.
+    manifest_map: HashMap<Arc<str>, LoadableFile>,
+    /// Tracks which files have been assigned manifest keys.
+    file_to_manifest_key: HashMap<LoadableFile, Option<Arc<str>>>,
 
     /// Tracks pre-processed files.
     preprocessed: Vec<PreprocessedLoadableFile>,
@@ -224,13 +219,67 @@ pub struct LoadableSheet
 impl LoadableSheet
 {
     /// Prepares a loadablesheet file.
-    fn prepare_file(&mut self, file: LoadableFile)
+    pub(crate) fn prepare_file(&mut self, file: LoadableFile)
     {
         let _ = self.pending.insert(file.clone());
         self.total_expected_sheets += 1;
+
+        // Make sure this file has a manifest key entry, which indicates it doesn't need to be initialized again
+        // if it is present in a manifest or import section.
+        self.register_manifest_key(file, None);
     }
 
-    /// Initializes a loadablesheet file.
+    /// Sets the manifest key for a file.
+    ///
+    /// The manifest key may be `None` if this file is being imported. We use manifest key presence as a proxy
+    /// for whether or not a file has been initialized.
+    ///
+    /// Returns `true` if this is the first time this file's manifest key has been registered. This is used
+    /// to decide whether to start loading transitive imports/manifests.
+    pub(crate) fn register_manifest_key(&mut self, file: LoadableFile, manifest_key: Option<Arc<str>>) -> bool
+    {
+        match self.file_to_manifest_key.entry(file.clone()) {
+            Vacant(entry) => {
+                entry.insert(manifest_key);
+
+                true
+            }
+            Occupied(mut entry) => {
+                // Manifest key can be None when a file is imported or loaded via the App extension.
+                let Some(new_key) = manifest_key else {
+                    return false;
+                };
+
+                match entry.get_mut() {
+                    // Error case: manifest key changing.
+                    Some(prev_key) => {
+                        if *prev_key == new_key {
+                            return false;
+                        }
+
+                        tracing::warn!("changing manifest key for {:?} (old: {:?}, new: {:?})",
+                            file.clone(), prev_key.clone(), new_key.clone());
+                        let prev = prev_key.clone();
+                        *prev_key = new_key.clone();
+                        self.manifest_map.remove(&prev);
+                    }
+                    // Normal case: setting the manifest key.
+                    None => {
+                        *entry.get_mut() = Some(new_key.clone());
+                    }
+                }
+
+                if let Some(prev_file) = self.manifest_map.insert(new_key.clone(), file.clone()) {
+                    tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
+                        new_key, prev_file, file);
+                }
+
+                false
+            }
+        }
+    }
+
+    /// Initializes a file that has been loaded.
     pub(crate) fn initialize_file(&mut self, file: &LoadableFile)
     {
         let _ = self.pending.remove(file);
@@ -260,7 +309,7 @@ impl LoadableSheet
     {
         // The file should not reference itself.
         if imports.remove(&file).is_some() {
-            tracing::warn!("loadable file {:?} tried to import itself", file.file);
+            tracing::warn!("loadable file {:?} tried to import itself", file.as_str());
         }
 
         // Check that all dependencies are known.
@@ -279,21 +328,85 @@ impl LoadableSheet
             }
 
             // Check if preprocessed.
-            if self
-                .preprocessed
-                .iter()
-                .find(|p| p.file == *import)
-                .is_some()
-            {
+            if self.preprocessed.iter().any(|p| p.file == *import) {
                 continue;
             }
 
-            tracing::error!("ignoring loadable file {:?} that has unregistered import {:?}", file.file, import.file);
+            tracing::error!("ignoring loadable file {:?} that has unregistered import {:?}", file.as_str(), import.as_str());
             return;
         }
 
         let preprocessed = PreprocessedLoadableFile { file, imports, data };
         self.preprocessed.push(preprocessed);
+    }
+
+    /// Converts a preprocessed file to a processed file.
+    fn process_sheet(&mut self, preprocessed: PreprocessedLoadableFile, type_registry: &TypeRegistry)
+    {
+        // Initialize using/constants maps from dependencies.
+        // [ shortname : longname ]
+        let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
+        // [ path : [ terminal identifier : constant value ] ]
+        let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
+
+        for (dependency, alias) in preprocessed.imports.iter() {
+            let processed = self.processed.get(dependency).unwrap();
+
+            for (k, v) in processed.using.iter() {
+                name_shortcuts.insert(k, v);
+            }
+            for (k, v) in processed.constants.iter() {
+                // Prepend the import alias.
+                constants.insert(append_constant_extension(alias.clone(), k.as_str()), v.clone());
+            }
+        }
+
+        // Prepare to process the file.
+        let mut processed = ProcessedLoadableFile::default();
+
+        #[cfg(feature = "hot_reload")]
+        {
+            processed.imports = preprocessed.imports;
+            processed.data = preprocessed.data.clone();
+        }
+
+        // Process the file.
+        // - This updates the using/constants maps with info extracted from the file.
+        parse_loadablesheet_file(
+            type_registry,
+            self,
+            preprocessed.file.clone(),
+            preprocessed.data,
+            &mut constants,
+            &mut name_shortcuts,
+        );
+
+        // Save final using/constants maps.
+        processed.using = name_shortcuts;
+        processed.constants = constants;
+
+        self.processed.insert(preprocessed.file.clone(), processed);
+
+        // Check for already-processed files that need to rebuild since they depend on this file.
+        #[cfg(feature = "hot_reload")]
+        {
+            let needs_rebuild: Vec<LoadableFile> = self
+                .processed
+                .iter()
+                .filter_map(|(file, processed)| {
+                    if processed.imports.contains_key(&preprocessed.file) {
+                        return Some(file.clone());
+                    }
+                    None
+                })
+                .collect();
+
+            for needs_rebuild in needs_rebuild {
+                let processed = self.processed.remove(&needs_rebuild).unwrap();
+                // Add via API to check for recursive dependencies.
+                self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
+            }
+        }
     }
 
     /// Converts preprocessed files to processed files.
@@ -305,7 +418,7 @@ impl LoadableSheet
         let mut num_processed = 0;
         let mut preprocessed = Vec::new();
 
-        while self.preprocessed.len() > 0 {
+        while !self.preprocessed.is_empty() {
             let num_already_processed = num_processed;
             preprocessed.clear();
             std::mem::swap(&mut self.preprocessed, &mut preprocessed);
@@ -315,78 +428,13 @@ impl LoadableSheet
                 if preprocessed
                     .imports
                     .keys()
-                    .find(|i| !self.processed.contains_key(i))
-                    .is_some()
+                    .any(|i| !self.processed.contains_key(i))
                 {
                     self.preprocessed.push(preprocessed);
                     continue;
                 }
 
-                // Initialize using/constants maps from dependencies.
-                // [ shortname : longname ]
-                let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
-                // [ path : [ terminal identifier : constant value ] ]
-                let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
-
-                for (dependency, alias) in preprocessed.imports.iter() {
-                    let processed = self.processed.get(dependency).unwrap();
-
-                    for (k, v) in processed.using.iter() {
-                        name_shortcuts.insert(k, v);
-                    }
-                    for (k, v) in processed.constants.iter() {
-                        // Prepend the import alias.
-                        constants.insert(append_constant_extension(alias.clone(), k.as_str()), v.clone());
-                    }
-                }
-
-                // Prepare to process the file.
-                let mut processed = ProcessedLoadableFile::default();
-
-                #[cfg(feature = "hot_reload")]
-                {
-                    processed.imports = preprocessed.imports;
-                    processed.data = preprocessed.data.clone();
-                }
-
-                // Process the file.
-                // - This updates the using/constants maps with info extracted from the file.
-                parse_loadablesheet_file(
-                    type_registry,
-                    self,
-                    preprocessed.file.clone(),
-                    preprocessed.data,
-                    &mut constants,
-                    &mut name_shortcuts,
-                );
-
-                // Save final using/constants maps.
-                processed.using = name_shortcuts;
-                processed.constants = constants;
-
-                self.processed.insert(preprocessed.file.clone(), processed);
-
-                // Check for already-processed files that need to rebuild since they depend on this file.
-                #[cfg(feature = "hot_reload")]
-                {
-                    let needs_rebuild: Vec<LoadableFile> = self
-                        .processed
-                        .iter()
-                        .filter_map(|(file, processed)| {
-                            if processed.imports.contains_key(&preprocessed.file) {
-                                return Some(file.clone());
-                            }
-                            None
-                        })
-                        .collect();
-
-                    for needs_rebuild in needs_rebuild {
-                        let processed = self.processed.remove(&needs_rebuild).unwrap();
-                        // Add via API to check for recursive dependencies.
-                        self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
-                    }
-                }
-
+                self.process_sheet(preprocessed, type_registry);
                 num_processed += 1;
             }
 
@@ -397,10 +445,10 @@ impl LoadableSheet
         }
 
         // Check for circular dependencies.
-        if self.pending.len() == 0 && self.preprocessed.len() > 0 {
+        if self.pending.is_empty() && !self.preprocessed.is_empty() {
             for preproc in self.preprocessed.drain(..) {
                 tracing::error!("discarding loadable file {:?} that failed to resolve imports; it probably has a \
-                    dependency cycle; fix the cycle and restart your app", preproc.file.file);
+                    dependency cycle; fix the cycle and restart your app", preproc.file.as_str());
             }
         }
 
@@ -408,10 +456,10 @@ impl LoadableSheet
         #[cfg(not(feature = "hot_reload"))]
         {
             tracing::info!("done loading (enable hot_reload feature if you want to reload files)");
-            if self.pending.len() == 0 && self.preprocessed.len() == 0 {
-                let _ = std::mem::replace(&mut self.pending, HashSet::default());
-                let _ = std::mem::replace(&mut self.preprocessed, Vec::default());
-                let _ = std::mem::replace(&mut self.processed, HashMap::default());
+            if self.pending.is_empty() && self.preprocessed.is_empty() {
+                self.pending = HashSet::default();
+                self.preprocessed = Vec::default();
+                self.processed = HashMap::default();
             }
         }
 
@@ -430,12 +478,12 @@ impl LoadableSheet
     ) -> bool
     {
         match self.loadables.entry(loadable_ref.clone()) {
-            std::collections::hash_map::Entry::Vacant(entry) => {
+            Vacant(entry) => {
                 let mut vec = SmallVec::default();
                 vec.push(ErasedLoadable { type_id, loadable: loadable.clone() });
                 entry.insert(vec);
             }
-            std::collections::hash_map::Entry::Occupied(mut entry) => {
+            Occupied(mut entry) => {
                 // Insert if the loadable value changed.
                 if let Some(erased_loadable) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
                     match erased_loadable.loadable.equals(&loadable) {
@@ -459,8 +507,8 @@ impl LoadableSheet
         }
 
         // Identify entites that should update.
-        let Some(subscriptions) = self.subscriptions.get(&loadable_ref) else { return false };
-        if subscriptions.len() == 0 {
+        let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return false };
+        if subscriptions.is_empty() {
             return false;
         }
         let entry = self.needs_updates.entry(type_id).or_default();
@@ -475,12 +523,15 @@ impl LoadableSheet
     pub(crate) fn track_entity(
         &mut self,
         entity: Entity,
-        loadable_ref: LoadableRef,
+        mut loadable_ref: LoadableRef,
         setter: ContextSetter,
         c: &mut Commands,
         callbacks: &LoaderCallbacks,
     )
     {
+        // Replace manifest key in the requested loadable.
+        self.swap_manifest_key_for_file(&mut loadable_ref.file);
+
         // Add to subscriptions.
         let subscription = RefSubscription { entity, setter };
         self.subscriptions
@@ -513,9 +564,20 @@ impl LoadableSheet
         }
 
         // Notify the entity that some of its loadables have loaded.
-        if loadables.len() > 0 {
+        if !loadables.is_empty() {
             c.react().entity_event(entity, Loaded);
         }
+    }
+
+    /// Swaps a manifest key for a file reference.
+    fn swap_manifest_key_for_file(&self, maybe_key: &mut LoadableFile)
+    {
+        let LoadableFile::ManifestKey(key) = maybe_key else { return };
+        let Some(file_ref) = self.manifest_map.get(key) else {
+            tracing::error!("tried accessing manifest key {:?} but no file was found", key);
+            return;
+        };
+        *maybe_key = file_ref.clone();
     }
 
     /// Cleans up despawned entities.
@@ -532,7 +594,7 @@ impl LoadableSheet
     /// Cleans up pending updates that failed to be processed.
     fn cleanup_pending_updates(&mut self)
     {
-        if self.needs_updates.len() > 0 {
+        if !self.needs_updates.is_empty() {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
             // call `apply_deferred` before the cleanup system runs.
             warn_once!("The loadable sheet contains pending updates for types that weren't registered. This warning only \
@@ -557,23 +619,6 @@ impl LoadableSheet
     }
 }
 
-impl Default for LoadableSheet
-{
-    fn default() -> Self
-    {
-        Self {
-            pending: HashSet::default(),
-            total_expected_sheets: 0,
-            preprocessed: Vec::default(),
-            processed: HashMap::default(),
-            loadables: HashMap::default(),
-            subscriptions: HashMap::default(),
-            subscriptions_rev: HashMap::default(),
-            needs_updates: HashMap::default(),
-        }
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that enables loading.
@@ -584,7 +629,6 @@ impl Plugin for LoadableSheetPlugin
     fn build(&self, app: &mut App)
     {
         app.init_react_resource::<LoadableSheet>()
-            .add_systems(PreStartup, setup_loadablesheet)
             .add_systems(
                 First,
                 (

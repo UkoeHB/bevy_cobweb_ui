@@ -762,7 +762,7 @@ fn detect_absolute_style(
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
     let Ok(style) = node.get(entity) else { return };
-    let style = Style::from((*style).clone().into());
+    let style: Style = (*style).clone().into();
     commands.entity(entity).try_insert(style.clone());
 }
 
@@ -788,7 +788,7 @@ fn detect_flex_style(
 {
     let entity = insertion.read().or_else(|| mutation.read()).unwrap();
     let Ok(style) = node.get(entity) else { return };
-    let style = Style::from((*style).clone().into());
+    let style: Style = (*style).clone().into();
     commands.entity(entity).try_insert(style.clone());
 }
 

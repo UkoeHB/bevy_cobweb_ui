@@ -1,7 +1,7 @@
 ## Loadablesheet asset format
 
 Loadablesheets are written as JSON files with the extension `.load.json`. You must register loadablesheets in your
-app with [`LoadableSheetListAppExt::load_sheet`].
+app with [`LoadableSheetListAppExt::load_sheet`]. The `#manifest` keyword can be used to transitively load files (see below for details).
 
 
 ### Base layer
@@ -81,7 +81,7 @@ To access loadables in your app, do the following:
 ```rust
 app.load_sheet("path/to/file.load.json")
 ```
-2. Make a reference to the file.
+2. Make a reference to the file. You can use the file path or its manifest key (see the `#manifest` keyword for details).
 ```rust
 let file = LoadableRef::from_file("path/to/file.load.json");
 ```
@@ -102,7 +102,7 @@ When it is inserted (or reinserted due to its value changing on file, if you hav
 
 Several keywords are supported in loadable files.
 
-1. Comments: `#c:`
+#### Comments: `#c:`
 
 Comments can be added as map entries throughout loadable files. They can't be added inside loadable values.
 
@@ -114,7 +114,7 @@ Comments can be added as map entries throughout loadable files. They can't be ad
 
 We need to add `:1` here because the comment is a map entry, which means it needs *some* value (any value is fine). We write the comment in the key since map keys need to be unique.
 
-2. Name shortcuts: `#using`
+#### Name shortcuts: `#using`
 
 In each file we reference types using their 'short names' (e.g. `Color`). If there is a type conflict (which will happen if multiple registered [`Reflect`] types have the same short name), then we need to clarify it in the file so values can be reflected correctly.
 
@@ -128,7 +128,7 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 }
 ```
 
-3. Inheritance: `#inherited`
+#### Inheritance: `#inherited`
 
 If you want values to propagate down a tree, you can use `#inherited` to pull-in the nearest value.
 
@@ -163,8 +163,7 @@ If a loadable is inherited in an abbreviated path, it will inherit from the curr
 }
 ```
 
-
-4. Constants: `#constants`
+#### Constants: `#constants`
 
 It is often useful to have the same value in multiple places throughout a file. Constants let you 'paste' sections of JSON to different places.
 
@@ -244,7 +243,7 @@ To support this, you can end a constant with `::*` to 'paste all' when it's used
 }
 ```
 
-5. Imports with `#import`
+#### Imports: `#import`
 
 You can import `#using` and `#constants` sections from other files with the `#import` keyword.
 
@@ -271,6 +270,45 @@ Add the `#import` section to the base map in a file. It should be a map between 
 
     "my_node": {
         "$constants::standard::*": {},
+    }
+}
+```
+
+Imports will be implicitly treated as manifests (see the next section), but *without* manifest keys. You can have a file in multiple manifest and import sections.
+
+#### Transitive loading: `#manifest`
+
+Sheets can be transitively loaded by specifying them in a `#manifest` section.
+
+Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`LoadableFile`] references in place of explicit file paths.
+
+An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level sheet which must be loaded via [`LoadableSheetListAppExt::load_sheet`].
+
+```json
+// button_widget.load.json
+{
+    "widget": {
+        // ...
+    }
+}
+
+// app.load.json
+{
+    "my_node": {
+        // ...
+    }
+}
+
+// manifest.load.json
+{
+    "#manifest": {
+        "": "manifest",
+        "button_widget.load.json": "widget-button",
+        "app.load.json": "app"
+    },
+
+    "demo_node_in_manifest": {
+        // ...
     }
 }
 ```

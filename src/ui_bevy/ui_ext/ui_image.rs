@@ -121,6 +121,9 @@ impl ThemedAttribute for LoadedUiImage
         value.apply(ec);
     }
 }
+//todo: animate ui images by lerping between indices into a texture map? and panic if not pointing to the same
+//      spritesheet
+// - might need custom AnimatedUiImage, especially for the case with more than 2 end states
 
 //-------------------------------------------------------------------------------------------------------------------
 

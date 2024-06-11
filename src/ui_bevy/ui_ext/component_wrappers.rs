@@ -16,7 +16,7 @@ impl ApplyLoadable for BgColor
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        ec.try_insert(BackgroundColor(self.0.clone()));
+        ec.try_insert(BackgroundColor(self.0));
     }
 }
 
@@ -48,7 +48,7 @@ impl ApplyLoadable for BrColor
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        ec.try_insert(BorderColor(self.0.clone()));
+        ec.try_insert(BorderColor(self.0));
     }
 }
 

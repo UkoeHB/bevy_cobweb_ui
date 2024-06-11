@@ -45,7 +45,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 {
     pub(crate) fn new(ec: EntityCommands<'a>) -> OnEventExt<'a, T>
     {
-        Self { ec, _p: PhantomData::default() }
+        Self { ec, _p: PhantomData }
     }
 
     /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.

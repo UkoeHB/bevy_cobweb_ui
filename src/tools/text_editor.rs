@@ -61,7 +61,7 @@ impl<'w, 's> TextEditor<'w, 's>
     /// Returns `None` if the text section could not be found or the text is empty.
     pub fn section_style(&mut self, text_entity: Entity, section: usize) -> Option<&mut TextStyle>
     {
-        let Some(text) = self.section(text_entity, section) else { return None };
+        let text = self.section(text_entity, section)?;
         Some(&mut text.style)
     }
 }

@@ -121,7 +121,7 @@ fn load_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub(crate) struct LoaderCallbacks
 {
     callbacks: HashMap<TypeId, SystemCommand>,
@@ -132,14 +132,6 @@ impl LoaderCallbacks
     pub(crate) fn get(&self, type_id: TypeId) -> Option<SystemCommand>
     {
         self.callbacks.get(&type_id).cloned()
-    }
-}
-
-impl Default for LoaderCallbacks
-{
-    fn default() -> Self
-    {
-        Self { callbacks: HashMap::default() }
     }
 }
 
@@ -176,19 +168,19 @@ impl LoadableRegistrationAppExt for App
 {
     fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self
     {
-        register_loadable_impl(self, bundle_loader::<T>, PhantomData::<T>::default(), "bundle");
+        register_loadable_impl(self, bundle_loader::<T>, PhantomData::<T>, "bundle");
         self
     }
 
     fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self
     {
-        register_loadable_impl(self, reactive_loader::<T>, PhantomData::<T>::default(), "reactive");
+        register_loadable_impl(self, reactive_loader::<T>, PhantomData::<T>, "reactive");
         self
     }
 
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self
     {
-        register_loadable_impl(self, derived_loader::<T>, PhantomData::<T>::default(), "derived");
+        register_loadable_impl(self, derived_loader::<T>, PhantomData::<T>, "derived");
         self
     }
 

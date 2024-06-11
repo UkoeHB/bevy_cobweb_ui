@@ -192,7 +192,7 @@ impl<C: DefaultTheme> AddLoadedTheme<C>
 {
     pub fn new(entity: Entity) -> Self
     {
-        Self { entity, _p: PhantomData::default() }
+        Self { entity, _p: PhantomData }
     }
 }
 

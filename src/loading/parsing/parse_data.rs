@@ -68,7 +68,7 @@ fn get_inherited_loadable_value(
     file: &LoadableFile,
     current_path: &LoadablePath,
     short_name: &str,
-    loadable_entry: &Vec<ReflectedLoadable>,
+    loadable_entry: &[ReflectedLoadable],
 ) -> Option<ReflectedLoadable>
 {
     // Try to inherit the last loadable entry in the stack.
@@ -88,7 +88,7 @@ fn get_loadable_value(
     current_path: &LoadablePath,
     short_name: &str,
     value: Value,
-    loadable_entry: &Vec<ReflectedLoadable>,
+    loadable_entry: &[ReflectedLoadable],
     deserializer: TypedReflectDeserializer,
 ) -> Option<ReflectedLoadable>
 {
@@ -125,13 +125,11 @@ fn handle_loadable_entry(
     };
 
     // Get the loadable's value.
-    let loadable_entry = loadable_stack
-        .entry(short_name)
-        .or_insert_with(|| Vec::default());
+    let loadable_entry = loadable_stack.entry(short_name).or_default();
     let starting_len = loadable_entry.len();
 
     let Some(loadable_value) =
-        get_loadable_value(file, current_path, short_name, value, &loadable_entry, deserializer)
+        get_loadable_value(file, current_path, short_name, value, loadable_entry, deserializer)
     else {
         return;
     };
@@ -172,7 +170,7 @@ fn handle_branch_entry(
     parse_branch(
         type_registry,
         loadablesheet,
-        &file,
+        file,
         &extended_path,
         data,
         name_shortcuts,
