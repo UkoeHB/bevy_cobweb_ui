@@ -33,6 +33,7 @@ pub(crate) fn extract_manifest_section(
         match manifest_file.as_str() {
             // Empty file name means use the file where the manifest section was found.
             "" => {
+                tracing::trace!("adding manifest {file:?} {manifest_key:?}");
                 let prev = manifests.insert(file.clone(), manifest_key);
                 if let Some(prev) = prev {
                     tracing::error!("found duplicate file name {:?} in manifest of file {:?}, ignoring manifest key {:?}",
@@ -46,6 +47,7 @@ pub(crate) fn extract_manifest_section(
                         file.as_str(), manifest_file.as_str(), manifest_key);
                     continue;
                 }
+                tracing::trace!("adding manifest {manifest_file:?} {manifest_key:?}");
                 manifests.insert(manifest_file, manifest_key);
             }
         }

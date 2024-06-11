@@ -12,7 +12,8 @@ impl Plugin for LoadingPlugin
     {
         app.add_plugins(LoaderPlugin)
             .add_plugins(LoadableSheetAssetLoaderPlugin)
-            .add_plugins(LoadableSheetPlugin);
+            .add_plugins(LoadableSheetPlugin)
+            .add_plugins(LoadProgressPlugin);
     }
 }
 

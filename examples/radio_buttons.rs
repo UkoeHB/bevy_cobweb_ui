@@ -7,6 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 use sickle::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use sickle::ui_builder::*;
+use sickle::widgets::container::UiContainerExt;
 use sickle::{DefaultTheme, SickleUiPlugin, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -63,7 +64,7 @@ impl RadioButtonBuilder
         node: &'a mut UiBuilder<'w, 's, '_, Entity>,
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
-        let file = LoadableRef::from_file("examples/widgets/radio_button.load.json");
+        let file = LoadableRef::from_file("widgets.radio_button");
 
         let mut core_entity = Entity::PLACEHOLDER;
         node.load_theme::<RadioButton>(file.e("core"), file.e("core"), |core, path| {
@@ -120,7 +121,7 @@ impl RadioButtonBuilder
 
 fn build_ui(mut c: Commands)
 {
-    let file = LoadableRef::from_file("examples/radio_buttons.load.json");
+    let file = LoadableRef::from_file("examples.radio_buttons");
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
@@ -128,8 +129,6 @@ fn build_ui(mut c: Commands)
         let mut display_text = Entity::PLACEHOLDER;
         root.load(path.e("display"), |display, path| {
             display.load(path.e("text"), |text, _| {
-                //todo: how to load this from file properly? there is a race condition with the initial selection
-                text.insert_derived(TextLine::default());
                 display_text = text.id();
             });
         });
@@ -159,9 +158,29 @@ fn build_ui(mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup(mut commands: Commands)
+fn init_loading_display(mut c: Commands)
 {
-    commands.spawn(Camera2dBundle {
+    c.ui_builder(UiRoot)
+        .container(NodeBundle::default(), |node| {
+            node.insert_reactive(FlexStyle::default())
+                .insert_derived(Width(Val::Vw(100.)))
+                .insert_derived(Height(Val::Vh(100.)))
+                .insert_derived(SetFlexDirection(FlexDirection::Column))
+                .insert_derived(SetJustifyMain(JustifyMain::Center))
+                .insert_derived(SetJustifyCross(JustifyCross::Center))
+                .despawn_on_broadcast::<StartupLoadingDone>();
+
+            node.container(NodeBundle::default(), |node| {
+                node.insert_derived(TextLine { text: "Loading...".into(), font: None, size: 75.0 });
+            });
+        });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn setup(mut c: Commands)
+{
+    c.spawn(Camera2dBundle {
         transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
         ..default()
     });
@@ -179,10 +198,10 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<RadioButton>::new())
-        .load_sheet("examples/widgets/radio_button.load.json")
         .load_sheet("examples/radio_buttons.load.json")
         .add_systems(PreStartup, setup)
-        .add_systems(Startup, build_ui)
+        .add_systems(OnEnter(LoadProgress::Loading), init_loading_display)
+        .add_systems(OnEnter(LoadProgress::Done), build_ui)
         .run();
 }
 

@@ -24,6 +24,12 @@ pub trait UiBuilderReactExt
     /// Mirrors [`UiReactEntityCommandsExt::on_event`].
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>;
 
+    /// Mirrors [`UiReactEntityCommandsExt::despawn_on_event`].
+    fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self;
+
+    /// Mirrors [`UiReactEntityCommandsExt::despawn_on_broadcast`].
+    fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
+
     /// Mirrors [`UiReactEntityCommandsExt::update_on`].
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
         &mut self,
@@ -59,6 +65,18 @@ impl UiBuilderReactExt for UiBuilder<'_, '_, '_, Entity>
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
     {
         OnEventExt::new(self.entity_commands())
+    }
+
+    fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self
+    {
+        self.entity_commands().despawn_on_event::<T>();
+        self
+    }
+
+    fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self
+    {
+        self.entity_commands().despawn_on_broadcast::<T>();
+        self
     }
 
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(

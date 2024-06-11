@@ -34,9 +34,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 # Default features.
 default = []
 
-# Enables loading progress tracking. User must add iyes_progress::ProgressPlugin to their app.
-track_progress = ["dep:iyes_progress"]
-
 # Enables hot-reloading.
 hot_reload = ["bevy/file_watcher"]
 
@@ -52,8 +49,6 @@ smol_str    = { version = "0.2" }
 smallvec    = { version = "1.13" }
 thiserror   = { version = "1.0" }
 tracing     = { version = "0.1" }
-
-iyes_progress = { version = "0.11", optional = true }
 
 sickle_ui = { rev = "a548517", git = "https://github.com/UmbraLuminosa/sickle_ui" }
 #sickle_ui = { rev = "0c0ac46", git = "https://github.com/UkoeHB/sickle_ui" }

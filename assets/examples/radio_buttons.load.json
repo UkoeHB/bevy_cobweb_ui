@@ -1,5 +1,10 @@
 {
 
+"#manifest": {
+    "": "examples.radio_buttons",
+    "examples/widgets/radio_button.load.json": "widgets.radio_button"
+},
+
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
@@ -19,7 +24,7 @@
             "FlexStyle": {
                 "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
             },
-            "#c: TODO FIXME": {"TextLine": {"size": 50.0}}
+            "TextLine": {"size": 25.0}
         }
     },
 

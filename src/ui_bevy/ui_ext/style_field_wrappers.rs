@@ -693,7 +693,7 @@ impl AnimatableAttribute for DimsRight
 
 /// Mirrors [`ContentFlex::clipping`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetClipping(Clipping);
+pub struct SetClipping(pub Clipping);
 
 impl ApplyToContentFlex for SetClipping
 {
@@ -769,7 +769,7 @@ impl AnimatableAttribute for Padding
 
 /// Mirrors [`ContentFlex::flex_direction`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetFlexDirection(FlexDirection);
+pub struct SetFlexDirection(pub FlexDirection);
 
 impl ApplyToContentFlex for SetFlexDirection
 {
@@ -805,7 +805,7 @@ impl ResponsiveAttribute for SetFlexDirection
 
 /// Mirrors [`ContentFlex::flex_wrap`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetFlexWrap(FlexWrap);
+pub struct SetFlexWrap(pub FlexWrap);
 
 impl ApplyToContentFlex for SetFlexWrap
 {
@@ -841,7 +841,7 @@ impl ResponsiveAttribute for SetFlexWrap
 
 /// Mirrors [`ContentFlex::justify_lines`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetJustifyLines(JustifyLines);
+pub struct SetJustifyLines(pub JustifyLines);
 
 impl ApplyToContentFlex for SetJustifyLines
 {
@@ -877,7 +877,7 @@ impl ResponsiveAttribute for SetJustifyLines
 
 /// Mirrors [`ContentFlex::justify_main`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetJustifyMain(JustifyMain);
+pub struct SetJustifyMain(pub JustifyMain);
 
 impl ApplyToContentFlex for SetJustifyMain
 {
@@ -913,7 +913,7 @@ impl ResponsiveAttribute for SetJustifyMain
 
 /// Mirrors [`ContentFlex::justify_cross`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetJustifyCross(JustifyCross);
+pub struct SetJustifyCross(pub JustifyCross);
 
 impl ApplyToContentFlex for SetJustifyCross
 {
@@ -949,7 +949,7 @@ impl ResponsiveAttribute for SetJustifyCross
 
 /// Mirrors [`ContentFlex::text_direction`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetTextDirection(Direction);
+pub struct SetTextDirection(pub Direction);
 
 impl ApplyToContentFlex for SetTextDirection
 {

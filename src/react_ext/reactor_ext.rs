@@ -51,12 +51,8 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
     /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.
     pub fn r<M>(mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'a>
     {
-        let syscommand = self.ec.commands().spawn_system_command(callback);
         let id = self.ec.id();
-        self.ec
-            .commands()
-            .react()
-            .with(entity_event::<T>(id), syscommand, ReactorMode::Cleanup);
+        self.ec.react().on(entity_event::<T>(id), callback);
 
         self.ec
     }
@@ -82,6 +78,12 @@ pub trait UiReactEntityCommandsExt
     ///
     /// Use [`OnEventExt::r`] to register the reactor.
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>;
+
+    /// Recursively despawns the current entity on entity event `T`.
+    fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self;
+
+    /// Recursively despawns the current entity on broadcast event `T`.
+    fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
     /// Updates an entity with a reactor system.
     ///
@@ -114,6 +116,24 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
     {
         OnEventExt::new(self.reborrow())
+    }
+
+    fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self
+    {
+        let entity = self.id();
+        self.on_event::<T>().r(move |mut c: Commands| {
+            c.get_entity(entity).map(|e| e.despawn_recursive());
+        });
+        self
+    }
+
+    fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self
+    {
+        let entity = self.id();
+        self.react().once(broadcast::<T>(), move |mut c: Commands| {
+            c.get_entity(entity).map(|e| e.despawn_recursive());
+        });
+        self
     }
 
     fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(

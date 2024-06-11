@@ -240,7 +240,14 @@ impl LoadableSheet
     {
         match self.file_to_manifest_key.entry(file.clone()) {
             Vacant(entry) => {
-                entry.insert(manifest_key);
+                entry.insert(manifest_key.clone());
+
+                if let Some(new_key) = manifest_key {
+                    if let Some(prev_file) = self.manifest_map.insert(new_key.clone(), file.clone()) {
+                        tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
+                            new_key, prev_file, file);
+                    }
+                }
 
                 true
             }
@@ -621,6 +628,12 @@ impl LoadableSheet
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// System set in [`First`] where files are processed.
+#[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
+pub struct FileProcessingSet;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Plugin that enables loading.
 pub(crate) struct LoadableSheetPlugin;
 
@@ -635,7 +648,8 @@ impl Plugin for LoadableSheetPlugin
                     preprocess_loadable_files,
                     process_loadable_files.run_if(|s: ReactRes<LoadableSheet>| s.num_preprocessed_pending() > 0),
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(FileProcessingSet),
             )
             .add_systems(Last, cleanup_loadablesheet);
     }

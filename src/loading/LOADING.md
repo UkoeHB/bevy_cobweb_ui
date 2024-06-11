@@ -303,7 +303,7 @@ An empty map key `""` can be used to set a manifest key for the current file. Th
 {
     "#manifest": {
         "": "manifest",
-        "button_widget.load.json": "widget-button",
+        "button_widget.load.json": "widgets.button",
         "app.load.json": "app"
     },
 
