@@ -116,7 +116,7 @@ impl CounterWidget
     /// Returns a reference to the base node of the counter widget (the button node).
     fn default_ref() -> LoadableRef
     {
-        LoadableRef::new("examples/widgets/counter.load.json", "counter_widget")
+        LoadableRef::new("widgets.counter", "counter_widget")
     }
 
     /// Builds the widget on an entity.
@@ -158,8 +158,8 @@ impl CounterWidget
 
 fn build_ui(mut c: Commands)
 {
-    let widget = LoadableRef::from_file("examples/widgets/counter.load.json");
-    let example = LoadableRef::from_file("examples/counter_widget.load.json");
+    let widget = LoadableRef::from_file("widgets.counter");
+    let example = LoadableRef::from_file("examples.counter_widget");
 
     c.ui_builder(UiRoot).load_theme::<CounterButton>(
         widget.e("counter_theme"),
@@ -212,10 +212,9 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<CounterButton>::new())
-        .load_sheet("examples/widgets/counter.load.json")
         .load_sheet("examples/counter_widget.load.json")
         .add_systems(PreStartup, setup)
-        .add_systems(Startup, build_ui)
+        .add_systems(OnEnter(LoadProgress::Done), build_ui)
         .run();
 }
 
