@@ -79,7 +79,7 @@ To access loadables in your app, do the following:
 
 1. Register the file to be loaded (using its path in the asset directory)
 ```rust
-app.load_sheet("path/to/file.load.json")
+app.load_sheet("path/to/file.load.json");
 ```
 2. Make a reference to the file. You can use the file path or its manifest key (see the `#manifest` keyword for details).
 ```rust
@@ -96,6 +96,30 @@ commands.spawn_empty().load(a);
 ```
 
 When it is inserted (or reinserted due to its value changing on file, if you have the `hot_reload` feature enabled), a [`Loaded`] entity event will be emitted. See [`ReactCommands::entity_event`](bevy_cobweb::prelude::ReactCommands::entity_event).
+
+You can define three kinds of custom loadables: loadables inserted as a component, inserted as reactive component, or applied to an entity as a 'derived' effect via [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable).
+
+```rust
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct MyLoadable(usize);
+
+// Use this if you want MyLoadable to be inserted as a `Bundle`. The type must implement `Bundle`.
+app.register_loadable::<MyLoadable>();
+
+// Use this if you want MyLoadable to be inserted as a `React` component. The type must implement `ReactComponent`.
+app.register_reactive::<MyLoadable>();
+
+// Use this if you want MyLoadable to mutate the entity. The type must implement `ApplyLoadable`.
+app.register_derived::<MyLoadable>();
+
+impl ApplyLoadable for MyLoadable
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        println!("MyLoadable({}) applied to entity {:?}", self.0, ec.id());
+    }
+}
+```
 
 
 ### Keywords
@@ -116,7 +140,7 @@ We need to add `:1` here because the comment is a map entry, which means it need
 
 #### Commands: `#commands`
 
-Normal loadables implement [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable) and must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can use a `#commands` section with types that implement [`ApplyCommand`](bevy_cobweb_ui::prelude::ApplyCommand).
+Normal loadables must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can use a `#commands` section with types that implement [`ApplyCommand`](bevy_cobweb_ui::prelude::ApplyCommand).
 
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -129,6 +153,9 @@ impl ApplyCommand for MyCommand
         println!("MyCommand applied: {}", self.0);
     }
 }
+
+// Commands must be registered.
+app.register_command::<MyCommand>();
 ```
 
 ```json
@@ -241,7 +268,7 @@ In this example, the `BgColor` constant is inserted as a value to the `backgroun
 ```
 
 When expanded, the result will be
-```rust
+```json
 {
     "background": {
         "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
