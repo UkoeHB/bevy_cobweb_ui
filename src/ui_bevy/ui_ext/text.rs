@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::text::TextLayoutInfo;
@@ -15,7 +13,6 @@ use crate::*;
 fn insert_text_line(
     In((entity, line)): In<(Entity, TextLine)>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut font_map: ResMut<FontMap>,
     color: Query<&TextLineColor>,
 )
@@ -26,35 +23,11 @@ fn insert_text_line(
         .unwrap_or_else(|_| TextLine::default_font_color());
     let mut ec = commands.entity(entity);
     ec.try_insert((
-        line.as_text(&asset_server, &mut font_map, color),
+        line.as_text(&mut font_map, color),
         TextLayoutInfo::default(),
         TextFlags::default(),
         ContentSize::default(),
     ));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Resource that stores handles to loaded fonts.
-//TODO: add font pre-loading and progress tracking
-#[derive(Resource, Default)]
-pub struct FontMap
-{
-    map: HashMap<String, Handle<Font>>,
-}
-
-impl FontMap
-{
-    fn get(&mut self, font: Option<String>, asset_server: &AssetServer) -> Handle<Font>
-    {
-        let Some(font) = font else { return Default::default() };
-        let Some(entry) = self.map.get(&font) else {
-            let entry = asset_server.load(&font);
-            self.map.insert(font, entry.clone());
-            return entry;
-        };
-        entry.clone()
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -91,12 +64,12 @@ impl TextLine
         Color::WHITE
     }
 
-    fn as_text(self, asset_server: &AssetServer, font_map: &mut FontMap, color: Color) -> Text
+    fn as_text(self, font_map: &mut FontMap, color: Color) -> Text
     {
         Text::from_section(
             self.text,
             TextStyle {
-                font: font_map.get(self.font, asset_server),
+                font: self.font.map(|f| font_map.get(&f)).unwrap_or_default(),
                 font_size: self.size,
                 color,
             },
@@ -206,8 +179,7 @@ impl Plugin for UiTextExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<FontMap>()
-            .register_derived::<TextLine>()
+        app.register_derived::<TextLine>()
             // IMPORTANT: This must be added after TextLine so the line size will overwrite TextLine defaults.
             .register_themed::<TextLineSize>()
             // IMPORTANT: This must be added after TextLine so the line color will overwrite TextLine defaults.

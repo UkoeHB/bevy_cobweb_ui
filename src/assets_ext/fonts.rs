@@ -9,7 +9,7 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_images(In(paths): In<Vec<String>>, asset_server: Res<AssetServer>, mut map: ResMut<ImageMap>)
+fn load_fonts(In(paths): In<Vec<String>>, asset_server: Res<AssetServer>, mut map: ResMut<FontMap>)
 {
     for path in paths {
         map.insert(path, &asset_server);
@@ -18,10 +18,10 @@ fn load_images(In(paths): In<Vec<String>>, asset_server: Res<AssetServer>, mut m
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn check_loaded_images(
-    mut events: EventReader<AssetEvent<Image>>,
-    mut errors: EventReader<AssetLoadFailedEvent<Image>>,
-    mut map: ResMut<ImageMap>,
+fn check_loaded_fonts(
+    mut events: EventReader<AssetEvent<Font>>,
+    mut errors: EventReader<AssetLoadFailedEvent<Font>>,
+    mut map: ResMut<FontMap>,
 )
 {
     for event in events.read() {
@@ -37,24 +37,24 @@ fn check_loaded_images(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Resource that stores handles to loaded image textures.
+/// Resource that stores handles to loaded fonts.
 #[derive(Resource, Default)]
-pub struct ImageMap
+pub struct FontMap
 {
-    pending: HashSet<AssetId<Image>>,
-    map: HashMap<String, Handle<Image>>,
+    pending: HashSet<AssetId<Font>>,
+    map: HashMap<String, Handle<Font>>,
 }
 
-impl ImageMap
+impl FontMap
 {
-    /// Adds an image that should be loaded.
+    /// Adds a font that should be loaded.
     ///
     /// Note that if this is called during [`LoadProgressSet::Loading`], then [`LoadProgressSet::Done`] will wait
-    /// for the image to be loaded.
+    /// for the font to be loaded.
     pub fn insert(&mut self, path: String, asset_server: &AssetServer)
     {
         if self.map.contains_key(&path) {
-            tracing::warn!("ignoring duplicate load for image {}", path);
+            tracing::warn!("ignoring duplicate load for font {}", path);
             return;
         }
 
@@ -63,25 +63,25 @@ impl ImageMap
         self.map.insert(path, handle);
     }
 
-    fn remove_pending(&mut self, id: &AssetId<Image>)
+    fn remove_pending(&mut self, id: &AssetId<Font>)
     {
         let _ = self.pending.remove(id);
     }
 
-    /// Gets an image handle for the given path.
+    /// Gets an font handle for the given path.
     ///
-    /// Returns a default handle if the image was not pre-inserted via [`Self::insert`].
-    pub fn get(&self, path: &String) -> Handle<Image>
+    /// Returns a default handle if the font was not pre-inserted via [`Self::insert`].
+    pub fn get(&self, path: &String) -> Handle<Font>
     {
         let Some(entry) = self.map.get(path) else {
-            tracing::error!("failed getting image {} that was not loaded; use LoadImages command", path);
+            tracing::error!("failed getting font {} that was not loaded; use LoadFonts command", path);
             return Default::default();
         };
         entry.clone()
     }
 }
 
-impl AssetLoadProgress for ImageMap
+impl AssetLoadProgress for FontMap
 {
     fn pending_assets(&self) -> usize
     {
@@ -96,32 +96,32 @@ impl AssetLoadProgress for ImageMap
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable command for registering image assets that need to be pre-loaded.
+/// Loadable command for registering font assets that need to be pre-loaded.
 ///
-/// The loaded images can be access via [`ImageMap`].
+/// The loaded fonts can be access via [`FontMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadImages(pub Vec<String>);
+pub struct LoadFonts(pub Vec<String>);
 
-impl ApplyCommand for LoadImages
+impl ApplyCommand for LoadFonts
 {
     fn apply(self, c: &mut Commands)
     {
-        c.syscall(self.0, load_images);
+        c.syscall(self.0, load_fonts);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct ImageLoadPlugin;
+pub(crate) struct FontLoadPlugin;
 
-impl Plugin for ImageLoadPlugin
+impl Plugin for FontLoadPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<ImageMap>()
-            .register_asset_tracker::<ImageMap>()
-            .register_command::<LoadImages>()
-            .add_systems(PreUpdate, check_loaded_images.before(LoadProgressSet::AssetProgress));
+        app.init_resource::<FontMap>()
+            .register_asset_tracker::<FontMap>()
+            .register_command::<LoadFonts>()
+            .add_systems(PreUpdate, check_loaded_fonts.before(LoadProgressSet::AssetProgress));
     }
 }
 
