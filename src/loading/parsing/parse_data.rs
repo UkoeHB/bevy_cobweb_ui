@@ -1,4 +1,3 @@
-use std::any::TypeId;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -8,59 +7,6 @@ use serde::de::DeserializeSeed;
 use serde_json::{Map, Value};
 
 use crate::*;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn is_loadable_entry(key: &str) -> bool
-{
-    // Check if camelcase
-    let Some(first_char) = key.chars().next() else {
-        return false;
-    };
-    first_char.is_uppercase()
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn get_loadable_meta<'a>(
-    type_registry: &'a TypeRegistry,
-    file: &LoadableFile,
-    current_path: &LoadablePath,
-    short_name: &str,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
-) -> Option<(&'static str, &'static str, TypeId, TypedReflectDeserializer<'a>)>
-{
-    // Check if we already have this mapping.
-    let mut found_mapping = false;
-    let registration = match name_shortcuts.get(short_name) {
-        Some(long_name) => {
-            found_mapping = true;
-            type_registry.get_with_type_path(long_name)
-        }
-        None => type_registry.get_with_short_type_path(short_name),
-    };
-
-    // Look up the longname
-    let Some(registration) = registration else {
-        tracing::error!("failed getting long type name for {:?} at {:?} in {:?}; if the type is ambiguous because \
-            there are multiple types with this short name, add its long name to the loadablesheet file's 'using' section",
-            short_name, current_path, file);
-        return None;
-    };
-
-    let short_name = registration.type_info().type_path_table().short_path(); //get static version
-    let long_name = registration.type_info().type_path_table().path();
-
-    // Save this mapping for later.
-    if !found_mapping {
-        name_shortcuts.insert(short_name, long_name);
-    }
-
-    // Deserializer
-    let deserializer = TypedReflectDeserializer::new(registration, type_registry);
-
-    Some((short_name, long_name, registration.type_info().type_id(), deserializer))
-}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -138,7 +84,7 @@ fn handle_loadable_entry(
     loadable_entry.push(loadable_value.clone());
     stack_tracker.push((short_name, starting_len));
 
-    loadablesheet.insert(
+    loadablesheet.insert_loadable(
         &LoadableRef { file: file.clone(), path: current_path.clone() },
         loadable_value,
         type_id,

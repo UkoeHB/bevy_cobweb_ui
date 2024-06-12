@@ -4,6 +4,7 @@ pub(crate) const MANIFEST_KEYWORD: &str = "#manifest";
 pub(crate) const IMPORT_KEYWORD: &str = "#import";
 pub(crate) const USING_KEYWORD: &str = "#using";
 pub(crate) const CONSTANTS_KEYWORD: &str = "#constants";
+pub(crate) const COMMANDS_KEYWORD: &str = "#commands";
 pub(crate) const COMMENT_KEYWORD: &str = "#c:";
 
 pub(crate) const INHERITED_KEYWORD: &str = "#inherited";

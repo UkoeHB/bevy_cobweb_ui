@@ -86,6 +86,9 @@ pub(crate) fn parse_loadablesheet_file(
     // Search and replace constants.
     search_and_replace_map_constants(&file, "$", &mut data, constants);
 
+    // Extract commands section.
+    parse_commands_section(type_registry, loadablesheet, &file, &mut data, name_shortcuts);
+
     // Recursively consume the file contents.
     parse_branch(
         type_registry,

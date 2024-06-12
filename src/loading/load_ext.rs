@@ -40,6 +40,37 @@ fn register_loadable_impl<M, T: 'static>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Applies loadable commands of type `T`.
+fn command_loader<T: ApplyCommand + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
+{
+    loadables
+        .get_noreact()
+        .apply_commands::<T>(|loadable_ref, loadable| {
+            let Some(command) = loadable.get_value::<T>(loadable_ref) else { return };
+            command.apply(&mut c);
+        });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Updates the loadable bundle `T` on entities.
+fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
+{
+    loadables
+        .get_noreact()
+        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
+            let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
+            let Some(mut ec) = c.get_entity(entity) else { return };
+
+            (context_setter.setter)(&mut ec);
+            ec.try_insert(bundle);
+
+            c.react().entity_event::<Loaded>(entity, Loaded);
+        });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Updates the loadable `React<T>` on entities.
 fn reactive_loader<T: ReactComponent + Loadable>(
     mut c: Commands,
@@ -64,24 +95,6 @@ fn reactive_loader<T: ReactComponent + Loadable>(
                     c.react().insert(entity, new_val);
                 }
             }
-
-            c.react().entity_event::<Loaded>(entity, Loaded);
-        });
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Updates the loadable bundle `T` on entities.
-fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
-{
-    loadables
-        .get_noreact()
-        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-            let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
-            let Some(mut ec) = c.get_entity(entity) else { return };
-
-            (context_setter.setter)(&mut ec);
-            ec.try_insert(bundle);
 
             c.react().entity_event::<Loaded>(entity, Loaded);
         });
@@ -148,6 +161,12 @@ pub(crate) struct ContextSetter
 /// Extends `App` with methods supporting [`LoadableSheet`] use.
 pub trait LoadableRegistrationAppExt
 {
+    /// Registers a loadable type that will be applied to the Bevy world when it is loaded.
+    fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self;
+
+    /// Combines [`App::register_type`] with [`Self::register_command_loadable`].
+    fn register_command<T: TypePath + GetTypeRegistration + ApplyCommand + Loadable>(&mut self) -> &mut Self;
+
     /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
     /// loadablesheet paths containing the type.
     fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self;
@@ -160,12 +179,27 @@ pub trait LoadableRegistrationAppExt
     /// loadablesheet paths containing the type.
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 
-    /// Combined [`App::register_type`] with [`Self::register_derived_loadable`].
+    /// Combines [`App::register_type`] with [`Self::register_derived_loadable`].
     fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 }
 
 impl LoadableRegistrationAppExt for App
 {
+    fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self
+    {
+        register_loadable_impl(self, command_loader::<T>, PhantomData::<T>, "command");
+        self
+    }
+
+    fn register_command<T: TypePath + GetTypeRegistration + ApplyCommand + Loadable>(&mut self) -> &mut Self
+    {
+        self.register_type::<T>()
+            .register_type::<Vec<T>>()
+            .register_type::<Multi<T>>()
+            .register_command_loadable::<T>()
+            .register_command_loadable::<Multi<T>>()
+    }
+
     fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, bundle_loader::<T>, PhantomData::<T>, "bundle");

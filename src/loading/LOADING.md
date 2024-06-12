@@ -114,6 +114,31 @@ Comments can be added as map entries throughout loadable files. They can't be ad
 
 We need to add `:1` here because the comment is a map entry, which means it needs *some* value (any value is fine). We write the comment in the key since map keys need to be unique.
 
+#### Commands: `#commands`
+
+Normal loadables implement [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable) and must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can use a `#commands` section with types that implement [`ApplyCommand`](bevy_cobweb_ui::prelude::ApplyCommand).
+
+```rust
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct MyCommand(usize);
+
+impl ApplyCommand for MyCommand
+{
+    fn apply(self, _c: &mut Commands)
+    {
+        println!("MyCommand applied: {}", self.0);
+    }
+}
+```
+
+```json
+{
+    "#commands": {
+        "MyCommand": [10],
+    }
+}
+```
+
 #### Name shortcuts: `#using`
 
 In each file we reference types using their 'short names' (e.g. `Color`). If there is a type conflict (which will happen if multiple registered [`Reflect`] types have the same short name), then we need to clarify it in the file so values can be reflected correctly.

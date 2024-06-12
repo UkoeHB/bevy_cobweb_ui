@@ -44,7 +44,34 @@ impl ApplyLoadableExt for EntityCommands<'_>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper loadable for cases where an entity can load multiple values of the same loadable.
+/// Trait for applying [`Self`] to a Bevy world.
+///
+/// Used by [`register_command_loadable`].
+pub trait ApplyCommand: Loadable
+{
+    fn apply(self, c: &mut Commands);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub trait ApplyCommandExt
+{
+    /// Calls [`ApplyCommand::apply`].
+    fn apply_command(&mut self, loadable: impl ApplyCommand) -> &mut Self;
+}
+
+impl ApplyCommandExt for Commands<'_, '_>
+{
+    fn apply_command(&mut self, loadable: impl ApplyCommand) -> &mut Self
+    {
+        loadable.apply(self);
+        self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper loadable for cases where multiple values of the same type can be loaded.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Multi<T>(Vec<T>);
 
@@ -54,6 +81,16 @@ impl<T: ApplyLoadable + TypePath> ApplyLoadable for Multi<T>
     {
         for item in self.0.drain(..) {
             item.apply(ec);
+        }
+    }
+}
+
+impl<T: ApplyCommand + TypePath> ApplyCommand for Multi<T>
+{
+    fn apply(mut self, c: &mut Commands)
+    {
+        for item in self.0.drain(..) {
+            item.apply(c);
         }
     }
 }

@@ -81,6 +81,46 @@ fn cleanup_loadablesheet(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn insert_loadable_entry(
+    loadables: &mut HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
+    loadable_ref: &LoadableRef,
+    loadable: ReflectedLoadable,
+    type_id: TypeId,
+    full_type_name: &str,
+) -> bool
+{
+    match loadables.entry(loadable_ref.clone()) {
+        Vacant(entry) => {
+            let mut vec = SmallVec::default();
+            vec.push(ErasedLoadable { type_id, loadable });
+            entry.insert(vec);
+        }
+        Occupied(mut entry) => {
+            // Insert if the loadable value changed.
+            if let Some(erased_loadable) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
+                match erased_loadable.loadable.equals(&loadable) {
+                    Some(true) => return false,
+                    Some(false) => {
+                        // Replace the existing value.
+                        *erased_loadable = ErasedLoadable { type_id, loadable };
+                    }
+                    None => {
+                        tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
+                            PartialEq", full_type_name, loadable_ref);
+                        return false;
+                    }
+                }
+            } else {
+                entry.get_mut().push(ErasedLoadable { type_id, loadable });
+            }
+        }
+    }
+
+    true
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Default, Debug)]
 struct PreprocessedLoadableFile
 {
@@ -202,6 +242,8 @@ pub struct LoadableSheet
     /// Records processed files.
     processed: HashMap<LoadableFile, ProcessedLoadableFile>,
 
+    /// Tracks loadable commands from all loaded files.
+    command_loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks loadables from all loaded files.
     loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
 
@@ -210,6 +252,9 @@ pub struct LoadableSheet
     /// Tracks entities for cleanup.
     subscriptions_rev: HashMap<Entity, SmallVec<[LoadableRef; 1]>>,
 
+    /// Records commands that need to be applied.
+    /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
+    commands_need_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef); 1]>>,
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
     needs_updates:
@@ -473,10 +518,10 @@ impl LoadableSheet
         num_processed > 0
     }
 
-    /// Inserts a loadable at the specified path if its value will change.
+    /// Inserts a loadable command if its value will change.
     ///
-    /// Returns `true` if this method added any pending subscriber updates.
-    pub(crate) fn insert(
+    /// Returns `true` if the command's saved value changed.
+    pub(crate) fn insert_command(
         &mut self,
         loadable_ref: &LoadableRef,
         loadable: ReflectedLoadable,
@@ -484,33 +529,41 @@ impl LoadableSheet
         full_type_name: &str,
     ) -> bool
     {
-        match self.loadables.entry(loadable_ref.clone()) {
-            Vacant(entry) => {
-                let mut vec = SmallVec::default();
-                vec.push(ErasedLoadable { type_id, loadable: loadable.clone() });
-                entry.insert(vec);
-            }
-            Occupied(mut entry) => {
-                // Insert if the loadable value changed.
-                if let Some(erased_loadable) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
-                    match erased_loadable.loadable.equals(&loadable) {
-                        Some(true) => return false,
-                        Some(false) => {
-                            // Replace the existing value.
-                            *erased_loadable = ErasedLoadable { type_id, loadable: loadable.clone() };
-                        }
-                        None => {
-                            tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
-                                PartialEq", full_type_name, loadable_ref);
-                            return false;
-                        }
-                    }
-                } else {
-                    entry
-                        .get_mut()
-                        .push(ErasedLoadable { type_id, loadable: loadable.clone() });
-                }
-            }
+        if !insert_loadable_entry(
+            &mut self.command_loadables,
+            loadable_ref,
+            loadable.clone(),
+            type_id,
+            full_type_name,
+        ) {
+            return false;
+        }
+
+        let entry = self.commands_need_updates.entry(type_id).or_default();
+        entry.push((loadable.clone(), loadable_ref.clone()));
+
+        true
+    }
+
+    /// Inserts a loadable at the specified path if its value will change.
+    ///
+    /// Returns `true` if this method added any pending subscriber updates.
+    pub(crate) fn insert_loadable(
+        &mut self,
+        loadable_ref: &LoadableRef,
+        loadable: ReflectedLoadable,
+        type_id: TypeId,
+        full_type_name: &str,
+    ) -> bool
+    {
+        if !insert_loadable_entry(
+            &mut self.loadables,
+            loadable_ref,
+            loadable.clone(),
+            type_id,
+            full_type_name,
+        ) {
+            return false;
         }
 
         // Identify entites that should update.
@@ -601,13 +654,33 @@ impl LoadableSheet
     /// Cleans up pending updates that failed to be processed.
     fn cleanup_pending_updates(&mut self)
     {
+        if !self.commands_need_updates.is_empty() {
+            warn_once!("The loadable sheet contains pending updates for command types that weren't registered. This warning \
+                only prints once.");
+        }
         if !self.needs_updates.is_empty() {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
             // call `apply_deferred` before the cleanup system runs.
             warn_once!("The loadable sheet contains pending updates for types that weren't registered. This warning only \
                 prints once, and may print spuriously if you spawn loaded entities in Last.");
         }
+        self.commands_need_updates.clear();
         self.needs_updates.clear();
+    }
+
+    /// Applies loadables extracted from `#commands` sections.
+    pub(crate) fn apply_commands<T: Loadable>(
+        &mut self,
+        mut callback: impl FnMut(&LoadableRef, &ReflectedLoadable),
+    )
+    {
+        let Some(mut commands_need_updates) = self.commands_need_updates.remove(&TypeId::of::<T>()) else {
+            return;
+        };
+
+        for (loadable, loadable_ref) in commands_need_updates.drain(..) {
+            (callback)(&loadable_ref, &loadable);
+        }
     }
 
     /// Updates entities that subscribed to `T` found at recently-updated loadable paths.
