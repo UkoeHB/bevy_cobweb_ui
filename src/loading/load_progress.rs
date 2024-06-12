@@ -23,7 +23,7 @@ fn check_load_progress(
     mut c: Commands,
     loadablesheet: ReactRes<LoadableSheet>,
     asset_tracker: ResMut<AssetLoadProgressTracker>,
-    mut next: ResMut<NextState<LoadProgress>>,
+    mut next: ResMut<NextState<LoadState>>,
 )
 {
     let (pending_files, total_files) = loadablesheet.loading_progress();
@@ -36,7 +36,7 @@ fn check_load_progress(
 
     tracing::info!("Startup loading done: {total_files} files, {total_assets} assets");
     c.react().broadcast(StartupLoadingDone);
-    next.set(LoadProgress::Done);
+    next.set(LoadState::Done);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -70,11 +70,11 @@ impl AssetLoadProgressTracker
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait for resources that track asset loading in state [`LoadProgress::Loading`].
+/// Trait for resources that track asset loading in state [`LoadState::Loading`].
 ///
 /// If a resource is registered with
 /// [`App::register_asset_tracker`](AssetLoadProgressTrackerAppExt::register_asset_tracker)
-/// then state [`LoadProgress::Done`] will be postponed until the resource returns 0 from [`Self::pending_assets`].
+/// then state [`LoadState::Done`] will be postponed until the resource returns 0 from [`Self::pending_assets`].
 pub trait AssetLoadProgress: Resource
 {
     /// Gets the number of assets currently loading.
@@ -88,9 +88,9 @@ pub trait AssetLoadProgress: Resource
 /// App extension trait for registering types that implement [`AssetLoadProgress`].
 pub trait AssetLoadProgressTrackerAppExt
 {
-    /// Registers a resource that reports asset load progress in state [`LoadProgress::Loading`].
+    /// Registers a resource that reports asset load progress in state [`LoadState::Loading`].
     ///
-    /// It is recommended to load all assets in state [`LoadProgress::Loading`] so they are available
+    /// It is recommended to load all assets in state [`LoadState::Loading`] so they are available
     /// post-initialization.
     fn register_asset_tracker<T: AssetLoadProgress>(&mut self) -> &mut Self;
 }
@@ -110,10 +110,10 @@ impl AssetLoadProgressTrackerAppExt for App
 
 /// Bevy states for tracking the initial load of `bevy_cobweb_ui` assets.
 ///
-/// It is recommended to show a loading screen in [`LoadProgress::Loading`], and to initialize UI in
-/// schedule `OnEnter(LoadProgress::Done)`.
+/// It is recommended to show a loading screen in [`LoadState::Loading`], and to initialize UI in
+/// schedule `OnEnter(LoadState::Done)`.
 #[derive(States, Debug, Default, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum LoadProgress
+pub enum LoadState
 {
     /// Loadable files and transitive assets are loading.
     #[default]
@@ -124,7 +124,7 @@ pub enum LoadProgress
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when state [`LoadProgress::Done`] is entered.
+/// Reactive event broadcasted when state [`LoadState::Done`] is entered.
 pub struct StartupLoadingDone;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ impl Plugin for LoadProgressPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_state::<LoadProgress>()
+        app.init_state::<LoadState>()
             .init_resource::<AssetLoadProgressTracker>()
             .configure_sets(
                 PreUpdate,
@@ -159,7 +159,7 @@ impl Plugin for LoadProgressPlugin
                     LoadProgressSet::Check,
                 )
                     .chain()
-                    .run_if(in_state(LoadProgress::Loading)),
+                    .run_if(in_state(LoadState::Loading)),
             )
             .add_systems(
                 PreUpdate,

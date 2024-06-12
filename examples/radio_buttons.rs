@@ -200,8 +200,8 @@ fn main()
         .add_plugins(ComponentThemePlugin::<RadioButton>::new())
         .load_sheet("examples/radio_buttons.load.json")
         .add_systems(PreStartup, setup)
-        .add_systems(OnEnter(LoadProgress::Loading), init_loading_display)
-        .add_systems(OnEnter(LoadProgress::Done), build_ui)
+        .add_systems(OnEnter(LoadState::Loading), init_loading_display)
+        .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
 

@@ -49,7 +49,7 @@ impl ImageMap
 {
     /// Adds an image that should be loaded.
     ///
-    /// Note that if this is called during [`LoadProgressSet::Loading`], then [`LoadProgressSet::Done`] will wait
+    /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for the image to be loaded.
     pub fn insert(&mut self, path: String, asset_server: &AssetServer)
     {

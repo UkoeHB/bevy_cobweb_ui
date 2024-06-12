@@ -214,7 +214,7 @@ fn main()
         .add_plugins(ComponentThemePlugin::<CounterButton>::new())
         .load_sheet("examples/counter_widget.load.json")
         .add_systems(PreStartup, setup)
-        .add_systems(OnEnter(LoadProgress::Done), build_ui)
+        .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
 
