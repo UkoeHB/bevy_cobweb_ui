@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that stores handles to [`TextureAtlasLayouts`](TextureAtlasLayout).
+//TODO: this assumes each image only uses one TextureAtlasLayout, but it's possible for an image to be divided
+// into sections with different layouts.
 //TODO: add pre-loading and progress tracking
 #[derive(Resource, Default)]
 pub struct TextureAtlasMap
@@ -243,6 +245,7 @@ impl Default for LoadedTextureAtlasLayout
 /// Mirrors [`TextureAtlas`] for serialization.
 ///
 /// Note that this must include a [`LoadedTextureAtlasLayout::Layout`] when serialized.
+//todo: possibly reduce duplication by referring to layout by image path?
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadedTextureAtlas
 {
