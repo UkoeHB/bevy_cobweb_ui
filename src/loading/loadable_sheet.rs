@@ -22,10 +22,6 @@ fn preprocess_loadable_files(
     mut loadablesheet: ReactResMut<LoadableSheet>,
 )
 {
-    if events.is_empty() {
-        return;
-    }
-
     for event in events.read() {
         let id = match event {
             AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
@@ -48,6 +44,9 @@ fn preprocess_loadable_files(
         let loadablesheet = loadablesheet.get_noreact();
         preprocess_loadablesheet_file(&asset_server, &mut sheet_list, loadablesheet, asset.file, asset.data);
     }
+
+    // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
+    // catastrophic.
 }
 
 //-------------------------------------------------------------------------------------------------------------------

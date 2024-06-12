@@ -15,6 +15,7 @@ impl Plugin for CobwebUiPlugin
             .add_plugins(LoadingPlugin)
             .add_plugins(ReactPlugin)
             .add_plugins(SickleExtPlugin)
+            .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin)
             //.add_plugins(Cobweb2DUiPlugin)
             ;

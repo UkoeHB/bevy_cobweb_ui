@@ -133,8 +133,11 @@ pub struct StartupLoadingDone;
 #[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum LoadProgressSet
 {
+    /// Set where load progress checking is prepared.
     Prepare,
+    /// Set where asset load progress is collected.
     AssetProgress,
+    /// Set where total load progress is checked.
     Check,
 }
 

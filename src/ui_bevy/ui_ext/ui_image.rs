@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::widget::UiImageSize;
@@ -11,12 +9,8 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn insert_ui_image(
-    In((entity, img)): In<(Entity, LoadedUiImage)>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut img_map: ResMut<UiImageMap>,
-)
+/// Insets a UiImage to an entity.
+fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands: Commands, img_map: Res<ImageMap>)
 {
     // Extract
     let content_size = match img.size {
@@ -24,7 +18,7 @@ fn insert_ui_image(
         None => ContentSize::default(),
     };
     let maybe_scale_mode = img.scale_mode.clone();
-    let ui_image = img.to_ui_image(&asset_server, &mut img_map);
+    let ui_image = img.to_ui_image(&img_map);
 
     // Insert
     let mut ec = commands.entity(entity);
@@ -35,30 +29,6 @@ fn insert_ui_image(
         ec.try_insert((scale_mode, bundle));
     } else {
         ec.try_insert(bundle);
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Resource that stores handles to loaded UI image textures.
-//TODO: add pre-loading and progress tracking
-#[derive(Resource, Default)]
-pub struct UiImageMap
-{
-    map: HashMap<String, Handle<Image>>,
-}
-
-impl UiImageMap
-{
-    fn get(&mut self, path: Option<String>, asset_server: &AssetServer) -> Handle<Image>
-    {
-        let Some(path) = path else { return Default::default() };
-        let Some(entry) = self.map.get(&path) else {
-            let entry = asset_server.load(&path);
-            self.map.insert(path, entry.clone());
-            return entry;
-        };
-        entry.clone()
     }
 }
 
@@ -95,10 +65,10 @@ pub struct LoadedUiImage
 impl LoadedUiImage
 {
     /// Converts to a [`UiImage`].
-    pub fn to_ui_image(self, asset_server: &AssetServer, map: &mut UiImageMap) -> UiImage
+    pub fn to_ui_image(self, map: &ImageMap) -> UiImage
     {
         UiImage {
-            texture: map.get(self.texture.into(), asset_server),
+            texture: map.get(&self.texture),
             flip_x: self.flip_x,
             flip_y: self.flip_y,
         }
@@ -133,8 +103,7 @@ impl Plugin for UiImageExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<UiImageMap>()
-            .register_type::<Option<ImageScaleMode>>()
+        app.register_type::<Option<ImageScaleMode>>()
             .register_themed::<LoadedUiImage>();
     }
 }
