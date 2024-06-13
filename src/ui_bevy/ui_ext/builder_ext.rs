@@ -27,12 +27,12 @@ pub trait NodeLoadingExt<'w, 's>
     ///
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
-    /// Includes a `callback` for interacting with the entity.
+    /// Includes a `callback(node_builder, structure_ref, theme_ref)` for interacting with the entity.
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        structure_ref: LoadableRef,
         theme_ref: LoadableRef,
-        loadable_ref: LoadableRef,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>;
 
     /// Spawns a new node registered to load styles from `loadable_ref`.
@@ -52,17 +52,17 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, UiRoot>
 {
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        structure_ref: LoadableRef,
         theme_ref: LoadableRef,
-        loadable_ref: LoadableRef,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut node = self.spawn(NodeBundle::default());
         node.entity_commands().load_theme::<C>(theme_ref.clone());
-        if theme_ref != loadable_ref {
-            node.entity_commands().load(loadable_ref.clone());
+        if theme_ref != structure_ref {
+            node.entity_commands().load(structure_ref.clone());
         }
-        (callback)(&mut node, loadable_ref);
+        (callback)(&mut node, structure_ref, theme_ref);
         node
     }
 
@@ -84,17 +84,17 @@ impl<'w, 's> NodeLoadingExt<'w, 's> for UiBuilder<'w, 's, '_, Entity>
 {
     fn load_theme<'a, C: DefaultTheme>(
         &'a mut self,
+        structure_ref: LoadableRef,
         theme_ref: LoadableRef,
-        loadable_ref: LoadableRef,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
+        callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef, LoadableRef),
     ) -> UiBuilder<'w, 's, 'a, Entity>
     {
         let mut child = self.spawn(NodeBundle::default());
         child.entity_commands().load_theme::<C>(theme_ref.clone());
-        if theme_ref != loadable_ref {
-            child.entity_commands().load(loadable_ref.clone());
+        if theme_ref != structure_ref {
+            child.entity_commands().load(structure_ref.clone());
         }
-        (callback)(&mut child, loadable_ref);
+        (callback)(&mut child, structure_ref, theme_ref);
         let id = self.id();
         self.commands().ui_builder(id)
     }

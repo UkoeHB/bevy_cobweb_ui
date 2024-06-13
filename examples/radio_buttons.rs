@@ -67,7 +67,7 @@ impl RadioButtonBuilder
         let file = LoadableRef::from_file("widgets.radio_button");
 
         let mut core_entity = Entity::PLACEHOLDER;
-        node.load_theme::<RadioButton>(file.e("core"), file.e("core"), |core, path| {
+        node.load_theme::<RadioButton>(file.e("core"), file.e("core"), |core, path, _| {
             core_entity = core.id();
             core.insert(RadioButton)
                 .insert(PropagateControl)

@@ -113,30 +113,29 @@ impl CounterWidget
         self
     }
 
-    /// Returns a reference to the base node of the counter widget (the button node).
-    fn default_ref() -> LoadableRef
+    /// Returns a reference to the counter widget file.
+    fn default_file() -> LoadableRef
     {
-        LoadableRef::new("widgets.counter", "counter_widget")
+        LoadableRef::from_file("widgets.counter")
     }
 
     /// Builds the widget on an entity.
     fn build(self, builder: &mut UiBuilder<Entity>)
     {
-        let (button_ref, text_ref) = match (self.button_config, self.text_config) {
-            (Some(b), Some(t)) => (b, t),
-            (Some(b), None) => (b, Self::default_ref().e("text")),
-            (None, Some(t)) => (Self::default_ref(), t),
-            (None, None) => {
-                // Avoid excess allocations in this case.
-                let b = Self::default_ref();
-                (b.clone(), b.e("text"))
-            }
-        };
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
 
-        let theme_ref = self.theme.unwrap_or_else(|| button_ref.clone());
-        builder.load_theme::<CounterButton>(theme_ref, button_ref, |button, _path| {
+        let button_ref = self
+            .button_config
+            .unwrap_or_else(|| Self::default_file().e("widget"));
+        let text_ref = self
+            .text_config
+            .unwrap_or_else(|| Self::default_file().e("widget").e("text"));
+        let theme_ref = self
+            .theme
+            .unwrap_or_else(|| Self::default_file().e("theme"));
+
+        builder.load_theme::<CounterButton>(button_ref, theme_ref, |button, _path, _theme| {
             let button_id = button.id();
             button
                 .insert(CounterButton)
@@ -161,33 +160,30 @@ fn build_ui(mut c: Commands)
     let widget = LoadableRef::from_file("widgets.counter");
     let example = LoadableRef::from_file("examples.counter_widget");
 
-    c.ui_builder(UiRoot).load_theme::<CounterButton>(
-        widget.e("counter_theme"),
-        example.e("root"),
-        |mut root, _path| {
+    c.ui_builder(UiRoot)
+        .load_theme::<CounterButton>(example.e("root"), widget.e("theme"), |root, _path, _| {
             // Default widget
-            CounterWidget::new().build(&mut root);
+            CounterWidget::new().build(root);
 
             // Widget with custom text structure.
             CounterWidget::new()
                 .text_config(example.e("counter_widget_text_small"))
                 .pre_text("Small: ")
-                .build(&mut root);
+                .build(root);
 
             // Widget with animated text structure.
             CounterWidget::new()
                 .text_config(example.e("counter_widget_text_responsive"))
                 .pre_text("Responsive: ")
-                .build(&mut root);
+                .build(root);
 
             // Widget with theme adjustments
             CounterWidget::new()
                 .theme(example.e("counter_theme_flexible"))
                 .button_config(example.e("counter_widget_button_flexible"))
                 .pre_text("Themed: ")
-                .build(&mut root);
-        },
-    );
+                .build(root);
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------

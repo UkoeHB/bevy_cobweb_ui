@@ -9,6 +9,16 @@
     "examples/widgets/counter.load.json": "base"
 },
 
+
+"#c: Custom node structure for the example app.":0,
+"root": {
+    "#c: Root node covers the window.":0,
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
+    }
+},
+
 "#c: Theme override for flexible CounterWidgets.":0,
 "counter_theme_flexible" : {
     "Animated<BrColor>": {
@@ -58,15 +68,6 @@
     "FlexStyle": {
         "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
         "content": {"justify_main": "Center", "justify_cross": "Center"}
-    }
-},
-
-"#c: Custom node structure for the example app.":0,
-"root": {
-    "#c: Root node covers the window.":0,
-    "FlexStyle": {
-        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
-        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     }
 }
 

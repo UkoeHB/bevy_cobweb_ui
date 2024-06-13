@@ -13,20 +13,8 @@
     }
 },
 
-"#c: Base theme for CounterWidgets.":0,
-"counter_theme" : {
-    "Animated<BgColor>": {
-        "values": {
-            "idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-            "hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.46, "alpha": 0.8}},
-            "press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}}
-        },
-        "settings": "$animation_settings"
-    }
-},
-
 "#c: Base node structure for CounterWidgets.":0,
-"counter_widget": {
+"widget": {
     "FlexStyle": {
         "content": {"justify_main": "Center", "justify_cross": "Center"}
     },
@@ -36,6 +24,18 @@
             "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
         },
         "TextLine": { "size": 50.0 }
+    }
+},
+
+"#c: Base theme for CounterWidgets.":0,
+"theme" : {
+    "Animated<BgColor>": {
+        "values": {
+            "idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+            "hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.46, "alpha": 0.8}},
+            "press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}}
+        },
+        "settings": "$animation_settings"
     }
 }
 
