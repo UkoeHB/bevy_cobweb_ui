@@ -1,14 +1,16 @@
-use sickle_ui::prelude::attribute::{CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute};
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::lerp::Lerp;
+use sickle_ui::prelude::attribute::{
+    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
+};
+use sickle_ui::prelude::*;
 use sickle_ui::theme::dynamic_style::{ContextStyleAttribute, DynamicStyle};
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
-use sickle_ui::prelude::*;
 
 use crate::*;
 

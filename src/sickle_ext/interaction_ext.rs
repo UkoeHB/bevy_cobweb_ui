@@ -2,8 +2,8 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle_ui::prelude::*;
+use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
 
 use crate::*;
 
@@ -78,82 +78,59 @@ pub trait UiInteractionExt
     /// Adds a reactor to a [`PointerEnter`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PointerEnter>().r(callback)`.
-    fn on_pointer_enter<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_pointer_enter<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`PointerLeave`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PointerLeave>().r(callback)`.
-    fn on_pointer_leave<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_pointer_leave<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Pressed`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Pressed>().r(callback)`.
-    fn on_pressed<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Released`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Released>().r(callback)`.
-    fn on_released<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_released<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`PressCanceled`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PressCanceled>().r(callback)`.
-    fn on_press_canceled<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_press_canceled<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 }
 
-impl UiInteractionExt for EntityCommands<'_>
+impl UiInteractionExt for UiBuilder<'_, Entity>
 {
-    fn on_pointer_enter<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_pointer_enter<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Pressed>().r(callback)
+        self.on_event::<Pressed>().r(callback);
+        self
     }
 
-    fn on_pointer_leave<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_pointer_leave<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<PointerLeave>().r(callback)
+        self.on_event::<PointerLeave>().r(callback);
+        self
     }
 
-    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>
+    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Pressed>().r(callback)
+        self.on_event::<Pressed>().r(callback);
+        self
     }
 
-    fn on_released<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_released<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Released>().r(callback)
+        self.on_event::<Released>().r(callback);
+        self
     }
 
-    fn on_press_canceled<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_press_canceled<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<PressCanceled>().r(callback)
+        self.on_event::<PressCanceled>().r(callback);
+        self
     }
 }
 

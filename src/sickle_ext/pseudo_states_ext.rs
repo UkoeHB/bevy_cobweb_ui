@@ -1,10 +1,10 @@
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::theme::pseudo_state::PseudoState;
+use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::ui_commands::ManagePseudoStateExt;
 
-use crate::UiReactEntityCommandsExt;
+use crate::UiBuilderReactExt;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -193,123 +193,113 @@ pub trait PseudoStateExt
     /// Adds a reactor to an [`Enable`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Enable>().r(callback)`.
-    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>;
+    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Disable`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Disable>().r(callback)`.
-    fn on_disable<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_disable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Select`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Select>().r(callback)`.
-    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>;
+    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Deselect`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Deselect>().r(callback)`.
-    fn on_deselect<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_deselect<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Check`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Check>().r(callback)`.
-    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>;
+    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to an [`Uncheck`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Uncheck>().r(callback)`.
-    fn on_uncheck<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>;
+    fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to an [`Open`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Open>().r(callback)`.
-    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>;
+    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to a [`Close`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Close>().r(callback)`.
-    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>;
+    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 }
 
-impl PseudoStateExt for EntityCommands<'_>
+impl PseudoStateExt for UiBuilder<'_, Entity>
 {
-    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>
+    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Enable>().r(callback)
+        self.on_event::<Enable>().r(callback);
+        self
     }
 
     /// Adds a reactor to a [`Disable`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Disable>().r(callback)`.
-    fn on_disable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>
+    fn on_disable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Disable>().r(callback)
+        self.on_event::<Disable>().r(callback);
+        self
     }
 
     /// Adds a reactor to a [`Select`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Select>().r(callback)`.
-    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>
+    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Select>().r(callback)
+        self.on_event::<Select>().r(callback);
+        self
     }
 
     /// Adds a reactor to a [`Deselect`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Deselect>().r(callback)`.
-    fn on_deselect<M>(
-        &mut self,
-        callback: impl IntoSystem<(), (), M> + Send + Sync + 'static,
-    ) -> EntityCommands<'_>
+    fn on_deselect<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Deselect>().r(callback)
+        self.on_event::<Deselect>().r(callback);
+        self
     }
 
     /// Adds a reactor to a [`Check`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Check>().r(callback)`.
-    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>
+    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Check>().r(callback)
+        self.on_event::<Check>().r(callback);
+        self
     }
 
     /// Adds a reactor to an [`Uncheck`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Uncheck>().r(callback)`.
-    fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static)
-        -> EntityCommands<'_>
+    fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Uncheck>().r(callback)
+        self.on_event::<Uncheck>().r(callback);
+        self
     }
 
     /// Adds a reactor to an [`Open`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Open>().r(callback)`.
-    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>
+    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Open>().r(callback)
+        self.on_event::<Open>().r(callback);
+        self
     }
 
     /// Adds a reactor to a [`Close`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Close>().r(callback)`.
-    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'_>
+    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
-        self.on_event::<Close>().r(callback)
+        self.on_event::<Close>().r(callback);
+        self
     }
 }
 

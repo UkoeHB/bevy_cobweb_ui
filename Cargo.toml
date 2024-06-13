@@ -50,8 +50,8 @@ smallvec    = { version = "1.13" }
 thiserror   = { version = "1.0" }
 tracing     = { version = "0.1" }
 
-sickle_ui = { rev = "7970623", git = "https://github.com/UmbraLuminosa/sickle_ui" }
-#sickle_ui = { rev = "0c0ac46", git = "https://github.com/UkoeHB/sickle_ui" }
+sickle_ui = { rev = "59a3004", git = "https://github.com/UmbraLuminosa/sickle_ui" }
+#sickle_ui = { rev = "1d3c592", git = "https://github.com/UkoeHB/sickle_ui" }
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3" }

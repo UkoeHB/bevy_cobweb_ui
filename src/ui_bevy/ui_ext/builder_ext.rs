@@ -48,7 +48,7 @@ pub trait NodeLoadingExt
     ) -> UiBuilder<Entity>;
 }
 
-impl NodeLoadingExt for UiBuilder<'_, '_, UiRoot>
+impl NodeLoadingExt for UiBuilder<'_, UiRoot>
 {
     fn load_theme<C: DefaultTheme>(
         &mut self,
@@ -80,7 +80,7 @@ impl NodeLoadingExt for UiBuilder<'_, '_, UiRoot>
     }
 }
 
-impl NodeLoadingExt for UiBuilder<'_, '_, Entity>
+impl NodeLoadingExt for UiBuilder<'_, Entity>
 {
     fn load_theme<C: DefaultTheme>(
         &mut self,

@@ -38,7 +38,7 @@ pub trait UiBuilderReactExt
     ) -> &mut Self;
 }
 
-impl UiBuilderReactExt for UiBuilder<'_, '_, Entity>
+impl UiBuilderReactExt for UiBuilder<'_, Entity>
 {
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
     {

@@ -141,7 +141,6 @@ impl CounterWidget
                 .insert(CounterButton)
                 .insert(PropagateControl)
                 .insert_reactive(Counter(0))
-                .entity_commands()
                 .on_pressed(Counter::increment(button_id));
 
             button.load(text_ref, |text, _path| {

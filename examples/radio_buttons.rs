@@ -58,11 +58,7 @@ impl RadioButtonBuilder
     /// Builds the button as a child of the builder entity.
     ///
     /// The `manager_entity` should have a [`RadioButtonManager`] component.
-    fn build<'a>(
-        self,
-        manager_entity: Entity,
-        node: &'a mut UiBuilder<Entity>,
-    ) -> UiBuilder<'a, 'a, Entity>
+    fn build<'a>(self, manager_entity: Entity, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
     {
         let file = LoadableRef::from_file("widgets.radio_button");
 
@@ -71,7 +67,6 @@ impl RadioButtonBuilder
             core_entity = core.id();
             core.insert(RadioButton)
                 .insert(PropagateControl)
-                .entity_commands()
                 // Note: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
                 .on_pressed(
@@ -141,7 +136,6 @@ fn build_ui(mut c: Commands)
                 // Add radio button.
                 let button_entity = RadioButtonBuilder::new(*option)
                     .build(manager_entity, frame)
-                    .entity_commands()
                     .on_select(move |mut e: TextEditor| {
                         e.write(display_text, |t| write!(t, "Selected: {}", option));
                     })
