@@ -1,3 +1,4 @@
+use sickle_ui::prelude::attribute::{CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute};
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
@@ -7,11 +8,7 @@ use sickle_ui::theme::dynamic_style::{ContextStyleAttribute, DynamicStyle};
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
-use sickle_ui::ui_style::{
-    AnimatedStyleAttribute, AnimatedVals, CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute,
-    CustomStaticStyleAttribute, InteractiveStyleAttribute, InteractiveVals, StaticStyleAttribute,
-};
-use sickle_ui::FluxInteraction;
+use sickle_ui::prelude::*;
 
 use crate::*;
 

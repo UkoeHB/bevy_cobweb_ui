@@ -28,9 +28,9 @@ impl EditablePseudoTheme
     }
 }
 
-impl Into<PseudoTheme> for EditablePseudoTheme
+impl<C> Into<PseudoTheme<C>> for EditablePseudoTheme
 {
-    fn into(self) -> PseudoTheme
+    fn into(self) -> PseudoTheme<C>
     {
         PseudoTheme::new(self.state, DynamicStyleBuilder::Static(self.style))
     }
@@ -43,7 +43,7 @@ fn refresh_loaded_theme<C: DefaultTheme>(
     ec: &mut EntityCommands,
 )
 {
-    let themes: Vec<PseudoTheme> = pseudo_themes.drain(..).map(|t| t.into()).collect();
+    let themes: Vec<PseudoTheme<C>> = pseudo_themes.drain(..).map(|t| t.into()).collect();
     ec.insert(Theme::<C>::new(themes));
 }
 

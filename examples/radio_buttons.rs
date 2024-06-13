@@ -7,7 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 use sickle::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use sickle::ui_builder::*;
-use sickle::widgets::container::UiContainerExt;
+use sickle::widgets::prelude::UiContainerExt;
 use sickle::{DefaultTheme, SickleUiPlugin, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -58,11 +58,11 @@ impl RadioButtonBuilder
     /// Builds the button as a child of the builder entity.
     ///
     /// The `manager_entity` should have a [`RadioButtonManager`] component.
-    fn build<'w, 's, 'a>(
+    fn build<'a>(
         self,
         manager_entity: Entity,
-        node: &'a mut UiBuilder<'w, 's, '_, Entity>,
-    ) -> UiBuilder<'w, 's, 'a, Entity>
+        node: &'a mut UiBuilder<Entity>,
+    ) -> UiBuilder<'a, 'a, Entity>
     {
         let file = LoadableRef::from_file("widgets.radio_button");
 
