@@ -49,8 +49,91 @@ impl ThemeLoadContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn add_attribute_to_dynamic_style_inner(
+    entity: Entity,
+    attribute: DynamicStyleAttribute,
+    commands: &mut Commands,
+    store_entity: Entity,
+    maybe_style: Option<&mut DynamicStyle>,
+)
+{
+    // Contextualize the attribute.
+    let context = if entity != store_entity {
+        Some(entity)
+    } else {
+        None
+    };
+    let contextual_attribute = ContextStyleAttribute::new(context, attribute);
+
+    // Add this attribute directly.
+    // - NOTE: If the entity has a themed component or is given a loaded theme at a later time, then these changes
+    //   MAY be overwritten.
+    let style = DynamicStyle::copy_from(vec![contextual_attribute]);
+    if let Some(existing) = maybe_style {
+        let mut temp = DynamicStyle::new(Vec::default());
+        std::mem::swap(&mut *existing, &mut temp);
+        *existing = temp.merge(style);
+    } else {
+        commands.entity(store_entity).try_insert(style);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn add_attribute_to_dynamic_style(
+    In((entity, inherit_control, attribute)): In<(Entity, bool, DynamicStyleAttribute)>,
+    mut commands: Commands,
+    parents: Query<&Parent>,
+    mut query: Query<(Entity, Option<&mut DynamicStyle>, Has<PropagateControl>)>,
+)
+{
+    if !inherit_control {
+        // Insert directly to this entity.
+        let Some((store_entity, maybe_style, _)) = query.get_mut(entity).ok() else { return };
+        add_attribute_to_dynamic_style_inner(
+            entity,
+            attribute,
+            &mut commands,
+            store_entity,
+            maybe_style.map(|i| i.into_inner()),
+        );
+    } else {
+        // Find parent where attribute should be saved.
+        let mut count = 0;
+        for parent in parents.iter_ancestors(entity) {
+            count += 1;
+            let Some((store_entity, maybe_style, has_propagate)) = query.get_mut(parent).ok() else {
+                continue;
+            };
+            if !has_propagate {
+                continue;
+            }
+            add_attribute_to_dynamic_style_inner(
+                entity,
+                attribute,
+                &mut commands,
+                store_entity,
+                maybe_style.map(|i| i.into_inner()),
+            );
+            return;
+        }
+
+        if count > 0 {
+            tracing::warn!("failed adding non-theme dynamic attribute with inherited interaction to {entity:?}, \
+                no ancestor with PropagateControl");
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn add_attribute_to_theme(
-    In((entity, state, attribute)): In<(Entity, Option<Vec<PseudoState>>, DynamicStyleAttribute)>,
+    In((entity, inherit_control, state, attribute)): In<(
+        Entity,
+        bool,
+        Option<Vec<PseudoState>>,
+        DynamicStyleAttribute,
+    )>,
     theme_registry: Res<ThemeRegistry>,
     contexts: Query<&ThemeLoadContext>,
     parents: Query<&Parent>,
@@ -59,10 +142,22 @@ fn add_attribute_to_theme(
 )
 {
     // Get load context for entity.
-    //todo: if no load context, insert to DynamicStyles?
     let Ok(load_context) = contexts.get(entity) else {
-        tracing::error!("failed adding attribute to theme for {entity:?}, no themes are loaded onto the entity (use \
-            `entity.load_theme<MyTheme>(loadable_ref);` or a similar method)");
+        // Fall back to inserting as a plain dynamic style attribute.
+
+        if let Some(state) = &state {
+            if !state.is_empty() {
+                tracing::error!("failed adding attribute to {entity:?}, pseudo states are not supported for non-theme \
+                    dynamic sytle attributes (state: {:?}", state);
+                return;
+            }
+        }
+
+        tracing::debug!("no themes are loaded to {entity:?}, inserting attribute to dynamic style instead");
+        params
+            .p2()
+            .syscall((entity, inherit_control, attribute), add_attribute_to_dynamic_style);
+
         return;
     };
 
@@ -187,6 +282,17 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Marker component for entities that control the dynamic styles of descendents for non-themed entities.
+///
+/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
+/// around entity updates in the loader. Specifically, it's possible for a child to
+/// load its dynamic styles before its parent with `PropagateControl` is loaded, in which case the child's
+/// styles would fail to load since they need to be saved in the propagator's [`DynamicStyles`].
+#[derive(Component)]
+pub struct PropagateControl;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Trait for loadable types that specify a value for a theme.
 pub trait ThemedAttribute: Loadable + TypePath
 {
@@ -236,7 +342,7 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
         ));
 
         let id = ec.id();
-        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
+        ec.syscall((id, false, self.state, attribute), add_attribute_to_theme);
     }
 }
 
@@ -256,6 +362,13 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The values that are toggled in response to interaction changes.
     pub values: InteractiveVals<T::Value>,
+    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
+    ///
+    /// Only used when this loadable is applied to a non-themed entity.
+    ///
+    /// `false` by default.
+    #[reflect(default)]
+    pub inherit_control: bool,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
@@ -268,7 +381,10 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
         ));
 
         let id = ec.id();
-        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
+        ec.syscall(
+            (id, self.inherit_control, self.state, attribute),
+            add_attribute_to_theme,
+        );
     }
 }
 
@@ -292,6 +408,13 @@ where
     pub values: AnimatedVals<T::Value>,
     /// Settings that control how values are interpolated.
     pub settings: AnimationSettings,
+    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
+    ///
+    /// Only used when this loadable is applied to a non-themed entity.
+    ///
+    /// `false` by default.
+    #[reflect(default)]
+    pub inherit_control: bool,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
@@ -309,7 +432,10 @@ where
         };
 
         let id = ec.id();
-        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
+        ec.syscall(
+            (id, self.inherit_control, self.state, attribute),
+            add_attribute_to_theme,
+        );
     }
 }
 
