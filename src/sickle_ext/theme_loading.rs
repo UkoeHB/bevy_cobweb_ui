@@ -1,4 +1,4 @@
-use std::any::TypeId;
+use std::any::{type_name, TypeId};
 
 use bevy::ecs::component::Components;
 use bevy::ecs::system::EntityCommands;
@@ -13,6 +13,7 @@ use sickle_ui::prelude::*;
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
+use sickle_ui::theme::ThemeRegistry;
 
 use crate::*;
 
@@ -37,6 +38,8 @@ struct ThemeLoadContext
 {
     /// Type id of the theme component of the theme that the entity is updating/just updated.
     marker: TypeId,
+    /// Type name of the theme component.
+    marker_name: &'static str,
     /// Context string for the sub-theme that is updating/just updated.
     context: Option<&'static str>,
     /// Type-erased callback for adding a theme to `LoadedThemes` if it's missing.
@@ -56,7 +59,13 @@ impl ThemeLoadContext
 fn set_context_for_load_theme<C: DefaultTheme + Component>(ec: &mut EntityCommands)
 {
     let marker = TypeId::of::<C>();
-    ec.insert(ThemeLoadContext { marker, context: None, theme_adder_fn: theme_adder_fn::<C> });
+    let marker_name = type_name::<C>();
+    ec.insert(ThemeLoadContext {
+        marker,
+        marker_name,
+        context: None,
+        theme_adder_fn: theme_adder_fn::<C>,
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -64,8 +73,10 @@ fn set_context_for_load_theme<C: DefaultTheme + Component>(ec: &mut EntityComman
 fn set_context_for_load_theme_with_context<C: DefaultTheme + Component, Ctx: TypeName>(ec: &mut EntityCommands)
 {
     let marker = TypeId::of::<C>();
+    let marker_name = type_name::<C>();
     ec.insert(ThemeLoadContext {
         marker,
+        marker_name,
         context: Some(Ctx::NAME),
         theme_adder_fn: theme_adder_fn::<C>,
     });
@@ -84,6 +95,7 @@ fn add_attribute_to_theme(
         DynamicStyleAttribute,
         PrepTargetFn,
     )>,
+    theme_registry: Res<ThemeRegistry>,
     contexts: Query<&ThemeLoadContext>,
     parents: Query<&Parent>,
     components: &Components,
@@ -97,6 +109,13 @@ fn add_attribute_to_theme(
             `entity.load_theme<MyTheme>(loadable_ref);` or a similar method)");
         return;
     };
+
+    // Check that the theme was registered.
+    if !theme_registry.contains_by_id(load_context.marker) {
+        tracing::error!("failed adding attribute to theme for {entity:?}, the target theme {} was not registered (use \
+            ComponentThemePlugin)", load_context.marker_name);
+        return;
+    }
 
     // Convert marker id to component id.
     let maybe_component_id = components.get_id(load_context.marker);
