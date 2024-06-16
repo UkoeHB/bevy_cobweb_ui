@@ -237,17 +237,11 @@ impl ThemedAttribute for Width
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        Width(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for Width
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for Width
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for Width {}
+impl AnimatableAttribute for Width {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -277,17 +271,11 @@ impl ThemedAttribute for Height
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        Height(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for Height
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for Height
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for Height {}
+impl AnimatableAttribute for Height {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -317,17 +305,11 @@ impl ThemedAttribute for MinWidth
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        MinWidth(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for MinWidth
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for MinWidth
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for MinWidth {}
+impl AnimatableAttribute for MinWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -357,17 +339,11 @@ impl ThemedAttribute for MinHeight
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        MinHeight(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for MinHeight
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for MinHeight
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for MinHeight {}
+impl AnimatableAttribute for MinHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -397,17 +373,11 @@ impl ThemedAttribute for MaxWidth
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        MaxWidth(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for MaxWidth
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for MaxWidth
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for MaxWidth {}
+impl AnimatableAttribute for MaxWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -437,17 +407,11 @@ impl ThemedAttribute for MaxHeight
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        MaxHeight(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for MaxHeight
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for MaxHeight
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for MaxHeight {}
+impl AnimatableAttribute for MaxHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -477,17 +441,11 @@ impl ThemedAttribute for AspectRatio
     type Value = f32;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        AspectRatio(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for AspectRatio
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for AspectRatio
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for AspectRatio {}
+impl AnimatableAttribute for AspectRatio {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -517,17 +475,11 @@ impl ThemedAttribute for Border
     type Value = StyleRect;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        Border(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for Border
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for Border
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for Border {}
+impl AnimatableAttribute for Border {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -557,17 +509,11 @@ impl ThemedAttribute for DimsTop
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        DimsTop(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for DimsTop
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for DimsTop
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for DimsTop {}
+impl AnimatableAttribute for DimsTop {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -597,17 +543,11 @@ impl ThemedAttribute for DimsBottom
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        DimsBottom(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for DimsBottom
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for DimsBottom
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for DimsBottom {}
+impl AnimatableAttribute for DimsBottom {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -637,17 +577,11 @@ impl ThemedAttribute for DimsLeft
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        DimsLeft(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for DimsLeft
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for DimsLeft
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for DimsLeft {}
+impl AnimatableAttribute for DimsLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -677,17 +611,11 @@ impl ThemedAttribute for DimsRight
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        DimsRight(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for DimsRight
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for DimsRight
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for DimsRight {}
+impl AnimatableAttribute for DimsRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -720,10 +648,7 @@ impl ThemedAttribute for SetClipping
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetClipping
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetClipping {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -753,17 +678,11 @@ impl ThemedAttribute for Padding
     type Value = StyleRect;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        Padding(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for Padding
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for Padding
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for Padding {}
+impl AnimatableAttribute for Padding {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -796,10 +715,7 @@ impl ThemedAttribute for SetFlexDirection
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetFlexDirection
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetFlexDirection {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -832,10 +748,7 @@ impl ThemedAttribute for SetFlexWrap
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetFlexWrap
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetFlexWrap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -868,10 +781,7 @@ impl ThemedAttribute for SetJustifyLines
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetJustifyLines
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetJustifyLines {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -904,10 +814,7 @@ impl ThemedAttribute for SetJustifyMain
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetJustifyMain
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetJustifyMain {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -940,10 +847,7 @@ impl ThemedAttribute for SetJustifyCross
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetJustifyCross
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetJustifyCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -976,10 +880,7 @@ impl ThemedAttribute for SetTextDirection
         Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetTextDirection
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetTextDirection {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1009,17 +910,11 @@ impl ThemedAttribute for ColumnGap
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        ColumnGap(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for ColumnGap
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for ColumnGap
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for ColumnGap {}
+impl AnimatableAttribute for ColumnGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1049,17 +944,11 @@ impl ThemedAttribute for RowGap
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        RowGap(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for RowGap
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for RowGap
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for RowGap {}
+impl AnimatableAttribute for RowGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1089,17 +978,11 @@ impl ThemedAttribute for Margin
     type Value = StyleRect;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        Margin(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for Margin
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for Margin
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for Margin {}
+impl AnimatableAttribute for Margin {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1129,17 +1012,11 @@ impl ThemedAttribute for FlexBasis
     type Value = Val;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        FlexBasis(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for FlexBasis
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for FlexBasis
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for FlexBasis {}
+impl AnimatableAttribute for FlexBasis {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1169,17 +1046,11 @@ impl ThemedAttribute for FlexGrow
     type Value = f32;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        FlexGrow(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for FlexGrow
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for FlexGrow
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for FlexGrow {}
+impl AnimatableAttribute for FlexGrow {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1209,17 +1080,11 @@ impl ThemedAttribute for FlexShrink
     type Value = f32;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        FlexShrink(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for FlexShrink
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for FlexShrink
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for FlexShrink {}
+impl AnimatableAttribute for FlexShrink {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1249,13 +1114,10 @@ impl ThemedAttribute for SetJustifySelfCross
     type Value = JustifySelfCross;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        SetJustifySelfCross(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
-impl ResponsiveAttribute for SetJustifySelfCross
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetJustifySelfCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

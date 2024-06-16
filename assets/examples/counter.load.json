@@ -24,6 +24,7 @@
                 "press": {"duration": 0.2, "easing": "OutExpo"}
             }
         },
+        "Interactive": [],
 
         "#c: Sets up the button's text as a single line of text with margin to control the edges of the button.":0,
         "text": {

@@ -19,13 +19,6 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_loadable<T: Default + ApplyLoadable>(ec: &mut EntityCommands)
-{
-    T::default().apply(ec);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn theme_adder_fn<C: DefaultTheme + Component>(loaded_themes: &mut LoadedThemes) -> &mut LoadedTheme
 {
     loaded_themes.add::<C>()
@@ -56,17 +49,8 @@ impl ThemeLoadContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct PrepTargetFn(fn(&mut EntityCommands));
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn add_attribute_to_theme(
-    In((entity, state, attribute, prep_target)): In<(
-        Entity,
-        Option<Vec<PseudoState>>,
-        DynamicStyleAttribute,
-        PrepTargetFn,
-    )>,
+    In((entity, state, attribute)): In<(Entity, Option<Vec<PseudoState>>, DynamicStyleAttribute)>,
     theme_registry: Res<ThemeRegistry>,
     contexts: Query<&ThemeLoadContext>,
     parents: Query<&Parent>,
@@ -109,7 +93,6 @@ fn add_attribute_to_theme(
             if let Some(loaded_theme) = loaded_themes.get_mut(load_context.marker) {
                 // Update the existing loaded themes.
                 loaded_theme.set_attribute(state, load_context.context, attribute);
-                prep_target.0(&mut params.p2().entity(entity));
                 return;
             }
 
@@ -118,7 +101,6 @@ fn add_attribute_to_theme(
                 // Insert to the existing loaded themes.
                 let loaded_theme = load_context.add_theme(loaded_themes.into_inner());
                 loaded_theme.set_attribute(state, load_context.context, attribute);
-                prep_target.0(&mut params.p2().entity(entity));
                 return;
             }
         }
@@ -131,7 +113,6 @@ fn add_attribute_to_theme(
             loaded_theme.set_attribute(state, load_context.context, attribute);
             let mut c = params.p2();
             let mut ec = c.entity(entity);
-            prep_target.0(&mut ec);
             ec.insert(loaded_themes);
             return;
         }
@@ -219,28 +200,16 @@ pub trait ThemedAttribute: Loadable + TypePath
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that respond to interactions.
-pub trait ResponsiveAttribute: Loadable + TypePath
-{
-    /// Specifies the interactivity loadable used by this responsive.
-    ///
-    /// Can be used to hook target entities up to custom interactivity.
-    ///
-    /// For example [`Interactive`] (for `bevy_ui`).
-    type Interactive: Default + ApplyLoadable;
-}
+///
+/// Use [`Interactive`] to make an entity interactable.
+pub trait ResponsiveAttribute: Loadable + TypePath {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that can be animated in response to interactions.
-pub trait AnimatableAttribute: Loadable + TypePath
-{
-    /// Specifies the interactivity loadable used by this animatable.
-    ///
-    /// Can be used to hook target entities up to custom interactivity.
-    ///
-    /// For example [`Interactive`] (for `bevy_ui`).
-    type Interactive: Default + ApplyLoadable;
-}
+///
+/// Use [`Interactive`] to make an entity interactable.
+pub trait AnimatableAttribute: Loadable + TypePath {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -267,10 +236,7 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
         ));
 
         let id = ec.id();
-        ec.syscall(
-            (id, self.state, attribute, PrepTargetFn(|_: &mut EntityCommands| {})),
-            add_attribute_to_theme,
-        );
+        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
     }
 }
 
@@ -302,10 +268,7 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
         ));
 
         let id = ec.id();
-        ec.syscall(
-            (id, self.state, attribute, PrepTargetFn(add_loadable::<T::Interactive>)),
-            add_attribute_to_theme,
-        );
+        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
     }
 }
 
@@ -346,10 +309,7 @@ where
         };
 
         let id = ec.id();
-        ec.syscall(
-            (id, self.state, attribute, PrepTargetFn(add_loadable::<T::Interactive>)),
-            add_attribute_to_theme,
-        );
+        ec.syscall((id, self.state, attribute), add_attribute_to_theme);
     }
 }
 

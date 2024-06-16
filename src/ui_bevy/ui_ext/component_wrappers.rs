@@ -25,18 +25,12 @@ impl ThemedAttribute for BgColor
     type Value = Color;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        BgColor(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
 
-impl ResponsiveAttribute for BgColor
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for BgColor
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for BgColor {}
+impl AnimatableAttribute for BgColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -57,18 +51,12 @@ impl ThemedAttribute for BrColor
     type Value = Color;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        BrColor(value).apply(ec);
+        Self(value).apply(ec);
     }
 }
 
-impl ResponsiveAttribute for BrColor
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for BrColor
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for BrColor {}
+impl AnimatableAttribute for BrColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -122,14 +110,8 @@ impl ThemedAttribute for NodeOutline
     }
 }
 
-impl ResponsiveAttribute for NodeOutline
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for NodeOutline
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for NodeOutline {}
+impl AnimatableAttribute for NodeOutline {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -170,10 +152,7 @@ impl ThemedAttribute for SetFocusPolicy
         value.apply(ec);
     }
 }
-impl ResponsiveAttribute for SetFocusPolicy
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetFocusPolicy {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -221,10 +200,7 @@ impl ThemedAttribute for SetZIndex
         value.apply(ec);
     }
 }
-impl ResponsiveAttribute for SetZIndex
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for SetZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

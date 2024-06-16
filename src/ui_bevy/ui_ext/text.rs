@@ -162,14 +162,8 @@ impl ThemedAttribute for TextLineColor
     }
 }
 
-impl ResponsiveAttribute for TextLineColor
-{
-    type Interactive = Interactive;
-}
-impl AnimatableAttribute for TextLineColor
-{
-    type Interactive = Interactive;
-}
+impl ResponsiveAttribute for TextLineColor {}
+impl AnimatableAttribute for TextLineColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
