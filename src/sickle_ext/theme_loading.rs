@@ -66,7 +66,7 @@ fn set_context_for_load_theme_with_context<C: DefaultTheme + Component, Ctx: Typ
     let marker = TypeId::of::<C>();
     ec.insert(ThemeLoadContext {
         marker,
-        context: Some(Ctx::type_name()),
+        context: Some(Ctx::NAME),
         theme_adder_fn: theme_adder_fn::<C>,
     });
 }

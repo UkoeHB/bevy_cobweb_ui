@@ -12,10 +12,9 @@ pub(crate) fn derive_type_name_impl(input: TokenStream) -> TokenStream
     // TypeName is not implement for generic types because the full type name is only known when instantiated.
     format!(r#"
         impl TypeName for {} {{
-            const TYPE_NAME: &'static str = "{}";
-            fn type_name() -> &'static str {{ "{}" }}
+            const NAME: &'static str = "{}";
         }}
-    "#, type_name, type_name, type_name)
+    "#, type_name, type_name)
     .parse()
     .unwrap()
 }

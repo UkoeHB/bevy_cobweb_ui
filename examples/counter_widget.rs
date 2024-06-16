@@ -80,13 +80,13 @@ impl UiContext for CounterWidget
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            CounterWidgetText::TYPE_NAME => Ok(self.text),
+            CounterWidgetText::NAME => Ok(self.text),
             _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
         }
     }
     fn contexts(&self) -> Vec<&'static str>
     {
-        vec![CounterWidgetText::TYPE_NAME]
+        vec![CounterWidgetText::NAME]
     }
 }
 

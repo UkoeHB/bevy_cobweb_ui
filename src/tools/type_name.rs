@@ -15,11 +15,8 @@ assert_eq!("MyStruct", MyStruct::type_name());
 */
 pub trait TypeName
 {
-    /// The type name as a constant.
-    const TYPE_NAME: &'static str;
-
-    /// Gets the type name.
-    fn type_name() -> &'static str;
+    /// The type's name as a constant.
+    const NAME: &'static str;
 }
 
 //-------------------------------------------------------------------------------------------------------------------

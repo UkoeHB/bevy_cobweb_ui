@@ -72,15 +72,15 @@ impl UiContext for RadioButton
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            RadioButtonOutline::TYPE_NAME => Ok(self.outline),
-            RadioButtonIndicator::TYPE_NAME => Ok(self.indicator),
-            RadioButtonText::TYPE_NAME => Ok(self.text),
+            RadioButtonOutline::NAME => Ok(self.outline),
+            RadioButtonIndicator::NAME => Ok(self.indicator),
+            RadioButtonText::NAME => Ok(self.text),
             _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
         }
     }
     fn contexts(&self) -> Vec<&'static str>
     {
-        vec![RadioButtonOutline::TYPE_NAME, RadioButtonIndicator::TYPE_NAME, RadioButtonText::TYPE_NAME]
+        vec![RadioButtonOutline::NAME, RadioButtonIndicator::NAME, RadioButtonText::NAME]
     }
 }
 

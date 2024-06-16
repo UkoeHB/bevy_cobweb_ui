@@ -10,13 +10,13 @@ struct TestType;
 #[test]
 fn test_type_name()
 {
-    assert_eq!("TestType", TestType::type_name());
+    assert_eq!("TestType", TestType::NAME);
     assert!(match "TestType"
     {
-        TestType::TYPE_NAME => true,
+        TestType::NAME => true,
         _ => false,
     });
-    assert!(match TestType::type_name()
+    assert!(match TestType::NAME
     {
         "TestType" => true,
         _ => false,
