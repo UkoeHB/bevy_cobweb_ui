@@ -32,7 +32,7 @@ fn theme_adder_fn<C: DefaultTheme + Component>(loaded_themes: &mut LoadedThemes)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct ThemeLoadContext
 {
     /// Type id of the theme component of the theme that the entity is updating/just updated.
@@ -91,6 +91,7 @@ fn add_attribute_to_theme(
 )
 {
     // Get load context for entity.
+    //todo: if no load context, insert to DynamicStyles?
     let Ok(load_context) = contexts.get(entity) else {
         tracing::error!("failed adding attribute to theme for {entity:?}, no themes are loaded onto the entity (use \
             `entity.load_theme<MyTheme>(loadable_ref);` or a similar method)");

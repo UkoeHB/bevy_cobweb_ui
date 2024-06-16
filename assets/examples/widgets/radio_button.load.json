@@ -105,11 +105,11 @@
                 "settings": "$animation_settings_slow"
             }
         ]],
-        "Themed<BrColor>": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}]
+        "Themed<BrColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
     },
 
     "outline": {
-        "Themed<BrColor>": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}]
+        "Themed<BrColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
     },
 
     "indicator": {
@@ -132,7 +132,7 @@
     },
 
     "text": {
-        "Themed<TextLineColor>": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}]
+        "Themed<TextLineColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
     }
 }
 

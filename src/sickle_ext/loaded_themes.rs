@@ -15,6 +15,7 @@ use smallvec::SmallVec;
 
 fn get_loaded_theme<C: Component>(
     style_builder: &mut StyleBuilder,
+    source: Entity,
     state: &Option<Vec<PseudoState>>,
     entity: Entity,
     _context: &C,
@@ -22,17 +23,19 @@ fn get_loaded_theme<C: Component>(
 )
 {
     // Get the pseudo theme being built.
-    let Some(loaded_themes) = world.get::<LoadedThemes>(entity) else {
-        tracing::error!("build style failed, {entity:?} is missing LoadedThemes for theme {}", type_name::<C>());
+    let Some(loaded_themes) = world.get::<LoadedThemes>(source) else {
+        tracing::error!("build style for {entity:?} failed, source {source:?} is missing LoadedThemes for theme {}",
+            type_name::<C>());
         return;
     };
     let Some(loaded_theme) = loaded_themes.get(TypeId::of::<C>()) else {
-        tracing::error!("build style failed, {entity:?} is missing LoadedTheme for theme {}", type_name::<C>());
+        tracing::error!("build style for {entity:?} failed, source {source:?} is missing LoadedTheme for theme {}",
+            type_name::<C>());
         return;
     };
     let Some(pseudo_theme) = loaded_theme.get(state) else {
-        tracing::debug!("build style skipped, {entity:?} doesn't have pseudo theme for theme {} for pseudo states {:?}",
-            type_name::<C>(), state);
+        tracing::error!("build style for {entity:?} skipped, source {source:?} doesn't have pseudo theme for \
+            theme {} for pseudo states {:?}", type_name::<C>(), state);
         return;
     };
 
@@ -131,7 +134,7 @@ impl EditablePseudoTheme
     {
         PseudoTheme::new(
             self.state.clone(),
-            DynamicStyleBuilder::PseudoWorldStyleBuilder(get_loaded_theme::<C>),
+            DynamicStyleBuilder::InfoWorldStyleBuilder(get_loaded_theme::<C>),
         )
     }
 }
@@ -173,7 +176,7 @@ impl LoadedTheme
     fn new<C: DefaultTheme>() -> Self
     {
         Self {
-            is_dirty: false,
+            is_dirty: true,
             theme_marker: TypeId::of::<C>(),
             refresh: refresh_loaded_theme::<C>,
             pseudo_themes: SmallVec::default(),

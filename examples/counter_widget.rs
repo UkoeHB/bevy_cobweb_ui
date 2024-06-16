@@ -56,37 +56,37 @@ impl Counter
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(TypeName)]
-struct CounterButtonText;
+struct CounterWidgetText;
 
 /// Marker type for the counter theme.
 #[derive(Component, DefaultTheme, Copy, Clone, Debug)]
-struct CounterButton
+struct CounterWidget
 {
     text: Entity,
 }
 
-impl CounterButton
+impl CounterWidget
 {
     fn load_base_theme(node: &mut UiBuilder<Entity>)
     {
-        let theme = CounterWidget::default_file().e("theme");
-        node.load_theme::<CounterButton>(theme.e("core"));
-        node.load_subtheme::<CounterButton, CounterButtonText>(theme.e("text"));
+        let theme = CounterWidgetBuilder::default_file().e("theme");
+        node.load_theme::<CounterWidget>(theme.e("core"));
+        node.load_subtheme::<CounterWidget, CounterWidgetText>(theme.e("text"));
     }
 }
 
-impl UiContext for CounterButton
+impl UiContext for CounterWidget
 {
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            CounterButtonText::TYPE_NAME => Ok(self.text),
+            CounterWidgetText::TYPE_NAME => Ok(self.text),
             _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
         }
     }
     fn contexts(&self) -> Vec<&'static str>
     {
-        vec![CounterButtonText::TYPE_NAME]
+        vec![CounterWidgetText::TYPE_NAME]
     }
 }
 
@@ -94,7 +94,7 @@ impl UiContext for CounterButton
 
 /// Pre-defined widget structure that can be customized.
 #[derive(Default)]
-struct CounterWidget
+struct CounterWidgetBuilder
 {
     button_config: Option<LoadableRef>,
     text_config: Option<LoadableRef>,
@@ -104,7 +104,7 @@ struct CounterWidget
     post_text: Option<String>,
 }
 
-impl CounterWidget
+impl CounterWidgetBuilder
 {
     /// Makes a default counter widget.
     fn new() -> Self
@@ -175,10 +175,10 @@ impl CounterWidget
 
         let mut text_entity = Entity::PLACEHOLDER;
 
-        builder.load_theme_with::<CounterButton>(button_ref, |button, _path| {
+        builder.load_theme_with::<CounterWidget>(button_ref, |button, _path| {
             // Load extra theme info.
             if let Some(theme) = self.core_theme {
-                button.load_theme::<CounterButton>(theme);
+                button.load_theme::<CounterWidget>(theme);
             }
 
             let button_id = button.id();
@@ -186,12 +186,12 @@ impl CounterWidget
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
-            button.load_subtheme_with::<CounterButton, CounterButtonText>(text_ref, |text, _path| {
+            button.load_subtheme_with::<CounterWidget, CounterWidgetText>(text_ref, |text, _path| {
                 text_entity = text.id();
 
                 // Load extra theme info.
                 if let Some(theme) = self.text_theme {
-                    text.load_subtheme::<CounterButton, CounterButtonText>(theme);
+                    text.load_subtheme::<CounterWidget, CounterWidgetText>(theme);
                 }
 
                 text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
@@ -199,7 +199,7 @@ impl CounterWidget
                 });
             });
 
-            button.insert(CounterButton { text: text_entity });
+            button.insert(CounterWidget { text: text_entity });
         });
     }
 }
@@ -212,25 +212,25 @@ fn build_ui(mut c: Commands)
 
     c.ui_builder(UiRoot).load(example.e("root"), |root, _path| {
         // Load base themes.
-        CounterButton::load_base_theme(root);
+        CounterWidget::load_base_theme(root);
 
         // Default widget
-        CounterWidget::new().build(root);
+        CounterWidgetBuilder::new().build(root);
 
         // Widget with custom text structure.
-        CounterWidget::new()
+        CounterWidgetBuilder::new()
             .text_config(example.e("counter_widget_text_small"))
             .pre_text("Small: ")
             .build(root);
 
         // Widget with animated text structure.
-        CounterWidget::new()
+        CounterWidgetBuilder::new()
             .text_config(example.e("counter_widget_text_responsive"))
             .pre_text("Responsive: ")
             .build(root);
 
         // Widget with theme adjustments
-        CounterWidget::new()
+        CounterWidgetBuilder::new()
             .core_theme(example.e("counter_theme_flexible"))
             .button_config(example.e("counter_widget_button_flexible"))
             .pre_text("Themed: ")
@@ -259,7 +259,7 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
-        .add_plugins(ComponentThemePlugin::<CounterButton>::new())
+        .add_plugins(ComponentThemePlugin::<CounterWidget>::new())
         .load_sheet("examples/counter_widget.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)

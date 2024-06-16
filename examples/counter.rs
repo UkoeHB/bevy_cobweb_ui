@@ -7,6 +7,7 @@ use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::theme::{DefaultTheme, UiContext};
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
+use sickle::theme::ComponentThemePlugin;
 use sickle::{DefaultTheme, UiContext};
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -54,7 +55,7 @@ impl Counter
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, DefaultTheme, UiContext, Copy, Clone, Debug)]
-struct CounterWidget;
+struct CounterButton;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -63,10 +64,10 @@ fn build_ui(mut c: Commands)
     let file = LoadableRef::from_file("examples/counter.load.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load_theme_with::<CounterWidget>(path.e("button"), |button, path| {
+        root.load_theme_with::<CounterButton>(path.e("button"), |button, path| {
             let button_id = button.id();
             button
-                .insert(CounterWidget)
+                .insert(CounterButton)
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
@@ -100,6 +101,7 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
+        .add_plugins(ComponentThemePlugin::<CounterButton>::new())
         .load_sheet("examples/counter.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(Startup, build_ui)
