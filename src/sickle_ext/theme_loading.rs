@@ -56,34 +56,6 @@ impl ThemeLoadContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn set_context_for_load_theme<C: DefaultTheme + Component>(ec: &mut EntityCommands)
-{
-    let marker = TypeId::of::<C>();
-    let marker_name = type_name::<C>();
-    ec.insert(ThemeLoadContext {
-        marker,
-        marker_name,
-        context: None,
-        theme_adder_fn: theme_adder_fn::<C>,
-    });
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn set_context_for_load_theme_with_context<C: DefaultTheme + Component, Ctx: TypeName>(ec: &mut EntityCommands)
-{
-    let marker = TypeId::of::<C>();
-    let marker_name = type_name::<C>();
-    ec.insert(ThemeLoadContext {
-        marker,
-        marker_name,
-        context: Some(Ctx::NAME),
-        theme_adder_fn: theme_adder_fn::<C>,
-    });
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 struct PrepTargetFn(fn(&mut EntityCommands));
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -385,6 +357,11 @@ where
 
 pub trait ThemeLoadingEntityCommandsExt
 {
+    /// Sets `C` in the theme load context so manually-inserted themable attributes will be applied properly.
+    fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self;
+    /// Sets `C` and `Ctx` in the theme load context so manually-inserted themable attributes will be applied
+    /// properly.
+    fn set_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self) -> &mut Self;
     /// Sets up the current entity to receive loadable theme data.
     ///
     /// This is useful if you want to add subthemes to a theme that doesn't need to use [`Self::load_them`] because
@@ -405,6 +382,32 @@ pub trait ThemeLoadingEntityCommandsExt
 
 impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
 {
+    fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            context: None,
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+
+    fn set_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            context: Some(Ctx::NAME),
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+
     fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self
     {
         let entity = self.id();
@@ -415,13 +418,17 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
     fn load_theme<C: DefaultTheme + Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
         self.prepare_theme::<C>();
-        self.load_with_context_setter(loadable_ref, set_context_for_load_theme::<C>);
+        self.load_with_context_setter(loadable_ref, |ec| {
+            ec.set_theme::<C>();
+        });
         self
     }
 
     fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
-        self.load_with_context_setter(loadable_ref, set_context_for_load_theme_with_context::<C, Ctx>);
+        self.load_with_context_setter(loadable_ref, |ec| {
+            ec.set_subtheme::<C, Ctx>();
+        });
         self
     }
 }

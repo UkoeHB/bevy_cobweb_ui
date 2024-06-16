@@ -50,8 +50,8 @@ smallvec    = { version = "1.13" }
 thiserror   = { version = "1.0" }
 tracing     = { version = "0.1" }
 
-#sickle_ui = { rev = "1753776", git = "https://github.com/UmbraLuminosa/sickle_ui" }
-sickle_ui = { rev = "7ee7327", git = "https://github.com/UkoeHB/sickle_ui" }
+sickle_ui = { rev = "a0d0468", git = "https://github.com/UmbraLuminosa/sickle_ui" }
+#sickle_ui = { rev = "7ee7327", git = "https://github.com/UkoeHB/sickle_ui" }
 
 bevy_cobweb_ui_derive = { path = "bevy_cobweb_ui_derive", version = "0.1.0" }
 

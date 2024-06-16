@@ -175,7 +175,7 @@ impl CounterWidgetBuilder
 
         let mut text_entity = Entity::PLACEHOLDER;
 
-        builder.load_theme_with::<CounterWidget>(button_ref, |button, _path| {
+        builder.load_with_theme::<CounterWidget>(button_ref, |button, _path| {
             // Load extra theme info.
             if let Some(theme) = self.core_theme {
                 button.load_theme::<CounterWidget>(theme);
@@ -186,7 +186,7 @@ impl CounterWidgetBuilder
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
-            button.load_subtheme_with::<CounterWidget, CounterWidgetText>(text_ref, |text, _path| {
+            button.load_with_subtheme::<CounterWidget, CounterWidgetText>(text_ref, |text, _path| {
                 text_entity = text.id();
 
                 // Load extra theme info.

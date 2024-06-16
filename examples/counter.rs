@@ -64,7 +64,7 @@ fn build_ui(mut c: Commands)
     let file = LoadableRef::from_file("examples/counter.load.json");
 
     c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load_theme_with::<CounterButton>(path.e("button"), |button, path| {
+        root.load_with_theme::<CounterButton>(path.e("button"), |button, path| {
             let button_id = button.id();
             button
                 .insert(CounterButton)

@@ -115,7 +115,7 @@ impl RadioButtonBuilder
         let mut indicator_entity = Entity::PLACEHOLDER;
         let mut text_entity = Entity::PLACEHOLDER;
 
-        node.load_theme_with::<RadioButton>(structure.e("core"), |core, path| {
+        node.load_with_theme::<RadioButton>(structure.e("core"), |core, path| {
             core_entity = core.id();
             core
                 // Select this button.
@@ -139,9 +139,9 @@ impl RadioButtonBuilder
                     manager.selected = Some(core_entity);
                 });
 
-            core.load_subtheme_with::<RadioButton, RadioButtonOutline>(path.e("outline"), |outline, path| {
+            core.load_with_subtheme::<RadioButton, RadioButtonOutline>(path.e("outline"), |outline, path| {
                 outline_entity = outline.id();
-                outline.load_subtheme_with::<RadioButton, RadioButtonIndicator>(
+                outline.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
                     path.e("indicator"),
                     |indicator, _| {
                         indicator_entity = indicator.id();
@@ -149,7 +149,7 @@ impl RadioButtonBuilder
                 );
             });
 
-            core.load_subtheme_with::<RadioButton, RadioButtonText>(path.e("text"), |text, _| {
+            core.load_with_subtheme::<RadioButton, RadioButtonText>(path.e("text"), |text, _| {
                 text_entity = text.id();
 
                 // Note: The text needs to be updated on load otherwise it may be overwritten.
