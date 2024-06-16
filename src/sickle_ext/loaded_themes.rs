@@ -15,7 +15,7 @@ use smallvec::SmallVec;
 
 fn get_loaded_theme<C: Component>(
     style_builder: &mut StyleBuilder,
-    source: Entity,
+    source: Option<Entity>,
     state: &Option<Vec<PseudoState>>,
     entity: Entity,
     _context: &C,
@@ -23,6 +23,11 @@ fn get_loaded_theme<C: Component>(
 )
 {
     // Get the pseudo theme being built.
+    let Some(source) = source else {
+        tracing::error!("build style for {entity:?} failed, there is unexpectedly no source entity {source:?} for theme {}",
+            type_name::<C>());
+        return;
+    };
     let Some(loaded_themes) = world.get::<LoadedThemes>(source) else {
         tracing::error!("build style for {entity:?} failed, source {source:?} is missing LoadedThemes for theme {}",
             type_name::<C>());
