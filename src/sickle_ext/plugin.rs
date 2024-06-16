@@ -36,6 +36,7 @@ impl Plugin for SickleExtPlugin
             .register_type::<AnimatedVals<Val>>()
             .register_type::<AnimatedVals<UiRect>>()
             .register_type::<AnimatedVals<StyleRect>>()
+            .add_plugins(LoadedThemesPlugin)
             .add_plugins(UiInteractionExtPlugin)
             .add_plugins(PseudoStatesExtPlugin);
     }

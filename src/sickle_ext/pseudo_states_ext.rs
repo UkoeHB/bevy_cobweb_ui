@@ -124,7 +124,7 @@ impl WorldReactor for DetectUncheckReactor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_opene_reactor(event: EntityEvent<Open>, mut c: Commands)
+fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 {
     let (entity, _) = event.read().unwrap();
     c.entity(entity).add_pseudo_state(PseudoState::Open);
@@ -138,7 +138,7 @@ impl WorldReactor for DetectOpenReactor
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback
     {
-        SystemCommandCallback::new(detect_opene_reactor)
+        SystemCommandCallback::new(detect_open_reactor)
     }
 }
 

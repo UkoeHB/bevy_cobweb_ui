@@ -13,6 +13,7 @@ mod tools;
 mod ui_bevy;
 
 pub use assets_ext::*;
+pub use bevy_cobweb_ui_derive::*;
 pub use bevy_ext::*;
 pub use loading::*;
 pub use plugin::*;

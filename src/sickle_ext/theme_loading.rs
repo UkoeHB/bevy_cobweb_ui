@@ -1,3 +1,6 @@
+use std::any::TypeId;
+
+use bevy::ecs::component::Components;
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
@@ -7,7 +10,6 @@ use sickle_ui::prelude::attribute::{
     CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
 };
 use sickle_ui::prelude::*;
-use sickle_ui::theme::dynamic_style::{ContextStyleAttribute, DynamicStyle};
 use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
@@ -16,101 +18,135 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_attribute_to_theme_inner(
-    entity: Entity,
-    state: Option<Vec<PseudoState>>,
-    attribute: DynamicStyleAttribute,
-    commands: &mut Commands,
-    store_entity: Entity,
-    maybe_style: Option<&mut DynamicStyle>,
-    maybe_themes: Option<&mut LoadedThemes>,
-)
+fn add_loadable<T: Default + ApplyLoadable>(ec: &mut EntityCommands)
 {
-    // If there is a loaded theme, then add this attribute to the theme.
-    let context = if entity != store_entity {
-        Some(entity)
-    } else {
-        None
-    };
-    let contextual_attribute = ContextStyleAttribute::new(context, attribute);
+    T::default().apply(ec);
+}
 
-    if let Some(themes) = maybe_themes {
-        themes.update(state, contextual_attribute);
-        commands.add(RefreshLoadedTheme { entity: store_entity });
-        return;
-    }
+//-------------------------------------------------------------------------------------------------------------------
 
-    // If there is no loaded theme, add this attribute directly.
-    // - NOTE: If the entity has a theme ancestor, then these changes MAY be overwritten.
-    let style = DynamicStyle::copy_from(vec![contextual_attribute]);
-    if let Some(existing) = maybe_style {
-        let mut temp = DynamicStyle::new(Vec::default());
-        std::mem::swap(&mut *existing, &mut temp);
-        *existing = temp.merge(style);
-    } else {
-        commands.entity(store_entity).try_insert(style);
+fn theme_adder_fn<C: DefaultTheme + Component>(loaded_themes: &mut LoadedThemes) -> &mut LoadedTheme
+{
+    loaded_themes.add::<C>()
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component)]
+struct ThemeLoadContext
+{
+    /// Type id of the theme component of the theme that the entity is updating/just updated.
+    marker: TypeId,
+    /// Context string for the sub-theme that is updating/just updated.
+    context: Option<&'static str>,
+    /// Type-erased callback for adding a theme to `LoadedThemes` if it's missing.
+    theme_adder_fn: fn(&mut LoadedThemes) -> &mut LoadedTheme,
+}
+
+impl ThemeLoadContext
+{
+    fn add_theme<'a>(&self, loaded_themes: &'a mut LoadedThemes) -> &'a mut LoadedTheme
+    {
+        (self.theme_adder_fn)(loaded_themes)
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn set_context_for_load_theme<C: DefaultTheme + Component>(ec: &mut EntityCommands)
+{
+    let marker = TypeId::of::<C>();
+    ec.insert(ThemeLoadContext { marker, context: None, theme_adder_fn: theme_adder_fn::<C> });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn set_context_for_load_theme_with_context<C: DefaultTheme + Component, Ctx: TypeName>(ec: &mut EntityCommands)
+{
+    let marker = TypeId::of::<C>();
+    ec.insert(ThemeLoadContext {
+        marker,
+        context: Some(Ctx::type_name()),
+        theme_adder_fn: theme_adder_fn::<C>,
+    });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct PrepTargetFn(fn(&mut EntityCommands));
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn add_attribute_to_theme(
-    In((entity, inherit_control, state, attribute)): In<(
+    In((entity, state, attribute, prep_target)): In<(
         Entity,
-        bool,
         Option<Vec<PseudoState>>,
         DynamicStyleAttribute,
+        PrepTargetFn,
     )>,
-    mut commands: Commands,
+    contexts: Query<&ThemeLoadContext>,
     parents: Query<&Parent>,
-    mut query: Query<(
-        Entity,
-        Option<&mut DynamicStyle>,
-        Option<&mut LoadedThemes>,
-        Has<PropagateControl>,
-    )>,
+    components: &Components,
+    mut params: ParamSet<(&World, Query<&mut LoadedThemes>, Commands)>,
 )
 {
-    if !inherit_control {
-        // Insert directly to this entity.
-        let Some((store_entity, maybe_style, maybe_themes, _)) = query.get_mut(entity).ok() else { return };
-        add_attribute_to_theme_inner(
-            entity,
-            state,
-            attribute,
-            &mut commands,
-            store_entity,
-            maybe_style.map(|i| i.into_inner()),
-            maybe_themes.map(|i| i.into_inner()),
-        );
-    } else {
-        // Find parent where attribute should be saved.
-        let mut count = 0;
-        for parent in parents.iter_ancestors(entity) {
-            count += 1;
-            let Some((store_entity, maybe_style, maybe_themes, has_propagate)) = query.get_mut(parent).ok() else {
-                continue;
-            };
-            if !has_propagate {
-                continue;
+    // Get load context for entity.
+    let Ok(load_context) = contexts.get(entity) else {
+        tracing::error!("failed adding attribute to theme for {entity:?}, no themes are loaded onto the entity (use \
+            `entity.load_theme<MyTheme>(loadable_ref);` or a similar method)");
+        return;
+    };
+
+    // Convert marker id to component id.
+    let maybe_component_id = components.get_id(load_context.marker);
+
+    // Find target entity and insert the attribute.
+    for entity in [entity]
+        .iter()
+        .cloned()
+        .chain(parents.iter_ancestors(entity))
+    {
+        // Check if the entity has the theme component.
+        let has_theme_component = maybe_component_id
+            .and_then(|component_id| params.p0().get_by_id(entity, component_id))
+            .is_some();
+
+        // Check if the entity has LoadedThemes with the theme component entry.
+        if let Ok(mut loaded_themes) = params.p1().get_mut(entity) {
+            // Check if the marker is known.
+            if let Some(loaded_theme) = loaded_themes.get_mut(load_context.marker) {
+                // Update the existing loaded themes.
+                loaded_theme.set_attribute(state, load_context.context, attribute);
+                prep_target.0(&mut params.p2().entity(entity));
+                return;
             }
-            add_attribute_to_theme_inner(
-                entity,
-                state,
-                attribute,
-                &mut commands,
-                store_entity,
-                maybe_style.map(|i| i.into_inner()),
-                maybe_themes.map(|i| i.into_inner()),
-            );
-            return;
+
+            // Check if the entity has the theme component.
+            if has_theme_component {
+                // Insert to the existing loaded themes.
+                let loaded_theme = load_context.add_theme(loaded_themes.into_inner());
+                loaded_theme.set_attribute(state, load_context.context, attribute);
+                prep_target.0(&mut params.p2().entity(entity));
+                return;
+            }
         }
 
-        if count > 0 {
-            tracing::warn!("failed adding theme attribute with inherited interaction to {entity:?}, \
-                no ancestor with PropagateControl");
+        // Check if the entity has the theme component.
+        if has_theme_component {
+            // Make new LoadedThemes with new theme and insert to the entity.
+            let mut loaded_themes = LoadedThemes::new();
+            let loaded_theme = load_context.add_theme(&mut loaded_themes);
+            loaded_theme.set_attribute(state, load_context.context, attribute);
+            let mut c = params.p2();
+            let mut ec = c.entity(entity);
+            prep_target.0(&mut ec);
+            ec.insert(loaded_themes);
+            return;
         }
     }
+
+    tracing::error!("failed adding attribute to theme for {entity:?}, could not find any ancestor with the theme \
+        component or where the theme is loaded");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -119,6 +155,7 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 {
     move |entity: Entity, world: &mut World| {
         // Apply the value to the entity.
+        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
         world.syscall(
             (entity, val.clone()),
             |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
@@ -140,6 +177,7 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
         let new_value = vals.to_value(state);
 
         // Apply the value to the entity.
+        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
         world.syscall(
             (entity, new_value),
             |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
@@ -163,6 +201,7 @@ where
         let new_value = vals.to_value(&state);
 
         // Apply the value to the entity.
+        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
         world.syscall(
             (entity, new_value),
             |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
@@ -213,17 +252,6 @@ pub trait AnimatableAttribute: Loadable + TypePath
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for entities that control the dynamic styles of descendents.
-///
-/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
-/// around entity updates in the loader. Specifically, it's possible for a child to
-/// load its dynamic styles before its parent with `PropagateControl` is loaded, in which case the child's
-/// styles would fail to load since they need to be saved in the propagator's theme.
-#[derive(Component)]
-pub struct PropagateControl;
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Loadable type for theme values.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Themed<T: ThemedAttribute>
@@ -235,11 +263,6 @@ pub struct Themed<T: ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The value that will be applied to the entity with `T`.
     pub value: T::Value,
-    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
-    ///
-    /// `false` by default.
-    #[reflect(default)]
-    pub inherit_control: bool,
 }
 
 impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
@@ -252,8 +275,8 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
         ));
 
         let id = ec.id();
-        ec.commands().syscall(
-            (id, self.inherit_control, self.state, attribute),
+        ec.syscall(
+            (id, self.state, attribute, PrepTargetFn(|_: &mut EntityCommands| {})),
             add_attribute_to_theme,
         );
     }
@@ -275,29 +298,20 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
     pub state: Option<Vec<PseudoState>>,
     /// The values that are toggled in response to interaction changes.
     pub values: InteractiveVals<T::Value>,
-    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
-    ///
-    /// `false` by default.
-    #[reflect(default)]
-    pub inherit_control: bool,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_control {
-            T::Interactive::default().apply(ec);
-        }
-
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
             CustomInteractiveStyleAttribute::new(extract_responsive_value::<T>(self.values)),
         ));
 
         let id = ec.id();
-        ec.commands().syscall(
-            (id, self.inherit_control, self.state, attribute),
+        ec.syscall(
+            (id, self.state, attribute, PrepTargetFn(add_loadable::<T::Interactive>)),
             add_attribute_to_theme,
         );
     }
@@ -323,11 +337,6 @@ where
     pub values: AnimatedVals<T::Value>,
     /// Settings that control how values are interpolated.
     pub settings: AnimationSettings,
-    /// Controls whether this value should be controlled by an ancestor with [`PropagateControl`].
-    ///
-    /// `false` by default.
-    #[reflect(default)]
-    pub inherit_control: bool,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
@@ -336,10 +345,6 @@ where
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        if !self.inherit_control {
-            T::Interactive::default().apply(ec);
-        }
-
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
             attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
@@ -349,10 +354,55 @@ where
         };
 
         let id = ec.id();
-        ec.commands().syscall(
-            (id, self.inherit_control, self.state, attribute),
+        ec.syscall(
+            (id, self.state, attribute, PrepTargetFn(add_loadable::<T::Interactive>)),
             add_attribute_to_theme,
         );
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub trait ThemeLoadingEntityCommandsExt
+{
+    /// Sets up the current entity to receive loadable theme data.
+    ///
+    /// This is useful if you want to add subthemes to a theme that doesn't need to use [`Self::load_them`] because
+    /// it doesn't have any attributes on the root entity.
+    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self;
+    /// Loads [`Theme<C>`] into the current entity from the loadable reference.
+    ///
+    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
+    /// insert attributes to the theme when they are loaded onto this entity.
+    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    /// Loads context-bound subtheme attributes to the nearest ancestor entity that has `C` or `LoadedThemes` with
+    /// an entry for `C`.
+    ///
+    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
+    /// insert attributes to the theme for context `Ctx::type_name()` when they are loaded onto this entity.
+    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+}
+
+impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
+{
+    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self
+    {
+        let entity = self.id();
+        self.commands().add(AddLoadedTheme::<C>::new(entity));
+        self
+    }
+
+    fn load_theme<C: DefaultTheme + Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    {
+        self.prepare_theme::<C>();
+        self.load_with_context_setter(loadable_ref, set_context_for_load_theme::<C>);
+        self
+    }
+
+    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    {
+        self.load_with_context_setter(loadable_ref, set_context_for_load_theme_with_context::<C, Ctx>);
+        self
     }
 }
 

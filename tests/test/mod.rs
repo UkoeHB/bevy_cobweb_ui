@@ -1,5 +1,4 @@
-//module tree
 //mod common;
+mod type_name;
 
-//API exports
 //pub use common::*;

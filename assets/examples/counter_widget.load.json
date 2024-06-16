@@ -58,8 +58,7 @@
             "hover": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.45, "alpha": 1.0}},
             "press": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.35, "alpha": 1.0}}
         },
-        "settings": "$base::animation_settings",
-        "inherit_control": true
+        "settings": "$base::animation_settings"
     }
 },
 

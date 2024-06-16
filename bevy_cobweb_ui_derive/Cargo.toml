@@ -1,0 +1,12 @@
+[package]
+name = "bevy_cobweb_ui_derive"
+description = "Derives for bevy_cobweb_ui"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2.0" }
