@@ -1,7 +1,7 @@
 use std::any::type_name;
 
+use bevy::ecs::system::CommandQueue;
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
 use sickle_ui::theme::{DefaultTheme, UiContext};
 use sickle_ui::ui_builder::*;
 
@@ -230,14 +230,10 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
             };
 
             //todo: get commands from World directly (need bevy v0.14)
-            let mut callback = Some(callback);
-            CallbackSystem::new(
-                move |mut c: Commands| {
-                    let Some(callback) = callback.take() else { return; };
-                    (callback)(&mut c, entity, child_entity);
-                }
-            )
-            .run(world, ());
+            let mut queue = CommandQueue::default();
+            let mut commands = Commands::new(&mut queue, world);
+            (callback)(&mut commands, entity, child_entity);
+            queue.apply(world);
         });
         self
     }
