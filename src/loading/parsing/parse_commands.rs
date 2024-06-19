@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use bevy::reflect::TypeRegistry;
-use serde::de::DeserializeSeed;
 use serde_json::{Map, Value};
 
 use crate::*;
@@ -27,10 +25,7 @@ fn handle_commands_entry(
     };
 
     // Get the loadable's value.
-    let command_value = match deserializer.deserialize(value) {
-        Ok(value) => ReflectedLoadable::Value(Arc::new(value)),
-        Err(err) => ReflectedLoadable::DeserializationFailed(Arc::new(err)),
-    };
+    let command_value = get_loadable_value(deserializer, value);
 
     // Save this command.
     loadablesheet.insert_command(

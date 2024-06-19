@@ -1,8 +1,11 @@
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy::reflect::TypeRegistry;
+use serde::de::DeserializeSeed;
+use serde_json::Value;
 
 use crate::*;
 
@@ -57,6 +60,16 @@ pub(crate) fn get_loadable_meta<'a>(
     let deserializer = TypedReflectDeserializer::new(registration, type_registry);
 
     Some((short_name, long_name, registration.type_info().type_id(), deserializer))
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn get_loadable_value(deserializer: TypedReflectDeserializer, value: Value) -> ReflectedLoadable
+{
+    match deserializer.deserialize(value) {
+        Ok(value) => ReflectedLoadable::Value(Arc::new(value)),
+        Err(err) => ReflectedLoadable::DeserializationFailed(Arc::new(err)),
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

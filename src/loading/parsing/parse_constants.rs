@@ -129,7 +129,7 @@ pub(crate) fn search_and_replace_map_constants(
 {
     for key in map
         .keys()
-        .filter(|k| !key_is_keyword(k))
+        .filter(|k| !key_is_non_content_keyword(k))
         .cloned()
         .collect::<Vec<String>>()
         .drain(..)
@@ -138,8 +138,8 @@ pub(crate) fn search_and_replace_map_constants(
     }
 
     for (key, value) in map.iter_mut() {
-        // Ignore sections that start with a keyword.
-        if key_is_keyword(key) {
+        // Ignore sections that start with a non-content keyword.
+        if key_is_non_content_keyword(key) {
             continue;
         }
         search_and_replace_constants(file, prefix, value, constants);
@@ -276,7 +276,7 @@ pub(crate) fn extract_constants_section(
     // Replace map keys with constants.
     for key in data
         .keys()
-        .filter(|k| !key_is_keyword(k))
+        .filter(|k| !key_is_non_content_keyword(k))
         .cloned()
         .collect::<Vec<String>>()
         .drain(..)

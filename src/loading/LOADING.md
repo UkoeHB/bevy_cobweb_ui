@@ -180,41 +180,6 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 }
 ```
 
-#### Inheritance: `#inherited`
-
-If you want values to propagate down a tree, you can use `#inherited` to pull-in the nearest value.
-
-Inheritance is ordering-dependent, so if you don't want a loadable to be inherited, insert it below any child nodes.
-```json
-{
-    "a": {
-        "Width": {"Px": 25.0},
-
-        "inner": {
-            "Width": "inherited"
-        }
-    }
-}
-```
-
-If a loadable is inherited in an abbreviated path, it will inherit from the current scope, not its path-parent.
-```json
-{
-    "root": {
-        "Width": {"Px": 25.0},
-
-        "a": {
-            "Width": {"Px": 50.0},
-        },
-
-        "a::inner": {
-            // This inherits 50.0.
-            "Width": "inherited"
-        }
-    }
-}
-```
-
 #### Constants: `#constants`
 
 It is often useful to have the same value in multiple places throughout a file. Constants let you 'paste' sections of JSON to different places.

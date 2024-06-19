@@ -7,13 +7,18 @@ pub(crate) const CONSTANTS_KEYWORD: &str = "#constants";
 pub(crate) const COMMANDS_KEYWORD: &str = "#commands";
 pub(crate) const COMMENT_KEYWORD: &str = "#c:";
 
-pub(crate) const INHERITED_KEYWORD: &str = "#inherited";
-
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) fn key_is_keyword(key: &str) -> bool
 {
-    // Does not include 'inherited', which apears in map values, not map keys.
+    key == COMMANDS_KEYWORD || key_is_non_content_keyword(key)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Returns `true` if `key` is a keyword for a section of JSON that contains no loadable content.
+pub(crate) fn key_is_non_content_keyword(key: &str) -> bool
+{
     key == MANIFEST_KEYWORD
         || key == IMPORT_KEYWORD
         || key == USING_KEYWORD
