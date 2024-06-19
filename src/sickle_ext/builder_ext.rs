@@ -21,15 +21,22 @@ pub trait NodeLoadingExt
     ) -> UiBuilder<Entity>;
     /// Spawns a new node registered to load a theme from `loadable_ref`.
     ///
+    /// The parameter `entity` will be set with the new node's entity id. This is often inserted to widget
+    /// components for use in [`UiContexts`](UiContext).
+    ///
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback(node_builder, loadable_ref)` for interacting with the entity.
     fn load_with_theme<C: DefaultTheme>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>;
     /// Spawns a new node registered to load a subtheme from `loadable_ref`.
+    ///
+    /// The parameter `entity` will be set with the new node's entity id. This is often inserted to widget
+    /// components for use in [`UiContexts`](UiContext).
     ///
     /// The subtheme will be tied to `Ctx`, and can be mapped to an entity in a theme instantiation using
     /// [`UiContext`].
@@ -40,6 +47,7 @@ pub trait NodeLoadingExt
     fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>;
 }
@@ -61,10 +69,12 @@ impl NodeLoadingExt for UiBuilder<'_, UiRoot>
     fn load_with_theme<C: DefaultTheme>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>
     {
         let mut node = self.spawn(NodeBundle::default());
+        *entity = node.id();
         node.entity_commands().load_theme::<C>(loadable_ref.clone());
         (callback)(&mut node, loadable_ref);
         node
@@ -73,10 +83,12 @@ impl NodeLoadingExt for UiBuilder<'_, UiRoot>
     fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>
     {
         let mut node = self.spawn(NodeBundle::default());
+        *entity = node.id();
         node.entity_commands()
             .load_subtheme::<C, Ctx>(loadable_ref.clone());
         (callback)(&mut node, loadable_ref);
@@ -102,10 +114,12 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
     fn load_with_theme<C: DefaultTheme>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>
     {
         let mut child = self.spawn(NodeBundle::default());
+        *entity = child.id();
         child
             .entity_commands()
             .load_theme::<C>(loadable_ref.clone());
@@ -117,10 +131,12 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
     fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
         &mut self,
         loadable_ref: LoadableRef,
+        entity: &mut Entity,
         callback: impl FnOnce(&mut UiBuilder<Entity>, LoadableRef),
     ) -> UiBuilder<Entity>
     {
         let mut child = self.spawn(NodeBundle::default());
+        *entity = child.id();
         child
             .entity_commands()
             .load_subtheme::<C, Ctx>(loadable_ref.clone());

@@ -62,7 +62,7 @@ struct CounterWidgetText;
 #[derive(Component, DefaultTheme, Copy, Clone, Debug)]
 struct CounterWidget
 {
-    text: Entity,
+    text_entity: Entity,
 }
 
 impl CounterWidget
@@ -80,7 +80,7 @@ impl UiContext for CounterWidget
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            CounterWidgetText::NAME => Ok(self.text),
+            CounterWidgetText::NAME => Ok(self.text_entity),
             _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
         }
     }
@@ -173,9 +173,10 @@ impl CounterWidgetBuilder
             .text_config
             .unwrap_or_else(|| Self::default_file().e("structure::text"));
 
+        let mut core_entity = Entity::PLACEHOLDER;
         let mut text_entity = Entity::PLACEHOLDER;
 
-        builder.load_with_theme::<CounterWidget>(button_ref, |button, _path| {
+        builder.load_with_theme::<CounterWidget>(button_ref, &mut core_entity, |button, _path| {
             // Load extra theme info.
             if let Some(theme) = self.core_theme {
                 button.load_theme::<CounterWidget>(theme);
@@ -186,20 +187,22 @@ impl CounterWidgetBuilder
                 .insert_reactive(Counter(0))
                 .on_pressed(Counter::increment(button_id));
 
-            button.load_with_subtheme::<CounterWidget, CounterWidgetText>(text_ref, |text, _path| {
-                text_entity = text.id();
+            button.load_with_subtheme::<CounterWidget, CounterWidgetText>(
+                text_ref,
+                &mut text_entity,
+                |text, _path| {
+                    // Load extra theme info.
+                    if let Some(theme) = self.text_theme {
+                        text.load_subtheme::<CounterWidget, CounterWidgetText>(theme);
+                    }
 
-                // Load extra theme info.
-                if let Some(theme) = self.text_theme {
-                    text.load_subtheme::<CounterWidget, CounterWidgetText>(theme);
-                }
+                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                        Counter::write(pre_text, post_text, button_id, text_id)
+                    });
+                },
+            );
 
-                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    Counter::write(pre_text, post_text, button_id, text_id)
-                });
-            });
-
-            button.insert(CounterWidget { text: text_entity });
+            button.insert(CounterWidget { text_entity });
         });
     }
 }

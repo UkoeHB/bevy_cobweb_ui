@@ -50,9 +50,9 @@ struct RadioButtonText;
 #[derive(Component, DefaultTheme, Copy, Clone, Debug)]
 struct RadioButton
 {
-    outline: Entity,
-    indicator: Entity,
-    text: Entity,
+    outline_entity: Entity,
+    indicator_entity: Entity,
+    text_entity: Entity,
 }
 
 impl RadioButton
@@ -72,9 +72,9 @@ impl UiContext for RadioButton
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            RadioButtonOutline::NAME => Ok(self.outline),
-            RadioButtonIndicator::NAME => Ok(self.indicator),
-            RadioButtonText::NAME => Ok(self.text),
+            RadioButtonOutline::NAME => Ok(self.outline_entity),
+            RadioButtonIndicator::NAME => Ok(self.indicator_entity),
+            RadioButtonText::NAME => Ok(self.text_entity),
             _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
         }
     }
@@ -115,20 +115,20 @@ impl RadioButtonBuilder
         let mut indicator_entity = Entity::PLACEHOLDER;
         let mut text_entity = Entity::PLACEHOLDER;
 
-        node.load_with_theme::<RadioButton>(structure.e("core"), |core, path| {
-            core_entity = core.id();
+        node.load_with_theme::<RadioButton>(structure.e("core"), &mut core_entity, |core, path| {
+            let core_id = core.id();
             core
                 // Select this button.
                 // Note: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
                 .on_pressed(move |mut c: Commands, states: Query<&PseudoStates>| {
-                    if let Ok(states) = states.get(core_entity) {
+                    if let Ok(states) = states.get(core_id) {
                         if states.has(&PseudoState::Selected) {
                             return;
                         }
                     }
 
-                    c.react().entity_event(core_entity, Select);
+                    c.react().entity_event(core_id, Select);
                 })
                 // Save the newly-selected button and deselect the previously selected.
                 .on_select(move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {
@@ -136,36 +136,36 @@ impl RadioButtonBuilder
                     if let Some(prev) = manager.selected {
                         c.react().entity_event(prev, Deselect);
                     }
-                    manager.selected = Some(core_entity);
+                    manager.selected = Some(core_id);
                 });
 
-            core.load_with_subtheme::<RadioButton, RadioButtonOutline>(path.e("outline"), |outline, path| {
-                outline_entity = outline.id();
-                outline.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
-                    path.e("indicator"),
-                    |indicator, _| {
-                        indicator_entity = indicator.id();
-                    },
-                );
-            });
+            core.load_with_subtheme::<RadioButton, RadioButtonOutline>(
+                path.e("outline"),
+                &mut outline_entity,
+                |outline, path| {
+                    outline.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
+                        path.e("indicator"),
+                        &mut indicator_entity,
+                        |_, _| {},
+                    );
+                },
+            );
 
-            core.load_with_subtheme::<RadioButton, RadioButtonText>(path.e("text"), |text, _| {
-                text_entity = text.id();
+            core.load_with_subtheme::<RadioButton, RadioButtonText>(
+                path.e("text"),
+                &mut text_entity,
+                |text, _| {
+                    // Note: The text needs to be updated on load otherwise it may be overwritten.
+                    let text_val = self.text;
+                    text.update_on((), |id| {
+                        move |mut e: TextEditor| {
+                            e.write(id, |t| write!(t, "{}", text_val.as_str()));
+                        }
+                    });
+                },
+            );
 
-                // Note: The text needs to be updated on load otherwise it may be overwritten.
-                let text_val = self.text;
-                text.update_on(entity_event::<Loaded>(text.id()), |id| {
-                    move |mut e: TextEditor| {
-                        e.write(id, |t| write!(t, "{}", text_val.as_str()));
-                    }
-                });
-            });
-
-            core.insert(RadioButton {
-                outline: outline_entity,
-                indicator: indicator_entity,
-                text: text_entity,
-            });
+            core.insert(RadioButton { outline_entity, indicator_entity, text_entity });
         });
 
         // Return UiBuilder for root of button where interactions will be detected.
