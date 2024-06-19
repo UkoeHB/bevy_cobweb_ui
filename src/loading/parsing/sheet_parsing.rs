@@ -72,11 +72,6 @@ pub(crate) fn parse_loadablesheet_file(
 {
     tracing::info!("parsing loadablesheet {:?}", file.as_str());
 
-    // [ shortname : [ loadable value ] ]
-    let mut loadable_stack: HashMap<&'static str, Vec<ReflectedLoadable>> = HashMap::default();
-    // [ {shortname, top index into loadablestack when first stack added this frame} ]
-    let mut stack_trackers: Vec<Vec<(&'static str, usize)>> = Vec::default();
-
     // Extract using section.
     extract_using_section(type_registry, &file, &data, name_shortcuts);
 
@@ -90,6 +85,11 @@ pub(crate) fn parse_loadablesheet_file(
     parse_commands_section(type_registry, loadablesheet, &file, &mut data, name_shortcuts);
 
     // Recursively consume the file contents.
+    // [ shortname : [ loadable value ] ]
+    let mut loadable_stack: HashMap<&'static str, Vec<ReflectedLoadable>> = HashMap::default();
+    // [ {shortname, top index into loadablestack when first stack added this frame} ]
+    let mut stack_trackers: Vec<Vec<(&'static str, usize)>> = Vec::default();
+
     parse_branch(
         type_registry,
         loadablesheet,

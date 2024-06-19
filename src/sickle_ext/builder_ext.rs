@@ -1,5 +1,8 @@
+use std::any::type_name;
+
 use bevy::prelude::*;
-use sickle_ui::theme::DefaultTheme;
+use bevy_cobweb::prelude::*;
+use sickle_ui::theme::{DefaultTheme, UiContext};
 use sickle_ui::ui_builder::*;
 
 use crate::*;
@@ -161,6 +164,16 @@ pub trait LoadableThemeBuilderExt
     fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
     /// See [`ThemeLoadingEntityCommandsExt::load_subtheme`].
     fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    /// Provides access to the entity of a subtheme of a themed widget.
+    ///
+    /// The callback paramaters are: commands, core entity where `C` is found, child entity where `Ctx` is found.
+    ///
+    /// Type `C` should be a themed component on the current entity. Type `Ctx` should be a subtheme accessible
+    /// via [`UiContext`] on `C`.
+    fn edit_child<C: Component + UiContext, Ctx: TypeName>(
+        &mut self,
+        callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
+    ) -> &mut Self;
 }
 
 impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
@@ -193,6 +206,39 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
     {
         self.entity_commands()
             .load_subtheme::<C, Ctx>(loadable_ref.clone());
+        self
+    }
+
+    fn edit_child<C: Component + UiContext, Ctx: TypeName>(
+        &mut self,
+        callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
+    ) -> &mut Self
+    {
+        let entity = self.id();
+        self.commands().add(move |world: &mut World| {
+            let Some(themed_component) = world.get::<C>(entity) else {
+                tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
+                    entity is missing or does not have {}", type_name::<Ctx>(), type_name::<C>(), type_name::<C>());
+                return;
+            };
+
+            let Ok(child_entity) = themed_component.get(Ctx::NAME) else {
+                tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
+                    subtheme is not available in entity's UiContext",
+                    type_name::<Ctx>(), type_name::<C>());
+                return;
+            };
+
+            //todo: get commands from World directly (need bevy v0.14)
+            let mut callback = Some(callback);
+            CallbackSystem::new(
+                move |mut c: Commands| {
+                    let Some(callback) = callback.take() else { return; };
+                    (callback)(&mut c, entity, child_entity);
+                }
+            )
+            .run(world, ());
+        });
         self
     }
 }

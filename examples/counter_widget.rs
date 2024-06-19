@@ -46,10 +46,13 @@ impl Counter
 
         IntoSystem::into_system(move |mut editor: TextEditor, counters: Reactive<Counter>| {
             let Some(counter) = counters.get(from) else { return };
-            editor.write(to, |t| {
-                write!(t, "{}{}{}", pre_text.as_str(), **counter, post_text.as_str())
-            });
+            counter.write_to_editor(&mut editor, to, pre_text.as_str(), post_text.as_str());
         })
+    }
+
+    fn write_to_editor(&self, editor: &mut TextEditor, to: Entity, pre_text: &str, post_text: &str)
+    {
+        editor.write(to, |t| write!(t, "{}{}{}", pre_text, self.0, post_text));
     }
 }
 
@@ -161,7 +164,7 @@ impl CounterWidgetBuilder
     }
 
     /// Builds the widget on an entity.
-    fn build(self, builder: &mut UiBuilder<Entity>)
+    fn build<'a>(self, builder: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
     {
         let pre_text = self.pre_text.unwrap_or_else(|| "Counter: ".into());
         let post_text = self.post_text.unwrap_or_else(|| "".into());
@@ -185,7 +188,7 @@ impl CounterWidgetBuilder
             let button_id = button.id();
             button
                 .insert_reactive(Counter(0))
-                .on_pressed(Counter::increment(button_id));
+                .on_released(Counter::increment(button_id));
 
             button.load_with_subtheme::<CounterWidget, CounterWidgetText>(
                 text_ref,
@@ -204,6 +207,8 @@ impl CounterWidgetBuilder
 
             button.insert(CounterWidget { text_entity });
         });
+
+        builder.commands().ui_builder(core_entity)
     }
 }
 
@@ -229,8 +234,13 @@ fn build_ui(mut c: Commands)
         // Widget with animated text structure.
         CounterWidgetBuilder::new()
             .text_config(example.e("counter_widget_text_responsive"))
-            .pre_text("Responsive: ")
-            .build(root);
+            .pre_text("Text: ")
+            .build(root)
+            .edit_child::<CounterWidget, CounterWidgetText>(|c, core, text| {
+                c.ui_builder(core).on_pressed(move |mut e: TextEditor| {
+                    e.write(text, |t| write!(t, "Pressed"));
+                });
+            });
 
         // Widget with theme adjustments
         CounterWidgetBuilder::new()
