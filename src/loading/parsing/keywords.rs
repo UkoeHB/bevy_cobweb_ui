@@ -7,6 +7,14 @@ pub(crate) const CONSTANTS_KEYWORD: &str = "#constants";
 pub(crate) const COMMANDS_KEYWORD: &str = "#commands";
 pub(crate) const COMMENT_KEYWORD: &str = "#c:";
 
+//pub(crate) const SPECS_KEYWORD: &str = "#specs";
+//pub(crate) const SPEC_INVOCATION_KEYWORD: &str = "#spec:";
+//pub(crate) const SPEC_PARAMETER_MARKER: &str = "@";
+
+pub(crate) const CONSTANT_MARKER: &str = "$";
+pub(crate) const CONSTANT_IN_CONSTANT_MARKER: &str = "$$";
+pub(crate) const CONSTANT_PASTE_ALL_TERMINATOR: &str = "*";
+
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) fn key_is_keyword(key: &str) -> bool

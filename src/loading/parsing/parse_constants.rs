@@ -84,7 +84,7 @@ fn try_replace_map_key_with_constant(
 
     match terminator {
         // If 'paste all' terminator, then insert all contents of the section into the map.
-        "*" => {
+        CONSTANT_PASTE_ALL_TERMINATOR => {
             let mut constants_set = constants_set.clone();
             map.append(&mut constants_set);
         }
@@ -184,14 +184,14 @@ pub(crate) fn constants_builder_recurse_into_value(
 {
     // Update the value if it references a constant.
     // - We do this in a separate step in case expanding the constant introduces more constants/path segments.
-    try_replace_string_with_constant(file, "$$", value, constants);
+    try_replace_string_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
 
     // Parse constants from the value.
     match value {
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => (),
         Value::Array(vec) => {
             for value in vec.iter_mut() {
-                search_and_replace_constants(file, "$$", value, constants);
+                search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
             }
         }
         //todo: it's ugly
@@ -203,7 +203,7 @@ pub(crate) fn constants_builder_recurse_into_value(
             let mut is_constants_segment = false;
 
             for (key, value) in map.iter_mut() {
-                if let Some(("", key)) = key.split_once('$') {
+                if let Some(("", key)) = key.split_once(CONSTANT_MARKER) {
                     if is_normal_segment {
                         tracing::error!("ignoring constant section at {:?} in {:?}, constant path mixed up with value map",
                             path, file);
@@ -222,7 +222,7 @@ pub(crate) fn constants_builder_recurse_into_value(
                     is_normal_segment = true;
 
                     // This key is a normal map entry, so its value is a normal value.
-                    search_and_replace_constants(file, "$$", value, constants);
+                    search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
                 }
             }
 
@@ -281,13 +281,13 @@ pub(crate) fn extract_constants_section(
         .collect::<Vec<String>>()
         .drain(..)
     {
-        try_replace_map_key_with_constant(file, "$$", key, data, constants);
+        try_replace_map_key_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, key, data, constants);
     }
 
     // Iterate into the map to replace values.
     for (key, value) in data.iter_mut() {
         // Check if value.
-        let Some(("", key)) = key.split_once('$') else {
+        let Some(("", key)) = key.split_once(CONSTANT_MARKER) else {
             // Don't warn for comments.
             if !key.starts_with(COMMENT_KEYWORD) {
                 tracing::warn!("ignoring non-path in base level of constants section in {:?}", file);
