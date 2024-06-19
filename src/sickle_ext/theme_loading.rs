@@ -1,7 +1,7 @@
 use std::any::{type_name, TypeId};
 
 use bevy::ecs::component::Components;
-use bevy::ecs::system::EntityCommands;
+use bevy::ecs::system::{CommandQueue, EntityCommands};
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -223,14 +223,12 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 {
     move |entity: Entity, world: &mut World| {
         // Apply the value to the entity.
-        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
-        world.syscall(
-            (entity, val.clone()),
-            |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
-                let Some(mut ec) = c.get_entity(entity) else { return };
-                T::update(&mut ec, new_val);
-            },
-        );
+        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
+        let mut queue = CommandQueue::default();
+        let mut c = Commands::new(&mut queue, world);
+        let Some(mut ec) = c.get_entity(entity) else { return };
+        T::update(&mut ec, val.clone());
+        queue.apply(world);
     }
 }
 
@@ -245,14 +243,12 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
         let new_value = vals.to_value(state);
 
         // Apply the value to the entity.
-        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
-        world.syscall(
-            (entity, new_value),
-            |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
-                let Some(mut ec) = c.get_entity(entity) else { return };
-                T::update(&mut ec, new_val);
-            },
-        );
+        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
+        let mut queue = CommandQueue::default();
+        let mut c = Commands::new(&mut queue, world);
+        let Some(mut ec) = c.get_entity(entity) else { return };
+        T::update(&mut ec, new_value);
+        queue.apply(world);
     }
 }
 
@@ -269,14 +265,12 @@ where
         let new_value = vals.to_value(&state);
 
         // Apply the value to the entity.
-        //todo: avoid syscall by getting Commands directly from World (bevy v0.14)
-        world.syscall(
-            (entity, new_value),
-            |In((entity, new_val)): In<(Entity, T::Value)>, mut c: Commands| {
-                let Some(mut ec) = c.get_entity(entity) else { return };
-                T::update(&mut ec, new_val);
-            },
-        );
+        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
+        let mut queue = CommandQueue::default();
+        let mut c = Commands::new(&mut queue, world);
+        let Some(mut ec) = c.get_entity(entity) else { return };
+        T::update(&mut ec, new_value);
+        queue.apply(world);
     }
 }
 
