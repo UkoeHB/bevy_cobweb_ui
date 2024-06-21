@@ -5,43 +5,58 @@
 "#constants" : {
     "$animation_settings_f" : {
         "$pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-        "$press": {"duration": 0.2, "easing": "OutExpo"}
+        "$pointer_leave": {"duration": 0.15, "easing": "OutExpo"},
+        "$press": {"duration": 0.2, "easing": "OutExpo"},
+        "$release": {"duration": 0.2, "easing": "OutExpo"}
     },
     "$animation_settings" : {
         "pointer_enter": "$$animation_settings_f::pointer_enter",
-        "press": "$$animation_settings_f::press"
+        "pointer_leave": "$$animation_settings_f::pointer_leave",
+        "press": "$$animation_settings_f::press",
+        "release": "$$animation_settings_f::release"
     }
 },
 
-"#c: Base node structure for CounterWidgets.":0,
-"structure": {
-    "FlexStyle": {
-        "content": {"justify_main": "Center", "justify_cross": "Center"}
-    },
-    "Interactive": [],
+"#specs" : {
+    "counter_widget": {
+        "@text_margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}},
+        "@text_size": 50.0,
+        "@bg_idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+        "@bg_hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.46, "alpha": 0.8}},
+        "@bg_press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}},
 
-    "text": {
-        "FlexStyle": {
-            "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
-        },
-        "TextLine": { "size": 50.0 }
-    }
-},
-
-"#c: Base theme for CounterWidgets.":0,
-"theme" : {
-    "core": {
-        "Animated<BgColor>": {
-            "values": {
-                "idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-                "hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.46, "alpha": 0.8}},
-                "press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}}
+        "!button": {
+            "FlexStyle": {
+                "content": {"justify_main": "Center", "justify_cross": "Center"},
+                "dims": {"!button_dims": ""},
+                "flex": {"!button_flex": ""}
             },
-            "settings": "$animation_settings"
-        }
-    },
+            "Interactive": [],
+            "Animated<BgColor>": {
+                "values": {"idle": "@bg_idle", "hover": "@bg_hover", "press": "@bg_press"},
+                "settings": "$animation_settings"
+            }
+        },
+        "!text": {
+            "FlexStyle": {
+                "flex": {"margin": "@text_margin"}
+            },
+            "TextLine": {"size": "@text_size"}
+        },
 
-    "text" : {}
-}
+        "*": {
+            "button": {
+                "!button":"",
+
+                "text": {
+                    "!text":""
+                }
+            }
+        }
+    }
+},
+
+"#c: Makes the default widget available at this location.":0,
+"counter_widget(#spec:counter_widget)": ""
 
 }

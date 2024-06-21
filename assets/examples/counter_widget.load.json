@@ -19,54 +19,50 @@
     }
 },
 
-"#c: Theme override for flexible CounterWidgets.":0,
-"counter_theme_flexible" : {
-    "Animated<BrColor>": {
-        "values": {
-            "idle": {"Hsla": {"hue": 24.0, "saturation": 0.74, "lightness": 0.5, "alpha": 1.0}},
-            "hover": {"Hsla": {"hue": 24.0, "saturation": 0.82, "lightness": 0.35, "alpha": 1.0}},
-            "press": {"Hsla": {"hue": 24.0, "saturation": 0.90, "lightness": 0.25, "alpha": 1.0}}
-        },
-        "settings": "$base::animation_settings"
-    },
-    "Animated<Padding>": {
-        "values": {
-            "idle": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
-            "press": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}}
-        },
-        "settings": "$base::animation_settings"
+
+"#c: CounterWidget override for small text.":0,
+"counter_widget_small_text(#spec:counter_widget)": {
+    "@text_size": 25.0,
+    "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}
+},
+
+"#c: CounterWidget override for responsive text.":0,
+"counter_widget_responsive_text(#spec:counter_widget)": {
+    "@text_size": 50.0,
+    "@text_margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}},
+    "!text": {
+        "Animated<TextLineColor>": {
+            "values": {
+                "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
+                "hover": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.45, "alpha": 1.0}},
+                "press": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.35, "alpha": 1.0}}
+            },
+            "settings": "$base::animation_settings"
+        }   
     }
 },
 
-"#c: Text node for small CounterWidgets.":0,
-"counter_widget_text_small": {
-    "FlexStyle": {
-        "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
+"#c: CounterWidget override for flexible node edges.":0,
+"counter_widget_flexible_button(#spec:counter_widget)": {
+    "!button_dims": {
+        "border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
     },
-    "TextLine": { "size": 25.0 }
-},
-
-"#c: Text node for CounterWidgets with responsive text.":0,
-"counter_widget_text_responsive": {
-    "FlexStyle": {
-        "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
-    },
-    "TextLine": { "size": 50.0 },
-    "Animated<TextLineColor>": {
-        "values": {
-            "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
-            "hover": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.45, "alpha": 1.0}},
-            "press": {"Hsla": {"hue": 117.0, "saturation": 1.0, "lightness": 0.35, "alpha": 1.0}}
+    "!button": {
+        "Animated<BrColor>": {
+            "values": {
+                "idle": {"Hsla": {"hue": 24.0, "saturation": 0.74, "lightness": 0.5, "alpha": 1.0}},
+                "hover": {"Hsla": {"hue": 24.0, "saturation": 0.82, "lightness": 0.35, "alpha": 1.0}},
+                "press": {"Hsla": {"hue": 24.0, "saturation": 0.90, "lightness": 0.25, "alpha": 1.0}}
+            },
+            "settings": "$base::animation_settings"
         },
-        "settings": "$base::animation_settings"
-    }
-},
-
-"#c: Button node for flexible CounterWidgets.":0,
-"counter_widget_button_flexible": {
-    "FlexStyle": {
-        "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
-        "content": {"justify_main": "Center", "justify_cross": "Center"}
+        "Animated<Padding>": {
+            "values": {
+                "idle": {"left": {"Px": 2.0}, "right": {"Px": 2.0}, "top": {"Px": 2.0}, "bottom": {"Px": 2.0}},
+                "press": {"left": {"Px": 0.0}, "right": {"Px": 0.0}, "top": {"Px": 0.0}, "bottom": {"Px": 0.0}}
+            },
+            "settings": "$base::animation_settings"
+        }
     }
 }
 

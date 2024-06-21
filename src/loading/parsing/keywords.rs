@@ -36,10 +36,10 @@ pub(crate) fn is_keyword_for_non_spec_editable_section(key: &str) -> bool
 
 /// Returns `true` if `key` is a keyword for a section of JSON that cannot be edited by constants.
 ///
-/// Constant-editable sections: commands, base loadables.
+/// Constant-editable sections: specs, commands, base loadables.
 pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
 {
-    is_keyword_for_non_spec_editable_section(key) || key == SPECS_KEYWORD
+    is_keyword_for_non_spec_editable_section(key)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
 /// Returns `true` if `key` is any keyword.
 pub(crate) fn is_any_keyword(key: &str) -> bool
 {
-    is_keyword_for_non_constant_editable_section(key) || key == COMMANDS_KEYWORD
+    is_keyword_for_non_constant_editable_section(key) || key == SPECS_KEYWORD || key == COMMANDS_KEYWORD
 }
 
 //-------------------------------------------------------------------------------------------------------------------
