@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -94,22 +95,22 @@ impl LoadablePath
     /// Creates a new loadable path.
     pub fn new(new_path: &str) -> Self
     {
-        let mut path = Vec::default();
+        let mut path = SmallVec::<[SmolStr; 10]>::default();
         Self::extend_inner(new_path, &mut path);
 
-        Self { path: Arc::from(path) }
+        Self { path: Arc::from(path.as_slice()) }
     }
 
     /// Extends an existing loadable path with a path extension.
     pub fn extend(&self, extension: &str) -> Self
     {
-        let mut path = Vec::from(&*self.path);
+        let mut path = SmallVec::<[SmolStr; 10]>::from(&*self.path);
         Self::extend_inner(extension, &mut path);
 
-        Self { path: Arc::from(path) }
+        Self { path: Arc::from(path.as_slice()) }
     }
 
-    fn extend_inner(extension: &str, path: &mut Vec<SmolStr>)
+    fn extend_inner(extension: &str, path: &mut SmallVec<[SmolStr; 10]>)
     {
         for path_element in extension.split(LOADABLE_PATH_SEPARATOR) {
             if path_element.is_empty() {
