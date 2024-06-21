@@ -54,13 +54,14 @@ impl ImageMap
     pub fn insert(&mut self, path: impl AsRef<str> + Into<String>, asset_server: &AssetServer)
     {
         if self.map.contains_key(path.as_ref()) {
-            tracing::warn!("ignoring duplicate load for image {}", path);
+            tracing::warn!("ignoring duplicate load for image {}", path.as_ref());
             return;
         }
 
-        let handle = asset_server.load(path.as_ref());
+        let path = path.into();
+        let handle = asset_server.load(path.clone());
         self.pending.insert(handle.id());
-        self.map.insert(path.into(), handle);
+        self.map.insert(path, handle);
     }
 
     fn remove_pending(&mut self, id: &AssetId<Image>)
@@ -74,7 +75,7 @@ impl ImageMap
     pub fn get(&self, path: impl AsRef<str>) -> Handle<Image>
     {
         let Some(entry) = self.map.get(path.as_ref()) else {
-            tracing::error!("failed getting image {} that was not loaded; use LoadImages command", path);
+            tracing::error!("failed getting image {} that was not loaded; use LoadImages command", path.as_ref());
             return Default::default();
         };
         entry.clone()

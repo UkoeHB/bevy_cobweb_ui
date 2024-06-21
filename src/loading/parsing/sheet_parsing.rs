@@ -67,7 +67,7 @@ pub(crate) fn parse_loadablesheet_file(
     // [ path : [ terminal identifier : constant value ] ]
     constants: &mut HashMap<String, Map<String, Value>>,
     // tracks specs
-    specs: &mut SpecMap,
+    specs: &mut SpecsMap,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )

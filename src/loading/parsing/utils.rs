@@ -74,16 +74,12 @@ pub(crate) fn get_loadable_value(deserializer: TypedReflectDeserializer, value: 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) fn try_parse_spec_invocation(file: &LoadableFile, key: &str) -> Result<Option<(&str, &str)>, ()>
+pub(crate) fn try_parse_spec_invocation(key: &str) -> Result<Option<(&str, &str)>, ()>
 {
     // Expected format: "key(SPEC_INVOCATION_KEYWORDspec_key)"
     let Some((new_key, maybe_spec_req)) = key.split_once('(') else { return Ok(None) };
-    let Some(("", maybe_spec_key)) = maybe_spec_req.split_once(SPEC_INVOCATION_KEYWORD) else {
-        return Err(())
-    };
-    let Some((spec_key, "")) = maybe_spec_key.split_once(')') else {
-        return Err(())
-    };
+    let Some(("", maybe_spec_key)) = maybe_spec_req.split_once(SPEC_INVOCATION_KEYWORD) else { return Err(()) };
+    let Some((spec_key, "")) = maybe_spec_key.split_once(')') else { return Err(()) };
     Ok(Some((new_key, spec_key)))
 }
 

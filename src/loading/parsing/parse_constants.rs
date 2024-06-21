@@ -33,7 +33,7 @@ fn get_constants_set<'a>(
     let terminator = rev_iterator.next().unwrap();
     let path = rev_iterator.next().unwrap_or("");
 
-    let Some(constant_value) = constants.get(&path) else {
+    let Some(constant_value) = constants.get(path) else {
         tracing::warn!("ignoring unknown constant reference {:?} in constants \
             section of {:?}", value_str, file);
         return None;
@@ -57,7 +57,7 @@ fn try_replace_string_with_constant(
     };
 
     // For map values, paste the data pointed-to by the terminator.
-    let Some(constant_data) = constants_set.get(&terminator) else {
+    let Some(constant_data) = constants_set.get(terminator) else {
         tracing::warn!("ignoring constant reference {:?} with no recorded data in {:?}", value_str, file);
         return;
     };
@@ -91,7 +91,7 @@ fn try_replace_map_key_with_constant(
         // Otherwise, just paste the terminator and its value.
         _ => {
             // For map values, paste the data pointed-to by the terminator.
-            let Some(constant_data) = constants_set.get(&terminator) else {
+            let Some(constant_data) = constants_set.get(terminator) else {
                 tracing::warn!("ignoring constant reference {:?} with no recorded data in {:?}", key, file);
                 return;
             };
@@ -258,7 +258,7 @@ pub(crate) fn extract_constants_section(
     constants: &mut HashMap<String, Map<String, Value>>,
 )
 {
-    let Some(constants_section) = data.get_mut(&CONSTANTS_KEYWORD) else {
+    let Some(constants_section) = data.get_mut(CONSTANTS_KEYWORD) else {
         return;
     };
 

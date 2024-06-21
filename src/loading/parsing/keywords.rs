@@ -12,7 +12,6 @@ pub(crate) const SPEC_INVOCATION_KEYWORD: &str = "#spec:";
 pub(crate) const SPEC_PARAMETER_MARKER: &str = "@";
 pub(crate) const SPEC_INSERTION_MARKER: &str = "!";
 pub(crate) const SPEC_CONTENT_SYMBOL: &str = "*";
-pub(crate) const SPEC_SEPARATOR: &str = "::";
 
 pub(crate) const CONSTANT_MARKER: &str = "$";
 pub(crate) const CONSTANT_IN_CONSTANT_MARKER: &str = "$$";
@@ -52,4 +51,3 @@ pub(crate) fn is_any_keyword(key: &str) -> bool
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-

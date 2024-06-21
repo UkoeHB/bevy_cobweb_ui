@@ -78,7 +78,7 @@ pub(crate) fn parse_branch(
         // Remove qualifier from key if it has one.
         let key = match key.split_once('(') {
             Some((key, _)) => key,
-            _ => key
+            _ => key,
         };
 
         let value = value.take();
