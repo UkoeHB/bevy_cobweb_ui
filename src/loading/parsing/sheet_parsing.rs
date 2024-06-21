@@ -4,6 +4,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
 use serde_json::{Map, Value};
+use smol_str::SmolStr;
 
 use crate::*;
 
@@ -65,7 +66,7 @@ pub(crate) fn parse_loadablesheet_file(
     file: LoadableFile,
     mut data: Map<String, Value>,
     // [ path : [ terminal identifier : constant value ] ]
-    constants: &mut HashMap<String, Map<String, Value>>,
+    constants: &mut HashMap<SmolStr, Map<String, Value>>,
     // tracks specs
     specs: &mut SpecsMap,
     // [ shortname : longname ]

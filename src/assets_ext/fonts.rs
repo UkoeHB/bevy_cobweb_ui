@@ -51,14 +51,15 @@ impl FontMap
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for the font to be loaded.
-    pub fn insert(&mut self, path: String, asset_server: &AssetServer)
+    pub fn insert(&mut self, path: impl AsRef<str> + Into<String>, asset_server: &AssetServer)
     {
-        if self.map.contains_key(&path) {
-            tracing::warn!("ignoring duplicate load for font {}", path);
+        if self.map.contains_key(path.as_ref()) {
+            tracing::warn!("ignoring duplicate load for font {}", path.as_ref());
             return;
         }
 
-        let handle = asset_server.load(&path);
+        let path = path.into();
+        let handle = asset_server.load(path.clone());
         self.pending.insert(handle.id());
         self.map.insert(path, handle);
     }
@@ -71,10 +72,10 @@ impl FontMap
     /// Gets an font handle for the given path.
     ///
     /// Returns a default handle if the font was not pre-inserted via [`Self::insert`].
-    pub fn get(&self, path: &String) -> Handle<Font>
+    pub fn get(&self, path: impl AsRef<str>) -> Handle<Font>
     {
-        let Some(entry) = self.map.get(path) else {
-            tracing::error!("failed getting font {} that was not loaded; use LoadFonts command", path);
+        let Some(entry) = self.map.get(path.as_ref()) else {
+            tracing::error!("failed getting font {} that was not loaded; use LoadFonts command", path.as_ref());
             return Default::default();
         };
         entry.clone()

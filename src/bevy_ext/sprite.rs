@@ -20,15 +20,14 @@ impl TextureAtlasMap
     /// Gets a handle from the map.
     pub fn get(
         &mut self,
-        image: impl Into<String>,
+        image: impl AsRef<str>,
         assets: &mut Assets<TextureAtlasLayout>,
         layout: TextureAtlasLayout,
     ) -> Handle<TextureAtlasLayout>
     {
-        let image = image.into();
-        let Some(entry) = self.map.get(&image) else {
+        let Some(entry) = self.map.get(image.as_ref()) else {
             let entry = assets.add(layout);
-            self.map.insert(image, entry.clone());
+            self.map.insert(String::from(image.as_ref()), entry.clone());
             return entry;
         };
         entry.clone()
@@ -209,7 +208,7 @@ impl LoadedTextureAtlasLayout
     /// To avoid re-allocating the layout, it is mapped to a string representing the associated image.
     pub fn get_handle(
         &mut self,
-        image: impl Into<String>,
+        image: impl AsRef<str>,
         assets: &mut Assets<TextureAtlasLayout>,
         map: &mut TextureAtlasMap,
     ) -> Handle<TextureAtlasLayout>

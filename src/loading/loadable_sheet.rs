@@ -9,6 +9,7 @@ use bevy::utils::warn_once;
 use bevy_cobweb::prelude::*;
 use serde_json::{Map, Value};
 use smallvec::SmallVec;
+use smol_str::SmolStr;
 
 use crate::*;
 
@@ -139,7 +140,7 @@ struct ProcessedLoadableFile
     /// Using info cached for use by dependents.
     using: HashMap<&'static str, &'static str>,
     /// Constants info cached for use by dependents.
-    constants: HashMap<String, Map<String, Value>>,
+    constants: HashMap<SmolStr, Map<String, Value>>,
     /// Specs that can be imported into other files.
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
@@ -402,7 +403,7 @@ impl LoadableSheet
         // [ shortname : longname ]
         let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
         // [ path : [ terminal identifier : constant value ] ]
-        let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
+        let mut constants: HashMap<SmolStr, Map<String, Value>> = HashMap::default();
         // specs collector
         let mut specs = SpecsMap::default();
 
@@ -414,7 +415,8 @@ impl LoadableSheet
             }
             for (k, v) in processed.constants.iter() {
                 // Prepend the import alias.
-                constants.insert(append_constant_extension(alias.clone(), k.as_str()), v.clone());
+                let path = path_to_constant_string(&[alias.as_str(), k.as_str()]);
+                constants.insert(path, v.clone());
             }
             specs.import_specs(dependency, &preprocessed.file, &processed.specs);
         }
