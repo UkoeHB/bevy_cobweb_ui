@@ -29,7 +29,6 @@ impl AssetLoader for LoadableSheetAssetLoader
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
-            //todo: replace this with custom parsing that only allocates where absolutely necessary
             let data: serde_json::Value = from_slice(&bytes)?;
             Ok(LoadableSheetAsset {
                 file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),

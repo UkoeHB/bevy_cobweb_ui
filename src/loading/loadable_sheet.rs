@@ -162,7 +162,7 @@ struct ErasedLoadable
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone)]
-struct RefSubscription
+struct SubscriptionRef
 {
     entity: Entity,
     setter: ContextSetter,
@@ -250,7 +250,7 @@ pub struct LoadableSheet
     loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
 
     /// Tracks subscriptions to loadable paths.
-    subscriptions: HashMap<LoadableRef, SmallVec<[RefSubscription; 1]>>,
+    subscriptions: HashMap<LoadableRef, SmallVec<[SubscriptionRef; 1]>>,
     /// Tracks entities for cleanup.
     subscriptions_rev: HashMap<Entity, SmallVec<[LoadableRef; 1]>>,
 
@@ -260,7 +260,7 @@ pub struct LoadableSheet
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
     needs_updates:
-        HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[RefSubscription; 1]>); 1]>>,
+        HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[SubscriptionRef; 1]>); 1]>>,
 }
 
 impl LoadableSheet
@@ -517,8 +517,8 @@ impl LoadableSheet
         // Clean up memory once all files are loaded and processed.
         #[cfg(not(feature = "hot_reload"))]
         {
-            tracing::info!("done loading (enable hot_reload feature if you want to reload files)");
             if self.pending.is_empty() && self.preprocessed.is_empty() {
+                tracing::info!("done loading (enable hot_reload feature if you want to reload files)");
                 self.pending = HashSet::default();
                 self.preprocessed = Vec::default();
                 self.processed = HashMap::default();
@@ -603,7 +603,7 @@ impl LoadableSheet
         self.swap_manifest_key_for_file(&mut loadable_ref.file);
 
         // Add to subscriptions.
-        let subscription = RefSubscription { entity, setter };
+        let subscription = SubscriptionRef { entity, setter };
         self.subscriptions
             .entry(loadable_ref.clone())
             .or_default()

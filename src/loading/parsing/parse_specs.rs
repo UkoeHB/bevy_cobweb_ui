@@ -14,7 +14,7 @@ struct SpecData
     /// [ param key : { saved value, cached temp override value } ]
     params: HashMap<SmolStr, (Value, Value)>,
     /// Cache for collecting temp inserts that need to be applied to the content.
-    inserts_cache: SmallVec<[(SmolStr, Value); 2]>,
+    inserts_cache: SmallVec<[(SmolStr, Value); 5]>,
     /// The unresolved value of this spec.
     content: Value,
 }
