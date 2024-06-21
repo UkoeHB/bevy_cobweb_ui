@@ -140,6 +140,8 @@ struct ProcessedLoadableFile
     using: HashMap<&'static str, &'static str>,
     /// Constants info cached for use by dependents.
     constants: HashMap<String, Map<String, Value>>,
+    /// Specs that can be imported into other files.
+    specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
     #[cfg(feature = "hot_reload")]
     imports: HashMap<LoadableFile, String>,
@@ -275,10 +277,10 @@ impl LoadableSheet
 
     /// Sets the manifest key for a file.
     ///
-    /// The manifest key may be `None` if this file is being imported. We use manifest key presence as a proxy
+    /// The `manifest_key` may be `None` if this file is being imported. We use manifest key presence as a proxy
     /// for whether or not a file has been initialized.
     ///
-    /// Returns `true` if this is the first time this file's manifest key has been registered. This is used
+    /// Returns `true` if this is the first time this file's manifest key has been registered. This can be used
     /// to decide whether to start loading transitive imports/manifests.
     pub(crate) fn register_manifest_key(&mut self, file: LoadableFile, manifest_key: Option<Arc<str>>) -> bool
     {
@@ -392,6 +394,8 @@ impl LoadableSheet
     }
 
     /// Converts a preprocessed file to a processed file.
+    ///
+    /// Assumes all imports are available.
     fn process_sheet(&mut self, preprocessed: PreprocessedLoadableFile, type_registry: &TypeRegistry)
     {
         // Initialize using/constants maps from dependencies.
@@ -399,6 +403,8 @@ impl LoadableSheet
         let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
         // [ path : [ terminal identifier : constant value ] ]
         let mut constants: HashMap<String, Map<String, Value>> = HashMap::default();
+        // specs collector
+        let mut specs = SpecsMap::default();
 
         for (dependency, alias) in preprocessed.imports.iter() {
             let processed = self.processed.get(dependency).unwrap();
@@ -410,6 +416,7 @@ impl LoadableSheet
                 // Prepend the import alias.
                 constants.insert(append_constant_extension(alias.clone(), k.as_str()), v.clone());
             }
+            specs.import_specs(dependency, &preprocessed.file, &processed.specs);
         }
 
         // Prepare to process the file.
@@ -429,12 +436,14 @@ impl LoadableSheet
             preprocessed.file.clone(),
             preprocessed.data,
             &mut constants,
+            &mut specs,
             &mut name_shortcuts,
         );
 
-        // Save final using/constants maps.
+        // Save final maps.
         processed.using = name_shortcuts;
         processed.constants = constants;
+        processed.specs = specs;
 
         self.processed.insert(preprocessed.file.clone(), processed);
 

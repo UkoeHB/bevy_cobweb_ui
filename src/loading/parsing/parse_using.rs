@@ -14,7 +14,7 @@ pub(crate) fn extract_using_section(
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
-    let Some(using_section) = map.get(&String::from(USING_KEYWORD)) else {
+    let Some(using_section) = map.get(USING_KEYWORD) else {
         return;
     };
 

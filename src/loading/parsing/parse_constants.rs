@@ -33,7 +33,7 @@ fn get_constants_set<'a>(
     let terminator = rev_iterator.next().unwrap();
     let path = rev_iterator.next().unwrap_or("");
 
-    let Some(constant_value) = constants.get(&String::from(path)) else {
+    let Some(constant_value) = constants.get(&path) else {
         tracing::warn!("ignoring unknown constant reference {:?} in constants \
             section of {:?}", value_str, file);
         return None;
@@ -57,7 +57,7 @@ fn try_replace_string_with_constant(
     };
 
     // For map values, paste the data pointed-to by the terminator.
-    let Some(constant_data) = constants_set.get(&String::from(terminator)) else {
+    let Some(constant_data) = constants_set.get(&terminator) else {
         tracing::warn!("ignoring constant reference {:?} with no recorded data in {:?}", value_str, file);
         return;
     };
@@ -91,7 +91,7 @@ fn try_replace_map_key_with_constant(
         // Otherwise, just paste the terminator and its value.
         _ => {
             // For map values, paste the data pointed-to by the terminator.
-            let Some(constant_data) = constants_set.get(&String::from(terminator)) else {
+            let Some(constant_data) = constants_set.get(&terminator) else {
                 tracing::warn!("ignoring constant reference {:?} with no recorded data in {:?}", key, file);
                 return;
             };
@@ -100,10 +100,6 @@ fn try_replace_map_key_with_constant(
         }
     }
 }
-
-//-------------------------------------------------------------------------------------------------------------------
-
-pub(crate) const CONSTANT_SEPARATOR: &str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -129,7 +125,7 @@ pub(crate) fn search_and_replace_map_constants(
 {
     for key in map
         .keys()
-        .filter(|k| !key_is_non_content_keyword(k))
+        .filter(|k| !is_keyword_for_non_constant_editable_section(k))
         .cloned()
         .collect::<Vec<String>>()
         .drain(..)
@@ -139,7 +135,7 @@ pub(crate) fn search_and_replace_map_constants(
 
     for (key, value) in map.iter_mut() {
         // Ignore sections that start with a non-content keyword.
-        if key_is_non_content_keyword(key) {
+        if is_keyword_for_non_constant_editable_section(key) {
             continue;
         }
         search_and_replace_constants(file, prefix, value, constants);
@@ -262,7 +258,7 @@ pub(crate) fn extract_constants_section(
     constants: &mut HashMap<String, Map<String, Value>>,
 )
 {
-    let Some(constants_section) = data.get_mut(&String::from(CONSTANTS_KEYWORD)) else {
+    let Some(constants_section) = data.get_mut(&CONSTANTS_KEYWORD) else {
         return;
     };
 
@@ -276,7 +272,7 @@ pub(crate) fn extract_constants_section(
     // Replace map keys with constants.
     for key in data
         .keys()
-        .filter(|k| !key_is_non_content_keyword(k))
+        .filter(|k| !is_keyword_for_non_constant_editable_section(k))
         .cloned()
         .collect::<Vec<String>>()
         .drain(..)

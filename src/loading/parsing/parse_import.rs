@@ -12,7 +12,7 @@ pub(crate) fn extract_import_section(
     imports: &mut HashMap<LoadableFile, String>,
 )
 {
-    let Some(import_section) = map.get(&String::from(IMPORT_KEYWORD)) else {
+    let Some(import_section) = map.get(IMPORT_KEYWORD) else {
         return;
     };
 

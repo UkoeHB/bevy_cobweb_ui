@@ -46,7 +46,7 @@ pub(crate) fn parse_commands_section(
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
-    let Some(commands_section) = data.get_mut(&String::from(COMMANDS_KEYWORD)) else {
+    let Some(commands_section) = data.get_mut(COMMANDS_KEYWORD) else {
         return;
     };
 

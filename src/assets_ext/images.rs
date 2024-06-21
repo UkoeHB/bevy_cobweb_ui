@@ -51,16 +51,16 @@ impl ImageMap
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for the image to be loaded.
-    pub fn insert(&mut self, path: String, asset_server: &AssetServer)
+    pub fn insert(&mut self, path: impl AsRef<str> + Into<String>, asset_server: &AssetServer)
     {
-        if self.map.contains_key(&path) {
+        if self.map.contains_key(path.as_ref()) {
             tracing::warn!("ignoring duplicate load for image {}", path);
             return;
         }
 
-        let handle = asset_server.load(&path);
+        let handle = asset_server.load(path.as_ref());
         self.pending.insert(handle.id());
-        self.map.insert(path, handle);
+        self.map.insert(path.into(), handle);
     }
 
     fn remove_pending(&mut self, id: &AssetId<Image>)
@@ -71,9 +71,9 @@ impl ImageMap
     /// Gets an image handle for the given path.
     ///
     /// Returns a default handle if the image was not pre-inserted via [`Self::insert`].
-    pub fn get(&self, path: &String) -> Handle<Image>
+    pub fn get(&self, path: impl AsRef<str>) -> Handle<Image>
     {
-        let Some(entry) = self.map.get(path) else {
+        let Some(entry) = self.map.get(path.as_ref()) else {
             tracing::error!("failed getting image {} that was not loaded; use LoadImages command", path);
             return Default::default();
         };

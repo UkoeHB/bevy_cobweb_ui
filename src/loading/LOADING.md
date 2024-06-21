@@ -260,11 +260,25 @@ To support this, you can end a constant with `::*` to 'paste all' when it's used
 }
 ```
 
+#### Specs: `#specs`
+
+When designing a widget, it is useful to have a base implementation and styling, and then to customize it as needed. To support this, you can define widget structures in the `#specs` section. Specifications (specs) are parameterized JSON data that can be pasted into commands or loadable trees. Overriding a spec is a simple as redefining some of its parameters.
+
+Spec definitions have three features.
+1. **Parameters**: Parameters are written as `@my_param` and can be used to insert data anywhere within a spec's content.
+2. **Insertion points**: Insertion points are written as `!my_insertion_point` and can be added to any map key or array within a spec's content. Overriding an insertion point lets you paste arbitrary values into the spec content. This can be used to add entries to arrays, add loadables to positions in loadable trees, or add normally-defaulted fields to structs. They also allow you to expand a spec's definition by adding more paremeters to the spec content.
+3. **Content**: Marked with `*`, spec content is 
+
+An existing spec can be invoked anywhere in a file's `#specs` section, `#commands` section, or its loadable tree by adding a 'spec invocation' with format `IDENTIFIER(#spec:spec_to_invoke)`. Spec invocations can define parameters or add content to insertion points.
+- **`#specs` override**: You can override an existing spec by adding a spec invocation like `new_spec_name(#spec:spec_to_override)` as a key in the `#specs` map. If the spec names are different, then a new spec will be created by copying the invoked spec. Otherwise the invoked spec will be overridden (its params and content will be overridden with new values specified by the invocation) and the updated version will be available in the remainder of the file.
+- **Path spec**: You can insert a spec to a path position in the loadable tree with `path_identifier(#spec:spec_to_insert)`. When the spec is inserted, all parameters saved in the spec will be inserted to their positions in the spec content. Any nested specs in the spec content will also be inserted and their params resolved.
+- **Loadable spec**: You can insert a spec as a loadable to the loadable tree or `#commands` section with `MyLoadable(#spec:spec_to_insert)`. As with path specs, spec content is inserted, params are resolved, and nested specs are handled.
+
 #### Imports: `#import`
 
-You can import `#using` and `#constants` sections from other files with the `#import` keyword.
+You can import `#using`, `#constants`, and `#specs` sections from other files with the `#import` keyword.
 
-Add the `#import` section to the base map in a file. It should be a map between file names and file aliases. The aliases can be used to access constants imported from each file.
+Add the `#import` section to the base map in a file. It should be a map between file names and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec invocations that are inside spec content.
 
 ```json
 // my_constants.load.json

@@ -13,7 +13,7 @@ pub(crate) fn extract_manifest_section(
     manifests: &mut HashMap<LoadableFile, Arc<str>>,
 )
 {
-    let Some(manifest_section) = map.get(&String::from(MANIFEST_KEYWORD)) else {
+    let Some(manifest_section) = map.get(MANIFEST_KEYWORD) else {
         return;
     };
 

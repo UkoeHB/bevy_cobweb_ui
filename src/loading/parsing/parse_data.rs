@@ -71,9 +71,15 @@ pub(crate) fn parse_branch(
 {
     for (key, value) in data.iter_mut() {
         // Skip keyword map entries.
-        if key_is_keyword(key) {
+        if is_any_keyword(key) {
             continue;
         }
+
+        // Remove qualifier from key if it has one.
+        let key = match key.split_once('(') {
+            Some((key, _)) => key,
+            _ => key
+        };
 
         let value = value.take();
 
@@ -83,7 +89,7 @@ pub(crate) fn parse_branch(
                 loadablesheet,
                 file,
                 current_path,
-                key.as_str(),
+                key,
                 value,
                 name_shortcuts,
             );
@@ -93,7 +99,7 @@ pub(crate) fn parse_branch(
                 loadablesheet,
                 file,
                 current_path,
-                key.as_str(),
+                key,
                 value,
                 name_shortcuts,
             );

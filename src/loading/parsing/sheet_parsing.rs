@@ -66,6 +66,8 @@ pub(crate) fn parse_loadablesheet_file(
     mut data: Map<String, Value>,
     // [ path : [ terminal identifier : constant value ] ]
     constants: &mut HashMap<String, Map<String, Value>>,
+    // tracks specs
+    specs: &mut SpecMap,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
@@ -79,7 +81,14 @@ pub(crate) fn parse_loadablesheet_file(
     extract_constants_section(&file, &mut data, constants);
 
     // Search and replace constants.
-    search_and_replace_map_constants(&file, "$", &mut data, constants);
+    search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants);
+
+    // Extract specifications section.
+    extract_specs_section(&file, &mut data, specs);
+
+    // Insert spec definitions where requested in commands and data.
+    // - Does not permanently mutate the specs, mutability is only for optimized spec insertion.
+    insert_specs(&file, &mut data, specs);
 
     // Extract commands section.
     parse_commands_section(type_registry, loadablesheet, &file, &mut data, name_shortcuts);
