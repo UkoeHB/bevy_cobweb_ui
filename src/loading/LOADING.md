@@ -262,17 +262,240 @@ To support this, you can end a constant with `::*` to 'paste all' when it's used
 
 #### Specs: `#specs`
 
-When designing a widget, it is useful to have a base implementation and styling, and then to customize it as needed. To support this, you can define widget structures in the `#specs` section. Specifications (specs) are parameterized JSON data that can be pasted into commands or loadable trees. Overriding a spec is a simple as redefining some of its parameters.
+When designing a widget, it is useful to have a base implementation and styling, and then to customize it as needed. To support this we have the `#specs` section. Specifications (specs) are parameterized JSON data that can be pasted into commands or loadable trees. Overriding a spec is a simple as redefining some of its parameters.
 
-Spec definitions have three features.
+Here is a spec for a trivial `text` widget:
+```json
+{
+    "#specs": {
+        "text": {
+            "@size": 30.0,
+            "*": {
+                "FlexStyle": {},
+                "TextLine": {
+                    "size": "@size",
+                    "!textline": ""
+                },
+                "!insert": ""
+            }
+        }
+    }
+}
+```
+
+The spec would be used like this:
+```json
+{
+    "#specs": "..omitted..",
+
+    "root": {
+        "#c: Root entity sets up the UI.":0,
+        "FlexStyle": {
+            "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+            "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
+        },
+
+        "#c: Invoke the text spec as a loadable section.":0,
+        "hello_text(#spec:text)": {
+            "@size": 50.0,
+            "!textline": {
+                "text": "Hello, World!"
+            },
+            "!insert": {
+                "TextLineColor": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}}
+            }
+        }
+    }
+}
+```
+
+Spec definitions have three pieces.
 1. **Parameters**: Parameters are written as `@my_param` and can be used to insert data anywhere within a spec's content.
-2. **Insertion points**: Insertion points are written as `!my_insertion_point` and can be added to any map key or array within a spec's content. Overriding an insertion point lets you paste arbitrary values into the spec content. This can be used to add entries to arrays, add loadables to positions in loadable trees, or add normally-defaulted fields to structs. They also allow you to expand a spec's definition by adding more paremeters to the spec content.
-3. **Content**: Marked with `*`, spec content is 
+2. **Insertion points**: Insertion points are written as `!my_insertion_point` and can be added to any map key or array within a spec's content. Overriding an insertion point lets you paste arbitrary values into the spec content. This can be used to add loadables to positions in loadable trees, add entries to arrays, or add normally-defaulted fields to structs. They also allow you to expand a spec's definition by adding more paremeters to the spec content.
+3. **Content**: Marked with `*`, spec content is inserted when a spec is invoked in the `#commnds` section or the loadable tree.
 
 An existing spec can be invoked anywhere in a file's `#specs` section, `#commands` section, or its loadable tree by adding a 'spec invocation' with format `IDENTIFIER(#spec:spec_to_invoke)`. Spec invocations can define parameters or add content to insertion points.
-- **`#specs` override**: You can override an existing spec by adding a spec invocation like `new_spec_name(#spec:spec_to_override)` as a key in the `#specs` map. If the spec names are different, then a new spec will be created by copying the invoked spec. Otherwise the invoked spec will be overridden (its params and content will be overridden with new values specified by the invocation) and the updated version will be available in the remainder of the file.
-- **Path spec**: You can insert a spec to a path position in the loadable tree with `path_identifier(#spec:spec_to_insert)`. When the spec is inserted, all parameters saved in the spec will be inserted to their positions in the spec content. Any nested specs in the spec content will also be inserted and their params resolved.
-- **Loadable spec**: You can insert a spec as a loadable to the loadable tree or `#commands` section with `MyLoadable(#spec:spec_to_insert)`. As with path specs, spec content is inserted, params are resolved, and nested specs are handled.
+
+Note that constants are applied to the `#specs` section before specs are imported from other files, and before the `#specs` section is evaluated.
+
+**`#specs` override**
+
+You can override an existing spec by adding a spec invocation like `new_spec_name(#spec:spec_to_override)` as a key in the `#specs` map. If the spec names are different, then a new spec will be created by copying the invoked spec. Otherwise the invoked spec will be overridden (its params and content will be overridden with new values specified by the invocation) and the updated version will be available in the remainder of the file.
+
+Here is our trivial text spec again:
+```json
+// file_a.load.json
+{
+    "#specs": {
+        "text": {
+            "@size": 30.0,
+            "*": {
+                "FlexStyle": {},
+                "TextLine": {
+                    "size": "@size",
+                    "!textline": ""
+                },
+                "!insert": ""
+            }
+        }
+    }
+}
+```
+
+And here we first override the text spec and then add a new spec derived from our overridden value. Note that specs are processed from top to bottom, which means an override in the specs section will be used by all references below the override.
+```json
+// file_b.load.json
+{
+    "#import": {
+        "file_a.load.json": ""
+    },
+
+    "#specs": {
+        "text(#spec:text)": {
+            "@size": 30.0
+        },
+
+        "colorful_text(#spec:text)": {
+            "!insert": {
+                "TextLineColor": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}}
+            }
+        }
+    }
+}
+```
+
+The `colorful_text` spec will have text size `30.0` and also a `TextLineColor` loadable.
+
+**Path spec**
+
+You can insert a spec to a path position in the loadable tree with `path_identifier(#spec:spec_to_insert)`. When the spec is inserted, all parameters saved in the spec will be inserted to their positions in the spec content. Any nested specs in the spec content will also be inserted and their params resolved.
+
+Here is a shortened version of the 'hello world' example from above:
+```json
+{
+    "#specs": "..omitted..",
+
+    "root": {
+        "..root entity omitted..":0,
+
+        "hello_text(#spec:text)": {
+            "@size": 50.0,
+            "!textline": {
+                "text": "Hello, World!"
+            },
+            "!insert": {
+                "TextLineColor": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}}
+            }
+        }
+    }
+}
+```
+
+When the text spec is expanded, the final loadable will look like:
+```json
+{
+    "#specs": "..omitted..",
+
+    "root": {
+        "..root entity omitted..":0,
+
+        "hello_text": {
+            "FlexStyle": {},
+            "TextLine": {
+                "size": 50.0,
+                "text": "Hello, World!"
+            },
+            "TextLineColor": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}}
+        }
+    }
+}
+```
+
+**Loadable spec**
+
+You can insert a spec as a loadable to the loadable tree or `#commands` section with `MyLoadable(#spec:spec_to_insert)`. As with path specs, spec content is inserted, params are resolved, and nested specs are handled.
+
+We could rewrite the `text` spec like this:
+```json
+{
+    "#specs": {
+        "text": {
+            "@size": 30.0,
+            "*": {
+                "size": "@size",
+                "!textline": ""
+            }
+        }
+    }
+}
+```
+
+And then use the spec content to directly fill in the `TextLine` loadable:
+```json
+{
+    "#specs": "..omitted..",
+
+    "root": {
+        "..root entity omitted..":0,
+
+        "hello_text": {
+            "FlexStyle": {},
+            "TextLine(#spec:text)": {
+                "@size": 50.0,
+                "!textline": {
+                    "text": "Hello, World!"
+                },
+            },
+            "TextLineColor": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}}
+        }
+    }
+}
+```
+
+**Nested specs**
+
+It is allowed for specs to reference other specs internally. This allows making complex widget structures composed of smaller widgets when you want the small widgets to be externally customizable.
+
+In this example we use the `text` spec as a component of a simple `button` spec:
+```json
+// file_a.load.json
+{
+    "#specs": {
+        "text": {
+            "@size": 30.0,
+            "*": {
+                "FlexStyle": {},
+                "TextLine": {
+                    "size": "@size",
+                    "!textline": ""
+                },
+                "!insert": ""
+            }
+        },
+
+        "button_text(#spec:text)": {
+            "@margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 8.0}, "right": {"Px": 8.0}},
+            "!insert": {
+                "Margin": "@margin"
+            }
+        },
+
+        "button": {
+            "*": {
+                "core": {
+                    "FlexStyle": {
+                        "dims"    : { "!dims":"" },
+                        "content" : { "!content":"" },
+                        "flex"    : { "!flex":"" }
+                    },
+
+                    "text(#spec:button_text)": { }
+                }
+            }
+        }
+    }
+}
+```
 
 #### Imports: `#import`
 
