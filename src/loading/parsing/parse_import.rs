@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde_json::{Map, Value};
+use smol_str::SmolStr;
 
 use crate::*;
 
@@ -9,7 +10,7 @@ use crate::*;
 pub(crate) fn extract_import_section(
     file: &LoadableFile,
     map: &Map<String, Value>,
-    imports: &mut HashMap<LoadableFile, String>,
+    imports: &mut HashMap<LoadableFile, SmolStr>,
 )
 {
     let Some(import_section) = map.get(IMPORT_KEYWORD) else {
@@ -34,7 +35,7 @@ pub(crate) fn extract_import_section(
                 file, import.as_str());
             continue;
         }
-        imports.insert(import, alias.clone());
+        imports.insert(import, alias.as_str().into());
     }
 }
 

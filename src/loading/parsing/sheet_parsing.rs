@@ -33,7 +33,7 @@ pub(crate) fn preprocess_loadablesheet_file(
     extract_manifest_section(&file, &data, &mut manifest);
 
     // Extract imports.
-    let mut imports: HashMap<LoadableFile, String> = HashMap::default();
+    let mut imports: HashMap<LoadableFile, SmolStr> = HashMap::default();
     extract_import_section(&file, &data, &mut imports);
 
     // Register manifest keys.

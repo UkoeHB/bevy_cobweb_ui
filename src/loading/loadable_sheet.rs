@@ -127,7 +127,7 @@ struct PreprocessedLoadableFile
     /// This file.
     file: LoadableFile,
     /// Imports for detecting when a re-load is required.
-    imports: HashMap<LoadableFile, String>,
+    imports: HashMap<LoadableFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
     data: Map<String, Value>,
 }
@@ -145,7 +145,7 @@ struct ProcessedLoadableFile
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
     #[cfg(feature = "hot_reload")]
-    imports: HashMap<LoadableFile, String>,
+    imports: HashMap<LoadableFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
     #[cfg(feature = "hot_reload")]
     data: Map<String, Value>,
@@ -357,7 +357,7 @@ impl LoadableSheet
     pub(crate) fn add_preprocessed_file(
         &mut self,
         file: LoadableFile,
-        mut imports: HashMap<LoadableFile, String>,
+        mut imports: HashMap<LoadableFile, SmolStr>,
         data: Map<String, Value>,
     )
     {
