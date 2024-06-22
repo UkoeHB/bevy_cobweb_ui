@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::marker::PhantomData;
 
 use bevy::ecs::system::EntityCommands;
@@ -8,15 +9,25 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[cfg(feature = "hot_reload")]
 fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     In((entity, syscommand, triggers)): In<(Entity, SystemCommand, Triggers)>,
     mut c: Commands,
     loaded: Query<(), With<HasLoadables>>,
 )
 {
-    // Detect loadables if appropriate.
-    let revoke_token = if loaded.contains(entity) {
-        #[cfg(feature = "hot_reload")]
+    // If there are no triggers then we should despawn the reactor immediately.
+    let is_loaded = loaded.contains(entity);
+    if !is_loaded && (TypeId::of::<Triggers>() == TypeId::of::<()>()) {
+        c.add(syscommand);
+        c.add(move |world: &mut World| {
+            world.despawn(*syscommand);
+        });
+        return;
+    }
+
+    // Otherwise, prepare the reactor.
+    let revoke_token = if is_loaded {
         let triggers = (triggers, entity_event::<Loaded>(entity));
 
         c.react()
@@ -30,6 +41,41 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 
     //todo: more efficient cleanup mechanism
     cleanup_reactor_on_despawn(&mut c, entity, revoke_token);
+
+    // Run the system to apply it.
+    c.add(syscommand);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[cfg(not(feature = "hot_reload"))]
+fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
+    c: &mut Commands,
+    entity: Entity,
+    syscommand: SystemCommand,
+    triggers: Triggers,
+)
+{
+    // If there are no triggers then we should despawn the reactor immediately after running it.
+    if TypeId::of::<Triggers>() == TypeId::of::<()>() {
+        c.add(syscommand);
+        c.add(move |world: &mut World| {
+            world.despawn(*syscommand);
+        });
+        return;
+    }
+
+    // Otherwise, prepare reactor.
+    let revoke_token = c
+        .react()
+        .with(triggers, syscommand, ReactorMode::Revokable)
+        .unwrap();
+
+    //todo: more efficient cleanup mechanism
+    cleanup_reactor_on_despawn(c, entity, revoke_token);
+
+    // Run the system to apply it.
+    c.add(syscommand);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -93,11 +139,11 @@ pub trait UiReactEntityCommandsExt
     /// - Immediately after being registered.
     /// - Whenever the triggers fire.
     /// - When an entity with [`HasLoadables`] receives [`Loaded`] events.
-    fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        triggers: impl ReactionTriggerBundle,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self;
+    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
+    where
+        C: IntoSystem<(), (), M> + Send + Sync + 'static,
+        T: ReactionTriggerBundle,
+        R: FnOnce(Entity) -> C;
 }
 
 impl UiReactEntityCommandsExt for EntityCommands<'_>
@@ -138,18 +184,24 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        triggers: impl ReactionTriggerBundle,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self
+    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
+    where
+        C: IntoSystem<(), (), M> + Send + Sync + 'static,
+        T: ReactionTriggerBundle,
+        R: FnOnce(Entity) -> C,
     {
         let id = self.id();
         let callback = (reactor)(id);
         let syscommand = self.commands().spawn_system_command(callback);
-        self.commands()
-            .syscall((id, syscommand, triggers), register_update_on_reactor);
-        self.commands().add(syscommand);
+        #[cfg(feature = "hot_reload")]
+        {
+            self.commands()
+                .syscall((id, syscommand, triggers), register_update_on_reactor);
+        }
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            register_update_on_reactor(&mut self.commands(), id, syscommand, triggers);
+        }
 
         self
     }

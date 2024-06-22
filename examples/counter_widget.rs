@@ -153,9 +153,13 @@ impl CounterWidgetBuilder
                 path.e("text"),
                 &mut text_entity,
                 |text, _path| {
-                    text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                        Counter::write(pre_text, post_text, button_id, text_id)
-                    });
+                    text.update_on(
+                        (
+                            entity_event::<PressCanceled>(button_id),
+                            entity_mutation::<Counter>(button_id),
+                        ),
+                        |text_id| Counter::write(pre_text, post_text, button_id, text_id),
+                    );
                 },
             );
 
