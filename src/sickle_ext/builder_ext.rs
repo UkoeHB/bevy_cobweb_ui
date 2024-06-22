@@ -17,6 +17,9 @@ pub trait NodeLoadingExt
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback` for interacting with the entity.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load(
         &mut self,
         loadable_ref: LoadableRef,
@@ -30,6 +33,9 @@ pub trait NodeLoadingExt
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback(node_builder, loadable_ref)` for interacting with the entity.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load_with_theme<C: DefaultTheme>(
         &mut self,
         loadable_ref: LoadableRef,
@@ -47,6 +53,9 @@ pub trait NodeLoadingExt
     /// Inserts a [`NodeBundle::default()`] to the entity.
     ///
     /// Includes a `callback(node_builder, loadable_ref)` for interacting with the entity.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
         &mut self,
         loadable_ref: LoadableRef,

@@ -67,6 +67,7 @@ fn process_loadable_files(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[cfg(feature = "hot_reload")]
 fn cleanup_loadablesheet(
     mut loadablesheet: ReactResMut<LoadableSheet>,
     mut removed: RemovedComponents<HasLoadables>,
@@ -76,6 +77,14 @@ fn cleanup_loadablesheet(
         loadablesheet.get_noreact().remove_entity(removed);
     }
 
+    loadablesheet.get_noreact().cleanup_pending_updates();
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[cfg(not(feature = "hot_reload"))]
+fn cleanup_loadablesheet(mut loadablesheet: ReactResMut<LoadableSheet>)
+{
     loadablesheet.get_noreact().cleanup_pending_updates();
 }
 
@@ -250,8 +259,10 @@ pub struct LoadableSheet
     loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
 
     /// Tracks subscriptions to loadable paths.
+    #[cfg(feature = "hot_reload")]
     subscriptions: HashMap<LoadableRef, SmallVec<[SubscriptionRef; 1]>>,
     /// Tracks entities for cleanup.
+    #[cfg(feature = "hot_reload")]
     subscriptions_rev: HashMap<Entity, SmallVec<[LoadableRef; 1]>>,
 
     /// Records commands that need to be applied.
@@ -577,12 +588,15 @@ impl LoadableSheet
         }
 
         // Identify entites that should update.
-        let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return false };
-        if subscriptions.is_empty() {
-            return false;
+        #[cfg(feature = "hot_reload")]
+        {
+            let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return false };
+            if subscriptions.is_empty() {
+                return false;
+            }
+            let entry = self.needs_updates.entry(type_id).or_default();
+            entry.push((loadable, loadable_ref.clone(), subscriptions.clone()));
         }
-        let entry = self.needs_updates.entry(type_id).or_default();
-        entry.push((loadable, loadable_ref.clone(), subscriptions.clone()));
 
         true
     }
@@ -604,14 +618,17 @@ impl LoadableSheet
 
         // Add to subscriptions.
         let subscription = SubscriptionRef { entity, setter };
-        self.subscriptions
-            .entry(loadable_ref.clone())
-            .or_default()
-            .push(subscription);
-        self.subscriptions_rev
-            .entry(entity)
-            .or_default()
-            .push(loadable_ref.clone());
+        #[cfg(feature = "hot_reload")]
+        {
+            self.subscriptions
+                .entry(loadable_ref.clone())
+                .or_default()
+                .push(subscription);
+            self.subscriptions_rev
+                .entry(entity)
+                .or_default()
+                .push(loadable_ref.clone());
+        }
 
         // Get already-loaded values that the entity is subscribed to.
         let Some(loadables) = self.loadables.get(&loadable_ref) else { return };
@@ -634,8 +651,11 @@ impl LoadableSheet
         }
 
         // Notify the entity that some of its loadables have loaded.
-        if !loadables.is_empty() {
-            c.react().entity_event(entity, Loaded);
+        #[cfg(feature = "hot_reload")]
+        {
+            if !loadables.is_empty() {
+                c.react().entity_event(entity, Loaded);
+            }
         }
     }
 
@@ -651,6 +671,7 @@ impl LoadableSheet
     }
 
     /// Cleans up despawned entities.
+    #[cfg(feature = "hot_reload")]
     fn remove_entity(&mut self, dead_entity: Entity)
     {
         let Some(loadable_refs) = self.subscriptions_rev.remove(&dead_entity) else { return };

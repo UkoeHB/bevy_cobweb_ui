@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-use bevy::ecs::system::EntityCommands;
+use bevy::ecs::system::{CommandQueue, EntityCommands};
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
@@ -18,24 +18,34 @@ fn register_loadable_impl<M, T: 'static>(
     register_type: &'static str,
 )
 {
-    if !app.world.contains_resource::<LoaderCallbacks>() {
-        app.init_resource::<LoaderCallbacks>();
+    let mut loaders = app
+        .world
+        .remove_resource::<LoaderCallbacks>()
+        .unwrap_or_default();
+
+    //todo: use commands from the world directly.
+    let mut queue = CommandQueue::default();
+    let mut c = Commands::new(&mut queue, &mut app.world);
+
+    let entry = loaders.callbacks.entry(TypeId::of::<T>());
+    if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
+        tracing::warn!("tried registering {register_type} loadable {} multiple times", std::any::type_name::<T>());
     }
 
-    CallbackSystem::new(
-        move |mut c: Commands, mut loaders: ResMut<LoaderCallbacks>|
-        {
-            let entry = loaders.callbacks.entry(TypeId::of::<T>());
-            if matches!(entry, std::collections::hash_map::Entry::Occupied(_))
-            {
-                tracing::warn!("tried registering {register_type} loadable {} multiple times", std::any::type_name::<T>());
-            }
+    #[cfg(feature = "hot_reload")]
+    {
+        entry.or_insert_with(|| {
+            c.react()
+                .on_persistent(resource_mutation::<LoadableSheet>(), callback)
+        });
+    }
+    #[cfg(not(feature = "hot_reload"))]
+    {
+        entry.or_insert_with(|| c.spawn_system_command(callback));
+    }
 
-            entry.or_insert_with(
-                    || c.react().on_persistent(resource_mutation::<LoadableSheet>(), callback)
-                );
-        }
-    ).run(&mut app.world, ());
+    queue.apply(&mut app.world);
+    app.world.insert_resource(loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -65,7 +75,10 @@ fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResM
             (context_setter.setter)(&mut ec);
             ec.try_insert(bundle);
 
-            c.react().entity_event::<Loaded>(entity, Loaded);
+            #[cfg(feature = "hot_reload")]
+            {
+                c.react().entity_event(entity, Loaded);
+            }
         });
 }
 
@@ -96,7 +109,10 @@ fn reactive_loader<T: ReactComponent + Loadable>(
                 }
             }
 
-            c.react().entity_event::<Loaded>(entity, Loaded);
+            #[cfg(feature = "hot_reload")]
+            {
+                c.react().entity_event(entity, Loaded);
+            }
         });
 }
 
@@ -114,7 +130,10 @@ fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut loadables: R
             (context_setter.setter)(&mut ec);
             value.apply(&mut ec);
 
-            c.react().entity_event::<Loaded>(entity, Loaded);
+            #[cfg(feature = "hot_reload")]
+            {
+                c.react().entity_event(entity, Loaded);
+            }
         });
 }
 
@@ -234,12 +253,18 @@ impl LoadableRegistrationAppExt for App
 pub trait StyleLoadingEntityCommandsExt
 {
     /// Registers the current entity to load loadables from `loadable_ref`.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self;
 
     /// Registers the current entity to load loadables from `loadable_ref`.
     ///
     /// The `setter` callback will be called every time a loadable is applied from the `loadable_ref` for this
     /// entity.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load_with_context_setter(
         &mut self,
         loadable_ref: LoadableRef,

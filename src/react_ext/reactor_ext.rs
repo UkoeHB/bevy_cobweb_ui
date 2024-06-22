@@ -16,7 +16,9 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 {
     // Detect loadables if appropriate.
     let revoke_token = if loaded.contains(entity) {
+        #[cfg(feature = "hot_reload")]
         let triggers = (triggers, entity_event::<Loaded>(entity));
+
         c.react()
             .with(triggers, syscommand, ReactorMode::Revokable)
             .unwrap()
