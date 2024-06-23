@@ -28,7 +28,7 @@
 
 "#c: CounterWidget override for responsive text.":0,
 "counter_widget_responsive_text(#spec:counter_widget)": {
-    "@text_size": 50.0,
+    "@text_size": 35.0,
     "@text_margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}},
     "!text": {
         "Animated<TextLineColor>": {

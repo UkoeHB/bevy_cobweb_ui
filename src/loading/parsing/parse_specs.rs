@@ -53,8 +53,8 @@ impl InsertValues
 #[derive(Default, Debug, Clone)]
 struct SpecData
 {
-    /// [ param key : { saved value, cached temp override value } ]
-    params: HashMap<SmolStr, (Value, Value)>,
+    /// [ param key : { saved value, cached temp override value, flag indicating the param was used } ]
+    params: HashMap<SmolStr, (Value, Value, bool)>,
     /// The unresolved value of this spec.
     content: Value,
 }
@@ -71,10 +71,17 @@ impl SpecData
         spec
     }
 
-    fn clear_cached_edits(&mut self)
+    fn clear_cached_edits_and_check_used(&mut self, file: &LoadableFile, spec_invocation: &str)
     {
-        self.params.retain(|_, (saved, temp)| {
+        self.params.retain(|key, (saved, temp, used)| {
+            if !*used {
+                tracing::warn!("spec parameter {} was unused for spec invocation {} in {:?}",
+                    key, spec_invocation, file);
+            }
+
             *temp = Value::Null;
+            *used = false;
+
             // Clean up map entries for temporary parameters that did not override pre-existing params.
             if let (Value::Null, Value::Null) = (saved, temp) {
                 return false;
@@ -104,7 +111,7 @@ impl SpecData
             } else if key.starts_with(SPEC_PARAMETER_MARKER) {
                 match self.params.contains_key(key.as_str()) {
                     true => {
-                        let (saved_param, temp_param) = self.params.get_mut(key.as_str()).unwrap();
+                        let (saved_param, temp_param, _) = self.params.get_mut(key.as_str()).unwrap();
                         match merge_params {
                             true => {
                                 // This overwrites the previous value.
@@ -121,10 +128,12 @@ impl SpecData
                         // use a param/have extra params
                         match merge_params {
                             true => {
-                                self.params.insert(key.into(), (value.take(), Value::Null));
+                                self.params
+                                    .insert(key.into(), (value.take(), Value::Null, false));
                             }
                             false => {
-                                self.params.insert(key.into(), (Value::Null, value.take()));
+                                self.params
+                                    .insert(key.into(), (Value::Null, value.take(), false));
                             }
                         }
                     }
@@ -218,7 +227,7 @@ impl SpecData
     }
 
     fn recursively_resolve_spec_content(
-        &self,
+        &mut self,
         file: &LoadableFile,
         value: &mut Value,
         inserts: &InsertValues,
@@ -353,7 +362,7 @@ impl SpecData
                 }
 
                 // Param key: replace value with param (favor temp value over saved value).
-                let Some((saved, temp)) = self.params.get(string.as_str()) else {
+                let Some((saved, temp, used)) = self.params.get_mut(string.as_str()) else {
                     tracing::warn!("failed setting param {} in {:?} while resolving a spec, the spec doesn't contain any \
                         values for this param", value, file);
                     return;
@@ -365,6 +374,7 @@ impl SpecData
                 };
 
                 *value = next_value;
+                *used = true;
             }
             _ => (),
         }
@@ -388,12 +398,11 @@ impl SpecData
         self.apply_insertions_to_spec_content(file, &mut content, &mut inserts);
         self.content = content;
 
-        // Validate that everything in the override was used.
+        // Validate that provided insertions were used.
         for (unused_insert_key, _) in inserts.iter_unused_values() {
             tracing::warn!("spec insertion key {:?} for spec definition/override {} in {:?} was not used",
                 unused_insert_key, spec_invocation, file);
         }
-        //todo: add params check
     }
 
     /// Extracts spec edits from a value, then overwrites the value with the spec content.
@@ -417,15 +426,14 @@ impl SpecData
 
         // Cleanup
         if has_edits {
-            self.clear_cached_edits();
+            self.clear_cached_edits_and_check_used(file, spec_invocation);
         }
 
-        // Validate that everything in the override was used.
+        // Validate that provided insertions were used.
         for (unused_insert_key, _) in inserts.iter_unused_values() {
             tracing::warn!("spec insertion key {:?} for spec invocation {} in {:?} was not used",
                 unused_insert_key, spec_invocation, file);
         }
-        //todo: add params check
     }
 }
 
