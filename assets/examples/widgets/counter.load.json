@@ -57,6 +57,6 @@
 },
 
 "#c: Makes the default widget available at this location.":0,
-"counter_widget(#spec:counter_widget)": ""
+"counter_widget(#spec:counter_widget)": { }
 
 }

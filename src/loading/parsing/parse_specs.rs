@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde_json::{Map, Value};
 use smallvec::SmallVec;
@@ -8,14 +9,52 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Default)]
+struct InsertValues
+{
+    inserts: SmallVec<[(SmolStr, Value, AtomicBool); 5]>,
+}
+
+impl InsertValues
+{
+    fn add(&mut self, insert_key: SmolStr, insert_value: Value)
+    {
+        self.inserts
+            .push((insert_key, insert_value, AtomicBool::default()));
+    }
+
+    fn get_index(&self, key: &str) -> Option<usize>
+    {
+        self.inserts
+            .iter()
+            .position(|(cached_key, _, _)| cached_key == key)
+    }
+
+    fn access(&self, index: usize) -> Option<(&SmolStr, &Value)>
+    {
+        let (key, value, accessed) = self.inserts.get(index)?;
+        accessed.store(true, Ordering::Relaxed);
+        Some((key, value))
+    }
+
+    fn iter_unused_values(&self) -> impl Iterator<Item = (&SmolStr, &Value)>
+    {
+        self.inserts.iter().filter_map(|(key, value, accessed)| {
+            if accessed.load(Ordering::Relaxed) {
+                return None;
+            }
+            Some((key, value))
+        })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Default, Debug, Clone)]
 struct SpecData
 {
     /// [ param key : { saved value, cached temp override value } ]
     params: HashMap<SmolStr, (Value, Value)>,
-    /// Cache for collecting temp inserts that need to be applied to the content.
-    //todo: detect if an insert is added to the cache but not used
-    inserts_cache: SmallVec<[(SmolStr, Value); 5]>,
     /// The unresolved value of this spec.
     content: Value,
 }
@@ -42,7 +81,6 @@ impl SpecData
             }
             true
         });
-        self.inserts_cache.clear();
     }
 
     /// Extracts spec edits from a map of params and inserts.
@@ -51,6 +89,7 @@ impl SpecData
         file: &LoadableFile,
         spec_invocation: &str,
         map: &mut Map<String, Value>,
+        inserts: &mut InsertValues,
         merge_params: bool,
     ) -> bool
     {
@@ -91,7 +130,7 @@ impl SpecData
                     }
                 }
             } else if key.starts_with(SPEC_INSERTION_MARKER) {
-                self.inserts_cache.push((key.as_str().into(), value.take()));
+                inserts.add(key.as_str().into(), value.take());
             } else if key.starts_with(COMMENT_KEYWORD) {
                 continue;
             } else {
@@ -103,7 +142,7 @@ impl SpecData
         map.len() > 0
     }
 
-    fn apply_insertions_to_spec_content(&self, file: &LoadableFile, value: &mut Value)
+    fn apply_insertions_to_spec_content(&self, file: &LoadableFile, value: &mut Value, inserts: &mut InsertValues)
     {
         let mut insertion_cache = SmallVec::<[usize; 4]>::default();
         match value {
@@ -112,23 +151,19 @@ impl SpecData
                 for (key, value) in map.iter_mut() {
                     // Insertion key: look in temp storage for value to insert.
                     if key.starts_with(SPEC_INSERTION_MARKER) {
-                        if let Some(to_insert) = self
-                            .inserts_cache
-                            .iter()
-                            .position(|(cached_key, _)| cached_key == key)
-                        {
+                        if let Some(to_insert) = inserts.get_index(key) {
                             insertion_cache.push(to_insert);
                         }
                         continue;
                     }
 
                     // Normal entry: recurse into value.
-                    self.apply_insertions_to_spec_content(file, value);
+                    self.apply_insertions_to_spec_content(file, value, inserts);
                 }
 
                 // Insert cached insertions (must be maps).
                 for insert_idx in insertion_cache.drain(..) {
-                    let (key, value) = &self.inserts_cache[insert_idx];
+                    let (key, value) = inserts.access(insert_idx).unwrap();
                     let Value::Object(insertion_map) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not a map but \
                             the insertion point is a map key", value, key, file);
@@ -144,7 +179,7 @@ impl SpecData
                 for value in arr.iter_mut() {
                     // Non-string: recurse into it.
                     let Value::String(value_str) = value else {
-                        self.apply_insertions_to_spec_content(file, value);
+                        self.apply_insertions_to_spec_content(file, value, inserts);
                         continue;
                     };
 
@@ -152,19 +187,13 @@ impl SpecData
                     if !value_str.starts_with(SPEC_INSERTION_MARKER) {
                         continue;
                     }
-                    let Some(to_insert) = self
-                        .inserts_cache
-                        .iter()
-                        .position(|(cached_key, _)| cached_key == value_str)
-                    else {
-                        continue;
-                    };
+                    let Some(to_insert) = inserts.get_index(value_str) else { continue };
                     insertion_cache.push(to_insert);
                 }
 
                 // Insert cached insertions (must be arrays).
                 for insert_idx in insertion_cache.drain(..) {
-                    let (key, value) = &self.inserts_cache[insert_idx];
+                    let (key, value) = inserts.access(insert_idx).unwrap();
                     let Value::Array(insertion_vec) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not an array but \
                             the insertion point is an array entry", value, key, file);
@@ -192,6 +221,7 @@ impl SpecData
         &self,
         file: &LoadableFile,
         value: &mut Value,
+        inserts: &InsertValues,
         is_resolving_insertion: bool,
     )
     {
@@ -210,7 +240,7 @@ impl SpecData
 
                     // Insertion key: remove and save for insertion.
                     if key.starts_with(SPEC_INSERTION_MARKER) {
-                        if let Some(to_insert) = self.inserts_cache.iter().position(|(cached_key, _)| cached_key == key) {
+                        if let Some(to_insert) = inserts.get_index(key) {
                             if !is_resolving_insertion {
                                 insertion_cache.push(to_insert);
                             } else {
@@ -228,13 +258,13 @@ impl SpecData
                     }
 
                     // Normal entry: recurse into value.
-                    self.recursively_resolve_spec_content(file, value, is_resolving_insertion);
+                    self.recursively_resolve_spec_content(file, value, inserts, is_resolving_insertion);
                     true
                 });
 
                 // Insert cached insertions (must be maps).
                 for insert_idx in insertion_cache.drain(..) {
-                    let (key, value) = &self.inserts_cache[insert_idx];
+                    let (key, value) = inserts.access(insert_idx).unwrap();
                     let Value::Object(insertion_map) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not a map but \
                             the insertion point is a map key", value, key, file);
@@ -243,7 +273,7 @@ impl SpecData
                     for (key, value) in insertion_map.iter() {
                         // Recurse into the inserted value in case it needs any spec params.
                         let mut value = value.clone();
-                        self.recursively_resolve_spec_content(file, &mut value, true);
+                        self.recursively_resolve_spec_content(file, &mut value, inserts, true);
                         map.insert(key.clone(), value);
                     }
                 }
@@ -259,20 +289,20 @@ impl SpecData
 
                     // Non-string: recurse into it.
                     let Value::String(value_str) = value else {
-                        self.recursively_resolve_spec_content(file, value, is_resolving_insertion);
+                        self.recursively_resolve_spec_content(file, value, inserts, is_resolving_insertion);
                         return true;
                     };
 
                     // Param key: recurse to set it.
                     if value_str.starts_with(SPEC_PARAMETER_MARKER) {
-                        self.recursively_resolve_spec_content(file, value, is_resolving_insertion);
+                        self.recursively_resolve_spec_content(file, value, inserts, is_resolving_insertion);
                         return true;
                     }
 
                     // Insertion key: remove and look in temp storage for value to insert
                     if value_str.starts_with(SPEC_INSERTION_MARKER) {
                         index_head -= 1;
-                        if let Some(to_insert) = self.inserts_cache.iter().position(|(cached_key, _)| cached_key == value_str) {
+                        if let Some(to_insert) = inserts.get_index(value_str) {
                             if !is_resolving_insertion {
                                 insertion_cache.push((to_insert, index_head));
                             } else {
@@ -291,7 +321,7 @@ impl SpecData
                 // - Insertions are expanded 'in-place' at the spot where the insertion marker was removed.
                 let mut num_insertions = 0;
                 for (insert_idx, location_idx) in insertion_cache.drain(..) {
-                    let (key, value) = &self.inserts_cache[insert_idx];
+                    let (key, value) = inserts.access(insert_idx).unwrap();
                     let Value::Array(insertion_vec) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not an array but \
                             the insertion point is an array entry", value, key, file);
@@ -304,7 +334,7 @@ impl SpecData
                     for value in insertion_vec.iter().rev() {
                         // Recurse into the inserted value in case it needs any spec params.
                         let mut value = value.clone();
-                        self.recursively_resolve_spec_content(file, &mut value, true);
+                        self.recursively_resolve_spec_content(file, &mut value, inserts, true);
                         arr.insert(vec_idx, value);
                     }
                 }
@@ -349,13 +379,21 @@ impl SpecData
     )
     {
         // Extract override edits.
-        self.extract_specs(file, spec_invocation, overrides, true);
+        // {(insertion key, insertion value, number of insertions)}
+        let mut inserts = InsertValues::default();
+        self.extract_specs(file, spec_invocation, overrides, &mut inserts, true);
 
         // Insert cached insertions to the spec.
         let mut content = self.content.take();
-        self.apply_insertions_to_spec_content(file, &mut content);
+        self.apply_insertions_to_spec_content(file, &mut content, &mut inserts);
         self.content = content;
-        self.inserts_cache.clear();
+
+        // Validate that everything in the override was used.
+        for (unused_insert_key, _) in inserts.iter_unused_values() {
+            tracing::warn!("spec insertion key {:?} for spec definition/override {} in {:?} was not used",
+                unused_insert_key, spec_invocation, file);
+        }
+        //todo: add params check
     }
 
     /// Extracts spec edits from a value, then overwrites the value with the spec content.
@@ -364,19 +402,30 @@ impl SpecData
     fn write_to_value(&mut self, file: &LoadableFile, spec_invocation: &str, value: &mut Value)
     {
         // Extract local edits specified in the value.
+        let mut inserts = InsertValues::default();
         let has_edits = match value {
-            Value::Object(map) => self.extract_specs(file, spec_invocation, map, false),
-            _ => false,
+            Value::Object(map) => self.extract_specs(file, spec_invocation, map, &mut inserts, false),
+            _ => {
+                tracing::warn!("ignoring non-map value for spec invocation {} in {:?}", spec_invocation, file);
+                false
+            }
         };
 
         // Write the spec to the value and apply params/inserts.
         *value = self.content.clone();
-        self.recursively_resolve_spec_content(file, value, false);
+        self.recursively_resolve_spec_content(file, value, &mut inserts, false);
 
         // Cleanup
         if has_edits {
             self.clear_cached_edits();
         }
+
+        // Validate that everything in the override was used.
+        for (unused_insert_key, _) in inserts.iter_unused_values() {
+            tracing::warn!("spec insertion key {:?} for spec invocation {} in {:?} was not used",
+                unused_insert_key, spec_invocation, file);
+        }
+        //todo: add params check
     }
 }
 
@@ -426,6 +475,7 @@ impl SpecsMap
                 }
             }
             Ok(Some((new_key, spec_key))) => {
+                // Try to update an existing spec.
                 let Some(data) = self.map.get_mut(spec_key) else {
                     tracing::warn!("ignoring specification override {} with unknown spec {} in 'specs' section of {:?}",
                         key, spec_key, file);
