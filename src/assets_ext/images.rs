@@ -99,7 +99,7 @@ impl AssetLoadProgress for ImageMap
 
 /// Loadable command for registering image assets that need to be pre-loaded.
 ///
-/// The loaded images can be access via [`ImageMap`].
+/// The loaded images can be accessed via [`ImageMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadImages(pub Vec<String>);
 

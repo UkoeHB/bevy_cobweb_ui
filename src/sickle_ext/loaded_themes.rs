@@ -156,7 +156,7 @@ fn refresh_loaded_theme<C: DefaultTheme>(
         .iter()
         .map(EditablePseudoTheme::pseudo_theme::<C>)
         .collect();
-    ec.insert(Theme::<C>::new(themes));
+    ec.try_insert(Theme::<C>::new(themes));
 }
 
 //-------------------------------------------------------------------------------------------------------------------

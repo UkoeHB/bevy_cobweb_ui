@@ -38,6 +38,8 @@ fn check_loaded_fonts(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that stores handles to loaded fonts.
+//todo: how to distinguish between a request for font for localization vs request for font for manual
+// non-localized text?
 #[derive(Resource, Default)]
 pub struct FontMap
 {
@@ -64,12 +66,14 @@ impl FontMap
         self.map.insert(path, handle);
     }
 
+    //todo: insert_localized()
+
     fn remove_pending(&mut self, id: &AssetId<Font>)
     {
         let _ = self.pending.remove(id);
     }
 
-    /// Gets an font handle for the given path.
+    /// Gets a font handle for the given path.
     ///
     /// Returns a default handle if the font was not pre-inserted via [`Self::insert`].
     pub fn get(&self, path: impl AsRef<str>) -> Handle<Font>
@@ -80,7 +84,11 @@ impl FontMap
         };
         entry.clone()
     }
+
+    //todo: get_or_insert()
 }
+
+//todo: delay asset loading until the TextLocalizer knows the language list
 
 impl AssetLoadProgress for FontMap
 {
@@ -99,7 +107,7 @@ impl AssetLoadProgress for FontMap
 
 /// Loadable command for registering font assets that need to be pre-loaded.
 ///
-/// The loaded fonts can be access via [`FontMap`].
+/// The loaded fonts can be accessed via [`FontMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadFonts(pub Vec<String>);
 

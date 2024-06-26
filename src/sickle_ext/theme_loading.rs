@@ -165,7 +165,7 @@ fn add_attribute_to_theme(
     // Check that the theme was registered.
     if !theme_registry.contains_by_id(load_context.marker) {
         tracing::error!("failed adding attribute to theme for {entity:?}, the target theme {} was not registered (use \
-            ComponentThemePlugin)", load_context.marker_name);
+            ComponentThemePlugin<{}>)", load_context.marker_name, load_context.marker_name);
         return;
     }
 

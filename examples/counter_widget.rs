@@ -221,14 +221,14 @@ fn main()
 {
     App::new()
         .add_plugins(bevy::DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..Default::default() }),
-            ..Default::default()
+            primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
+            ..default()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<CounterWidget>::new())
-        .load("examples/counter_widget.load.json")
+        .load("examples/counter_widget/main.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

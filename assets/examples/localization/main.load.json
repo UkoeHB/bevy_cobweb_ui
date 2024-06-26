@@ -1,0 +1,76 @@
+{
+"#manifest": {
+    "": "localization",
+    "examples/localization/widgets/radio_button.load.json": "widgets.radio_button"
+},
+
+"#commands": {
+    "LoadLocalizationManifest": {
+        "default": {
+            "id": "en-US",
+            "name": "English",
+            "manifest": "examples/localization/locales/en-US/main.ftl.ron"
+        },
+        "alts": [
+            {
+                "id": "fr-FR",
+                "name": "French",
+                "manifest": "examples/localization/locales/fr-FR/main.ftl.ron"
+            },
+            {
+                "id": "de-DE",
+                "name": "German",
+                "manifest": "examples/localization/locales/de-DE/main.ftl.ron"
+            }
+        ]
+    }
+},
+
+"#constants": {
+    "$text_margin": {
+        "FlexStyle": {
+            "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}}}
+        }
+    }
+},
+
+"root": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
+    },
+    "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
+
+    "selection_section": {
+        "FlexStyle": {
+            "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}},
+            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+        },
+
+        "selection_box": {
+            "FlexStyle": {
+                "content": {
+                    "flex_direction": "Column",
+                    "justify_main": "SpaceEvenly",
+                    "justify_cross": "Center",
+                    "padding": {"top": {"Px": 8.0}, "bottom": {"Px": 8.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}
+                }
+            },
+            "BrColor": [{"Hsla":{"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}]
+        }
+    },
+
+    "text_section": {
+        "FlexStyle": {
+            "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}, "left": {"Percent": -5.0}},
+            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "FlexStart"}
+        },
+
+        "unlocalized": { "$text_margin::*": {} },
+        "untranslated": { "$text_margin::*": {} },
+        "partially_translated": { "$text_margin::*": {} },
+        "fully_translated": { "$text_margin::*": {} },
+        "dynamic": { "$text_margin::*": {} }
+    }
+}
+}

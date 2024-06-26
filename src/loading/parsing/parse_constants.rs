@@ -29,7 +29,7 @@ fn get_constants_set<'a>(
 
     let Some(constant_value) = constants.get(path) else {
         tracing::warn!("ignoring unknown constant reference {:?} in constants \
-            section of {:?}", value_str, file);
+            section of {:?}; {path:?} {terminator:?}", value_str, file);
         return None;
     };
 
@@ -69,21 +69,53 @@ fn try_replace_map_key_with_constant(
     constants: &HashMap<SmolStr, Map<String, Value>>,
 )
 {
-    let Some((terminator, constants_set)) = get_constants_set(file, prefix, key, constants) else {
-        return;
-    };
+    let Some(("", path_ref)) = key.split_once(prefix) else { return };
 
-    //TODO: Ordering is NOT preserved when replacing a map key with constants.
-    map.remove(key);
+    if path_ref.is_empty() {
+        tracing::warn!("ignoring zero-length constant reference {} in {:?}", key, file);
+        return;
+    }
+
+    // Extract path terminator.
+    let mut rev_iterator = path_ref.rsplitn(2, CONSTANT_SEPARATOR);
+    let terminator = rev_iterator.next().unwrap();
 
     match terminator {
-        // If 'paste all' terminator, then insert all contents of the section into the map.
         CONSTANT_PASTE_ALL_TERMINATOR => {
-            let mut constants_set = constants_set.clone();
-            map.append(&mut constants_set);
+            let real_terminator = rev_iterator.next().unwrap_or("");
+            let path = rev_iterator.next().unwrap_or("");
+
+            let Some(constants_set) = constants.get(path) else {
+                tracing::warn!("ignoring unknown constant reference {:?} in constants \
+                    section of {:?}", key, file);
+                return;
+            };
+
+            let Some(Value::Object(constants_value)) = constants_set.get(real_terminator) else {
+                tracing::warn!("ignoring invalid paste-all constant reference {:?} in constants \
+                    section of {:?}; the constant's value should be a map", key, file);
+                return;
+            };
+
+            //TODO: Ordering is NOT preserved when replacing a map key with constants.
+            map.remove(key);
+
+            // If 'paste all' terminator, then insert all contents of the constant's value into the map.
+            let mut constants_value = constants_value.clone();
+            map.append(&mut constants_value);
         }
-        // Otherwise, just paste the terminator and its value.
         _ => {
+            let path = rev_iterator.next().unwrap_or("");
+
+            let Some(constants_set) = constants.get(path) else {
+                tracing::warn!("ignoring unknown constant reference {:?} in constants \
+                    section of {:?}", key, file);
+                return;
+            };
+
+            //TODO: Ordering is NOT preserved when replacing a map key with constants.
+            map.remove(key);
+
             // For map values, paste the data pointed-to by the terminator.
             let Some(constant_data) = constants_set.get(terminator) else {
                 tracing::warn!("ignoring constant reference {} with no recorded data in {:?}", key, file);

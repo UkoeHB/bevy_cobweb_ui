@@ -49,6 +49,11 @@ pub struct TextLine
 
 impl TextLine
 {
+    pub fn from_text(text: impl Into<String>) -> Self
+    {
+        Self { text: text.into(), ..default() }
+    }
+
     fn default_text() -> String
     {
         "[text line]".into()

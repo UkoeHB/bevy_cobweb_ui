@@ -1,0 +1,6 @@
+(
+    locale: "fr-FR",
+    resources: [
+        "text.ftl"
+    ]
+)

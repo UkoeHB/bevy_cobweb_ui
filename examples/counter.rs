@@ -25,7 +25,7 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("examples/counter.load.json", "root");
+    let scene = LoadableRef::new("examples/counter/main.load.json", "root");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("button", |l| {
@@ -62,13 +62,13 @@ fn main()
 {
     App::new()
         .add_plugins(bevy::DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..Default::default() }),
-            ..Default::default()
+            primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
+            ..default()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
-        .load("examples/counter.load.json")
+        .load("examples/counter/main.load.json")
         .register_type::<Counter>()
         .register_reactive_loadable::<Counter>()
         .add_systems(PreStartup, setup)

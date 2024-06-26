@@ -54,6 +54,17 @@ sickle_ui = { rev = "a0f42b2", git = "https://github.com/dead-money/sickle_ui" }
 #sickle_ui = { rev = "2093be0", git = "https://github.com/UmbraLuminosa/sickle_ui" }
 #sickle_ui = { rev = "7ee7327", git = "https://github.com/UkoeHB/sickle_ui" }
 
+# Localization deps
+sys-locale = { version = "0.3" }
+fluent = { version = "0.16" }
+fluent-langneg = { version = "0.14" }
+fluent_content = { version = "0.0.5" }
+intl-memoizer = { version = "0.5" }
+ron = { version = "0.8" }
+serde_yaml = { version = "0.9" }
+unic-langid = { version = "0.9", features = ["serde", "unic-langid-macros"] }
+
+# Local sub-crates
 bevy_cobweb_ui_derive = { path = "bevy_cobweb_ui_derive", version = "0.1.0" }
 
 [dev-dependencies]
