@@ -601,6 +601,19 @@ impl LoadableSheet
         true
     }
 
+    /// Schedules all pending commands to be processed.
+    #[cfg(not(feature = "hot_reload"))]
+    pub(crate) fn apply_pending_commands(&self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    {
+        for type_id in self.commands_need_updates.keys() {
+            let Some(syscommand) = callbacks.get(*type_id) else {
+                tracing::warn!("found loadable command with type id {:?} that wasn't registered", type_id);
+                continue;
+            };
+            c.add(syscommand);
+        }
+    }
+
     /// Adds an entity to the tracking context.
     ///
     /// Schedules callbacks that will run to handle pending updates for the entity.

@@ -11,6 +11,24 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// We must add a separate reactor for commands when `hot_reload` is disabled because otherwise commands won't be
+/// applied.
+///
+/// It's not a problem for entity loadables, where we expect all entities to be spawned after loading is done so
+/// there's no case of needing to load something into an entity after a file is loaded.
+#[cfg(not(feature = "hot_reload"))]
+fn apply_commands_manual(mut c: Commands)
+{
+    c.react().on_persistent(
+        resource_mutation::<LoadableSheet>(),
+        |mut c: Commands, loadables: ReactRes<LoadableSheet>, loaders: Res<LoaderCallbacks>| {
+            loadables.apply_pending_commands(&mut c, &loaders);
+        },
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn register_loadable_impl<M, T: 'static>(
     app: &mut App,
     callback: impl IntoSystem<(), (), M> + Send + Sync + 'static + Copy,
@@ -300,6 +318,9 @@ impl Plugin for LoaderPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<LoaderCallbacks>();
+
+        #[cfg(not(feature = "hot_reload"))]
+        app.add_systems(Startup, apply_commands_manual);
     }
 }
 
