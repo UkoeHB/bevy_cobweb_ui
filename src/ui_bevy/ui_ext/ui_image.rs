@@ -9,7 +9,8 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Insets a UiImage to an entity.
+/// Inserts a UiImage to an entity.
+//note: in bevy 0.13 you need a non-transparent BackgroundColor for ui images to display, but in 0.14 it should be fixed
 fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands: Commands, img_map: Res<ImageMap>)
 {
     // Extract
