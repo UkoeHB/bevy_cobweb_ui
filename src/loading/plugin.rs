@@ -10,9 +10,10 @@ impl Plugin for LoadingPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(LoaderPlugin)
-            .add_plugins(LoadableSheetAssetLoaderPlugin)
-            .add_plugins(LoadableSheetPlugin)
+        app.add_plugins(LoadExtPlugin)
+            .add_plugins(CobwebAssetLoaderPlugin)
+            .add_plugins(CobwebAssetCachePlugin)
+            .add_plugins(SceneLoaderPlugin)
             .add_plugins(LoadProgressPlugin);
     }
 }

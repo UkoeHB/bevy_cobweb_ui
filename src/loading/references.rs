@@ -12,11 +12,11 @@ pub const LOADABLE_PATH_SEPARATOR: &str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the path to a loadable-sheet file in the `asset` directory, or a manifest key for that file.
+/// Represents the path to a cobweb asset file in the `asset` directory, or a manifest key for that file.
 ///
-/// Loadable-sheet files use the `.load.json` extension.
+/// Cobweb asset files use the `.load.json` extension.
 ///
-/// Example: `ui/home.load.json` for a `home` loadable-sheet in `assets/ui`.
+/// Example: `ui/home.load.json` for a `home` cobweb asset in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum LoadableFile
 {
@@ -30,8 +30,9 @@ impl LoadableFile
     ///
     /// If the file name does not include a file extension (i.e. `.load.json`), then it will be treated as a
     /// manifest key.
-    pub fn new(file: &str) -> Self
+    pub fn new(file: impl AsRef<str>) -> Self
     {
+        let file = file.as_ref();
         match file.ends_with(".load.json") {
             true => Self::File(Arc::from(file)),
             false => Self::ManifestKey(Arc::from(file)),
@@ -79,11 +80,11 @@ impl Default for LoadableFile
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents the path to a specific loadable in a loadable-sheet file.
+/// Represents the path to a specific scene node in a cobweb asset file.
 ///
 /// Path extensions are stored as [`SmolStr`], so it is recommended for extensions to be <= 25 characters long.
 ///
-/// Example: `menu::header::title` for accessing the `title` loadable path in a loadable-sheet.
+/// Example: `menu::header::title` for accessing the `title` scene node in the `menu` scene in a cobweb asset file.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct LoadablePath
 {
@@ -93,21 +94,53 @@ pub struct LoadablePath
 impl LoadablePath
 {
     /// Creates a new loadable path.
-    pub fn new(new_path: &str) -> Self
+    pub fn new(new_path: impl AsRef<str>) -> Self
     {
+        let new_path = new_path.as_ref();
         let mut path = SmallVec::<[SmolStr; 10]>::default();
         Self::extend_inner(new_path, &mut path);
 
         Self { path: Arc::from(path.as_slice()) }
     }
 
-    /// Extends an existing loadable path with a path extension.
-    pub fn extend(&self, extension: &str) -> Self
+    /// Parses a path with one segment from the given string.
+    ///
+    /// Returns `None` if `new_path` is not exactly one non-empty segment.
+    pub fn parse_single(new_path: impl AsRef<str>) -> Option<Self>
     {
+        let new_path = new_path.as_ref();
+        let segment = Self::parse_single_inner(new_path)?;
+
+        Some(Self { path: Arc::from([SmolStr::from(segment)]) })
+    }
+
+    /// Extends an existing loadable path with a path extension.
+    pub fn extend(&self, extension: impl AsRef<str>) -> Self
+    {
+        let extension = extension.as_ref();
         let mut path = SmallVec::<[SmolStr; 10]>::from(&*self.path);
         Self::extend_inner(extension, &mut path);
 
         Self { path: Arc::from(path.as_slice()) }
+    }
+
+    /// Extends an existing loadable path with a path extension.
+    ///
+    /// Returns `None` if `extension` is not exactly one non-empty segment.
+    pub fn extend_single(&self, extension: impl AsRef<str>) -> Option<Self>
+    {
+        let extension = extension.as_ref();
+        let mut path = SmallVec::<[SmolStr; 10]>::from(&*self.path);
+        let segment = Self::parse_single_inner(extension)?;
+        path.push(SmolStr::from(segment));
+
+        Some(Self { path: Arc::from(path.as_slice()) })
+    }
+
+    /// Gets the number of path segments.
+    pub fn len(&self) -> usize
+    {
+        self.path.len()
     }
 
     fn extend_inner(extension: &str, path: &mut SmallVec<[SmolStr; 10]>)
@@ -118,6 +151,20 @@ impl LoadablePath
             }
             path.push(SmolStr::from(path_element));
         }
+    }
+
+    fn parse_single_inner(extension: &str) -> Option<&str>
+    {
+        let mut segments = extension.split(LOADABLE_PATH_SEPARATOR);
+        let first_segment = segments.next()?;
+        if first_segment.is_empty() {
+            return None;
+        }
+        let None = segments.next() else {
+            return None;
+        };
+
+        Some(first_segment)
     }
 }
 
@@ -131,11 +178,12 @@ impl Default for LoadablePath
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Represents a complete reference to a loadable instance in a loadable-sheet asset.
+/// Represents a complete reference to a scene node in a cobweb asset asset.
 ///
 /// Example:
-/// - File: `ui/home.load.json` for a `home` loadable-sheet in `assets/ui`.
-/// - Path: `menu::header::title` for accessing the `title` loadable path in the `home` loadable-sheet.
+/// - **File**: `ui/home.load.json` for a `home` cobweb asset in `assets/ui`.
+/// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
+/// asset.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
 pub struct LoadableRef
 {
@@ -148,80 +196,33 @@ pub struct LoadableRef
 impl LoadableRef
 {
     /// Creates a new loadable reference from a file name.
-    pub fn from_file(file: &str) -> Self
+    pub fn from_file(file: impl AsRef<str>) -> Self
     {
-        Self::new(file, "")
+        Self::new(file.as_ref(), "")
     }
 
     /// Creates a new loadable reference from a file name and path.
-    pub fn new(file: &str, path: &str) -> Self
+    pub fn new(file: impl AsRef<str>, path: impl AsRef<str>) -> Self
     {
-        Self { file: LoadableFile::new(file), path: LoadablePath::new(path) }
+        Self {
+            file: LoadableFile::new(file.as_ref()),
+            path: LoadablePath::new(path),
+        }
     }
 
     /// Extends an existing loadable reference with a path extension.
-    pub fn extend(&self, extension: &str) -> Self
+    pub fn extend(&self, extension: impl AsRef<str>) -> Self
     {
-        Self { file: self.file.clone(), path: self.path.extend(extension) }
+        Self {
+            file: self.file.clone(),
+            path: self.path.extend(extension.as_ref()),
+        }
     }
 
-    /// Shorthand method for [`Self::extend`].
-    pub fn e(&self, extension: &str) -> Self
+    /// Shorthand for [`Self::extend`].
+    pub fn e(&self, extension: impl AsRef<str>) -> Self
     {
         self.extend(extension)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Stores a complete [`LoadablePath`] in addition to the loadable's
-/// [`type_path`](bevy::reflect::TypePath::type_path).
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct FullLoadablePath
-{
-    /// See [`LoadablePath`].
-    pub path: LoadablePath,
-    /// See [`type_path`](bevy::reflect::TypePath::type_path).
-    pub full_type_name: &'static str,
-}
-
-impl FullLoadablePath
-{
-    /// Finalizes a [`LoadablePath`] by specifying the loadable's
-    /// [`type_path`](bevy::reflect::TypePath::type_path), which is used to identify the loadable in
-    /// loadable-sheet files.
-    pub fn new(path: LoadablePath, full_type_name: &'static str) -> Self
-    {
-        Self { path, full_type_name }
-    }
-}
-
-impl Default for FullLoadablePath
-{
-    fn default() -> Self
-    {
-        Self::new(LoadablePath::default(), "")
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Stores a fully-specified reference to a loadable.
-#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
-pub struct FullLoadableRef
-{
-    /// See [`LoadableFile`].
-    pub file: LoadableFile,
-    /// See [`FullLoadablePath`].
-    pub path: FullLoadablePath,
-}
-
-impl FullLoadableRef
-{
-    /// Creates a full loadable reference.
-    pub fn new(file: LoadableFile, path: FullLoadablePath) -> Self
-    {
-        Self { file, path }
     }
 }
 

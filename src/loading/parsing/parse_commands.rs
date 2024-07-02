@@ -9,7 +9,7 @@ use crate::*;
 
 fn handle_commands_entry(
     type_registry: &TypeRegistry,
-    loadablesheet: &mut LoadableSheet,
+    caf_cache: &mut CobwebAssetCache,
     file: &LoadableFile,
     current_path: &LoadablePath,
     short_name: &str,
@@ -28,7 +28,7 @@ fn handle_commands_entry(
     let command_value = get_loadable_value(deserializer, value);
 
     // Save this command.
-    loadablesheet.insert_command(
+    caf_cache.insert_command(
         &LoadableRef { file: file.clone(), path: current_path.clone() },
         command_value,
         type_id,
@@ -40,7 +40,7 @@ fn handle_commands_entry(
 
 pub(crate) fn parse_commands_section(
     type_registry: &TypeRegistry,
-    loadablesheet: &mut LoadableSheet,
+    caf_cache: &mut CobwebAssetCache,
     file: &LoadableFile,
     data: &mut Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -63,7 +63,7 @@ pub(crate) fn parse_commands_section(
         if is_loadable_entry(key) {
             handle_commands_entry(
                 type_registry,
-                loadablesheet,
+                caf_cache,
                 file,
                 &pseudo_path,
                 key.as_str(),

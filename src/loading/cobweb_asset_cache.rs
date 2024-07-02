@@ -1,7 +1,7 @@
 use std::any::{type_name, TypeId};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
@@ -15,35 +15,35 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn preprocess_loadable_files(
+fn preprocess_cobweb_asset_files(
     asset_server: Res<AssetServer>,
-    mut events: EventReader<AssetEvent<LoadableSheetAsset>>,
-    mut sheet_list: ResMut<LoadableSheetList>,
-    mut assets: ResMut<Assets<LoadableSheetAsset>>,
-    mut loadablesheet: ReactResMut<LoadableSheet>,
+    mut events: EventReader<AssetEvent<CobwebAssetFile>>,
+    mut caf_files: ResMut<LoadedCobwebAssetFiles>,
+    mut assets: ResMut<Assets<CobwebAssetFile>>,
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
 )
 {
     for event in events.read() {
         let id = match event {
             AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
             _ => {
-                tracing::debug!("ignoring loadablesheet asset event {:?}", event);
+                tracing::debug!("ignoring CobwebAssetCache asset event {:?}", event);
                 continue;
             }
         };
 
-        let Some(handle) = sheet_list.get_handle(*id) else {
-            tracing::warn!("encountered loadablesheet asset event {:?} for an untracked asset", id);
+        let Some(handle) = caf_files.get_handle(*id) else {
+            tracing::warn!("encountered CobwebAssetCache asset event {:?} for an untracked asset", id);
             continue;
         };
 
         let Some(asset) = assets.remove(handle) else {
-            tracing::error!("failed to remove loadablesheet asset {:?}", handle);
+            tracing::error!("failed to remove CobwebAssetCache asset {:?}", handle);
             continue;
         };
 
-        let loadablesheet = loadablesheet.get_noreact();
-        preprocess_loadablesheet_file(&asset_server, &mut sheet_list, loadablesheet, asset.file, asset.data);
+        let caf_cache = caf_cache.get_noreact();
+        preprocess_caf_file(&asset_server, &mut caf_files, caf_cache, asset.file, asset.data);
     }
 
     // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
@@ -52,40 +52,47 @@ fn preprocess_loadable_files(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn process_loadable_files(
-    mut c: Commands,
-    mut loadablesheet: ReactResMut<LoadableSheet>,
+fn process_cobweb_asset_files(
     types: Res<AppTypeRegistry>,
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut c: Commands,
+    mut scene_loader: ResMut<SceneLoader>,
 )
 {
     let type_registry = types.read();
 
-    if loadablesheet.get_noreact().process_sheets(&type_registry) {
-        loadablesheet.get_mut(&mut c);
+    if caf_cache
+        .get_noreact()
+        .process_cobweb_asset_files(&type_registry, &mut c, &mut scene_loader)
+    {
+        caf_cache.get_mut(&mut c);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
-fn cleanup_loadablesheet(
-    mut loadablesheet: ReactResMut<LoadableSheet>,
+fn cleanup_cobweb_asset_cache(
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut scene_loader: ResMut<SceneLoader>,
     mut removed: RemovedComponents<HasLoadables>,
 )
 {
     for removed in removed.read() {
-        loadablesheet.get_noreact().remove_entity(removed);
+        caf_cache
+            .get_noreact()
+            .remove_entity(&mut scene_loader, removed);
     }
 
-    loadablesheet.get_noreact().cleanup_pending_updates();
+    caf_cache.get_noreact().cleanup_pending_updates();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(not(feature = "hot_reload"))]
-fn cleanup_loadablesheet(mut loadablesheet: ReactResMut<LoadableSheet>)
+fn cleanup_cobweb_asset_cache(mut caf_cache: ReactResMut<CobwebAssetCache>)
 {
-    loadablesheet.get_noreact().cleanup_pending_updates();
+    caf_cache.get_noreact().cleanup_pending_updates();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -231,19 +238,25 @@ impl ReflectedLoadable
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive resource for managing loadables loaded from loadablesheet assets.
+/// Reactive resource that manages content loaded from cobweb asset files (`.caf.json` files).
+///
+/// Can be used to load scenes with [`LoadSceneExt::load_scene`], or load individual scene nodes with
+/// [`CafLoadingEntityCommandsExt::load`].
+///
+/// Note that command loadables in caf files are automatically applied to the world.
 #[derive(ReactResource, Default)]
-pub struct LoadableSheet
+pub struct CobwebAssetCache
 {
     /// Tracks which files have not initialized yet.
     pending: HashSet<LoadableFile>,
-    /// Tracks the total number of loadable sheets that should load.
+    /// Tracks the total number of files that should load.
     ///
     /// Used for progress tracking on initial load.
     total_expected_sheets: usize,
 
     /// Tracks manifest data.
-    manifest_map: HashMap<Arc<str>, LoadableFile>,
+    /// - Inside an arc/mutex so the SceneLoader can also use it.
+    manifest_map: Arc<Mutex<ManifestMap>>,
     /// Tracks which files have been assigned manifest keys.
     file_to_manifest_key: HashMap<LoadableFile, Option<Arc<str>>>,
 
@@ -258,7 +271,7 @@ pub struct LoadableSheet
     /// Tracks loadables from all loaded files.
     loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
 
-    /// Tracks subscriptions to loadable paths.
+    /// Tracks subscriptions to scene paths.
     #[cfg(feature = "hot_reload")]
     subscriptions: HashMap<LoadableRef, SmallVec<[SubscriptionRef; 1]>>,
     /// Tracks entities for cleanup.
@@ -274,9 +287,35 @@ pub struct LoadableSheet
         HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[SubscriptionRef; 1]>); 1]>>,
 }
 
-impl LoadableSheet
+impl CobwebAssetCache
 {
-    /// Prepares a loadablesheet file.
+    fn new(manifest_map: Arc<Mutex<ManifestMap>>) -> Self
+    {
+        Self { manifest_map, ..default() }
+    }
+
+    fn manifest_map(&mut self) -> MutexGuard<ManifestMap>
+    {
+        self.manifest_map.lock().unwrap()
+    }
+
+    /// Gets the CobwebAssetCache's loading progress on startup.
+    ///
+    /// Returns `(num uninitialized files, num total files)`.
+    ///
+    /// Does not include files recursively loaded via manifests.
+    pub fn loading_progress(&self) -> (usize, usize)
+    {
+        (self.pending.len(), self.total_expected_sheets)
+    }
+
+    /// Gets the number of files waiting to be processed.
+    fn num_preprocessed_pending(&self) -> usize
+    {
+        self.preprocessed.len()
+    }
+
+    /// Prepares a cobweb asset file.
     pub(crate) fn prepare_file(&mut self, file: LoadableFile)
     {
         let _ = self.pending.insert(file.clone());
@@ -301,7 +340,7 @@ impl LoadableSheet
                 entry.insert(manifest_key.clone());
 
                 if let Some(new_key) = manifest_key {
-                    if let Some(prev_file) = self.manifest_map.insert(new_key.clone(), file.clone()) {
+                    if let Some(prev_file) = self.manifest_map().insert(new_key.clone(), file.clone()) {
                         tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
                             new_key, prev_file, file);
                     }
@@ -326,7 +365,7 @@ impl LoadableSheet
                             file.clone(), prev_key.clone(), new_key.clone());
                         let prev = prev_key.clone();
                         *prev_key = new_key.clone();
-                        self.manifest_map.remove(&prev);
+                        self.manifest_map().remove(&prev);
                     }
                     // Normal case: setting the manifest key.
                     None => {
@@ -334,7 +373,7 @@ impl LoadableSheet
                     }
                 }
 
-                if let Some(prev_file) = self.manifest_map.insert(new_key.clone(), file.clone()) {
+                if let Some(prev_file) = self.manifest_map().insert(new_key.clone(), file.clone()) {
                     tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
                         new_key, prev_file, file);
                 }
@@ -348,20 +387,6 @@ impl LoadableSheet
     pub(crate) fn initialize_file(&mut self, file: &LoadableFile)
     {
         let _ = self.pending.remove(file);
-    }
-
-    /// Gets the loadablesheet's loading progress on startup.
-    ///
-    /// Returns `(num uninitialized files, num total files)`.
-    pub fn loading_progress(&self) -> (usize, usize)
-    {
-        (self.pending.len(), self.total_expected_sheets)
-    }
-
-    /// Gets the number of files waiting to be processed.
-    fn num_preprocessed_pending(&self) -> usize
-    {
-        self.preprocessed.len()
     }
 
     /// Inserts a preprocessed file for later processing.
@@ -408,7 +433,13 @@ impl LoadableSheet
     /// Converts a preprocessed file to a processed file.
     ///
     /// Assumes all imports are available.
-    fn process_sheet(&mut self, preprocessed: PreprocessedLoadableFile, type_registry: &TypeRegistry)
+    fn process_cobweb_asset_file(
+        &mut self,
+        preprocessed: PreprocessedLoadableFile,
+        type_registry: &TypeRegistry,
+        c: &mut Commands,
+        scene_loader: &mut SceneLoader,
+    )
     {
         // Initialize using/constants maps from dependencies.
         // [ shortname : longname ]
@@ -442,15 +473,17 @@ impl LoadableSheet
         }
 
         // Process the file.
-        // - This updates the using/constants maps with info extracted from the file.
-        parse_loadablesheet_file(
+        // - This updates the using/constants/specs maps with info extracted from the file.
+        parse_caf_file(
             type_registry,
+            c,
             self,
+            scene_loader,
             preprocessed.file.clone(),
             preprocessed.data,
+            &mut name_shortcuts,
             &mut constants,
             &mut specs,
-            &mut name_shortcuts,
         );
 
         // Save final maps.
@@ -484,8 +517,13 @@ impl LoadableSheet
 
     /// Converts preprocessed files to processed files.
     ///
-    /// Returns `true` if at least one sheet was processed.
-    fn process_sheets(&mut self, type_registry: &TypeRegistry) -> bool
+    /// Returns `true` if at least one file was processed.
+    fn process_cobweb_asset_files(
+        &mut self,
+        type_registry: &TypeRegistry,
+        c: &mut Commands,
+        scene_loader: &mut SceneLoader,
+    ) -> bool
     {
         // Loop preprocessed until nothing can be processed.
         let mut num_processed = 0;
@@ -507,7 +545,7 @@ impl LoadableSheet
                     continue;
                 }
 
-                self.process_sheet(preprocessed, type_registry);
+                self.process_cobweb_asset_file(preprocessed, type_registry, c, scene_loader);
                 num_processed += 1;
             }
 
@@ -607,7 +645,7 @@ impl LoadableSheet
     {
         for type_id in self.commands_need_updates.keys() {
             let Some(syscommand) = callbacks.get(*type_id) else {
-                tracing::warn!("found loadable command with type id {:?} that wasn't registered", type_id);
+                tracing::warn!("ignoring loadable command with type id {:?} that wasn't registered", type_id);
                 continue;
             };
             c.add(syscommand);
@@ -627,7 +665,7 @@ impl LoadableSheet
     )
     {
         // Replace manifest key in the requested loadable.
-        self.swap_manifest_key_for_file(&mut loadable_ref.file);
+        self.manifest_map().swap_for_file(&mut loadable_ref.file);
 
         // Add to subscriptions.
         let subscription = SubscriptionRef { entity, setter };
@@ -672,23 +710,16 @@ impl LoadableSheet
         }
     }
 
-    /// Swaps a manifest key for a file reference.
-    fn swap_manifest_key_for_file(&self, maybe_key: &mut LoadableFile)
-    {
-        let LoadableFile::ManifestKey(key) = maybe_key else { return };
-        let Some(file_ref) = self.manifest_map.get(key) else {
-            tracing::error!("tried accessing manifest key {:?} but no file was found", key);
-            return;
-        };
-        *maybe_key = file_ref.clone();
-    }
-
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
-    fn remove_entity(&mut self, dead_entity: Entity)
+    fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
     {
         let Some(loadable_refs) = self.subscriptions_rev.remove(&dead_entity) else { return };
         for loadable_ref in loadable_refs {
+            // Clean up scenes.
+            scene_loader.cleanup_dead_entity(&loadable_ref, dead_entity);
+
+            // Clean up subscription.
             let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { continue };
             let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { continue };
             subscribed.swap_remove(dead);
@@ -752,23 +783,26 @@ pub struct FileProcessingSet;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that enables loading.
-pub(crate) struct LoadableSheetPlugin;
+pub(crate) struct CobwebAssetCachePlugin;
 
-impl Plugin for LoadableSheetPlugin
+impl Plugin for CobwebAssetCachePlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_react_resource::<LoadableSheet>()
+        let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
+        app.insert_react_resource(CobwebAssetCache::new(manifest_map.clone()))
+            .insert_resource(SceneLoader::new(manifest_map))
             .add_systems(
                 First,
                 (
-                    preprocess_loadable_files,
-                    process_loadable_files.run_if(|s: ReactRes<LoadableSheet>| s.num_preprocessed_pending() > 0),
+                    preprocess_cobweb_asset_files,
+                    process_cobweb_asset_files
+                        .run_if(|s: ReactRes<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
                 )
                     .chain()
                     .in_set(FileProcessingSet),
             )
-            .add_systems(Last, cleanup_loadablesheet);
+            .add_systems(Last, cleanup_cobweb_asset_cache);
     }
 }
 

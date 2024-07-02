@@ -14,17 +14,12 @@ use crate::*;
 /// We must add a separate reactor for commands when `hot_reload` is disabled because otherwise commands won't be
 /// applied.
 ///
-/// It's not a problem for entity loadables, where we expect all entities to be spawned after loading is done so
-/// there's no case of needing to load something into an entity after a file is loaded.
+/// It's not a problem for entity loadables, where we expect all entities to be spawned after loading is done.
+/// There's no case of needing to load something into a pre-existing entity after a file is loaded.
 #[cfg(not(feature = "hot_reload"))]
-fn apply_commands_manual(mut c: Commands)
+fn apply_commands_manual(mut c: Commands, caf_cache: ReactRes<CobwebAssetCache>, loaders: Res<LoaderCallbacks>)
 {
-    c.react().on_persistent(
-        resource_mutation::<LoadableSheet>(),
-        |mut c: Commands, loadables: ReactRes<LoadableSheet>, loaders: Res<LoaderCallbacks>| {
-            loadables.apply_pending_commands(&mut c, &loaders);
-        },
-    );
+    caf_cache.apply_pending_commands(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -54,7 +49,7 @@ fn register_loadable_impl<M, T: 'static>(
     {
         entry.or_insert_with(|| {
             c.react()
-                .on_persistent(resource_mutation::<LoadableSheet>(), callback)
+                .on_persistent(resource_mutation::<CobwebAssetCache>(), callback)
         });
     }
     #[cfg(not(feature = "hot_reload"))]
@@ -69,9 +64,9 @@ fn register_loadable_impl<M, T: 'static>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Applies loadable commands of type `T`.
-fn command_loader<T: ApplyCommand + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
+fn command_loader<T: ApplyCommand + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
 {
-    loadables
+    caf_cache
         .get_noreact()
         .apply_commands::<T>(|loadable_ref, loadable| {
             let Some(command) = loadable.get_value::<T>(loadable_ref) else { return };
@@ -82,9 +77,9 @@ fn command_loader<T: ApplyCommand + Loadable>(mut c: Commands, mut loadables: Re
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates the loadable bundle `T` on entities.
-fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
+fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
 {
-    loadables
+    caf_cache
         .get_noreact()
         .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
             let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
@@ -105,11 +100,11 @@ fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut loadables: ReactResM
 /// Updates the loadable `React<T>` on entities.
 fn reactive_loader<T: ReactComponent + Loadable>(
     mut c: Commands,
-    mut loadables: ReactResMut<LoadableSheet>,
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
     mut entities: Query<Option<&mut React<T>>>,
 )
 {
-    loadables
+    caf_cache
         .get_noreact()
         .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
             let Ok(component) = entities.get_mut(entity) else { return };
@@ -137,9 +132,9 @@ fn reactive_loader<T: ReactComponent + Loadable>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Uses `T` to derive changes on subscribed entities.
-fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut loadables: ReactResMut<LoadableSheet>)
+fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
 {
-    loadables
+    caf_cache
         .get_noreact()
         .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
             let Some(value) = loadable.get_value::<T>(loadable_ref) else { return };
@@ -161,10 +156,10 @@ fn load_from_ref(
     In((id, loadable_ref, setter)): In<(Entity, LoadableRef, ContextSetter)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
-    mut loadablesheet: ReactResMut<LoadableSheet>,
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
 )
 {
-    loadablesheet
+    caf_cache
         .get_noreact()
         .track_entity(id, loadable_ref, setter, &mut c, &loaders);
 }
@@ -195,8 +190,8 @@ pub(crate) struct ContextSetter
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`LoadableSheet`] use.
-pub trait LoadableRegistrationAppExt
+/// Extends `App` with methods supporting [`CobwebAssetCache`] use.
+pub trait CobwebAssetRegistrationAppExt
 {
     /// Registers a loadable type that will be applied to the Bevy world when it is loaded.
     fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self;
@@ -205,22 +200,22 @@ pub trait LoadableRegistrationAppExt
     fn register_command<T: TypePath + GetTypeRegistration + ApplyCommand + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
-    /// loadablesheet paths containing the type.
+    /// cobweb asset file paths containing the type.
     fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a loadable type that will be inserted as [`React<T>`] components on entities that subscribe to
-    /// loadablesheet paths containing the type.
+    /// cobweb asset file paths containing the type.
     fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
-    /// loadablesheet paths containing the type.
+    /// cobweb asset file paths containing the type.
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 
     /// Combines [`App::register_type`] with [`Self::register_derived_loadable`].
     fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 }
 
-impl LoadableRegistrationAppExt for App
+impl CobwebAssetRegistrationAppExt for App
 {
     fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self
     {
@@ -268,7 +263,7 @@ impl LoadableRegistrationAppExt for App
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering entities for loadable loading.
-pub trait StyleLoadingEntityCommandsExt
+pub trait CafLoadingEntityCommandsExt
 {
     /// Registers the current entity to load loadables from `loadable_ref`.
     ///
@@ -290,7 +285,7 @@ pub trait StyleLoadingEntityCommandsExt
     ) -> &mut Self;
 }
 
-impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
+impl CafLoadingEntityCommandsExt for EntityCommands<'_>
 {
     fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
@@ -311,16 +306,16 @@ impl StyleLoadingEntityCommandsExt for EntityCommands<'_>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct LoaderPlugin;
+pub(crate) struct LoadExtPlugin;
 
-impl Plugin for LoaderPlugin
+impl Plugin for LoadExtPlugin
 {
     fn build(&self, app: &mut App)
     {
         app.init_resource::<LoaderCallbacks>();
 
         #[cfg(not(feature = "hot_reload"))]
-        app.add_systems(Startup, apply_commands_manual);
+        app.react(|rc| rc.on_persistent(resource_mutation::<CobwebAssetCache>(), apply_commands_manual));
     }
 }
 

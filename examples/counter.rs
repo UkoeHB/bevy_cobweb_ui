@@ -1,4 +1,4 @@
-//! Demonstrates building a simple counter.
+//! Demonstrates building a simple counter as a small reactive scene.
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
@@ -6,66 +6,40 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
+use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(ReactComponent, Deref)]
+#[derive(ReactComponent, Deref, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Counter(usize);
 
 impl Counter
 {
-    fn increment_inner(&mut self)
+    fn increment(&mut self)
     {
         self.0 += 1;
-    }
-
-    /// Makes callback for incrementing the counter on `target`.
-    fn increment(target: Entity) -> impl FnMut(Commands, ReactiveMut<Counter>)
-    {
-        move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-            counters
-                .get_mut(&mut c, target)
-                .map(Counter::increment_inner);
-        }
-    }
-
-    /// Makes callback for writing the counter value when it changes.
-    fn write(
-        pre_text: impl Into<String>,
-        post_text: impl Into<String>,
-        from: Entity,
-        to: Entity,
-    ) -> impl FnMut(TextEditor, Reactive<Counter>)
-    {
-        let pre_text = pre_text.into();
-        let post_text = post_text.into();
-
-        move |mut editor: TextEditor, counters: Reactive<Counter>| {
-            let Some(counter) = counters.get(from) else { return };
-            editor.write(to, |t| {
-                write!(t, "{}{}{}", pre_text.as_str(), **counter, post_text.as_str())
-            });
-        }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("examples/counter.load.json");
+    let scene = LoadableRef::new("examples/counter.load.json", "root");
 
-    c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
-        root.load(path.e("button"), |button, path| {
-            let button_id = button.id();
-            button
-                .insert(PropagateControl)
-                .insert_reactive(Counter(0))
-                .on_pressed(Counter::increment(button_id));
+    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
+        l.edit("button", |l| {
+            let button_id = l.id();
+            l.on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+                counters.get_mut(&mut c, button_id).map(Counter::increment);
+            });
 
-            button.load(path.e("text"), |text, _path| {
-                text.update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    Counter::write("Counter: ", "", button_id, text_id)
+            l.edit("text", |l| {
+                l.update_on(entity_mutation::<Counter>(button_id), |text_id| {
+                    move |mut e: TextEditor, counters: Reactive<Counter>| {
+                        let Some(counter) = counters.get(button_id) else { return };
+                        e.write(text_id, |t| write!(t, "Counter: {}", **counter));
+                    }
                 });
             });
         });
@@ -93,7 +67,9 @@ fn main()
         }))
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
-        .load_sheet("examples/counter.load.json")
+        .load("examples/counter.load.json")
+        .register_type::<Counter>()
+        .register_reactive_loadable::<Counter>()
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

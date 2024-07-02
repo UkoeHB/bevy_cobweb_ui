@@ -10,21 +10,21 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Preprocesses a loadablesheet file and adds it to [`LoadableSheet`] for processing.
+/// Preprocesses a cobweb asset file and adds it to [`CobwebAssetCache`] for processing.
 ///
 /// Only the manifest and imports sections of the file are parsed here.
-pub(crate) fn preprocess_loadablesheet_file(
+pub(crate) fn preprocess_caf_file(
     asset_server: &AssetServer,
-    sheet_list: &mut LoadableSheetList,
-    loadablesheet: &mut LoadableSheet,
+    caf_files: &mut LoadedCobwebAssetFiles,
+    caf_cache: &mut CobwebAssetCache,
     file: LoadableFile,
     data: Value,
 )
 {
-    loadablesheet.initialize_file(&file);
+    caf_cache.initialize_file(&file);
 
     let Value::Object(data) = data else {
-        tracing::error!("failed preprocessing loadablesheet {:?}, data base layer is not an Object", file);
+        tracing::error!("failed preprocessing cobweb asset file {:?}, data base layer is not an Object", file);
         return;
     };
 
@@ -45,35 +45,37 @@ pub(crate) fn preprocess_loadablesheet_file(
         .chain(imports.keys().map(|k| (k.clone(), None)))
     {
         // Continue if this file has been registered before.
-        if !loadablesheet.register_manifest_key(file.clone(), manifest_key) {
+        if !caf_cache.register_manifest_key(file.clone(), manifest_key) {
             continue;
         }
 
         // Load this manifest entry.
-        sheet_list.start_loading_sheet(file, loadablesheet, asset_server);
+        caf_files.start_loading(file, caf_cache, asset_server);
     }
 
     // Save this file for processing once its import dependencies are ready.
-    loadablesheet.add_preprocessed_file(file, imports, data);
+    caf_cache.add_preprocessed_file(file, imports, data);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Consumes a loadablesheet file's data and loads it into [`LoadableSheet`].
-pub(crate) fn parse_loadablesheet_file(
+/// Consumes a cobweb asset file's data and loads it into [`CobwebAssetCache`].
+pub(crate) fn parse_caf_file(
     type_registry: &TypeRegistry,
-    loadablesheet: &mut LoadableSheet,
+    c: &mut Commands,
+    caf_cache: &mut CobwebAssetCache,
+    scene_loader: &mut SceneLoader,
     file: LoadableFile,
     mut data: Map<String, Value>,
+    // [ shortname : longname ]
+    name_shortcuts: &mut HashMap<&'static str, &'static str>,
     // [ path : [ terminal identifier : constant value ] ]
     constants: &mut HashMap<SmolStr, Map<String, Value>>,
     // tracks specs
     specs: &mut SpecsMap,
-    // [ shortname : longname ]
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
-    tracing::info!("parsing loadablesheet {:?}", file.as_str());
+    tracing::info!("parsing cobweb asset file {:?}", file.as_str());
 
     // Extract using section.
     extract_using_section(type_registry, &file, &data, name_shortcuts);
@@ -92,17 +94,10 @@ pub(crate) fn parse_loadablesheet_file(
     insert_specs(&file, &mut data, specs);
 
     // Extract commands section.
-    parse_commands_section(type_registry, loadablesheet, &file, &mut data, name_shortcuts);
+    parse_commands_section(type_registry, caf_cache, &file, &mut data, name_shortcuts);
 
-    // Recursively consume the file contents.
-    parse_branch(
-        type_registry,
-        loadablesheet,
-        &file,
-        &LoadablePath::new(""),
-        data,
-        name_shortcuts,
-    );
+    // Parse scenes from the file.
+    parse_scenes(type_registry, c, caf_cache, scene_loader, &file, data, name_shortcuts);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

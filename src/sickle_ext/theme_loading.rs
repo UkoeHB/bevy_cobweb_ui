@@ -276,17 +276,6 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for entities that control the dynamic styles of descendents for non-themed entities.
-///
-/// This component must be manually added to entities, since it can't be reliably loaded due to race conditions
-/// around entity updates in the loader. Specifically, it's possible for a child to
-/// load its dynamic styles before its parent with `PropagateControl` is loaded, in which case the child's
-/// styles would fail to load since they need to be saved in the propagator's [`DynamicStyles`].
-#[derive(Component)]
-pub struct PropagateControl;
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Trait for loadable types that specify a value for a theme.
 pub trait ThemedAttribute: Loadable + TypePath
 {

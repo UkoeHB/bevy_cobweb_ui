@@ -43,7 +43,7 @@ pub(crate) fn get_loadable_meta<'a>(
     // Look up the longname
     let Some(registration) = registration else {
         tracing::error!("failed getting long type name for {:?} at {:?} in {:?}; if the type is ambiguous because \
-            there are multiple types with this short name, add its long name to the loadablesheet file's 'using' section",
+            there are multiple types with this short name, add its long name to the cobweb asset file's 'using' section",
             short_name, current_path, file);
         return None;
     };

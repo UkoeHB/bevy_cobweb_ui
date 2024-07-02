@@ -11,13 +11,13 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct LoadableSheetAssetLoader;
+struct CobwebAssetLoader;
 
-impl AssetLoader for LoadableSheetAssetLoader
+impl AssetLoader for CobwebAssetLoader
 {
-    type Asset = LoadableSheetAsset;
+    type Asset = CobwebAssetFile;
     type Settings = ();
-    type Error = LoadableSheetAssetLoaderError;
+    type Error = CobwebAssetLoaderError;
 
     fn load<'a>(
         &'a self,
@@ -30,7 +30,7 @@ impl AssetLoader for LoadableSheetAssetLoader
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
             let data: serde_json::Value = from_slice(&bytes)?;
-            Ok(LoadableSheetAsset {
+            Ok(CobwebAssetFile {
                 file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),
                 data,
             })
@@ -39,44 +39,44 @@ impl AssetLoader for LoadableSheetAssetLoader
 
     fn extensions(&self) -> &[&str]
     {
-        &[".load.json"]
+        &[".load.json"] //todo: `.caf.json`
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instructs the asset server to load all pre-set loadablesheet files.
-fn load_sheets(
-    mut sheets: ResMut<LoadableSheetList>,
-    mut loadablesheet: ReactResMut<LoadableSheet>,
+/// Instructs the asset server to load all pre-set CobwebAssetCache files.
+fn load_cobweb_assets(
+    mut files: ResMut<LoadedCobwebAssetFiles>,
+    mut caf_cache: ReactResMut<CobwebAssetCache>,
     asset_server: Res<AssetServer>,
 )
 {
-    for sheet in sheets.take_preset_files() {
-        sheets.start_loading_sheet(sheet, loadablesheet.get_noreact(), &asset_server);
+    for file in files.take_preset_files() {
+        files.start_loading(file, caf_cache.get_noreact(), &asset_server);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Possible errors that can be produced by the internal `LoadableSheetAssetLoader`.
+/// Possible errors that can be produced by the internal `CobwebAssetLoader`.
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum LoadableSheetAssetLoaderError
+pub enum CobwebAssetLoaderError
 {
     /// An [IO Error](std::io::Error).
-    #[error("Could not read the loadablesheet file: {0}")]
+    #[error("Could not read the CobwebAssetFile file: {0}")]
     Io(#[from] std::io::Error),
     /// A [JSON Error](serde_json::error::Error).
-    #[error("Could not parse the loadablesheet JSON: {0}")]
+    #[error("Could not parse the CobwebAssetFile JSON: {0}")]
     JsonError(#[from] serde_json::error::Error),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A partially-deserialized loadablesheet file.
+/// A partially-deserialized CobwebAssetCache file.
 #[derive(Debug, Asset, TypePath)]
-pub(crate) struct LoadableSheetAsset
+pub(crate) struct CobwebAssetFile
 {
     pub(crate) file: LoadableFile,
     pub(crate) data: serde_json::Value,
@@ -84,19 +84,19 @@ pub(crate) struct LoadableSheetAsset
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores asset paths for all loadablesheets that should be loaded.
+/// Stores asset paths for all cobweb asset files that should be loaded.
 #[derive(Resource, Default)]
-pub(crate) struct LoadableSheetList
+pub(crate) struct LoadedCobwebAssetFiles
 {
     preset_files: Vec<LoadableFile>,
-    handles: HashMap<AssetId<LoadableSheetAsset>, Handle<LoadableSheetAsset>>,
+    handles: HashMap<AssetId<CobwebAssetFile>, Handle<CobwebAssetFile>>,
 }
 
-impl LoadableSheetList
+impl LoadedCobwebAssetFiles
 {
     fn add_preset_file(&mut self, file: &str)
     {
-        tracing::info!("registered loadablesheet file \"{:?}\"", file);
+        tracing::info!("registered CobwebAssetCache file \"{:?}\"", file);
         self.preset_files.push(LoadableFile::new(file));
     }
 
@@ -105,19 +105,19 @@ impl LoadableSheetList
         std::mem::take(&mut self.preset_files)
     }
 
-    pub(crate) fn start_loading_sheet(
+    pub(crate) fn start_loading(
         &mut self,
         file: LoadableFile,
-        loadablesheet: &mut LoadableSheet,
+        caf_cache: &mut CobwebAssetCache,
         asset_server: &AssetServer,
     )
     {
-        loadablesheet.prepare_file(file.clone());
+        caf_cache.prepare_file(file.clone());
         let handle = asset_server.load(String::from(file.as_str()));
         self.handles.insert(handle.id(), handle);
     }
 
-    pub(crate) fn get_handle(&self, id: AssetId<LoadableSheetAsset>) -> Option<&Handle<LoadableSheetAsset>>
+    pub(crate) fn get_handle(&self, id: AssetId<CobwebAssetFile>) -> Option<&Handle<CobwebAssetFile>>
     {
         self.handles.get(&id)
     }
@@ -125,23 +125,23 @@ impl LoadableSheetList
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`LoadableSheet`] use.
-pub trait LoadableSheetListAppExt
+/// Extends `App` with methods supporting [`CobwebAssetCache`] use.
+pub trait LoadedCobwebAssetFilesAppExt
 {
-    /// Registers a loadable sheet file to be loaded as a loadablesheet asset.
-    fn load_sheet(&mut self, file: impl AsRef<str>) -> &mut Self;
+    /// Registers a cobweb asset file to be loaded.
+    fn load(&mut self, file: impl AsRef<str>) -> &mut Self;
 }
 
-impl LoadableSheetListAppExt for App
+impl LoadedCobwebAssetFilesAppExt for App
 {
-    fn load_sheet(&mut self, file: impl AsRef<str>) -> &mut Self
+    fn load(&mut self, file: impl AsRef<str>) -> &mut Self
     {
-        if !self.world.contains_resource::<LoadableSheetList>() {
-            self.init_resource::<LoadableSheetList>();
+        if !self.world.contains_resource::<LoadedCobwebAssetFiles>() {
+            self.init_resource::<LoadedCobwebAssetFiles>();
         }
 
         self.world
-            .resource_mut::<LoadableSheetList>()
+            .resource_mut::<LoadedCobwebAssetFiles>()
             .add_preset_file(file.as_ref());
         self
     }
@@ -149,20 +149,20 @@ impl LoadableSheetListAppExt for App
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Plugin to load [`LoadableSheet`] files into [`LoadableSheetAssets`](LoadableSheetAsset).
-pub(crate) struct LoadableSheetAssetLoaderPlugin;
+/// Plugin to load [`CobwebAssetCache`] files into [`CobwebAssetFiles`](CobwebAssetFile).
+pub(crate) struct CobwebAssetLoaderPlugin;
 
-impl Plugin for LoadableSheetAssetLoaderPlugin
+impl Plugin for CobwebAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        if !app.world.contains_resource::<LoadableSheetList>() {
-            app.init_resource::<LoadableSheetList>();
+        if !app.world.contains_resource::<LoadedCobwebAssetFiles>() {
+            app.init_resource::<LoadedCobwebAssetFiles>();
         }
 
-        app.init_asset::<LoadableSheetAsset>()
-            .register_asset_loader(LoadableSheetAssetLoader)
-            .add_systems(PreStartup, load_sheets);
+        app.init_asset::<CobwebAssetFile>()
+            .register_asset_loader(CobwebAssetLoader)
+            .add_systems(PreStartup, load_cobweb_assets);
     }
 }
 

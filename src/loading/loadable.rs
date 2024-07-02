@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait representing types that can be loaded by [`LoadableSheet`].
+/// Trait representing types that can be loaded from cobweb asset files.
 pub trait Loadable:
     Reflect + FromReflect + PartialEq + Clone + Default + Serialize + for<'de> Deserialize<'de>
 {
@@ -97,7 +97,7 @@ impl<T: ApplyCommand + TypePath> ApplyCommand for Multi<T>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component added to nodes that load loadables from the loadablesheet.
+/// Component added to nodes that load scene nodes from cobweb asset files (see [`SceneLoader`]).
 #[derive(Component)]
 pub(crate) struct HasLoadables;
 

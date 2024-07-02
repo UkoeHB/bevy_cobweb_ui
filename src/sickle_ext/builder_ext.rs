@@ -1,6 +1,6 @@
 use std::any::type_name;
 
-use bevy::ecs::system::CommandQueue;
+use bevy::ecs::system::{CommandQueue, EntityCommands};
 use bevy::prelude::*;
 use sickle_ui::theme::{DefaultTheme, UiContext};
 use sickle_ui::ui_builder::*;
@@ -247,5 +247,61 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
         self
     }
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
+{
+    type Loaded<'a> = UiBuilder<'a, Entity>;
+
+    fn commands(&mut self) -> Commands
+    {
+        self.commands().reborrow()
+    }
+
+    fn scene_parent_entity(&self) -> Option<Entity>
+    {
+        None
+    }
+
+    fn initialize_scene_node(ec: &mut EntityCommands)
+    {
+        ec.insert(NodeBundle::default());
+    }
+
+    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    {
+        commands.ui_builder(entity)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
+{
+    type Loaded<'a> = UiBuilder<'a, Entity>;
+
+    fn commands(&mut self) -> Commands
+    {
+        self.commands().reborrow()
+    }
+
+    fn scene_parent_entity(&self) -> Option<Entity>
+    {
+        Some(self.id())
+    }
+
+    fn initialize_scene_node(ec: &mut EntityCommands)
+    {
+        ec.insert(NodeBundle::default());
+    }
+
+    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    {
+        commands.ui_builder(entity)
+    }
+}
+
+impl<'a> scene_traits::LoadedSceneBuilder<'a> for UiBuilder<'a, Entity> {}
 
 //-------------------------------------------------------------------------------------------------------------------

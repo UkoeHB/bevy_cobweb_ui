@@ -21,12 +21,12 @@ fn collect_asset_progress<T: AssetLoadProgress>(mut tracker: ResMut<AssetLoadPro
 
 fn check_load_progress(
     mut c: Commands,
-    loadablesheet: ReactRes<LoadableSheet>,
+    caf_cache: ReactRes<CobwebAssetCache>,
     asset_tracker: ResMut<AssetLoadProgressTracker>,
     mut next: ResMut<NextState<LoadState>>,
 )
 {
-    let (pending_files, total_files) = loadablesheet.loading_progress();
+    let (pending_files, total_files) = caf_cache.loading_progress();
     let (pending_assets, total_assets) = asset_tracker.loading_progress();
 
     let pending = pending_files + pending_assets;
@@ -34,7 +34,7 @@ fn check_load_progress(
         return;
     }
 
-    tracing::info!("Startup loading done: {total_files} files, {total_assets} assets");
+    tracing::info!("Startup loading done: {total_files} file(s), {total_assets} asset(s)");
     c.react().broadcast(StartupLoadingDone);
     next.set(LoadState::Done);
 }

@@ -227,7 +227,7 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<CounterWidget>::new())
-        .load_sheet("examples/counter_widget.load.json")
+        .load("examples/counter_widget.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
