@@ -140,8 +140,6 @@ c.load_scene(&mut s, file.e("game_menu_scene"), |loaded_scene: &mut LoadedScene<
 });
 ```
 
-While scenes can be hot reloaded, we assume only scene root nodes are despawned manually. If you despawn an inner scene node, then hot reload a structural change to that node's parent (adding or rearranging child nodes), then your app *may* panic.
-
 
 ### Note on serialization
 

@@ -345,9 +345,6 @@ impl SceneLoader
     /// Spawns new scene nodes in existing scenes instances.
     ///
     /// Used to fill in missing slots in hierarchies after a scene structure change is hot reloaded.
-    ///
-    /// Panics if scene nodes were despawned manually, causing the insertion index to be invalid.
-    //todo: insert children without panicking (just insert to the end if index >= children len)
     #[cfg(feature = "hot_reload")]
     pub(crate) fn handle_inserted_scene_node(
         &mut self,
@@ -381,12 +378,21 @@ impl SceneLoader
             let node_entity = c.spawn_empty().id();
 
             // Insert the entity to the proper parent index.
-            let Some(mut parent_ec) = c.get_entity(parent_entity) else {
-                tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
-                    parent {:?} was despawned", scene, scene_instance.root_entity(), inserted, parent_entity);
-                continue;
-            };
-            parent_ec.insert_children(insertion_index, &[node_entity]);
+            // - We add an extra step of truncating the insertion index to avoid panics on insert.
+            let scene_inner = scene.clone();
+            let root_entity = scene_instance.root_entity();
+            let inserted_inner = inserted.clone();
+            c.add(move |world: &mut World| {
+                let num_children = world.get::<Children>(parent_entity).map(|c| c.len()).unwrap_or_default();
+                let position = std::cmp::min(num_children, insertion_index);
+
+                let Some(mut ec) = world.get_entity_mut(parent_entity) else {
+                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
+                        parent {:?} was despawned", scene_inner, root_entity, inserted_inner, parent_entity);
+                    return;
+                };
+                ec.insert_children(position, &[node_entity]);
+            });
 
             // Prep the node entity.
             let mut ec = c.entity(node_entity);
@@ -406,7 +412,6 @@ impl SceneLoader
     /// Used to adjust scene node positions in hierarchies after a scene structure change is hot reloaded.
     ///
     /// Panics if scene nodes were despawned manually, causing the new insertion index to be invalid.
-    //todo: insert children without panicking (just insert to the end if index >= children len)
     #[cfg(feature = "hot_reload")]
     pub(crate) fn handle_rearranged_scene_node(
         &self,
@@ -436,16 +441,23 @@ impl SceneLoader
                 continue;
             };
 
-            // Command the parent to adjust the index of its child.
-            let Some(mut parent_ec) = c.get_entity(parent_entity) else {
-                tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
-                    parent {:?} was despawned", scene, scene_instance.root_entity(), moved, parent_entity);
-                continue;
-            };
-
             // Insert at the desired index.
+            // - We add an extra step of truncating the insertion index to avoid panics on insert.
             // - This correctly rearranges entities that are already in the parent's child list.
-            parent_ec.insert_children(new_index, &[node_entity]);
+            let scene = scene.clone();
+            let root_entity = scene_instance.root_entity();
+            let moved = moved.clone();
+            c.add(move |world: &mut World| {
+                let num_children = world.get::<Children>(parent_entity).map(|c| c.len()).unwrap_or_default();
+                let position = std::cmp::min(num_children, new_index);
+
+                let Some(mut ec) = world.get_entity_mut(parent_entity) else {
+                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
+                        parent {:?} was despawned", scene, root_entity, moved, parent_entity);
+                    return;
+                };
+                ec.insert_children(position, &[node_entity]);
+            });
         }
     }
 
