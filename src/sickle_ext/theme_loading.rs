@@ -149,7 +149,7 @@ fn add_attribute_to_theme(
         if let Some(state) = &state {
             if !state.is_empty() {
                 tracing::error!("failed adding attribute to {entity:?}, pseudo states are not supported for non-theme \
-                    dynamic sytle attributes (state: {:?}", state);
+                    dynamic sytle attributes (state: {:?})", state);
                 return;
             }
         }
