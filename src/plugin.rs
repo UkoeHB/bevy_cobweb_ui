@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
 
 use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Depends on [`bevy_cobweb::prelude::ReactPlugin`] and [`sickle_ui::prelude::SickleUiPlugin`].
 pub struct CobwebUiPlugin;
 
 impl Plugin for CobwebUiPlugin
@@ -13,7 +13,6 @@ impl Plugin for CobwebUiPlugin
     {
         app.add_plugins(BevyExtPlugin)
             .add_plugins(LoadingPlugin)
-            .add_plugins(ReactPlugin)
             .add_plugins(SickleExtPlugin)
             .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin)
