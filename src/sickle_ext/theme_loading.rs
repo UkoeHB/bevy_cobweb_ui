@@ -1,8 +1,9 @@
 use std::any::{type_name, TypeId};
 
 use bevy::ecs::component::Components;
-use bevy::ecs::system::{CommandQueue, EntityCommands};
+use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
+use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::lerp::Lerp;
@@ -223,12 +224,10 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 {
     move |entity: Entity, world: &mut World| {
         // Apply the value to the entity.
-        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
-        let mut queue = CommandQueue::default();
-        let mut c = Commands::new(&mut queue, world);
+        let mut c = world.commands();
         let Some(mut ec) = c.get_entity(entity) else { return };
         T::update(&mut ec, val.clone());
-        queue.apply(world);
+        world.flush();
     }
 }
 
@@ -243,12 +242,10 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
         let new_value = vals.to_value(state);
 
         // Apply the value to the entity.
-        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
-        let mut queue = CommandQueue::default();
-        let mut c = Commands::new(&mut queue, world);
+        let mut c = world.commands();
         let Some(mut ec) = c.get_entity(entity) else { return };
         T::update(&mut ec, new_value);
-        queue.apply(world);
+        world.flush();
     }
 }
 
@@ -265,12 +262,10 @@ where
         let new_value = vals.to_value(&state);
 
         // Apply the value to the entity.
-        //todo: avoid queue allocation by getting Commands directly from World (bevy v0.14)
-        let mut queue = CommandQueue::default();
-        let mut c = Commands::new(&mut queue, world);
+        let mut c = world.commands();
         let Some(mut ec) = c.get_entity(entity) else { return };
         T::update(&mut ec, new_value);
-        queue.apply(world);
+        world.flush();
     }
 }
 
@@ -305,6 +300,8 @@ pub trait AnimatableAttribute: Loadable + TypePath {}
 /// Loadable type for theme values.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Themed<T: ThemedAttribute>
+where
+    <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this to become active.
     ///
@@ -316,6 +313,8 @@ pub struct Themed<T: ThemedAttribute>
 }
 
 impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
+where
+    <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
     fn apply(self, ec: &mut EntityCommands)
     {
@@ -337,6 +336,8 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
+where
+    <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this to become active.
     ///
@@ -355,6 +356,8 @@ pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
+where
+    <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
     fn apply(self, ec: &mut EntityCommands)
     {
@@ -380,7 +383,7 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Animated<T: AnimatableAttribute + ThemedAttribute>
 where
-    <T as ThemedAttribute>::Value: Lerp,
+    <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
 {
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this animation to become active.
     ///
@@ -402,7 +405,7 @@ where
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
 where
-    <T as ThemedAttribute>::Value: Lerp,
+    <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
 {
     fn apply(self, ec: &mut EntityCommands)
     {

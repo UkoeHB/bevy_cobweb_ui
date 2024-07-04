@@ -51,6 +51,9 @@ pub struct LoadedUiImage
     /// [`LoadedImageScaleMode::Sliced`] can be used for nine-slicing.
     #[reflect(default)]
     pub scale_mode: Option<LoadedImageScaleMode>,
+    /// The color of the image.
+    #[reflect(default = "LoadedUiImage::default_color")]
+    pub color: Color,
     /// The size of the image.
     ///
     /// Set this if you want to force the node to match the image size.
@@ -70,10 +73,17 @@ impl LoadedUiImage
     pub fn to_ui_image(self, map: &ImageMap) -> UiImage
     {
         UiImage {
+            color: self.color,
             texture: map.get(&self.texture),
             flip_x: self.flip_x,
             flip_y: self.flip_y,
         }
+    }
+
+    /// Gets the default color, which is transparent.
+    pub fn default_color() -> Color
+    {
+        Color::NONE
     }
 }
 

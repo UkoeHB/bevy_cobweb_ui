@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-use bevy::ecs::system::{CommandQueue, EntityCommands};
+use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
@@ -32,13 +32,11 @@ fn register_loadable_impl<M, T: 'static>(
 )
 {
     let mut loaders = app
-        .world
+        .world_mut()
         .remove_resource::<LoaderCallbacks>()
         .unwrap_or_default();
 
-    //todo: use commands from the world directly.
-    let mut queue = CommandQueue::default();
-    let mut c = Commands::new(&mut queue, &mut app.world);
+    let mut c = app.world_mut().commands();
 
     let entry = loaders.callbacks.entry(TypeId::of::<T>());
     if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
@@ -57,8 +55,8 @@ fn register_loadable_impl<M, T: 'static>(
         entry.or_insert_with(|| c.spawn_system_command(callback));
     }
 
-    queue.apply(&mut app.world);
-    app.world.insert_resource(loaders);
+    app.world_mut().flush();
+    app.insert_resource(loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

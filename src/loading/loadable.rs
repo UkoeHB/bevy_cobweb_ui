@@ -1,5 +1,6 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
+use bevy::reflect::GetTypeRegistration;
 use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ impl ApplyCommandExt for Commands<'_, '_>
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Multi<T>(Vec<T>);
 
-impl<T: ApplyLoadable + TypePath> ApplyLoadable for Multi<T>
+impl<T: ApplyLoadable + TypePath + FromReflect + GetTypeRegistration> ApplyLoadable for Multi<T>
 {
     fn apply(mut self, ec: &mut EntityCommands)
     {
@@ -85,7 +86,7 @@ impl<T: ApplyLoadable + TypePath> ApplyLoadable for Multi<T>
     }
 }
 
-impl<T: ApplyCommand + TypePath> ApplyCommand for Multi<T>
+impl<T: ApplyCommand + TypePath + FromReflect + GetTypeRegistration> ApplyCommand for Multi<T>
 {
     fn apply(mut self, c: &mut Commands)
     {

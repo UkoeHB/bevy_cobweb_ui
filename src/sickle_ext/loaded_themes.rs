@@ -2,7 +2,8 @@ use std::any::{type_name, TypeId};
 use std::cmp::Ordering;
 use std::marker::PhantomData;
 
-use bevy::ecs::system::{Command, EntityCommands};
+use bevy::ecs::system::EntityCommands;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
 use sickle_ui::theme::pseudo_state::PseudoState;

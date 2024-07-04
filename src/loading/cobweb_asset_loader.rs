@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::asset::io::Reader;
-use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
+use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde_json::from_slice;
@@ -19,21 +19,19 @@ impl AssetLoader for CobwebAssetLoader
     type Settings = ();
     type Error = CobwebAssetLoaderError;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>>
+        load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error>
     {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
-            let data: serde_json::Value = from_slice(&bytes)?;
-            Ok(CobwebAssetFile {
-                file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),
-                data,
-            })
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        let data: serde_json::Value = from_slice(&bytes)?;
+        Ok(CobwebAssetFile {
+            file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),
+            data,
         })
     }
 
@@ -136,11 +134,11 @@ impl LoadedCobwebAssetFilesAppExt for App
 {
     fn load(&mut self, file: impl AsRef<str>) -> &mut Self
     {
-        if !self.world.contains_resource::<LoadedCobwebAssetFiles>() {
+        if !self.world().contains_resource::<LoadedCobwebAssetFiles>() {
             self.init_resource::<LoadedCobwebAssetFiles>();
         }
 
-        self.world
+        self.world_mut()
             .resource_mut::<LoadedCobwebAssetFiles>()
             .add_preset_file(file.as_ref());
         self
@@ -156,7 +154,7 @@ impl Plugin for CobwebAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        if !app.world.contains_resource::<LoadedCobwebAssetFiles>() {
+        if !app.world().contains_resource::<LoadedCobwebAssetFiles>() {
             app.init_resource::<LoadedCobwebAssetFiles>();
         }
 

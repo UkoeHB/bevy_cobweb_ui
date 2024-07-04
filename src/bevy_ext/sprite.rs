@@ -188,13 +188,13 @@ pub enum LoadedTextureAtlasLayout
 {
     Layout
     {
-        tile_size: Vec2,
-        columns: usize,
-        rows: usize,
+        tile_size: UVec2,
+        columns: u32,
+        rows: u32,
         #[reflect(default)]
-        padding: Option<Vec2>,
+        padding: Option<UVec2>,
         #[reflect(default)]
-        offset: Option<Vec2>,
+        offset: Option<UVec2>,
     },
     #[reflect(ignore)]
     #[serde(skip)]
@@ -230,7 +230,7 @@ impl Default for LoadedTextureAtlasLayout
     fn default() -> Self
     {
         Self::Layout {
-            tile_size: Vec2::default(),
+            tile_size: UVec2::default(),
             columns: 0,
             rows: 0,
             padding: None,

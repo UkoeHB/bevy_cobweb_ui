@@ -36,7 +36,9 @@ impl<'a> SceneLayerInsertionResult<'a>
 
 enum SceneLayerInsertionMethod
 {
+    #[cfg(feature = "hot_reload")]
     NoChange,
+    #[cfg(feature = "hot_reload")]
     Updated,
     Added,
 }
@@ -98,6 +100,7 @@ impl SceneLayer
             debug_assert_eq!(self.children.len(), position);
         }
 
+        #[allow(unused_labels)]
         let insertion_method = 'm: {
             #[cfg(feature = "hot_reload")]
             {
@@ -237,6 +240,7 @@ impl SceneInstance
     }
 
     /// Removes a scene node with the given path.
+    #[cfg(feature = "hot_reload")]
     pub(crate) fn remove(&mut self, path: &LoadablePath) -> Option<Entity>
     {
         self.nodes.remove(path)
@@ -255,6 +259,7 @@ impl SceneInstance
     }
 
     /// Returns the function that should be used to initialize new nodes.
+    #[cfg(feature = "hot_reload")]
     pub(crate) fn node_prep_fn(&self) -> fn(&mut EntityCommands)
     {
         self.new_node_prep_fn
