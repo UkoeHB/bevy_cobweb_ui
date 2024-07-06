@@ -28,6 +28,7 @@
             "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
         },
         "Interactive": [],
+        "BrRadius": [{"Px": 6.0}],
 
         "outline": {
             "FlexStyle": {
@@ -35,12 +36,14 @@
                 "content": {"justify_main": "Center", "justify_cross": "Center"},
                 "flex": {"margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 9.0}, "right": {"Px": 1.0}}}
             },
+            "BrRadius": [{"Px": 8.5}],
 
             "indicator": {
                 "FlexStyle": {
                     "dims": {"width": {"Px": 9.0}, "height": {"Px": 9.0}},
                     "flex": {"margin": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}}
-                }
+                },
+                "BrRadius": [{"Px": 4.5}]
             }
         },
 
