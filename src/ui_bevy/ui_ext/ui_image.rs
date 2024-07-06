@@ -36,6 +36,14 @@ fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands:
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<&mut UiImage>)
+{
+    let Ok(mut img) = q.get_mut(entity) else { return };
+    img.color = color;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Mirrors [`UiImage`] for serialization.
 ///
 /// Must be inserted to an entity with [`NodeBundle`].
@@ -80,10 +88,10 @@ impl LoadedUiImage
         }
     }
 
-    /// Gets the default color, which is transparent.
+    /// Gets the default color, which is white.
     pub fn default_color() -> Color
     {
-        Color::NONE
+        Color::WHITE
     }
 }
 
@@ -109,6 +117,33 @@ impl ThemedAttribute for LoadedUiImage
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Mirrors [`UiImage::color`], can be loaded as a style.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UiImageColor(pub Color);
+
+impl ApplyLoadable for UiImageColor
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), update_ui_image_color);
+    }
+}
+
+impl ThemedAttribute for UiImageColor
+{
+    type Value = Color;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for UiImageColor {}
+impl AnimatableAttribute for UiImageColor {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct UiImageExtPlugin;
 
 impl Plugin for UiImageExtPlugin
@@ -116,7 +151,8 @@ impl Plugin for UiImageExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<Option<ImageScaleMode>>()
-            .register_themed::<LoadedUiImage>();
+            .register_themed::<LoadedUiImage>()
+            .register_animatable::<UiImageColor>();
     }
 }
 
