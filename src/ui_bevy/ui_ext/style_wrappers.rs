@@ -760,7 +760,7 @@ fn detect_absolute_style(
     node: Query<&React<AbsoluteStyle>>,
 )
 {
-    let entity = insertion.read().or_else(|| mutation.read()).unwrap();
+    let entity = insertion.try_read().unwrap_or_else(|| mutation.read());
     let Ok(style) = node.get(entity) else { return };
     let style: Style = (*style).clone().into();
     commands.entity(entity).try_insert(style.clone());
@@ -786,7 +786,7 @@ fn detect_flex_style(
     node: Query<&React<FlexStyle>>,
 )
 {
-    let entity = insertion.read().or_else(|| mutation.read()).unwrap();
+    let entity = insertion.try_read().unwrap_or_else(|| mutation.read());
     let Ok(style) = node.get(entity) else { return };
     let style: Style = (*style).clone().into();
     commands.entity(entity).try_insert(style.clone());
