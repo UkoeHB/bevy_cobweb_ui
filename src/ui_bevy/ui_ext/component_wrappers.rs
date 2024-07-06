@@ -1,10 +1,77 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
+use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::lerp::Lerp;
 
 use crate::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn set_border_radius_top_left(
+    In((entity, radius)): In<(Entity, Val)>,
+    mut c: Commands,
+    mut q: Query<Option<&mut BorderRadius>>,
+)
+{
+    let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
+    let Some(mut border_radius) = maybe_border_radius else {
+        c.entity(entity).try_insert(BorderRadius::top_left(radius));
+        return;
+    };
+    border_radius.top_left = radius;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn set_border_radius_top_right(
+    In((entity, radius)): In<(Entity, Val)>,
+    mut c: Commands,
+    mut q: Query<Option<&mut BorderRadius>>,
+)
+{
+    let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
+    let Some(mut border_radius) = maybe_border_radius else {
+        c.entity(entity).try_insert(BorderRadius::top_right(radius));
+        return;
+    };
+    border_radius.top_right = radius;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn set_border_radius_bottom_left(
+    In((entity, radius)): In<(Entity, Val)>,
+    mut c: Commands,
+    mut q: Query<Option<&mut BorderRadius>>,
+)
+{
+    let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
+    let Some(mut border_radius) = maybe_border_radius else {
+        c.entity(entity)
+            .try_insert(BorderRadius::bottom_left(radius));
+        return;
+    };
+    border_radius.bottom_left = radius;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn set_border_radius_bottom_right(
+    In((entity, radius)): In<(Entity, Val)>,
+    mut c: Commands,
+    mut q: Query<Option<&mut BorderRadius>>,
+)
+{
+    let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
+    let Some(mut border_radius) = maybe_border_radius else {
+        c.entity(entity)
+            .try_insert(BorderRadius::bottom_right(radius));
+        return;
+    };
+    border_radius.bottom_right = radius;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +124,151 @@ impl ThemedAttribute for BrColor
 
 impl ResponsiveAttribute for BrColor {}
 impl AnimatableAttribute for BrColor {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderRadius`] to set all corner radii to the same value, can be loaded as a style.
+///
+/// See [`BrRadiusTopLeft`], [`BrRadiusTopRight`], [`BrRadiusBottomLeft`], [`BrRadiusBottomRight`] to set
+/// individual corners.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrRadius(pub Val);
+
+impl ApplyLoadable for BrRadius
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        ec.try_insert(BorderRadius::all(self.0));
+    }
+}
+
+impl ThemedAttribute for BrRadius
+{
+    type Value = Val;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for BrRadius {}
+impl AnimatableAttribute for BrRadius {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderRadius`] to set the top left corner radius, can be loaded as a style.
+///
+/// See [`BrRadius`] to set all corners at once.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrRadiusTopLeft(pub Val);
+
+impl ApplyLoadable for BrRadiusTopLeft
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), set_border_radius_top_left);
+    }
+}
+
+impl ThemedAttribute for BrRadiusTopLeft
+{
+    type Value = Val;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for BrRadiusTopLeft {}
+impl AnimatableAttribute for BrRadiusTopLeft {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderRadius`] to set the top right corner radius, can be loaded as a style.
+///
+/// See [`BrRadius`] to set all corners at once.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrRadiusTopRight(pub Val);
+
+impl ApplyLoadable for BrRadiusTopRight
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), set_border_radius_top_right);
+    }
+}
+
+impl ThemedAttribute for BrRadiusTopRight
+{
+    type Value = Val;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for BrRadiusTopRight {}
+impl AnimatableAttribute for BrRadiusTopRight {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderRadius`] to set the bottom left corner radius, can be loaded as a style.
+///
+/// See [`BrRadius`] to set all corners at once.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrRadiusBottomLeft(pub Val);
+
+impl ApplyLoadable for BrRadiusBottomLeft
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), set_border_radius_bottom_left);
+    }
+}
+
+impl ThemedAttribute for BrRadiusBottomLeft
+{
+    type Value = Val;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for BrRadiusBottomLeft {}
+impl AnimatableAttribute for BrRadiusBottomLeft {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BorderRadius`] to set the bottom right corner radius, can be loaded as a style.
+///
+/// See [`BrRadius`] to set all corners at once.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BrRadiusBottomRight(pub Val);
+
+impl ApplyLoadable for BrRadiusBottomRight
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), set_border_radius_bottom_right);
+    }
+}
+
+impl ThemedAttribute for BrRadiusBottomRight
+{
+    type Value = Val;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for BrRadiusBottomRight {}
+impl AnimatableAttribute for BrRadiusBottomRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -212,6 +424,11 @@ impl Plugin for UiComponentWrappersPlugin
     {
         app.register_animatable::<BgColor>()
             .register_animatable::<BrColor>()
+            .register_animatable::<BrRadius>()
+            .register_animatable::<BrRadiusTopLeft>()
+            .register_animatable::<BrRadiusTopRight>()
+            .register_animatable::<BrRadiusBottomLeft>()
+            .register_animatable::<BrRadiusBottomRight>()
             .register_animatable::<NodeOutline>()
             .register_responsive::<SetFocusPolicy>()
             .register_responsive::<SetZIndex>();
