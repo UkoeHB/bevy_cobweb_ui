@@ -16,6 +16,9 @@ use crate::{LocalizedText, TextLocalizer};
 /// Helper system param for modifying [`Text`] components.
 ///
 /// Includes automatic text localization when writing text.
+///
+/// **NOTE**: `TextEditor` uses a query internally, so text can't be edited in the same system where it is
+/// inserted.
 #[derive(SystemParam)]
 pub struct TextEditor<'w, 's>
 {

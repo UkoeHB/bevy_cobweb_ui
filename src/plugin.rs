@@ -11,7 +11,8 @@ impl Plugin for CobwebUiPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(BevyExtPlugin)
+        app.add_plugins(BuiltinAssetsPlugin)
+            .add_plugins(BevyExtPlugin)
             .add_plugins(LoadingPlugin)
             .add_plugins(LocalizationPlugin)
             .add_plugins(SickleExtPlugin)

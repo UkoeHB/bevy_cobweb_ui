@@ -40,7 +40,9 @@ pub struct TextLine
     #[reflect(default = "TextLine::default_text")]
     pub text: String,
     /// The font handle.
-    #[reflect(default)]
+    ///
+    /// Defaults to `sickle_ui`'s built-in `FiraSans-Regular` font.
+    #[reflect(default = "TextLine::default_font")]
     pub font: Option<String>,
     /// The desired font size.
     #[reflect(default = "TextLine::default_font_size")]
@@ -57,6 +59,11 @@ impl TextLine
     fn default_text() -> String
     {
         "[text line]".into()
+    }
+
+    fn default_font() -> Option<String>
+    {
+        Some("embedded://bevy_cobweb_ui/fonts/OpenSans-Semibold.ttf".into())
     }
 
     fn default_font_size() -> f32
@@ -98,7 +105,7 @@ impl Default for TextLine
     {
         Self {
             text: Self::default_text(),
-            font: None,
+            font: Self::default_font(),
             size: Self::default_font_size(),
         }
     }

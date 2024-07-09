@@ -109,8 +109,11 @@ impl LocalizedTextSection
 /// Then to update localization templates on entities you must use the [`TextEditor`] helper, which uses this
 /// component to auto-localize text.
 ///
-/// **NOTE**: [`TextEditor`] uses a query internally, so text can't be edited in the same system where it is
-/// inserted.
+/// **NOTE**: If a localization template includes a parameter, then `fluent` will [insert][fluent-isolation]
+/// Unicode Directionality Isolation Marks. These marks are not handled properly by all fonts (e.g. Bevy's
+/// default font just displays little rectangles).
+///
+/// [fluent-isolation](https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating)
 #[derive(Component, Debug)]
 pub struct LocalizedText
 {

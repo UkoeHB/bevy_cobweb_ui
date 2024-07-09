@@ -4,7 +4,7 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub struct AssetsExtPlugin;
+pub(crate) struct AssetsExtPlugin;
 
 impl Plugin for AssetsExtPlugin
 {
