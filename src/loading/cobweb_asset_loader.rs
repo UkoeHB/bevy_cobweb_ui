@@ -115,9 +115,18 @@ impl LoadedCobwebAssetFiles
         self.handles.insert(handle.id(), handle);
     }
 
-    pub(crate) fn get_handle(&self, id: AssetId<CobwebAssetFile>) -> Option<&Handle<CobwebAssetFile>>
+    /// Does not remove the handle in case the asset gets reloaded.
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn get_handle(&self, id: AssetId<CobwebAssetFile>) -> Option<Handle<CobwebAssetFile>>
     {
-        self.handles.get(&id)
+        self.handles.get(&id).cloned()
+    }
+
+    /// Removes the handle to clean it up properly.
+    #[cfg(not(feature = "hot_reload"))]
+    pub(crate) fn get_handle(&mut self, id: AssetId<CobwebAssetFile>) -> Option<Handle<CobwebAssetFile>>
+    {
+        self.handles.remove(&id)
     }
 }
 

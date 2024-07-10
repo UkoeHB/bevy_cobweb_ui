@@ -1,5 +1,4 @@
 use std::borrow::Borrow;
-use std::path::PathBuf;
 
 use bevy::asset::AssetLoadFailedEvent;
 use bevy::prelude::*;
@@ -260,7 +259,7 @@ impl TextLocalizer
                     #[cfg(feature = "hot_reload")]
                     {
                         // When hot reloading, the language's manifest location may be stale.
-                        let path: PathBuf = removed.handle().path().unwrap().clone().into();
+                        let path: std::path::PathBuf = removed.handle().path().unwrap().clone().into();
                         if negotiated.manifest != path {
                             TextLocalization::Loading {
                                 id: negotiated.id.clone(),

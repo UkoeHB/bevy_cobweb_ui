@@ -37,7 +37,7 @@ fn preprocess_cobweb_asset_files(
             continue;
         };
 
-        let Some(asset) = assets.remove(handle) else {
+        let Some(asset) = assets.remove(&handle) else {
             tracing::error!("failed to remove CobwebAssetCache asset {:?}", handle);
             continue;
         };
