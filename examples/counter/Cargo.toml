@@ -11,3 +11,4 @@ dev = ["bevy_cobweb_ui/dev"]
 bevy = { version = "0.14", default-features = true, features = ["serialize"] }
 bevy_cobweb = { version = "0.9" }
 bevy_cobweb_ui = { path = "../../" }
+tracing = { version = "0.1" }

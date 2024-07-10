@@ -1,8 +1,14 @@
 {
 
 "#constants" : {
+    "$animation_settings_shared_slow" : {"duration": 0.04, "easing": "Linear"},
     "$animation_settings_shared_medium" : {"duration": 0.0265, "easing": "Linear"},
     "$animation_settings_shared_fast" : {"duration": 0.025, "easing": "Linear"},
+    "$animation_settings_slow" : {
+        "enter": "$$animation_settings_shared_slow",
+        "pointer_enter": "$$animation_settings_shared_slow",
+        "press": "$$animation_settings_shared_slow"
+    },
     "$animation_settings_medium" : {
         "enter": "$$animation_settings_shared_medium",
         "pointer_enter": "$$animation_settings_shared_medium",
@@ -85,19 +91,22 @@
                 "settings": "$animation_settings_fast"
             }
         ]],
-        "Multi<Responsive<BgColor>>": [[
+        "Multi<Animated<BgColor>>": [[
             {
                 "values": {
                     "idle": {"Hsla": {"hue": 160.0, "saturation": 0.05, "lightness": 0.94, "alpha": 1.0}},
                     "hover": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}}
-                }
+                },
+                "settings": "$animation_settings_slow"
             },
             {
                 "state": ["Selected"],
                 "values": {
+                    "enter_from": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
                     "idle": {"Hsla": {"hue": 197.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
                     "hover": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
-                }
+                },
+                "settings": "$animation_settings_slow"
             }
         ]],
         "Themed<BrColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}

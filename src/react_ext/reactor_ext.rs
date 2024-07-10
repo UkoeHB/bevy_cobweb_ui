@@ -9,20 +9,37 @@ use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn despawn_syscommand(mut event: SystemEvent<SystemCommand>, mut c: Commands)
+{
+    let syscommand = event.take().unwrap();
+    c.add(move |world: &mut World| {
+        world.despawn(*syscommand);
+    })
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// This is a hack to help despawn SystemCommands immediately after running them for system commands that are run
+/// from within a reaction tree (where normal commands are applied *before* system commands).
+//todo: rework/rethink reaction tree design so this kind of problem doesn't occur
+#[derive(Resource)]
+struct DespawnSyscommandHelper(SystemCommand);
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[cfg(feature = "hot_reload")]
 fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     In((entity, syscommand, triggers)): In<(Entity, SystemCommand, Triggers)>,
     mut c: Commands,
     loaded: Query<(), With<HasLoadables>>,
+    despawn_helper: Res<DespawnSyscommandHelper>,
 )
 {
     // If there are no triggers then we should despawn the reactor immediately.
     let is_loaded = loaded.contains(entity);
     if !is_loaded && (TypeId::of::<Triggers>() == TypeId::of::<()>()) {
         c.add(syscommand);
-        c.add(move |world: &mut World| {
-            world.despawn(*syscommand);
-        });
+        c.send_system_event(despawn_helper.0, syscommand);
         return;
     }
 
@@ -60,7 +77,8 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     if TypeId::of::<Triggers>() == TypeId::of::<()>() {
         c.add(syscommand);
         c.add(move |world: &mut World| {
-            world.despawn(*syscommand);
+            let despawn_helper = world.resource::<DespawnSyscommandHelper>().0;
+            world.send_system_event(despawn_helper, syscommand);
         });
         return;
     }
@@ -204,6 +222,19 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         }
 
         self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct ReactorExtPlugin;
+
+impl Plugin for ReactorExtPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        let despawn_helper = app.world_mut().spawn_system_command(despawn_syscommand);
+        app.insert_resource(DespawnSyscommandHelper(despawn_helper));
     }
 }
 

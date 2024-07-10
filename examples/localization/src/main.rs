@@ -187,8 +187,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
         // Dropdown for selecting a language.
         l.edit("selection_section::selection_box", |l| {
-            // Update the selection whenever the manifest changes.
-            l.update_on(resource_mutation::<LocalizationManifest>(), |id| {
+            // Update the selection whenever the manifest is updated.
+            l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
                 move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
                     // Despawn existing buttons.
                     c.entity(id).despawn_descendants();

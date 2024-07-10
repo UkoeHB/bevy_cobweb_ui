@@ -26,6 +26,8 @@ fn load_manifest(
     let manifest = manifest.get_mut(&mut c);
     manifest.reset(default_meta, alt_metas);
     manifest.negotiate(&locale.requested);
+    c.react().broadcast(LocalizationManifestUpdated);
+    c.react().broadcast(LanguagesNegotiated);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -47,7 +49,18 @@ fn update_negotiated_languages(
     let manifest = manifest.get_mut(&mut c);
     manifest.negotiate(&locale.requested);
     tracing::info!("app languages set to {:?} from requested {:?}", manifest.negotiated(), locale.requested);
+    c.react().broadcast(LanguagesNegotiated);
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Reactive event broadcasted when [`LocalizationManifest`] has been updated with languages loaded from file.
+pub struct LocalizationManifestUpdated;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Reactive event broadcasted when [`LocalizationManifest`] has negotiated a new languages list with [`Locale`].
+pub struct LanguagesNegotiated;
 
 //-------------------------------------------------------------------------------------------------------------------
 
