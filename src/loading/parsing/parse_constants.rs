@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use serde_json::{Map, Value};
 use smallvec::SmallVec;
@@ -12,8 +13,8 @@ fn get_constants_set<'a>(
     file: &LoadableFile,
     prefix: &'static str,
     value_str: &'a str,
-    constants: &'a HashMap<SmolStr, Map<String, Value>>,
-) -> Option<(&'a str, &'a Map<String, Value>)>
+    constants: &'a HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+) -> Option<(&'a str, &'a HashMap<SmolStr, Arc<Value>>)>
 {
     let Some(("", path_ref)) = value_str.split_once(prefix) else { return None };
 
@@ -42,7 +43,7 @@ fn try_replace_string_with_constant(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<SmolStr, Map<String, Value>>,
+    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     let Value::String(value_str) = &value else { return };
@@ -56,7 +57,7 @@ fn try_replace_string_with_constant(
         return;
     };
 
-    *value = constant_data.clone();
+    *value = (**constant_data).clone();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ fn try_replace_map_key_with_constant(
     prefix: &'static str,
     key: &str,
     map: &mut Map<String, Value>,
-    constants: &HashMap<SmolStr, Map<String, Value>>,
+    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     let Some(("", path_ref)) = key.split_once(prefix) else { return };
@@ -90,7 +91,11 @@ fn try_replace_map_key_with_constant(
                 return;
             };
 
-            let Some(Value::Object(constants_value)) = constants_set.get(real_terminator) else {
+            let Value::Object(constants_value) = constants_set
+                .get(real_terminator)
+                .map(|v| &**v)
+                .unwrap_or(&Value::Null)
+            else {
                 tracing::warn!("ignoring invalid paste-all constant reference {:?} in {:?}; \
                     the constant's value should be a map", key, file);
                 return;
@@ -137,7 +142,7 @@ fn try_replace_map_key_with_constant(
 
 pub(crate) fn path_to_constant_string<T: AsRef<str>>(path: &[T]) -> SmolStr
 {
-    // trim empties then a::b::c
+    // trim empties then concatenate a::b::c
     let mut count = 0;
     SmolStr::from_iter(
         path.iter()
@@ -159,7 +164,7 @@ pub(crate) fn search_and_replace_map_constants(
     file: &LoadableFile,
     prefix: &'static str,
     map: &mut Map<String, Value>,
-    constants: &HashMap<SmolStr, Map<String, Value>>,
+    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     for key in map
@@ -188,7 +193,7 @@ pub(crate) fn search_and_replace_constants(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<SmolStr, Map<String, Value>>,
+    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     match value {
@@ -214,7 +219,7 @@ fn constants_builder_recurse_into_value(
     key: &str,
     value: &mut Value,
     path: &mut SmallVec<[SmolStr; 10]>,
-    constants: &mut HashMap<SmolStr, Map<String, Value>>,
+    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     // Update the value if it references a constant.
@@ -271,8 +276,8 @@ fn constants_builder_recurse_into_value(
     }
 
     // If value was not a map of constant path segments, then the value is a *value* and can be saved.
-    let insert = |inner: &mut Map<String, Value>| {
-        let prev = inner.insert(key.into(), value.clone());
+    let insert = |inner: &mut HashMap<SmolStr, Arc<Value>>| {
+        let prev = inner.insert(SmolStr::from(key), Arc::new(value.clone()));
         if prev.is_some() {
             tracing::warn!("overwriting duplicate terminal path segment {} in constants map at {:?}", key, file);
         }
@@ -282,7 +287,7 @@ fn constants_builder_recurse_into_value(
     if let Some(inner) = constants.get_mut(&base_path) {
         insert(inner);
     } else {
-        let mut inner = Map::default();
+        let mut inner = HashMap::default();
         insert(&mut inner);
         constants.insert(base_path, inner);
     }
@@ -294,7 +299,7 @@ fn constants_builder_recurse_into_value(
 pub(crate) fn extract_constants_section(
     file: &LoadableFile,
     data: &mut Map<String, Value>,
-    constants: &mut HashMap<SmolStr, Map<String, Value>>,
+    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )
 {
     let Some(constants_section) = data.get_mut(CONSTANTS_KEYWORD) else {

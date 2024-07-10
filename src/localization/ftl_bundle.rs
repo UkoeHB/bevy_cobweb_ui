@@ -52,7 +52,7 @@ async fn load_ftl_bundle_contents(
         }
     }
 
-    //TODO: Bevy does not support directional isolates until v0.15 w/ cosmit-text integration
+    //TODO: Bevy does not support directional isolates until v0.15 w/ cosmic-text integration
     // - https://github.com/projectfluent/fluent-rs/issues/172
     // - https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating
     // - https://unicode.org/reports/tr9/#Explicit_Directional_Isolates

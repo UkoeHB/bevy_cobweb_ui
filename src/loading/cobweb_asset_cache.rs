@@ -156,7 +156,7 @@ struct ProcessedLoadableFile
     /// Using info cached for use by dependents.
     using: HashMap<&'static str, &'static str>,
     /// Constants info cached for use by dependents.
-    constants: HashMap<SmolStr, Map<String, Value>>,
+    constants: HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
     /// Specs that can be imported into other files.
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
@@ -445,7 +445,7 @@ impl CobwebAssetCache
         // [ shortname : longname ]
         let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
         // [ path : [ terminal identifier : constant value ] ]
-        let mut constants: HashMap<SmolStr, Map<String, Value>> = HashMap::default();
+        let mut constants: HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>> = HashMap::default();
         // specs collector
         let mut specs = SpecsMap::default();
 
@@ -457,7 +457,7 @@ impl CobwebAssetCache
             }
             for (k, v) in processed.constants.iter() {
                 // Prepend the import alias.
-                let path = path_to_constant_string(&[alias.as_str(), k.as_str()]);
+                let path = path_to_constant_string(&[alias.as_str(), &*k]);
                 constants.insert(path, v.clone());
             }
             specs.import_specs(dependency, &preprocessed.file, &processed.specs);

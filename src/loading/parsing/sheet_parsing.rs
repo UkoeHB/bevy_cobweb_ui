@@ -70,7 +70,7 @@ pub(crate) fn parse_caf_file(
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
     // [ path : [ terminal identifier : constant value ] ]
-    constants: &mut HashMap<SmolStr, Map<String, Value>>,
+    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
     // tracks specs
     specs: &mut SpecsMap,
 )
