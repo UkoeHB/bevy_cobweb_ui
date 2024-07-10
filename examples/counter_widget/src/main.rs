@@ -194,7 +194,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             .spec(file.e("counter_widget_responsive_text"))
             .pre_text("Text: ")
             .build(n)
-            .edit_child::<CounterWidget, CounterWidgetText>(|c, core, text| {
+            .edit_child::<CounterWidget>(CounterWidgetText::NAME, |c, core, text| {
                 c.ui_builder(core).on_pressed(move |mut e: TextEditor| {
                     e.write(text, |t| write!(t, "Pressed"));
                 });

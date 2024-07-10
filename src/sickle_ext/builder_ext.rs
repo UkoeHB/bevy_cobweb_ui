@@ -177,10 +177,11 @@ pub trait LoadableThemeBuilderExt
     ///
     /// The callback paramaters are: commands, core entity where `C` is found, child entity where `Ctx` is found.
     ///
-    /// Type `C` should be a themed component on the current entity. Type `Ctx` should be a subtheme accessible
-    /// via [`UiContext`] on `C`.
-    fn edit_child<C: Component + UiContext, Ctx: TypeName>(
+    /// Type `C` should be a themed component on the current entity. The `child` field should be a subtheme
+    /// accessible via [`UiContext`] on `C`.
+    fn edit_child<C: Component + UiContext>(
         &mut self,
+        child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
     ) -> &mut Self;
 }
@@ -218,8 +219,9 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
         self
     }
 
-    fn edit_child<C: Component + UiContext, Ctx: TypeName>(
+    fn edit_child<C: Component + UiContext>(
         &mut self,
+        child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
     ) -> &mut Self
     {
@@ -227,14 +229,14 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
         self.commands().add(move |world: &mut World| {
             let Some(themed_component) = world.get::<C>(entity) else {
                 tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
-                    entity is missing or does not have {}", type_name::<Ctx>(), type_name::<C>(), type_name::<C>());
+                    entity is missing or does not have {}", child, type_name::<C>(), type_name::<C>());
                 return;
             };
 
-            let Ok(child_entity) = themed_component.get(Ctx::NAME) else {
+            let Ok(child_entity) = themed_component.get(child) else {
                 tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
                     subtheme is not available in entity's UiContext",
-                    type_name::<Ctx>(), type_name::<C>());
+                    child, type_name::<C>());
                 return;
             };
 
