@@ -175,31 +175,30 @@ impl RadioButtonBuilder
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("examples.radio_buttons");
+    let scene = LoadableRef::new("examples.radio_buttons", "root");
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
-    c.ui_builder(UiRoot).load(file.e("root"), |root, path| {
+    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         // Prepare themes.
-        RadioButton::load_base_theme(root);
+        RadioButton::load_base_theme(l.deref_mut());
 
-        // Display the selected option.
+        // Get the display text's entity.
         let mut display_text = Entity::PLACEHOLDER;
-        root.load(path.e("display"), |display, path| {
-            display.load(path.e("text"), |text, _| {
-                display_text = text.id();
-            });
+        l.edit("display::text", |l| {
+            display_text = l.id();
         });
 
         // Insert radio buttons.
-        root.load(path.e("radio_frame"), |frame, _| {
-            let manager_entity = RadioButtonManager::new().insert(frame);
+        l.edit("radio_frame", |l| {
+            let n = l.deref_mut();
+            let manager_entity = RadioButtonManager::new().insert(n);
 
             for (i, option) in OPTIONS.iter().enumerate() {
                 // Add radio button.
                 let button_entity = RadioButtonBuilder::new(*option)
-                    .build(manager_entity, frame)
+                    .build(manager_entity, n)
                     .on_select(move |mut e: TextEditor| {
                         e.write(display_text, |t| write!(t, "Selected: {}", option));
                     })
@@ -207,7 +206,7 @@ fn build_ui(mut c: Commands)
 
                 // Select the first option.
                 if i == 0 {
-                    frame.react().entity_event(button_entity, Select);
+                    n.react().entity_event(button_entity, Select);
                 }
             }
         });

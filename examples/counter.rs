@@ -30,9 +30,11 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("button", |l| {
             let button_id = l.id();
-            l.on_pressed(move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-                counters.get_mut(&mut c, button_id).map(Counter::increment);
-            });
+            l.insert_reactive(Counter(0)).on_pressed(
+                move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
+                    counters.get_mut(&mut c, button_id).map(Counter::increment);
+                },
+            );
 
             l.edit("text", |l| {
                 l.update_on(entity_mutation::<Counter>(button_id), |text_id| {
@@ -69,8 +71,6 @@ fn main()
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .load("examples/counter/main.load.json")
-        .register_type::<Counter>()
-        .register_reactive_loadable::<Counter>()
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

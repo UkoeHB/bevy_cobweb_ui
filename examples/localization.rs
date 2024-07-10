@@ -183,7 +183,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         // Prep the radio button theme.
-        RadioButton::load_base_theme(&mut *l);
+        RadioButton::load_base_theme(l.deref_mut());
 
         // Dropdown for selecting a language.
         l.edit("selection_section::selection_box", |l| {
@@ -197,8 +197,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     }
 
                     // Spawn new buttons for everything in the manifest.
-                    let mut node = c.ui_builder(id);
-                    let manager_entity = RadioButtonManager::new().insert(&mut node);
+                    let mut n = c.ui_builder(id);
+                    let manager_entity = RadioButtonManager::new().insert(&mut n);
                     let current_lang = &manifest.negotiated()[0];
 
                     for language in manifest.languages() {
@@ -206,7 +206,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         let lang = language.id.clone();
 
                         let button_id = RadioButtonBuilder::new(name)
-                            .build(manager_entity, &mut node)
+                            .build(manager_entity, &mut n)
                             .on_select(move |mut locale: ResMut<Locale>| {
                                 *locale = Locale::new_from_id(lang.clone());
                             })
@@ -214,7 +214,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
                         // Select the current locale.
                         if &language.id == current_lang {
-                            node.react().entity_event(button_id, Select);
+                            n.react().entity_event(button_id, Select);
                         }
                     }
                 }

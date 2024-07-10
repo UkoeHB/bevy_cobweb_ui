@@ -18,7 +18,8 @@
 "structure": {
     "core": {
         "FlexStyle": {
-            "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"},
+            "dims": {"min_width": {"Percent": 100.0}},
+            "content": {"justify_main": "FlexStart", "justify_cross": "Center"},
             "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
         },
         "Interactive": [],
@@ -43,7 +44,7 @@
 
         "text": {
             "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}}
+                "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 5.0}}}
             },
             "TextLine": {"size": 35.0}
         }

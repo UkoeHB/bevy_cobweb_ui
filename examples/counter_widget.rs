@@ -172,25 +172,28 @@ impl CounterWidgetBuilder
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let example = LoadableRef::from_file("examples.counter_widget");
+    let file = LoadableRef::from_file("examples.counter_widget");
+    let scene = file.e("root");
 
-    c.ui_builder(UiRoot).load(example.e("root"), |root, _path| {
+    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
+        let n = l.deref_mut();
+
         // Default widget
-        CounterWidgetBuilder::new().build(root);
+        CounterWidgetBuilder::new().build(n);
 
         // Widget with custom text structure.
         CounterWidgetBuilder::new()
-            .spec(example.e("counter_widget_small_text"))
+            .spec(file.e("counter_widget_small_text"))
             .pre_text("Small: ")
-            .build(root);
+            .build(n);
 
         // Widget with animated text structure.
         CounterWidgetBuilder::new()
-            .spec(example.e("counter_widget_responsive_text"))
+            .spec(file.e("counter_widget_responsive_text"))
             .pre_text("Text: ")
-            .build(root)
+            .build(n)
             .edit_child::<CounterWidget, CounterWidgetText>(|c, core, text| {
                 c.ui_builder(core).on_pressed(move |mut e: TextEditor| {
                     e.write(text, |t| write!(t, "Pressed"));
@@ -199,9 +202,9 @@ fn build_ui(mut c: Commands)
 
         // Widget with theme adjustments
         CounterWidgetBuilder::new()
-            .spec(example.e("counter_widget_flexible_button"))
+            .spec(file.e("counter_widget_flexible_button"))
             .pre_text("Themed: ")
-            .build(root);
+            .build(n);
     });
 }
 

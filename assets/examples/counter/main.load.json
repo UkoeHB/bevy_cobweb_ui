@@ -24,7 +24,6 @@
                 "press": {"duration": 0.2, "easing": "OutExpo"}
             }
         },
-        "Counter": [0],
         "Interactive": [],
         "PropagateControl": [],
 
@@ -36,9 +35,9 @@
             "TextLine": {"size": 50.0},
             "Animated<TextLineColor>": {
                 "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.52, "lightness": 0.9, "alpha": 0.8}},
-                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.6, "lightness": 0.8, "alpha": 0.8}},
-                    "press": {"Hsla": {"hue": 0.0, "saturation": 0.68, "lightness": 0.7, "alpha": 0.8}}
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.15, "lightness": 1.0, "alpha": 1.0}},
+                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.23, "lightness": 0.9, "alpha": 1.0}},
+                    "press": {"Hsla": {"hue": 0.0, "saturation": 0.31, "lightness": 0.8, "alpha": 1.0}}
                 },
                 "settings": {
                     "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
