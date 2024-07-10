@@ -1,7 +1,7 @@
 {
 "#manifest": {
     "": "localization",
-    "examples/localization/widgets/radio_button.load.json": "widgets.radio_button"
+    "widgets/radio_button.load.json": "widgets.radio_button"
 },
 
 "#commands": {
@@ -9,18 +9,18 @@
         "default": {
             "id": "en-US",
             "name": "English",
-            "manifest": "examples/localization/locales/en-US/main.ftl.ron"
+            "manifest": "locales/en-US/main.ftl.ron"
         },
         "alts": [
             {
                 "id": "de-DE",
                 "name": "German",
-                "manifest": "examples/localization/locales/de-DE/main.ftl.ron"
+                "manifest": "locales/de-DE/main.ftl.ron"
             },
             {
                 "id": "fr-FR",
                 "name": "French",
-                "manifest": "examples/localization/locales/fr-FR/main.ftl.ron"
+                "manifest": "locales/fr-FR/main.ftl.ron"
             }
         ]
     }

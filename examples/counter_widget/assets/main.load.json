@@ -2,11 +2,11 @@
 
 "#manifest": {
     "": "examples.counter_widget",
-    "examples/counter_widget/widgets/counter.load.json": "widgets.counter"
+    "widgets/counter.load.json": "widgets.counter"
 },
 
 "#import": {
-    "examples/counter_widget/widgets/counter.load.json": "base"
+    "widgets/counter.load.json": "base"
 },
 
 

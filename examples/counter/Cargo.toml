@@ -1,0 +1,9 @@
+[package]
+name = "counter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.14", default-features = true, features = ["serialize"] }
+bevy_cobweb = { version = "0.9" }
+bevy_cobweb_ui = { path = "../../", features = ["dev"] }

@@ -2,7 +2,7 @@
 
 "#manifest": {
     "": "examples.radio_buttons",
-    "examples/radio_buttons/widgets/radio_button.load.json": "widgets.radio_button"
+    "widgets/radio_button.load.json": "widgets.radio_button"
 },
 
 "root": {

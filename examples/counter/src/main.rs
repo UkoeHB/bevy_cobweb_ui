@@ -6,11 +6,10 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
-use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(ReactComponent, Deref, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Deref, Default, Debug, Clone)]
 struct Counter(usize);
 
 impl Counter
@@ -25,7 +24,7 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("examples/counter/main.load.json", "root");
+    let scene = LoadableRef::new("main.load.json", "root");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("button", |l| {
@@ -70,7 +69,7 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
-        .load("examples/counter/main.load.json")
+        .load("main.load.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

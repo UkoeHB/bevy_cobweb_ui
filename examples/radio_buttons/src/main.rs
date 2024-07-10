@@ -1,6 +1,4 @@
-//! Demonstrates localization of text (TODO: and fonts, images).
-
-// TODO: The radio button widget is duplicated from the radio_buttons example, but it should be reusable.
+//! A simple radio button widget.
 
 use std::any::type_name;
 
@@ -8,11 +6,11 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::ui_builder::*;
-use bevy_cobweb_ui::sickle::SickleUiPlugin;
 use sickle::theme::pseudo_state::{PseudoState, PseudoStates};
 use sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
-use sickle::DefaultTheme;
+use sickle::ui_builder::*;
+use sickle::widgets::prelude::UiContainerExt;
+use sickle::{DefaultTheme, SickleUiPlugin};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -179,85 +177,62 @@ impl RadioButtonBuilder
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("localization", "root");
+    let scene = LoadableRef::new("examples.radio_buttons", "root");
+    static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
-        // Prep the radio button theme.
+        // Prepare themes.
         RadioButton::load_base_theme(l.deref_mut());
 
-        // Dropdown for selecting a language.
-        l.edit("selection_section::selection_box", |l| {
-            // Update the selection whenever the manifest changes.
-            l.update_on(resource_mutation::<LocalizationManifest>(), |id| {
-                move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
-                    // Despawn existing buttons.
-                    #[cfg(feature = "hot_reload")]
-                    {
-                        c.entity(id).despawn_descendants();
-                    }
-
-                    // Spawn new buttons for everything in the manifest.
-                    let mut n = c.ui_builder(id);
-                    let manager_entity = RadioButtonManager::new().insert(&mut n);
-                    let current_lang = &manifest.negotiated()[0];
-
-                    for language in manifest.languages() {
-                        let name = language.display_name();
-                        let lang = language.id.clone();
-
-                        let button_id = RadioButtonBuilder::new(name)
-                            .build(manager_entity, &mut n)
-                            .on_select(move |mut locale: ResMut<Locale>| {
-                                *locale = Locale::new_from_id(lang.clone());
-                            })
-                            .id();
-
-                        // Select the current locale.
-                        if &language.id == current_lang {
-                            n.react().entity_event(button_id, Select);
-                        }
-                    }
-                }
-            });
+        // Get the display text's entity.
+        let mut display_text = Entity::PLACEHOLDER;
+        l.edit("display::text", |l| {
+            display_text = l.id();
         });
 
-        l.edit("text_section", |l| {
-            // Unlocalized text.
-            l.edit("unlocalized", |l| {
-                l.insert_derived(TextLine::from_text("This text is not localized."));
-            });
+        // Insert radio buttons.
+        l.edit("radio_frame", |l| {
+            let n = l.deref_mut();
+            let manager_entity = RadioButtonManager::new().insert(n);
 
-            // Untranslated text (only localized in the default language).
-            l.edit("untranslated", |l| {
-                l.insert(LocalizedText::default());
-                l.insert_derived(TextLine::from_text("untranslated"));
-            });
+            for (i, option) in OPTIONS.iter().enumerate() {
+                // Add radio button.
+                let button_entity = RadioButtonBuilder::new(*option)
+                    .build(manager_entity, n)
+                    .on_select(move |mut e: TextEditor| {
+                        e.write(display_text, |t| write!(t, "Selected: {}", option));
+                    })
+                    .id();
 
-            // Localized and partly translated text (localized in only some, but not all, alternate languages).
-            l.edit("partially_translated", |l| {
-                l.insert(LocalizedText::default());
-                l.insert_derived(TextLine::from_text("partly-translated"));
-            });
-
-            // Localized and fully translated text.
-            l.edit("fully_translated", |l| {
-                l.insert(LocalizedText::default());
-                l.insert_derived(TextLine::from_text("fully-translated"));
-            });
-
-            // Localized dynamic text.
-            l.edit("dynamic", |l| {
-                l.insert(LocalizedText::default());
-                l.insert_derived(TextLine::default());
-                l.update_on(broadcast::<TextLocalizerUpdated>(), |id| {
-                    move |mut count: Local<usize>, mut t: TextEditor| {
-                        t.write(id, |t| write!(t, "locale-counter?count={:?}", *count));
-                        *count += 1;
-                    }
-                });
-            });
+                // Select the first option.
+                if i == 0 {
+                    n.react().entity_event(button_entity, Select);
+                }
+            }
         });
     });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+// This code just demonstrates what can be done while loading.
+// The loading message will only display for a very short time.
+fn init_loading_display(mut c: Commands)
+{
+    c.ui_builder(UiRoot)
+        .container(NodeBundle::default(), |node| {
+            node.insert_reactive(FlexStyle::default())
+                .insert_derived(Width(Val::Vw(100.)))
+                .insert_derived(Height(Val::Vh(100.)))
+                .insert_derived(SetFlexDirection(FlexDirection::Column))
+                .insert_derived(SetJustifyMain(JustifyMain::Center))
+                .insert_derived(SetJustifyCross(JustifyCross::Center))
+                .despawn_on_broadcast::<StartupLoadingDone>();
+
+            node.container(NodeBundle::default(), |node| {
+                node.insert_derived(TextLine { text: "Loading...".into(), font: None, size: 75.0 });
+            });
+        });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -268,8 +243,6 @@ fn setup(mut c: Commands)
         transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
         ..default()
     });
-
-    //c.insert_resource(Locale::new("de-DE").unwrap());
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -281,12 +254,13 @@ fn main()
             primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
             ..default()
         }))
-        .add_plugins(ReactPlugin)
         .add_plugins(SickleUiPlugin)
+        .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<RadioButton>::new())
-        .load("examples/localization/main.load.json")
+        .load("main.load.json")
         .add_systems(PreStartup, setup)
+        .add_systems(OnEnter(LoadState::Loading), init_loading_display)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }

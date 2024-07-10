@@ -9,13 +9,6 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/UkoeHB/bevy_cobweb_ui"
 
-[workspace]
-resolver = "2"
-exclude = [
-    "examples",
-    "assets"
-]
-
 [lib]
 path = "src/lib.rs"
 doctest = false
@@ -72,3 +65,12 @@ tracing-subscriber = { version = "0.3" }
 
 [profile.dev.package."*"]
 opt-level = 2
+
+[workspace]
+resolver = "2"
+members = [
+    "examples/counter",
+    "examples/counter_widget",
+    "examples/localization",
+    "examples/radio_buttons",
+]
