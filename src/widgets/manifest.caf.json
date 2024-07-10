@@ -1,0 +1,5 @@
+{
+"#manifest": {
+    "embedded://bevy_cobweb_ui/radio_buttons.caf.json": "widgets.radio_buttons"
+}
+}

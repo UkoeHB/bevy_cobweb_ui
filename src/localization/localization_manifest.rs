@@ -7,7 +7,7 @@ use bevy_cobweb::prelude::*;
 use fluent_langneg::{negotiate_languages, LanguageIdentifier, LangugeIdentifierParserError, NegotiationStrategy};
 use serde::{Deserialize, Serialize};
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

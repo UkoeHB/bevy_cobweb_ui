@@ -7,7 +7,7 @@ use bevy_cobweb::prelude::*;
 use serde_json::from_slice;
 use thiserror::Error;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

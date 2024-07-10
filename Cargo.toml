@@ -21,11 +21,14 @@ doctest = false
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 
 [features]
 # Default features.
-default = []
+default = ["widgets"]
+
+# Enables built-in widgets.
+widgets = []
 
 # Enables hot-reloading.
 hot_reload = ["bevy/file_watcher"]
@@ -55,7 +58,7 @@ fluent_content = { version = "0.0.5" }
 intl-memoizer = { version = "0.5" }
 ron = { version = "0.8" }
 serde_yaml = { version = "0.9" }
-unic-langid = { version = "0.9", features = ["serde", "unic-langid-macros"] }
+unic-langid = { version = "0.9" }
 
 # Local sub-crates
 bevy_cobweb_ui_derive = { path = "bevy_cobweb_ui_derive", version = "0.1.0" }

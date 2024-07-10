@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #[allow(unused_imports)]
 use crate as bevy_cobweb_ui;
@@ -11,23 +12,29 @@ mod plugin;
 mod react_ext;
 mod sickle_ext;
 mod tools;
-//mod ui_2d;
 mod ui_bevy;
 
-pub(crate) use assets::*;
-pub use assets_ext::*;
-pub use bevy_cobweb_ui_derive::*;
-pub use bevy_ext::*;
-pub use loading::*;
-pub use localization::*;
-pub use plugin::*;
-pub use react_ext::*;
-pub use sickle_ext::*;
-pub use tools::*;
-//pub use ui_2d::*;
-pub use ui_bevy::*;
+#[cfg(feature = "widgets")]
+pub mod widgets;
+
+pub mod sickle
+{
+    // Re-export sickle_ui so the dependency doesn't need to be tracked by users of this crate.
+    pub use sickle_ui::*;
+}
 
 pub mod prelude
 {
-    pub use crate::*;
+    pub(crate) use crate::assets::*;
+    pub use crate::assets_ext::*;
+    pub use crate::bevy_ext::*;
+    pub use crate::loading::*;
+    pub use crate::localization::*;
+    pub use crate::plugin::*;
+    pub use crate::react_ext::*;
+    pub use crate::sickle_ext::*;
+    pub use crate::tools::*;
+    pub use crate::ui_bevy::*;
+
+    pub use bevy_cobweb_ui_derive::*;
 }

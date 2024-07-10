@@ -5,7 +5,7 @@ use fluent_langneg::LanguageIdentifier;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde_json::{Map, Value};
 use smol_str::SmolStr;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

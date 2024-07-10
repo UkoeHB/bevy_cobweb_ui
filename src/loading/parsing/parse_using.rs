@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::reflect::TypeRegistry;
 use serde_json::{Map, Value};
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

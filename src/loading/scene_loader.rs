@@ -6,7 +6,7 @@ use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use smallvec::SmallVec;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

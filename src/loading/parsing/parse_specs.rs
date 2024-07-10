@@ -5,7 +5,7 @@ use serde_json::{Map, Value};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

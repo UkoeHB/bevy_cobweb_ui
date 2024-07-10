@@ -5,7 +5,7 @@ pub use std::fmt::Write;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
-use crate::{LocalizedText, TextLocalizer};
+use crate::prelude::{LocalizedText, TextLocalizer};
 
 //-------------------------------------------------------------------------------------------------------------------
 

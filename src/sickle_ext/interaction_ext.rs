@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use sickle_ui::prelude::*;
 use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

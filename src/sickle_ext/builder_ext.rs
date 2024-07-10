@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use sickle_ui::theme::{DefaultTheme, UiContext};
 use sickle_ui::ui_builder::*;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

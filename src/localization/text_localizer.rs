@@ -9,7 +9,7 @@ use fluent::{FluentArgs, FluentResource};
 use fluent_content::Request;
 use fluent_langneg::LanguageIdentifier;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

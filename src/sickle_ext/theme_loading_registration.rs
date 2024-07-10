@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use sickle_ui::lerp::Lerp;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

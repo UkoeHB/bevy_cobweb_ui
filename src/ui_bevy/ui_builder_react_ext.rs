@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::ui_builder::*;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

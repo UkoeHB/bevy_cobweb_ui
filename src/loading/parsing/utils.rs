@@ -7,7 +7,7 @@ use bevy::reflect::TypeRegistry;
 use serde::de::DeserializeSeed;
 use serde_json::Value;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

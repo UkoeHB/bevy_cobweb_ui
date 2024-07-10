@@ -4,7 +4,7 @@ use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::ui_builder::UiBuilder;
 use sickle_ui::ui_commands::ManagePseudoStateExt;
 
-use crate::UiBuilderReactExt;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

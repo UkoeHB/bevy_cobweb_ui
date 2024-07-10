@@ -1,16 +1,27 @@
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
+use sickle_ui::SickleUiPlugin;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Depends on [`bevy_cobweb::prelude::ReactPlugin`] and [`sickle_ui::prelude::SickleUiPlugin`].
+/// Plugin that sets up `bevy_cobweb_ui` in an app.
+///
+/// Panics if [`bevy_cobweb::prelude::ReactPlugin`] or [`sickle_ui::prelude::SickleUiPlugin`] are missing.
 pub struct CobwebUiPlugin;
 
 impl Plugin for CobwebUiPlugin
 {
     fn build(&self, app: &mut App)
     {
+        if !app.is_plugin_added::<ReactPlugin>() {
+            panic!("failed building CobwebUiPlugin, bevy_cobweb::prelude::ReactPlugin is missing");
+        }
+        if !app.is_plugin_added::<SickleUiPlugin>() {
+            panic!("failed building CobwebUiPlugin, sickle_ui::prelude::SickleUiPlugin is missing");
+        }
+
         app.add_plugins(BuiltinAssetsPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)
@@ -19,8 +30,13 @@ impl Plugin for CobwebUiPlugin
             .add_plugins(SickleExtPlugin)
             .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin)
-            //.add_plugins(Cobweb2DUiPlugin)
             ;
+
+        #[cfg(feature = "widgets")]
+        {
+            app.add_plugins(crate::widgets::CobwebWidgetsPlugin)
+            ;
+        }
     }
 }
 

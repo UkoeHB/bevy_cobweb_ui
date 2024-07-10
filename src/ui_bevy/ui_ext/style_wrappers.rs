@@ -3,7 +3,7 @@ use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::lerp::Lerp;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

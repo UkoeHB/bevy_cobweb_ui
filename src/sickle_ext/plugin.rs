@@ -3,7 +3,7 @@ use sickle_ui::ease::Ease;
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

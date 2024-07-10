@@ -1,7 +1,7 @@
 //use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 
-use crate::FontMap;
+use crate::prelude::FontMap;
 
 //-------------------------------------------------------------------------------------------------------------------
 

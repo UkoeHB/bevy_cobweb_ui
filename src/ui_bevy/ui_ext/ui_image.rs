@@ -5,7 +5,7 @@ use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

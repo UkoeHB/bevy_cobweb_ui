@@ -4,7 +4,7 @@ pub use std::ops::{Deref, DerefMut}; // Re-export for ease of use.
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 
-use crate::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
