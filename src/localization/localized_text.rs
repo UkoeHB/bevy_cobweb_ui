@@ -109,11 +109,11 @@ impl LocalizedTextSection
 /// Then to update localization templates on entities you must use the [`TextEditor`] helper, which uses this
 /// component to auto-localize text.
 ///
-/// **NOTE**: If a localization template includes a parameter, then `fluent` will [insert][fluent-isolation]
-/// Unicode Directionality Isolation Marks. These marks are not handled properly by all fonts (e.g. Bevy's
-/// default font just displays little rectangles).
+/// **NOTE**: Automatic directional isolation of parameters is not supported until `bevy` v0.15. See
+/// [here][fluent-isolation] and [here][directional-isolates].
 ///
 /// [fluent-isolation](https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating)
+/// [directional-isolates](https://unicode.org/reports/tr9/#Explicit_Directional_Isolates)
 #[derive(Component, Debug)]
 pub struct LocalizedText
 {
