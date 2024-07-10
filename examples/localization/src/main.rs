@@ -282,7 +282,7 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<RadioButton>::new())
-        .load("main.load.json")
+        .load("main.caf.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

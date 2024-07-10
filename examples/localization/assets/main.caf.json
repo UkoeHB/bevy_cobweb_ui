@@ -1,7 +1,7 @@
 {
 "#manifest": {
     "": "localization",
-    "widgets/radio_button.load.json": "widgets.radio_button"
+    "widgets/radio_button.caf.json": "widgets.radio_button"
 },
 
 "#commands": {

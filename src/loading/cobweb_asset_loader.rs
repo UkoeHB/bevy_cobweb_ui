@@ -37,7 +37,7 @@ impl AssetLoader for CobwebAssetLoader
 
     fn extensions(&self) -> &[&str]
     {
-        &[".load.json"] //todo: `.caf.json`
+        &[".caf.json"]
     }
 }
 

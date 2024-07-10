@@ -14,9 +14,9 @@ pub const LOADABLE_PATH_SEPARATOR: &str = "::";
 
 /// Represents the path to a cobweb asset file in the `asset` directory, or a manifest key for that file.
 ///
-/// Cobweb asset files use the `.load.json` extension.
+/// Cobweb asset files use the `.caf.json` extension.
 ///
-/// Example: `ui/home.load.json` for a `home` cobweb asset in `assets/ui`.
+/// Example: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum LoadableFile
 {
@@ -28,12 +28,12 @@ impl LoadableFile
 {
     /// Creates a new loadable file reference from a file name.
     ///
-    /// If the file name does not include a file extension (i.e. `.load.json`), then it will be treated as a
+    /// If the file name does not include the `.caf.json` file extension, then it will be treated as a
     /// manifest key.
     pub fn new(file: impl AsRef<str>) -> Self
     {
         let file = file.as_ref();
-        match file.ends_with(".load.json") {
+        match file.ends_with(".caf.json") {
             true => Self::File(Arc::from(file)),
             false => Self::ManifestKey(Arc::from(file)),
         }
@@ -181,7 +181,7 @@ impl Default for LoadablePath
 /// Represents a complete reference to a scene node in a cobweb asset asset.
 ///
 /// Example:
-/// - **File**: `ui/home.load.json` for a `home` cobweb asset in `assets/ui`.
+/// - **File**: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
 /// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
 /// asset.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]

@@ -231,7 +231,7 @@ fn main()
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_plugins(ComponentThemePlugin::<CounterWidget>::new())
-        .load("main.load.json")
+        .load("main.caf.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

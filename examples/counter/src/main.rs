@@ -24,7 +24,7 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("main.load.json", "root");
+    let scene = LoadableRef::new("main.caf.json", "root");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("button", |l| {
@@ -69,7 +69,7 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
-        .load("main.load.json")
+        .load("main.caf.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
