@@ -1,4 +1,5 @@
 use bevy::ecs::system::EntityCommands;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use serde::{Deserialize, Serialize};
@@ -45,33 +46,6 @@ impl ApplyLoadableExt for EntityCommands<'_>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait for applying [`Self`] to a Bevy world.
-///
-/// Used by [`register_command_loadable`].
-pub trait ApplyCommand: Loadable
-{
-    fn apply(self, c: &mut Commands);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-pub trait ApplyCommandExt
-{
-    /// Calls [`ApplyCommand::apply`].
-    fn apply_command(&mut self, loadable: impl ApplyCommand) -> &mut Self;
-}
-
-impl ApplyCommandExt for Commands<'_, '_>
-{
-    fn apply_command(&mut self, loadable: impl ApplyCommand) -> &mut Self
-    {
-        loadable.apply(self);
-        self
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Helper loadable for cases where multiple values of the same type can be loaded.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Multi<T>(Vec<T>);
@@ -86,12 +60,12 @@ impl<T: ApplyLoadable + TypePath + FromReflect + GetTypeRegistration> ApplyLoada
     }
 }
 
-impl<T: ApplyCommand + TypePath + FromReflect + GetTypeRegistration> ApplyCommand for Multi<T>
+impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Multi<T>
 {
-    fn apply(mut self, c: &mut Commands)
+    fn apply(mut self, world: &mut World)
     {
         for item in self.0.drain(..) {
-            item.apply(c);
+            item.apply(world);
         }
     }
 }

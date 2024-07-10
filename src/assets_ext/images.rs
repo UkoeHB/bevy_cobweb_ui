@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy::asset::AssetLoadFailedEvent;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -103,11 +104,11 @@ impl AssetLoadProgress for ImageMap
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadImages(pub Vec<String>);
 
-impl ApplyCommand for LoadImages
+impl Command for LoadImages
 {
-    fn apply(self, c: &mut Commands)
+    fn apply(self, world: &mut World)
     {
-        c.syscall(self.0, load_images);
+        world.syscall(self.0, load_images);
     }
 }
 

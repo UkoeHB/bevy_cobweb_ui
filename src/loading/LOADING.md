@@ -174,17 +174,19 @@ We need to add `:1` here because the comment is a map entry, which means it need
 
 #### Commands: `#commands`
 
-Scene nodes must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can add a `#commands` section with types that implement [`ApplyCommand`](bevy_cobweb_ui::prelude::ApplyCommand).
+Scene nodes must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can add a `#commands` section with types that implement [`Command`](bevy::ecs::world::Command).
 
 We do not guarantee anything about the order that commands will be applied, even for commands from the same file.
 
 ```rust
+use bevy::ecs::world::Command;
+
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct MyCommand(usize);
 
-impl ApplyCommand for MyCommand
+impl Command for MyCommand
 {
-    fn apply(self, _c: &mut Commands)
+    fn apply(self, _w: &mut World)
     {
         println!("MyCommand applied: {}", self.0);
     }

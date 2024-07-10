@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy::asset::AssetLoadFailedEvent;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -111,11 +112,11 @@ impl AssetLoadProgress for FontMap
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadFonts(pub Vec<String>);
 
-impl ApplyCommand for LoadFonts
+impl Command for LoadFonts
 {
-    fn apply(self, c: &mut Commands)
+    fn apply(self, world: &mut World)
     {
-        c.syscall(self.0, load_fonts);
+        world.syscall(self.0, load_fonts);
     }
 }
 

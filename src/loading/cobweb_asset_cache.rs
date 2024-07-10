@@ -743,19 +743,12 @@ impl CobwebAssetCache
         self.needs_updates.clear();
     }
 
-    /// Applies loadables extracted from `#commands` sections.
-    pub(crate) fn apply_commands<T: Loadable>(
-        &mut self,
-        mut callback: impl FnMut(&LoadableRef, &ReflectedLoadable),
-    )
+    /// Takes command loadables of type `T` extracted from `#commands` sections.
+    pub(crate) fn take_commands<T: Loadable>(&mut self) -> SmallVec<[(ReflectedLoadable, LoadableRef); 1]>
     {
-        let Some(mut commands_need_updates) = self.commands_need_updates.remove(&TypeId::of::<T>()) else {
-            return;
-        };
-
-        for (loadable, loadable_ref) in commands_need_updates.drain(..) {
-            (callback)(&loadable_ref, &loadable);
-        }
+        self.commands_need_updates
+            .remove(&TypeId::of::<T>())
+            .unwrap_or_default()
     }
 
     /// Updates entities that subscribed to `T` found at recently-updated loadable paths.

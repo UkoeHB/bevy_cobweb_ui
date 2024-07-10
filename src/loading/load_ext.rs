@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use bevy::ecs::system::EntityCommands;
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
@@ -62,14 +63,16 @@ fn register_loadable_impl<M, T: 'static>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Applies loadable commands of type `T`.
-fn command_loader<T: ApplyCommand + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
+fn command_loader<T: Command + Loadable>(world: &mut World)
 {
-    caf_cache
-        .get_noreact()
-        .apply_commands::<T>(|loadable_ref, loadable| {
-            let Some(command) = loadable.get_value::<T>(loadable_ref) else { return };
-            command.apply(&mut c);
-        });
+    let mut commands = world
+        .react_resource_mut_noreact::<CobwebAssetCache>()
+        .take_commands::<T>();
+
+    for (loadable, loadable_ref) in commands.drain(..) {
+        let Some(command) = loadable.get_value::<T>(&loadable_ref) else { continue };
+        command.apply(world);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -192,10 +195,10 @@ pub(crate) struct ContextSetter
 pub trait CobwebAssetRegistrationAppExt
 {
     /// Registers a loadable type that will be applied to the Bevy world when it is loaded.
-    fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self;
+    fn register_command_loadable<T: Command + Loadable>(&mut self) -> &mut Self;
 
     /// Combines [`App::register_type`] with [`Self::register_command_loadable`].
-    fn register_command<T: TypePath + GetTypeRegistration + ApplyCommand + Loadable>(&mut self) -> &mut Self;
+    fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
     /// cobweb asset file paths containing the type.
@@ -215,13 +218,13 @@ pub trait CobwebAssetRegistrationAppExt
 
 impl CobwebAssetRegistrationAppExt for App
 {
-    fn register_command_loadable<T: ApplyCommand + Loadable>(&mut self) -> &mut Self
+    fn register_command_loadable<T: Command + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, command_loader::<T>, PhantomData::<T>, "command");
         self
     }
 
-    fn register_command<T: TypePath + GetTypeRegistration + ApplyCommand + Loadable>(&mut self) -> &mut Self
+    fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self
     {
         self.register_type::<T>()
             .register_type::<Vec<T>>()

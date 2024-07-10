@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::{negotiate_languages, LanguageIdentifier, LangugeIdentifierParserError, NegotiationStrategy};
@@ -306,9 +307,9 @@ pub struct LoadLocalizationManifest
     pub alts: Vec<LocalizationMetaReflected>,
 }
 
-impl ApplyCommand for LoadLocalizationManifest
+impl Command for LoadLocalizationManifest
 {
-    fn apply(mut self, c: &mut Commands)
+    fn apply(mut self, world: &mut World)
     {
         let default_meta = match LocalizationMeta::try_from(self.default) {
             Ok(default_meta) => default_meta,
@@ -333,7 +334,7 @@ impl ApplyCommand for LoadLocalizationManifest
             })
             .collect();
 
-        c.syscall((default_meta, alt_metas), load_manifest);
+        world.syscall((default_meta, alt_metas), load_manifest);
     }
 }
 
