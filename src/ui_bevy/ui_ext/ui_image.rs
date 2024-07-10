@@ -150,8 +150,7 @@ impl Plugin for UiImageExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<Option<ImageScaleMode>>()
-            .register_themed::<LoadedUiImage>()
+        app.register_themed::<LoadedUiImage>()
             .register_animatable::<UiImageColor>();
     }
 }

@@ -812,7 +812,6 @@ impl Plugin for StyleWrappersPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<StyleRect>()
-            .register_type::<Option<StyleRect>>()
             .register_type::<Clipping>()
             .register_type::<JustifyLines>()
             .register_type::<JustifyMain>()
