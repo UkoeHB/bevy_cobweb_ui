@@ -14,6 +14,8 @@ use crate::prelude::*;
 ///
 /// Only the manifest and imports sections of the file are parsed here.
 pub(crate) fn preprocess_caf_file(
+    manifest: &mut HashMap<String, Arc<str>>,
+    imports: &mut Vec<(String, SmolStr)>,
     asset_server: &AssetServer,
     caf_files: &mut LoadedCobwebAssetFiles,
     caf_cache: &mut CobwebAssetCache,
@@ -21,6 +23,7 @@ pub(crate) fn preprocess_caf_file(
     data: Value,
 )
 {
+    tracing::info!("preprocessing {file:?}");
     caf_cache.initialize_file(&file);
 
     let Value::Object(data) = data else {
@@ -29,23 +32,32 @@ pub(crate) fn preprocess_caf_file(
     };
 
     // Extract manifest.
-    let mut manifest: HashMap<LoadableFile, Arc<str>> = HashMap::default();
-    extract_manifest_section(&file, &data, &mut manifest);
+    manifest.clear();
+    extract_manifest_section(&file, &data, manifest);
 
     // Extract imports.
-    let mut imports: HashMap<LoadableFile, SmolStr> = HashMap::default();
-    extract_import_section(&file, &data, &mut imports);
+    imports.clear();
+    extract_import_section(&file, &data, imports);
+
+    // Convert import file references.
+    let mut imports_to_save: HashMap<LoadableFile, SmolStr> = HashMap::default();
+    for (file, alias) in imports.iter() {
+        imports_to_save.insert(LoadableFile::new(file.as_str()), alias.clone());
+    }
 
     // Register manifest keys.
     // - We also register imported files for loading to ensure they are tracked properly and to reduce
     //   duplication/race conditions/complexity between manifest loading and imports.
+    // - NOTE: We start with String keys and then convert to LoadableFiles because files may target a specific
+    //   asset loader (e.g. `embedded://my_file.caf.json`), but we strip that information when converting to a
+    //   LoadableFile.
     for (file, manifest_key) in manifest
         .drain()
         .map(|(f, m)| (f, Some(m)))
-        .chain(imports.keys().map(|k| (k.clone(), None)))
+        .chain(imports.drain(..).map(|(k, _)| (k, None)))
     {
         // Continue if this file has been registered before.
-        if !caf_cache.register_manifest_key(file.clone(), manifest_key) {
+        if !caf_cache.register_manifest_key(LoadableFile::new(file.as_str()), manifest_key) {
             continue;
         }
 
@@ -54,7 +66,7 @@ pub(crate) fn preprocess_caf_file(
     }
 
     // Save this file for processing once its import dependencies are ready.
-    caf_cache.add_preprocessed_file(file, imports, data);
+    caf_cache.add_preprocessed_file(file, imports_to_save, data);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

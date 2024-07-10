@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde_json::{Map, Value};
 use smol_str::SmolStr;
 
@@ -10,7 +8,7 @@ use crate::prelude::*;
 pub(crate) fn extract_import_section(
     file: &LoadableFile,
     map: &Map<String, Value>,
-    imports: &mut HashMap<LoadableFile, SmolStr>,
+    imports: &mut Vec<(String, SmolStr)>,
 )
 {
     let Some(import_section) = map.get(IMPORT_KEYWORD) else {
@@ -29,13 +27,12 @@ pub(crate) fn extract_import_section(
             continue;
         };
 
-        let import = LoadableFile::new(import.as_str());
-        if !import.is_file_path() {
+        if !LoadableFile::str_is_file_path(import) {
             tracing::error!("ignoring import entry in {:?} that does not have a valid file path {:?}",
                 file, import.as_str());
             continue;
         }
-        imports.insert(import, alias.as_str().into());
+        imports.push((import.clone(), alias.as_str().into()));
     }
 }
 

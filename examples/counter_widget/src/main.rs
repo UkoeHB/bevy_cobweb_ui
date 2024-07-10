@@ -8,8 +8,7 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use bevy_cobweb_ui::sickle::ui_builder::*;
-use bevy_cobweb_ui::sickle::SickleUiPlugin;
-use bevy_cobweb_ui::sickle::DefaultTheme;
+use bevy_cobweb_ui::sickle::{DefaultTheme, SickleUiPlugin};
 
 //-------------------------------------------------------------------------------------------------------------------
 

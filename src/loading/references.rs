@@ -14,7 +14,8 @@ pub const LOADABLE_PATH_SEPARATOR: &str = "::";
 
 /// Represents the path to a cobweb asset file in the `asset` directory, or a manifest key for that file.
 ///
-/// Cobweb asset files use the `.caf.json` extension.
+/// Cobweb asset files use the `.caf.json` extension. If your original path includes an asset source, then
+/// the asset source will be stripped from the name (e.g. `embedded://scene.caf.json` -> `scene.caf.json`).
 ///
 /// Example: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -34,7 +35,10 @@ impl LoadableFile
     {
         let file = file.as_ref();
         match file.ends_with(".caf.json") {
-            true => Self::File(Arc::from(file)),
+            true => {
+                let file = file.split_once("://").map(|(_, path)| path).unwrap_or(file);
+                Self::File(Arc::from(file))
+            }
             false => Self::ManifestKey(Arc::from(file)),
         }
     }
@@ -57,7 +61,7 @@ impl LoadableFile
         }
     }
 
-    /// Returns `true` if this file reference is a file path.
+    /// Returns `true` if this file reference is a file path (i.e. it ends with `.caf.json`).
     pub fn is_file_path(&self) -> bool
     {
         matches!(*self, Self::File(_))
@@ -67,6 +71,12 @@ impl LoadableFile
     pub fn is_manifest_key(&self) -> bool
     {
         matches!(*self, Self::ManifestKey(_))
+    }
+
+    /// Returns `true` if the string ends in `.caf.json`.
+    pub fn str_is_file_path(string: impl AsRef<str>) -> bool
+    {
+        string.as_ref().ends_with(".caf.json")
     }
 }
 

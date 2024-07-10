@@ -10,7 +10,7 @@ use crate::prelude::*;
 pub(crate) fn extract_manifest_section(
     file: &LoadableFile,
     map: &Map<String, Value>,
-    manifests: &mut HashMap<LoadableFile, Arc<str>>,
+    manifests: &mut HashMap<String, Arc<str>>,
 )
 {
     let Some(manifest_section) = map.get(MANIFEST_KEYWORD) else {
@@ -34,21 +34,20 @@ pub(crate) fn extract_manifest_section(
             // Empty file name means use the file where the manifest section was found.
             "" => {
                 tracing::trace!("adding manifest {file:?} {manifest_key:?}");
-                let prev = manifests.insert(file.clone(), manifest_key);
+                let prev = manifests.insert(String::from(file.as_str()), manifest_key);
                 if let Some(prev) = prev {
                     tracing::error!("found duplicate file name {:?} in manifest of file {:?}, ignoring manifest key {:?}",
                         manifest_file.as_str(), file.as_str(), prev);
                 }
             }
             _ => {
-                let manifest_file = LoadableFile::new(manifest_file.as_str());
-                if !manifest_file.is_file_path() {
+                if !LoadableFile::str_is_file_path(manifest_file) {
                     tracing::error!("ignoring manifest entry in {:?} with invalid file path {:?} (key: {:?})",
                         file.as_str(), manifest_file.as_str(), manifest_key);
                     continue;
                 }
                 tracing::trace!("adding manifest {manifest_file:?} {manifest_key:?}");
-                manifests.insert(manifest_file, manifest_key);
+                manifests.insert(manifest_file.clone(), manifest_key);
             }
         }
     }

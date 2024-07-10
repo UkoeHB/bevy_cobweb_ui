@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use std::any::type_name;
 
 use bevy::asset::embedded_asset;
@@ -7,9 +5,14 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
 
+use crate::prelude::*;
+
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Component)]
+/// Coordinates toggling of radio buttons.
+///
+/// See [`RadioButtonBuilder::build`].
+#[derive(Component, Default, Debug)]
 pub struct RadioButtonManager
 {
     selected: Option<Entity>,
@@ -17,17 +20,12 @@ pub struct RadioButtonManager
 
 impl RadioButtonManager
 {
-    pub fn new() -> Self
-    {
-        Self { selected: None }
-    }
-
-    /// Inserts the manager onto the builder entity.
+    /// Inserts a new manager onto the builder entity.
     ///
     /// Returns the entity where the manager is stored.
-    pub fn insert(self, node: &mut UiBuilder<Entity>) -> Entity
+    pub fn insert(node: &mut UiBuilder<Entity>) -> Entity
     {
-        node.insert(self);
+        node.insert(Self::default());
         node.id()
     }
 }
@@ -81,8 +79,10 @@ impl UiContext for RadioButton
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Builds a [`RadioButton`] widget into an entity.
 pub struct RadioButtonBuilder
 {
+    //todo: optional text (e.g. what if you want an image intead?)
     text: String,
 }
 

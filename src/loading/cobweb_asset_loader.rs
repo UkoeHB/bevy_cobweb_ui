@@ -86,7 +86,7 @@ pub(crate) struct CobwebAssetFile
 #[derive(Resource, Default)]
 pub(crate) struct LoadedCobwebAssetFiles
 {
-    preset_files: Vec<LoadableFile>,
+    preset_files: Vec<String>,
     handles: HashMap<AssetId<CobwebAssetFile>, Handle<CobwebAssetFile>>,
 }
 
@@ -95,23 +95,23 @@ impl LoadedCobwebAssetFiles
     fn add_preset_file(&mut self, file: &str)
     {
         tracing::info!("registered CobwebAssetCache file \"{:?}\"", file);
-        self.preset_files.push(LoadableFile::new(file));
+        self.preset_files.push(String::from(file));
     }
 
-    fn take_preset_files(&mut self) -> Vec<LoadableFile>
+    fn take_preset_files(&mut self) -> Vec<String>
     {
         std::mem::take(&mut self.preset_files)
     }
 
     pub(crate) fn start_loading(
         &mut self,
-        file: LoadableFile,
+        file: String,
         caf_cache: &mut CobwebAssetCache,
         asset_server: &AssetServer,
     )
     {
-        caf_cache.prepare_file(file.clone());
-        let handle = asset_server.load(String::from(file.as_str()));
+        caf_cache.prepare_file(LoadableFile::new(file.as_str()));
+        let handle = asset_server.load(file);
         self.handles.insert(handle.id(), handle);
     }
 

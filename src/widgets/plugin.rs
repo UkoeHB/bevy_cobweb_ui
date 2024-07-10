@@ -1,4 +1,5 @@
-use bevy::{asset::embedded_asset, prelude::*};
+use bevy::asset::embedded_asset;
+use bevy::prelude::*;
 
 use crate::prelude::*;
 use crate::widgets::*;

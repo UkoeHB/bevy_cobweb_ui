@@ -25,6 +25,8 @@ pub mod sickle
 
 pub mod prelude
 {
+    pub use bevy_cobweb_ui_derive::*;
+
     pub(crate) use crate::assets::*;
     pub use crate::assets_ext::*;
     pub use crate::bevy_ext::*;
@@ -35,6 +37,4 @@ pub mod prelude
     pub use crate::sickle_ext::*;
     pub use crate::tools::*;
     pub use crate::ui_bevy::*;
-
-    pub use bevy_cobweb_ui_derive::*;
 }

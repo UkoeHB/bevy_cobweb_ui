@@ -16,6 +16,8 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 fn preprocess_cobweb_asset_files(
+    mut manifest_buffer: Local<HashMap<String, Arc<str>>>,
+    mut imports_buffer: Local<Vec<(String, SmolStr)>>,
     asset_server: Res<AssetServer>,
     mut events: EventReader<AssetEvent<CobwebAssetFile>>,
     mut caf_files: ResMut<LoadedCobwebAssetFiles>,
@@ -43,7 +45,15 @@ fn preprocess_cobweb_asset_files(
         };
 
         let caf_cache = caf_cache.get_noreact();
-        preprocess_caf_file(&asset_server, &mut caf_files, caf_cache, asset.file, asset.data);
+        preprocess_caf_file(
+            &mut manifest_buffer,
+            &mut imports_buffer,
+            &asset_server,
+            &mut caf_files,
+            caf_cache,
+            asset.file,
+            asset.data,
+        );
     }
 
     // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
