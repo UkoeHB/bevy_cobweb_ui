@@ -81,7 +81,7 @@ impl<'w, 's> TextEditor<'w, 's>
     ) -> bool
     {
         let Ok((text, maybe_localized)) = self.text.get_mut(text_entity) else {
-            tracing::warn!("failed writing to text section {section} of {text_entity:?}, entity doesn't exist");
+            tracing::warn!("failed writing to text section {section} of {text_entity:?}, entity not found");
             return false;
         };
         let Some(text) = text.into_inner().sections.get_mut(section) else {

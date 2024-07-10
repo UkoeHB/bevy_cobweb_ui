@@ -667,6 +667,13 @@ impl CobwebAssetCache
         // Replace manifest key in the requested loadable.
         self.manifest_map().swap_for_file(&mut loadable_ref.file);
 
+        // Get values that the entity is subscribing to.
+        let Some(loadables) = self.loadables.get(&loadable_ref) else {
+            tracing::warn!("failed loading {loadable_ref:?} into {entity:?}, path is unknown; either the path is \
+                invalid or you loaded the entity before LoadState::Done");
+            return;
+        };
+
         // Add to subscriptions.
         let subscription = SubscriptionRef { entity, setter };
         #[cfg(feature = "hot_reload")]
@@ -681,9 +688,6 @@ impl CobwebAssetCache
                 .push(loadable_ref.clone());
         }
 
-        // Get already-loaded values that the entity is subscribed to.
-        let Some(loadables) = self.loadables.get(&loadable_ref) else { return };
-
         // Schedule updates for each loadable so they will be applied to the entity.
         for loadable in loadables.iter() {
             let type_id = loadable.type_id;
@@ -694,7 +698,8 @@ impl CobwebAssetCache
             ));
 
             let Some(syscommand) = callbacks.get(type_id) else {
-                tracing::warn!("found loadable at {:?} that wasn't registered as a loadable loadable", loadable_ref);
+                tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
+                    loadable_ref);
                 continue;
             };
 
