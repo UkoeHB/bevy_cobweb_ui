@@ -69,7 +69,12 @@
         "untranslated": { "$text_margin::*": {} },
         "partially_translated": { "$text_margin::*": {} },
         "fully_translated": { "$text_margin::*": {} },
-        "dynamic": { "$text_margin::*": {} }
+        "dynamic": { "$text_margin::*": {} },
+        "from-file": {
+            "$text_margin::*": {},
+            "LocalizedText": {},
+            "TextLine": {"text": "file-text"}
+        }
     }
 }
 }

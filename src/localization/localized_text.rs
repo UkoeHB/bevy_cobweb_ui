@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::LanguageIdentifier;
+use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::*;
@@ -72,13 +73,15 @@ fn handle_new_localized_text(
 /// Includes the language currently loaded to each section, which can be used to accurately set fallback
 /// fonts.
 //toto: incorporate fallback fonts (need to store main font for font recovery)
-#[derive(Debug, Clone, Default)]
+#[derive(Reflect, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LocalizedTextSection
 {
     /// The language currently applied to the associated text section on the entity.
     ///
     /// This will be `None` if the text section has not been localized yet. See
     /// [`LocalizedText::localize_section`].
+    #[reflect(ignore)]
+    #[serde(skip)]
     pub id: Option<LanguageIdentifier>,
     /// The localization template that can be used to generate localized text strings.
     pub template: String,
@@ -114,14 +117,15 @@ impl LocalizedTextSection
 ///
 /// [fluent-isolation](https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating)
 /// [directional-isolates](https://unicode.org/reports/tr9/#Explicit_Directional_Isolates)
-#[derive(Component, Debug)]
+#[derive(Component, Reflect, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LocalizedText
 {
     /// Localization templates for each [`TextSection`] in the [`Text`] component on this entity.
     ///
     /// This should be updated before calling [`LocalizedText::localize`] if the localization template has
     /// changed.
-    //todo: #[reflect(skip, default = "LocalizedText::default_loc")]
+    #[reflect(ignore, default = "LocalizedText::default_loc")]
+    #[serde(skip, default = "LocalizedText::default_loc")]
     localization: SmallVec<[LocalizedTextSection; 1]>,
 }
 
@@ -223,7 +227,9 @@ impl Plugin for LocalizedTextPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.react(|rc| rc.on_persistent(broadcast::<TextLocalizerUpdated>(), relocalize_all_text))
+        app.register_type::<LocalizedText>()
+            .register_loadable::<LocalizedText>()
+            .react(|rc| rc.on_persistent(broadcast::<TextLocalizerUpdated>(), relocalize_all_text))
             .configure_sets(
                 PostUpdate,
                 LocalizationSet::Update

@@ -253,6 +253,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     }
                 });
             });
+
+            // Localized text from file (see `assets/main.caf.json`).
         });
     });
 }
