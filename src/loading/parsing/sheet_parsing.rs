@@ -23,7 +23,6 @@ pub(crate) fn preprocess_caf_file(
     data: Value,
 )
 {
-    tracing::info!("preprocessing {file:?}");
     caf_cache.initialize_file(&file);
 
     let Value::Object(data) = data else {

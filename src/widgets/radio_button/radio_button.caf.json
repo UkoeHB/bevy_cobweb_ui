@@ -1,4 +1,7 @@
 {
+"#manifest": {
+    "": "widgets.radio_button"
+},
 
 "#constants" : {
     "$animation_settings_shared_medium" : {"duration": 0.0265, "easing": "Linear"},
@@ -16,7 +19,6 @@
 },
 
 "#specs": {
-
     "radio_button_base": {
         "@base_background_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
         "@indicator_outline_thickness": {"Px": 2.0},

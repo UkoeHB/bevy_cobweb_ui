@@ -1,11 +1,11 @@
 use std::any::type_name;
 
-use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
 use smallvec::SmallVec;
 
+use crate::load_embedded_widget;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -106,9 +106,9 @@ impl RadioButtonType
     fn get_scene(&self) -> LoadableRef
     {
         match self {
-            Self::Default { .. } => LoadableRef::new("widgets.radio_buttons", "radio_button_default"),
+            Self::Default { .. } => LoadableRef::new("widgets.radio_button", "radio_button_default"),
             Self::DefaultInBox { .. } => {
-                LoadableRef::new("widgets.radio_buttons", "radio_button_default_in_vertical_box")
+                LoadableRef::new("widgets.radio_button", "radio_button_default_in_vertical_box")
             }
             Self::Custom(loadable) => loadable.clone(),
             Self::CustomWithText { loadable, .. } => loadable.clone(),
@@ -302,13 +302,13 @@ impl RadioButtonBuilder
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct CobwebRadioButtonsPlugin;
+pub(crate) struct CobwebRadioButtonPlugin;
 
-impl Plugin for CobwebRadioButtonsPlugin
+impl Plugin for CobwebRadioButtonPlugin
 {
     fn build(&self, app: &mut App)
     {
-        embedded_asset!(app, "src/widgets/radio_buttons", "radio_buttons.caf.json");
+        load_embedded_widget!(app, "bevy_cobweb_ui", "src/widgets/radio_button", "radio_button.caf.json");
         app.add_plugins(ComponentThemePlugin::<RadioButton>::new());
     }
 }

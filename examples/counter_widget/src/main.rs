@@ -1,4 +1,4 @@
-//! Demonstrates building a counter with a custom widget and theming.
+//! Demonstrates building a counter with a custom widget using a cobweb asset file 'specification'.
 
 use std::any::type_name;
 
