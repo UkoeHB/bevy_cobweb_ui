@@ -94,6 +94,11 @@ enum RadioButtonType
         text: Option<String>,
     },
     Custom(LoadableRef),
+    CustomWithText
+    {
+        loadable: LoadableRef,
+        text: Option<String>,
+    },
 }
 
 impl RadioButtonType
@@ -106,13 +111,14 @@ impl RadioButtonType
                 LoadableRef::new("widgets.radio_buttons", "radio_button_default_in_vertical_box")
             }
             Self::Custom(loadable) => loadable.clone(),
+            Self::CustomWithText { loadable, .. } => loadable.clone(),
         }
     }
 
     fn take_text(self) -> Option<String>
     {
         match self {
-            Self::Default { text } | Self::DefaultInBox { text } => text,
+            Self::Default { text } | Self::DefaultInBox { text } | Self::CustomWithText { text, .. } => text,
             Self::Custom(..) => None,
         }
     }
@@ -149,6 +155,14 @@ impl RadioButtonBuilder
     {
         Self {
             button_type: RadioButtonType::Custom(scene),
+            localized: false,
+        }
+    }
+
+    pub fn custom_with_text(scene: LoadableRef, text: impl Into<String>) -> Self
+    {
+        Self {
+            button_type: RadioButtonType::CustomWithText { loadable: scene, text: Some(text.into()) },
             localized: false,
         }
     }

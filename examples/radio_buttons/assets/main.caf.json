@@ -1,11 +1,14 @@
 {
 
 "#manifest": {
-    "": "examples.radio_buttons",
-    "widgets/radio_button.caf.json": "widgets.radio_button"
+    "": "examples.radio_buttons"
 },
 
-"root": {
+"#import": {
+    "bevy_cobweb_ui/radio_buttons.caf.json": ""
+},
+
+"scene": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
@@ -44,6 +47,11 @@
         "BrColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
         "BrRadius": [{"Px": 6.0}]
     }
+},
+
+"radio_button(#spec:radio_button_default)": {
+    "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}},
+    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
 }
 
 }
