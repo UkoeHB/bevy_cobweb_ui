@@ -1,0 +1,12 @@
+{
+
+"structure": {
+    "TextLine": {}
+},
+
+"theme": {
+    "Themed<TextLineColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.8, "alpha": 1.0}}},
+    "Themed<TextLineSize>": {"value": 35.0}
+}
+
+}

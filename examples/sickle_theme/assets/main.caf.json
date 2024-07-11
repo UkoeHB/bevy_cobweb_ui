@@ -1,0 +1,23 @@
+{
+
+"#manifest": {
+    "": "examples.trivial_text",
+    "widgets/trivial_text.caf.json": "examples.widgets.trivial_text"
+},
+
+"scene": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+    }
+},
+
+"large_text_override": {
+    "Themed<TextLineSize>": {"value": 50.0}
+},
+
+"yellow_text_override": {
+    "Themed<TextLineColor>": {"value": {"Hsla": {"hue": 41.0, "saturation": 100.0, "lightness": 0.60, "alpha": 1.0}}}
+}
+
+}

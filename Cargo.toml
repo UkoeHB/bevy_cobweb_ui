@@ -76,4 +76,5 @@ members = [
     "examples/counter_widget",
     "examples/localization",
     "examples/radio_buttons",
+    "examples/sickle_theme",
 ]
