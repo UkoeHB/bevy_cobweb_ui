@@ -1,6 +1,6 @@
 {
 "#manifest": {
-    "": "widgets.radio_button"
+    "": "builtin.widgets.radio_button"
 },
 
 "#constants" : {

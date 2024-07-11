@@ -106,9 +106,9 @@ impl RadioButtonType
     fn get_scene(&self) -> LoadableRef
     {
         match self {
-            Self::Default { .. } => LoadableRef::new("widgets.radio_button", "radio_button_default"),
+            Self::Default { .. } => LoadableRef::new("builtin.widgets.radio_button", "radio_button_default"),
             Self::DefaultInBox { .. } => {
-                LoadableRef::new("widgets.radio_button", "radio_button_default_in_vertical_box")
+                LoadableRef::new("builtin.widgets.radio_button", "radio_button_default_in_vertical_box")
             }
             Self::Custom(loadable) => loadable.clone(),
             Self::CustomWithText { loadable, .. } => loadable.clone(),
