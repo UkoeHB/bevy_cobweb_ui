@@ -30,8 +30,8 @@ default = ["widgets"]
 # Enables built-in widgets.
 widgets = []
 
-# Enables hot-reloading.
-hot_reload = ["bevy/file_watcher"]
+# Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.
+hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
 
 # Dev features. Enables hot-reloading.
 dev = ["hot_reload", "bevy/dynamic_linking"]

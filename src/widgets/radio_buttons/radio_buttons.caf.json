@@ -1,14 +1,8 @@
 {
 
 "#constants" : {
-    "$animation_settings_shared_slow" : {"duration": 0.04, "easing": "Linear"},
     "$animation_settings_shared_medium" : {"duration": 0.0265, "easing": "Linear"},
     "$animation_settings_shared_fast" : {"duration": 0.025, "easing": "Linear"},
-    "$animation_settings_slow" : {
-        "enter": "$$animation_settings_shared_slow",
-        "pointer_enter": "$$animation_settings_shared_slow",
-        "press": "$$animation_settings_shared_slow"
-    },
     "$animation_settings_medium" : {
         "enter": "$$animation_settings_shared_medium",
         "pointer_enter": "$$animation_settings_shared_medium",
@@ -21,123 +15,232 @@
     }
 },
 
-"structure": {
-    "core": {
-        "FlexStyle": {
-            "dims": {"min_width": {"Percent": 100.0}},
-            "content": {"justify_main": "FlexStart", "justify_cross": "Center"},
-            "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
-        },
-        "Interactive": [],
-        "BrRadius": [{"Px": 6.0}],
+"#specs": {
 
-        "outline": {
-            "FlexStyle": {
-                "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
-                "content": {"justify_main": "Center", "justify_cross": "Center"},
-                "flex": {"margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 9.0}, "right": {"Px": 1.0}}}
-            },
-            "BrRadius": [{"Px": 8.5}],
+    "radio_button_base": {
+        "@base_background_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
+        "@indicator_outline_thickness": {"Px": 2.0},
+        "@indicator_outline_margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 9.0}, "right": {"Px": 1.0}},
+        "@indicator_outline_radius": {"Px": 8.5},
+        "@indicator_outline_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@indicator_dot_unselected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+        "@indicator_dot_selected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@indicator_dot_diameter": {"Px": 9.0},
+        "@indicator_dot_radius": {"Px": 4.5},
+        "@indicator_dot_animation_setting": {},
+        "@indicator_internal_spacing": {"Px": 2.0},
 
-            "indicator": {
+        "*": {
+            "base": {
                 "FlexStyle": {
-                    "dims": {"width": {"Px": 9.0}, "height": {"Px": 9.0}},
-                    "flex": {"margin": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}}
+                    "dims": {"!base_dims":{}},
+                    "content": {
+                        "justify_main": "FlexStart",
+                        "justify_cross": "Center",
+                        "!base_content":{}
+                    },
+                    "flex": {"!base_flex":{}}
                 },
-                "BrRadius": [{"Px": 4.5}]
-            }
-        },
+                "Interactive": [],
+                "BgColor": ["@base_background_color"],
+                "!base":{},
 
-        "text": {
-            "FlexStyle": {
-                "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 5.0}}}
-            },
-            "TextLine": {"size": 35.0}
+                "indicator": {
+                    "FlexStyle": {
+                        "dims": {
+                            "border": {
+                                "top": "@indicator_outline_thickness",
+                                "bottom": "@indicator_outline_thickness",
+                                "left": "@indicator_outline_thickness",
+                                "right": "@indicator_outline_thickness"
+                            }
+                        },  
+                        "content": {"justify_main": "Center", "justify_cross": "Center"},
+                        "flex": {"margin": "@indicator_outline_margin"}
+                    },
+                    "BrRadius": ["@indicator_outline_radius"],
+                    "BrColor": ["@indicator_outline_color"],
+                    "!indicator":{},
+
+                    "indicator_dot": {
+                        "FlexStyle": {
+                            "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"},
+                            "flex": {
+                                "margin": {
+                                    "top": "@indicator_internal_spacing",
+                                    "bottom": "@indicator_internal_spacing",
+                                    "left": "@indicator_internal_spacing",
+                                    "right": "@indicator_internal_spacing"
+                                }
+                            }
+                        },
+                        "BrRadius": ["@indicator_dot_radius"],
+                        "Multi<Animated<BgColor>>": [[
+                            {
+                                "values": {
+                                    "idle": "@indicator_dot_unselected_color",
+                                    "!indicator_dot_color_animation":{}
+                                },
+                                "settings": "@indicator_dot_animation_setting"
+                            },
+                            {
+                                "state": ["Selected"],
+                                "values": {
+                                    "enter_from": "@indicator_dot_unselected_color",
+                                    "idle": "@indicator_dot_selected_color"
+                                },
+                                "settings": "@indicator_dot_animation_setting"
+                            },
+                            "!indicator_dot_background_color_animation"
+                        ]],
+                        "!indicator_dot":{}
+                    }
+                },
+
+                "content": {
+                    "FlexStyle": {
+                        "dims": {"!content_dims":{}},
+                        "content": {"!content_content":{}},
+                        "flex": {"!content_flex":{}}
+                    },
+                    "!content":{}
+                }
+            }
+        }
+    },
+
+    "radio_button_with_basic_text(#spec:radio_button_base)": {
+        "@text_size": 35.0,
+        "@text_string": "[empty-text]",
+        "@text_font": null,
+        "@text_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 5.0}},
+
+        "!content_flex": {
+            "margin": "@text_margin"
+        },
+        "!content": {
+            "TextLine": { "size": "@text_size", "text": "@text_string", "font": "@text_font" },
+            "TextLineColor": ["@text_color"]
+        }
+    },
+
+    "radio_button_default(#spec:radio_button_with_basic_text)": {
+        "@text_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
+        "@base_border_radius": {"Px": 6.0},
+        "@base_starting_border_thickness": {"Px": 2.0},
+        "@base_selected_border_thickness": {"Px": 3.0},
+        "@base_border_animation_settings": "$animation_settings_fast",
+        "@base_starting_padding_thickness": {"Px": 2.0},
+        "@base_selected_padding_thickness": {"Px": 1.0},
+        "@base_idle_background_color": {"Hsla": {"hue": 160.0, "saturation": 0.05, "lightness": 0.94, "alpha": 1.0}},
+        "@base_hovered_background_color": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
+        "@base_selected_background_color": {"Hsla": {"hue": 197.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
+        "@base_selected_hovered_background_color": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}},
+        "@base_background_animation_settings": "$animation_settings_medium",
+        "@base_border_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
+        "@indicator_outline_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
+        "@indicator_dot_unselected_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 0.0}},
+        "@indicator_dot_selected_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
+        "@indicator_dot_animation_setting": "$animation_settings_medium",
+
+        "!base": {
+            "BrRadius": ["@base_border_radius"],
+            "BrColor": ["@base_border_color"],
+            "Multi<Animated<Border>>": [[
+                {
+                    "values": {
+                        "idle": {
+                            "top": "@base_starting_border_thickness",
+                            "bottom": "@base_starting_border_thickness",
+                            "left": "@base_starting_border_thickness",
+                            "right": "@base_starting_border_thickness"
+                        }
+                    },
+                    "settings": "@base_border_animation_settings"
+                },
+                {
+                    "state": ["Selected"],
+                    "values": {
+                        "enter_from": {
+                            "top": "@base_starting_border_thickness",
+                            "bottom": "@base_starting_border_thickness",
+                            "left": "@base_starting_border_thickness",
+                            "right": "@base_starting_border_thickness"
+                        },
+                        "idle": {
+                            "top": "@base_selected_border_thickness",
+                            "bottom": "@base_selected_border_thickness",
+                            "left": "@base_selected_border_thickness",
+                            "right": "@base_selected_border_thickness"
+                        }
+                    },
+                    "settings": "@base_border_animation_settings"
+                },
+                "!base_border_animation"
+            ]],
+            "Multi<Animated<Padding>>": [[
+                {
+                    "values": {
+                        "idle": {
+                            "top": "@base_starting_padding_thickness",
+                            "bottom": "@base_starting_padding_thickness",
+                            "left": "@base_starting_padding_thickness",
+                            "right": "@base_starting_padding_thickness"
+                        }
+                    },
+                    "settings": "@base_border_animation_settings"
+                },
+                {
+                    "state": ["Selected"],
+                    "values": {
+                        "enter_from": {
+                            "top": "@base_starting_padding_thickness",
+                            "bottom": "@base_starting_padding_thickness",
+                            "left": "@base_starting_padding_thickness",
+                            "right": "@base_starting_padding_thickness"
+                        },
+                        "idle": {
+                            "top": "@base_selected_padding_thickness",
+                            "bottom": "@base_selected_padding_thickness",
+                            "left": "@base_selected_padding_thickness",
+                            "right": "@base_selected_padding_thickness"
+                        }
+                    },
+                    "settings": "@base_border_animation_settings"
+                },
+                "!base_padding_animation"
+            ]],
+            "Multi<Animated<BgColor>>": [[
+                {
+                    "values": {
+                        "idle": "@base_idle_background_color",
+                        "hover": "@base_hovered_background_color"
+                    },
+                    "settings": "@base_background_animation_settings"
+                },
+                {
+                    "state": ["Selected"],
+                    "values": {
+                        "enter_from": "@base_hovered_background_color",
+                        "idle": "@base_selected_background_color",
+                        "hover": "@base_selected_hovered_background_color"
+                    },
+                    "settings": "@base_background_animation_settings"
+                },
+                "!base_background_color_animation"
+            ]]
         }
     }
 },
 
-"theme": {
-    "core": {
-        "Multi<Animated<Border>>": [[
-            {
-                "values": {
-                    "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
-                },
-                "settings": "$animation_settings_fast"
-            },
-            {
-                "state": ["Selected"],
-                "values": {
-                    "enter_from": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
-                    "idle": {"top": {"Px": 3.0}, "bottom": {"Px": 3.0}, "left": {"Px": 3.0}, "right": {"Px": 3.0}}
-                },
-                "settings": "$animation_settings_fast"
-            }
-        ]],
-        "Multi<Animated<Padding>>": [[
-            {
-                "values": {
-                    "idle": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
-                },
-                "settings": "$animation_settings_fast"
-            },
-            {
-                "state": ["Selected"],
-                "values": {
-                    "enter_from": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}},
-                    "idle": {"top": {"Px": 1.0}, "bottom": {"Px": 1.0}, "left": {"Px": 1.0}, "right": {"Px": 1.0}}
-                },
-                "settings": "$animation_settings_fast"
-            }
-        ]],
-        "Multi<Animated<BgColor>>": [[
-            {
-                "values": {
-                    "idle": {"Hsla": {"hue": 160.0, "saturation": 0.05, "lightness": 0.94, "alpha": 1.0}},
-                    "hover": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}}
-                },
-                "settings": "$animation_settings_slow"
-            },
-            {
-                "state": ["Selected"],
-                "values": {
-                    "enter_from": {"Hsla": {"hue": 192.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
-                    "idle": {"Hsla": {"hue": 197.0, "saturation": 0.05, "lightness": 0.88, "alpha": 1.0}},
-                    "hover": {"Hsla": {"hue": 202.0, "saturation": 0.05, "lightness": 0.84, "alpha": 1.0}}
-                },
-                "settings": "$animation_settings_slow"
-            }
-        ]],
-        "Themed<BrColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
-    },
+"radio_button_with_basic_text(#spec:radio_button_with_basic_text)": {},
 
-    "outline": {
-        "Themed<BrColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
-    },
+"radio_button_default(#spec:radio_button_default)": {},
 
-    "indicator": {
-        "Multi<Animated<BgColor>>": [[
-            {
-                "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}}
-                },
-                "settings": "$animation_settings_medium"
-            },
-            {
-                "state": ["Selected"],
-                "values": {
-                    "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
-                    "idle": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}
-                },
-                "settings": "$animation_settings_medium"
-            }
-        ]]
-    },
-
-    "text": {
-        "Themed<TextLineColor>": {"value": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}}
-    }
+"radio_button_default_in_vertical_box(#spec:radio_button_default)": {
+    "!base_dims": {"min_width": {"Percent": 100.0}},
+    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
 }
 
 }

@@ -54,7 +54,7 @@ impl InsertValues
 struct SpecData
 {
     /// [ param key : { saved value, cached temp override value, flag indicating the param was used } ]
-    params: HashMap<SmolStr, (Value, Value, bool)>,
+    params: HashMap<SmolStr, (Option<Value>, Option<Value>, bool)>,
     /// The unresolved value of this spec.
     content: Value,
 }
@@ -79,11 +79,13 @@ impl SpecData
                     key, spec_invocation, file);
             }
 
-            *temp = Value::Null;
+            *temp = None;
             *used = false;
 
             // Clean up map entries for temporary parameters that did not override pre-existing params.
-            if let (Value::Null, Value::Null) = (saved, temp) {
+            // - Note that we compare against `None`, not `Value::Null`. This is because the values
+            // might actually be `Value::Null`.
+            if let (None, None) = (saved, temp) {
                 return false;
             }
             true
@@ -115,28 +117,23 @@ impl SpecData
                         match merge_params {
                             true => {
                                 // This overwrites the previous value.
-                                *saved_param = value.take();
+                                *saved_param = Some(value.take());
                             }
                             false => {
-                                *temp_param = value.take();
+                                *temp_param = Some(value.take());
                             }
                         }
                     }
-                    false => {
-                        //todo: check that newly-added params are present in the content after insertions are
-                        // applied so users can be warned if they made a typo or forgot to
-                        // use a param/have extra params
-                        match merge_params {
-                            true => {
-                                self.params
-                                    .insert(key.into(), (value.take(), Value::Null, false));
-                            }
-                            false => {
-                                self.params
-                                    .insert(key.into(), (Value::Null, value.take(), false));
-                            }
+                    false => match merge_params {
+                        true => {
+                            self.params
+                                .insert(key.into(), (Some(value.take()), None, false));
                         }
-                    }
+                        false => {
+                            self.params
+                                .insert(key.into(), (None, Some(value.take()), false));
+                        }
+                    },
                 }
             } else if key.starts_with(SPEC_INSERTION_MARKER) {
                 inserts.add(key.as_str().into(), value.take());
@@ -173,6 +170,9 @@ impl SpecData
                 // Insert cached insertions (must be maps).
                 for insert_idx in insertion_cache.drain(..) {
                     let (key, value) = inserts.access(insert_idx).unwrap();
+                    if let Value::Null = value {
+                        continue;
+                    }
                     let Value::Object(insertion_map) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not a map but \
                             the insertion point is a map key", value, key, file);
@@ -274,6 +274,9 @@ impl SpecData
                 // Insert cached insertions (must be maps).
                 for insert_idx in insertion_cache.drain(..) {
                     let (key, value) = inserts.access(insert_idx).unwrap();
+                    if let Value::Null = value {
+                        continue;
+                    }
                     let Value::Object(insertion_map) = value else {
                         tracing::warn!("ignoring spec insertion {} for key {} in {:?}, value to insert is not a map but \
                             the insertion point is a map key", value, key, file);
@@ -368,9 +371,10 @@ impl SpecData
                     return;
                 };
 
-                let next_value = match temp {
-                    Value::Null => saved.clone(),
-                    _ => temp.clone(),
+                let Some(next_value) = temp.as_ref().or_else(|| saved.as_ref()).cloned() else {
+                    tracing::error!("failed setting param {} in {:?} while resolving a spec, the spec values for this param \
+                        are unexpectedly missing", value, file);
+                    return;
                 };
 
                 *value = next_value;

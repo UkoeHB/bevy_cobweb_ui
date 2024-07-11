@@ -4,6 +4,7 @@ use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
+use smallvec::SmallVec;
 
 use crate::prelude::*;
 
@@ -23,7 +24,7 @@ impl RadioButtonManager
     /// Inserts a new manager onto the builder entity.
     ///
     /// Returns the entity where the manager is stored.
-    pub fn insert(node: &mut UiBuilder<Entity>) -> Entity
+    pub fn setup(node: &mut UiBuilder<Entity>) -> Entity
     {
         node.insert(Self::default());
         node.id()
@@ -33,31 +34,20 @@ impl RadioButtonManager
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(TypeName)]
-pub struct RadioButtonOutline;
-#[derive(TypeName)]
 pub struct RadioButtonIndicator;
 #[derive(TypeName)]
-pub struct RadioButtonText;
+pub struct RadioButtonIndicatorDot;
+#[derive(TypeName)]
+pub struct RadioButtonContent;
 
 /// Marker component for the radio button theme.
-#[derive(Component, DefaultTheme, Copy, Clone, Debug)]
+#[derive(Component, DefaultTheme, Clone, Debug)]
 pub struct RadioButton
 {
-    outline_entity: Entity,
     indicator_entity: Entity,
-    text_entity: Entity,
-}
-
-impl RadioButton
-{
-    pub fn load_base_theme(builder: &mut UiBuilder<Entity>)
-    {
-        let theme = LoadableRef::new(RadioButtonBuilder::default_file(), "theme");
-        builder.load_theme::<RadioButton>(theme.e("core"));
-        builder.load_subtheme::<RadioButton, RadioButtonOutline>(theme.e("outline"));
-        builder.load_subtheme::<RadioButton, RadioButtonIndicator>(theme.e("indicator"));
-        builder.load_subtheme::<RadioButton, RadioButtonText>(theme.e("text"));
-    }
+    indicator_dot_entity: Entity,
+    content_entity: Entity,
+    content_inner_entities: SmallVec<[(&'static str, Entity); 3]>,
 }
 
 impl UiContext for RadioButton
@@ -65,15 +55,66 @@ impl UiContext for RadioButton
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            RadioButtonOutline::NAME => Ok(self.outline_entity),
             RadioButtonIndicator::NAME => Ok(self.indicator_entity),
-            RadioButtonText::NAME => Ok(self.text_entity),
-            _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
+            RadioButtonIndicatorDot::NAME => Ok(self.indicator_dot_entity),
+            RadioButtonContent::NAME => Ok(self.content_entity),
+            _ => {
+                let Some((_, entity)) = self
+                    .content_inner_entities
+                    .iter()
+                    .find(|(name, _)| *name == target)
+                else {
+                    return Err(format!("unknown UI context {target} for {}", type_name::<Self>()));
+                };
+                Ok(*entity)
+            }
         }
     }
     fn contexts(&self) -> Vec<&'static str>
     {
-        vec![RadioButtonOutline::NAME, RadioButtonIndicator::NAME, RadioButtonText::NAME]
+        Vec::from_iter(
+            [RadioButtonIndicator::NAME, RadioButtonIndicatorDot::NAME, RadioButtonContent::NAME]
+                .iter()
+                .map(|name| *name)
+                .chain(self.content_inner_entities.iter().map(|(name, _)| *name)),
+        )
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+enum RadioButtonType
+{
+    Default
+    {
+        text: Option<String>,
+    },
+    DefaultInBox
+    {
+        text: Option<String>,
+    },
+    Custom(LoadableRef),
+}
+
+impl RadioButtonType
+{
+    fn get_scene(&self) -> LoadableRef
+    {
+        match self {
+            Self::Default { .. } => LoadableRef::new("widgets.radio_buttons", "radio_button_default"),
+            Self::DefaultInBox { .. } => {
+                LoadableRef::new("widgets.radio_buttons", "radio_button_default_in_vertical_box")
+            }
+            Self::Custom(loadable) => loadable.clone(),
+        }
+    }
+
+    fn take_text(self) -> Option<String>
+    {
+        match self {
+            Self::Default { text } | Self::DefaultInBox { text } => text,
+            Self::Custom(..) => None,
+        }
     }
 }
 
@@ -82,48 +123,110 @@ impl UiContext for RadioButton
 /// Builds a [`RadioButton`] widget into an entity.
 pub struct RadioButtonBuilder
 {
-    //todo: optional text (e.g. what if you want an image intead?)
-    text: String,
+    button_type: RadioButtonType,
+    localized: bool,
 }
 
 impl RadioButtonBuilder
 {
-    pub fn new(text: impl Into<String>) -> Self
+    pub fn default() -> Self
     {
-        Self { text: text.into() }
+        Self {
+            button_type: RadioButtonType::Default { text: None },
+            localized: false,
+        }
     }
 
-    pub fn default_file() -> &'static str
+    pub fn default_in_box() -> Self
     {
-        "widgets.radio_buttons"
+        Self {
+            button_type: RadioButtonType::DefaultInBox { text: None },
+            localized: false,
+        }
+    }
+
+    pub fn custom(scene: LoadableRef) -> Self
+    {
+        Self {
+            button_type: RadioButtonType::Custom(scene),
+            localized: false,
+        }
+    }
+
+    pub fn new(text: impl Into<String>) -> Self
+    {
+        Self {
+            button_type: RadioButtonType::Default { text: Some(text.into()) },
+            localized: false,
+        }
+    }
+
+    pub fn new_in_box(text: impl Into<String>) -> Self
+    {
+        Self {
+            button_type: RadioButtonType::DefaultInBox { text: Some(text.into()) },
+            localized: false,
+        }
+    }
+
+    /// Cause the text to be localized.
+    ///
+    /// Mainly useful for default-themed radio buttons, since custom buttons can include [`LocalizedText`]
+    /// components directly.
+    pub fn localized(mut self) -> Self
+    {
+        self.localized = true;
+        self
     }
 
     /// Builds the button as a child of the builder entity.
     ///
     /// The `manager_entity` should have a [`RadioButtonManager`] component.
+    ///
+    /// If you want to add children to the content entity with [`Animated`] or [`Responsive`], then
+    /// use [`Self::build_with_themed_content`] instead.
     pub fn build<'a>(self, manager_entity: Entity, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
     {
-        let structure = LoadableRef::new(&Self::default_file(), "structure");
+        self.build_with_themed_content(manager_entity, node, |_| SmallVec::default())
+    }
 
-        let mut core_entity = Entity::PLACEHOLDER;
-        let mut outline_entity = Entity::PLACEHOLDER;
+    /// Builds the button as a child of the builder entity, with custom themed content.
+    ///
+    /// The `manager_entity` should have a [`RadioButtonManager`] component.
+    ///
+    /// Load your content sub-entities with `.load_with_subtheme::<RadioButton, YourSubtheme>()`.
+    /// Otherwise your sub-entities won't respond properly to interactions on the base button.
+    ///
+    /// The `content_builder` should return [`UiContext`] entries for themed sub-entities.
+    pub fn build_with_themed_content<'a>(
+        self,
+        manager_entity: Entity,
+        node: &'a mut UiBuilder<Entity>,
+        content_builder: impl FnOnce(&mut UiBuilder<Entity>) -> SmallVec<[(&'static str, Entity); 3]>,
+    ) -> UiBuilder<'a, Entity>
+    {
+        let scene = self.button_type.get_scene();
+
+        let mut base_entity = Entity::PLACEHOLDER;
         let mut indicator_entity = Entity::PLACEHOLDER;
-        let mut text_entity = Entity::PLACEHOLDER;
+        let mut indicator_dot_entity = Entity::PLACEHOLDER;
+        let mut content_entity = Entity::PLACEHOLDER;
+        let mut content_inner_entities = SmallVec::default();
 
-        node.load_with_theme::<RadioButton>(structure.e("core"), &mut core_entity, |core, path| {
-            let core_id = core.id();
-            core
+        node.load_with_theme::<RadioButton>(scene.e("base"), &mut base_entity, |base, path| {
+            let base_id = base.id();
+            base
                 // Select this button.
                 // TODO: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
                 .on_pressed(move |mut c: Commands, states: Query<&PseudoStates>| {
-                    if let Ok(states) = states.get(core_id) {
+                    if let Ok(states) = states.get(base_id) {
                         if states.has(&PseudoState::Selected) {
                             return;
                         }
                     }
 
-                    c.react().entity_event(core_id, Select);
+                    c.react().entity_event(base_id, Select);
                 })
                 // Save the newly-selected button and deselect the previously selected.
                 .on_select(move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {
@@ -131,40 +234,55 @@ impl RadioButtonBuilder
                     if let Some(prev) = manager.selected {
                         c.react().entity_event(prev, Deselect);
                     }
-                    manager.selected = Some(core_id);
+                    manager.selected = Some(base_id);
                 });
 
-            core.load_with_subtheme::<RadioButton, RadioButtonOutline>(
-                path.e("outline"),
-                &mut outline_entity,
+            base.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
+                path.e("indicator"),
+                &mut indicator_entity,
                 |outline, path| {
-                    outline.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
-                        path.e("indicator"),
-                        &mut indicator_entity,
+                    outline.load_with_subtheme::<RadioButton, RadioButtonIndicatorDot>(
+                        path.e("indicator_dot"),
+                        &mut indicator_dot_entity,
                         |_, _| {},
                     );
                 },
             );
 
-            core.load_with_subtheme::<RadioButton, RadioButtonText>(
-                path.e("text"),
-                &mut text_entity,
-                |text, _| {
-                    // Note: The text needs to be updated on load otherwise it may be overwritten.
-                    let text_val = self.text;
-                    text.update_on((), |id| {
-                        move |mut e: TextEditor| {
-                            e.write(id, |t| write!(t, "{}", text_val.as_str()));
-                        }
-                    });
+            base.load_with_subtheme::<RadioButton, RadioButtonContent>(
+                path.e("content"),
+                &mut content_entity,
+                |content, _| {
+                    // Add text if necessary.
+                    if let Some(text) = self.button_type.take_text() {
+                        // Note: The text needs to be updated on load otherwise it may be overwritten.
+                        content.update_on((), |id| {
+                            move |mut e: TextEditor| {
+                                e.write(id, |t| write!(t, "{}", text.as_str()));
+                            }
+                        });
+                    }
+
+                    // Localize if necessary.
+                    if self.localized {
+                        content.insert(LocalizedText::default());
+                    }
+
+                    // Build contents.
+                    content_inner_entities = (content_builder)(content);
                 },
             );
 
-            core.insert(RadioButton { outline_entity, indicator_entity, text_entity });
+            base.insert(RadioButton {
+                indicator_entity,
+                indicator_dot_entity,
+                content_entity,
+                content_inner_entities,
+            });
         });
 
         // Return UiBuilder for root of button where interactions will be detected.
-        node.commands().ui_builder(core_entity)
+        node.commands().ui_builder(base_entity)
     }
 }
 
