@@ -20,10 +20,10 @@ pub(crate) const CONSTANT_SEPARATOR: &str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Returns `true` if `key` is a keyword for a section of JSON that cannot be edited by specs.
+/// Returns `true` if `key` is a keyword for a section of JSON that cannot be edited by constants.
 ///
-/// Spec-editable sections: specs, commands, base loadables.
-pub(crate) fn is_keyword_for_non_spec_editable_section(key: &str) -> bool
+/// Constant-editable sections: specs, commands, base loadables.
+pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
 {
     key == MANIFEST_KEYWORD
         || key == IMPORT_KEYWORD
@@ -34,12 +34,12 @@ pub(crate) fn is_keyword_for_non_spec_editable_section(key: &str) -> bool
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Returns `true` if `key` is a keyword for a section of JSON that cannot be edited by constants.
+/// Returns `true` if `key` is a keyword for a section of JSON that is not edited by specs.
 ///
-/// Constant-editable sections: specs, commands, base loadables.
-pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
+/// Spec-editable sections: commands, base loadables.
+pub(crate) fn is_keyword_for_non_spec_editable_section(key: &str) -> bool
 {
-    is_keyword_for_non_spec_editable_section(key)
+    is_keyword_for_non_constant_editable_section(key) || key == SPECS_KEYWORD
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
 /// Returns `true` if `key` is any keyword.
 pub(crate) fn is_any_keyword(key: &str) -> bool
 {
-    is_keyword_for_non_constant_editable_section(key) || key == SPECS_KEYWORD || key == COMMANDS_KEYWORD
+    is_keyword_for_non_spec_editable_section(key) || key == COMMANDS_KEYWORD
 }
 
 //-------------------------------------------------------------------------------------------------------------------

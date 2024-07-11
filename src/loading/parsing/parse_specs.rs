@@ -12,6 +12,7 @@ use crate::prelude::*;
 #[derive(Default)]
 struct InsertValues
 {
+    /// {(insertion key, insertion value, whether insert was accessed)}
     inserts: SmallVec<[(SmolStr, Value, AtomicBool); 5]>,
 }
 
@@ -393,7 +394,6 @@ impl SpecData
     )
     {
         // Extract override edits.
-        // {(insertion key, insertion value, number of insertions)}
         let mut inserts = InsertValues::default();
         self.extract_specs(file, spec_invocation, overrides, &mut inserts, true);
 

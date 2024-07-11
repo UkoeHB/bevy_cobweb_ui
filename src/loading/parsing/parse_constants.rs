@@ -179,6 +179,9 @@ pub(crate) fn search_and_replace_map_constants(
 
     for (key, value) in map.iter_mut() {
         // Ignore sections that start with a non-content keyword.
+        // NOTE: This 'ignores' the constants section itself, but we bypass it by manually calling
+        //       extract_constants_section(), and then once inside that section it doesn't matter if we ignore
+        //       the constants keyword.
         if is_keyword_for_non_constant_editable_section(key) {
             continue;
         }
@@ -189,7 +192,7 @@ pub(crate) fn search_and_replace_map_constants(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Replaces constants throughout a value.
-pub(crate) fn search_and_replace_constants(
+fn search_and_replace_constants(
     file: &LoadableFile,
     prefix: &'static str,
     value: &mut Value,
