@@ -1,4 +1,8 @@
 //! Built-in widgets
+//!
+//! Currently implemented:
+//! - `radio_button`: Includes [`RadioButtonBuilder`](radio_button::RadioButtonBuilder) for making radio buttons,
+//!   and [`RadioButtonManager`](radio_button::RadioButtonManager) for coordinating button selection.
 
 pub mod radio_button;
 

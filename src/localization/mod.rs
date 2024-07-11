@@ -1,3 +1,7 @@
+#![doc = include_str!("LOCALIZATION.md")]
+#[allow(unused_imports)]
+use crate as bevy_cobweb_ui;
+
 mod ftl_bundle;
 mod locale;
 mod localization_manifest;
