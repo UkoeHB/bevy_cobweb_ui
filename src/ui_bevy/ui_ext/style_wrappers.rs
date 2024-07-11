@@ -29,6 +29,12 @@ impl StyleRect
     {
         Val::Px(0.)
     }
+
+    /// Constructs a style rect with all sides equal to `single`.
+    pub fn splat(single: Val) -> Self
+    {
+        Self { top: single, bottom: single, left: single, right: single }
+    }
 }
 
 impl Into<UiRect> for StyleRect

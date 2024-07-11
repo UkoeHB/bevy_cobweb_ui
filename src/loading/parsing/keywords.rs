@@ -37,6 +37,9 @@ pub(crate) fn is_keyword_for_non_constant_editable_section(key: &str) -> bool
 /// Returns `true` if `key` is a keyword for a section of JSON that is not edited by specs.
 ///
 /// Spec-editable sections: commands, base loadables.
+///
+/// Note that specs can be recursive. However, that recursion is only applied within editable sections. Specs
+/// in the specs section keep unresolved recursive specs until the outer spec is inserted.
 pub(crate) fn is_keyword_for_non_spec_editable_section(key: &str) -> bool
 {
     is_keyword_for_non_constant_editable_section(key) || key == SPECS_KEYWORD

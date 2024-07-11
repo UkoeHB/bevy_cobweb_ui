@@ -47,33 +47,19 @@
 
                 "indicator": {
                     "FlexStyle": {
-                        "dims": {
-                            "border": {
-                                "top": "@indicator_outline_thickness",
-                                "bottom": "@indicator_outline_thickness",
-                                "left": "@indicator_outline_thickness",
-                                "right": "@indicator_outline_thickness"
-                            }
-                        },  
                         "content": {"justify_main": "Center", "justify_cross": "Center"},
                         "flex": {"margin": "@indicator_outline_margin"}
                     },
+                    "Splat<Border>": ["@indicator_outline_thickness"],
                     "BrRadius": ["@indicator_outline_radius"],
                     "BrColor": ["@indicator_outline_color"],
                     "!indicator":{},
 
                     "indicator_dot": {
                         "FlexStyle": {
-                            "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"},
-                            "flex": {
-                                "margin": {
-                                    "top": "@indicator_internal_spacing",
-                                    "bottom": "@indicator_internal_spacing",
-                                    "left": "@indicator_internal_spacing",
-                                    "right": "@indicator_internal_spacing"
-                                }
-                            }
+                            "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"}
                         },
+                        "Splat<Margin>": ["@indicator_internal_spacing"],
                         "BrRadius": ["@indicator_dot_radius"],
                         "Multi<Animated<BgColor>>": [[
                             {
@@ -147,65 +133,35 @@
         "!base": {
             "BrRadius": ["@base_border_radius"],
             "BrColor": ["@base_border_color"],
-            "Multi<Animated<Border>>": [[
+            "Multi<Animated<Splat<Border>>>": [[
                 {
                     "values": {
-                        "idle": {
-                            "top": "@base_starting_border_thickness",
-                            "bottom": "@base_starting_border_thickness",
-                            "left": "@base_starting_border_thickness",
-                            "right": "@base_starting_border_thickness"
-                        }
+                        "idle": "@base_starting_border_thickness"
                     },
                     "settings": "@base_border_animation_settings"
                 },
                 {
                     "state": ["Selected"],
                     "values": {
-                        "enter_from": {
-                            "top": "@base_starting_border_thickness",
-                            "bottom": "@base_starting_border_thickness",
-                            "left": "@base_starting_border_thickness",
-                            "right": "@base_starting_border_thickness"
-                        },
-                        "idle": {
-                            "top": "@base_selected_border_thickness",
-                            "bottom": "@base_selected_border_thickness",
-                            "left": "@base_selected_border_thickness",
-                            "right": "@base_selected_border_thickness"
-                        }
+                        "enter_from": "@base_starting_border_thickness",
+                        "idle": "@base_selected_border_thickness"
                     },
                     "settings": "@base_border_animation_settings"
                 },
                 "!base_border_animation"
             ]],
-            "Multi<Animated<Padding>>": [[
+            "Multi<Animated<Splat<Padding>>>": [[
                 {
                     "values": {
-                        "idle": {
-                            "top": "@base_starting_padding_thickness",
-                            "bottom": "@base_starting_padding_thickness",
-                            "left": "@base_starting_padding_thickness",
-                            "right": "@base_starting_padding_thickness"
-                        }
+                        "idle": "@base_starting_padding_thickness"
                     },
                     "settings": "@base_border_animation_settings"
                 },
                 {
                     "state": ["Selected"],
                     "values": {
-                        "enter_from": {
-                            "top": "@base_starting_padding_thickness",
-                            "bottom": "@base_starting_padding_thickness",
-                            "left": "@base_starting_padding_thickness",
-                            "right": "@base_starting_padding_thickness"
-                        },
-                        "idle": {
-                            "top": "@base_selected_padding_thickness",
-                            "bottom": "@base_selected_padding_thickness",
-                            "left": "@base_selected_padding_thickness",
-                            "right": "@base_selected_padding_thickness"
-                        }
+                        "enter_from": "@base_starting_padding_thickness",
+                        "idle": "@base_selected_padding_thickness"
                     },
                     "settings": "@base_border_animation_settings"
                 },

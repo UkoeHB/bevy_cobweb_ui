@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
@@ -67,6 +69,55 @@ impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Mult
         for item in self.0.drain(..) {
             item.apply(world);
         }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Trait that enables derived loadables to use the [`Splat`] wrapper loadable.
+///
+/// For example, a UI `Border` could be splatted with `Splat<Border>(Val::Px(2.0))`.
+pub trait Splattable
+{
+    /// The inner value used to splat-construct `Self`.
+    type Splat: TypePath
+        + FromReflect
+        + GetTypeRegistration
+        + Default
+        + Debug
+        + Clone
+        + PartialEq
+        + Serialize
+        + for<'de> Deserialize<'de>;
+
+    /// Constructs a full `Self` from a single inner `splat` value.
+    fn splat(splat: Self::Splat) -> Self;
+}
+
+/// Helper loadable for cases where a loadable can be 'splat-constructed' from a single inner value.
+///
+/// Note that `Splat<T>` must be manually registered with `register_derived` or `register_command` for all `T` that
+/// want to use it.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Splat<T: Splattable>(T::Splat);
+
+impl<T> ApplyLoadable for Splat<T>
+where
+    T: Splattable + ApplyLoadable + TypePath + FromReflect + GetTypeRegistration,
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        T::splat(self.0).apply(ec);
+    }
+}
+
+impl<T> Command for Splat<T>
+where
+    T: Splattable + Command + TypePath + FromReflect + GetTypeRegistration,
+{
+    fn apply(self, world: &mut World)
+    {
+        T::splat(self.0).apply(world);
     }
 }
 

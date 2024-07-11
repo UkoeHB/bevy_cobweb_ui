@@ -481,6 +481,15 @@ impl ThemedAttribute for Border
 impl ResponsiveAttribute for Border {}
 impl AnimatableAttribute for Border {}
 
+impl Splattable for Border
+{
+    type Splat = Val;
+    fn splat(single: Self::Splat) -> Self
+    {
+        Border(StyleRect::splat(single))
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::top`], can be loaded as a style.
@@ -683,6 +692,15 @@ impl ThemedAttribute for Padding
 }
 impl ResponsiveAttribute for Padding {}
 impl AnimatableAttribute for Padding {}
+
+impl Splattable for Padding
+{
+    type Splat = Val;
+    fn splat(single: Self::Splat) -> Self
+    {
+        Padding(StyleRect::splat(single))
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -984,6 +1002,15 @@ impl ThemedAttribute for Margin
 impl ResponsiveAttribute for Margin {}
 impl AnimatableAttribute for Margin {}
 
+impl Splattable for Margin
+{
+    type Splat = Val;
+    fn splat(single: Self::Splat) -> Self
+    {
+        Margin(StyleRect::splat(single))
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::flex_basis`], can be loaded as a style.
@@ -1139,6 +1166,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_animatable::<MaxWidth>()
             .register_animatable::<AspectRatio>()
             .register_animatable::<Border>()
+            .register_animatable::<Splat<Border>>()
             .register_animatable::<DimsTop>()
             .register_animatable::<DimsBottom>()
             .register_animatable::<DimsLeft>()
@@ -1147,6 +1175,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
         // ContentFlex
         app.register_responsive::<SetClipping>()
             .register_animatable::<Padding>()
+            .register_animatable::<Splat<Padding>>()
             .register_responsive::<SetFlexDirection>()
             .register_responsive::<SetFlexWrap>()
             .register_responsive::<SetJustifyLines>()
@@ -1158,6 +1187,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
 
         // SelfFlex
         app.register_animatable::<Margin>()
+            .register_animatable::<Splat<Margin>>()
             .register_animatable::<FlexBasis>()
             .register_animatable::<FlexGrow>()
             .register_animatable::<FlexShrink>()

@@ -297,6 +297,21 @@ pub trait AnimatableAttribute: Loadable + TypePath {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
+impl<T> ThemedAttribute for Splat<T>
+where
+    T: ApplyLoadable + Splattable + ThemedAttribute,
+{
+    type Value = T::Splat;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        T::splat(value).apply(ec);
+    }
+}
+impl<T> ResponsiveAttribute for Splat<T> where T: Splattable + ResponsiveAttribute {}
+impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribute {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Loadable type for theme values.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Themed<T: ThemedAttribute>
