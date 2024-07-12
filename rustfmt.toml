@@ -8,6 +8,8 @@ group_imports = "StdExternalCrate"
 
 use_field_init_shorthand = true
 skip_macro_invocations = ["*"]
+format_macro_matchers = false
+format_macro_bodies = false # There is a bug: https://github.com/rust-lang/rustfmt/pull/6075
 
 comment_width = 115
 wrap_comments = true
