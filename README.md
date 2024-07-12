@@ -11,7 +11,7 @@ Provides a framework for building UI and managing assets in a Bevy app. Built on
 - Integration with [sickle_ui](https://github.com/UmbraLuminosa/sickle_ui) so widgets and themes can be specified in cobweb asset files then easily overridden/customized. Also includes various reactivity extensions for `UiBuilder`, including UI interactions (e.g. `.on_pressed(your_system)`). See the [`sickle_ext`](bevy_cobweb_ui::sickle_ext) module.
 - Robust localization support for text, fonts, images, and audio, with extensibility to other assets. See the [`localization`](bevy_cobweb_ui::localization) module.
 - Asset manager resources that keep track of asset handles, take care of localization automatically, and are easily populated using asset manifests specified in cobweb asset files. See the [`assets_ext`](bevy_cobweb_ui::assets_ext) module.
-- Wrappers around `bevy_ui` for loading UI into scenes via cobweb asset files. See the [ui_bevy](bevy_cobweb_ui::ui_bevy) module.
+- Wrappers around `bevy_ui` for loading UI into scenes via cobweb asset files. See the [`ui_bevy`](bevy_cobweb_ui::ui_bevy) module.
 - Built-in UI widgets. See the [widgets](bevy_cobweb_ui::widgets) module. Note that the `widgets` feature is enabled by default.
 
 

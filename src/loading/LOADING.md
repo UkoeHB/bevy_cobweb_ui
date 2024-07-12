@@ -1,7 +1,17 @@
 ## Cobweb asset format
 
-Cobweb assets are written as JSON files with the extension `.caf.json`. You must register root-level `caf` files in your
-app with [`CobwebAssetRegistrationAppExt::load`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load). The `#manifest` keyword can be used to transitively load files (see below for details).
+Cobweb assets are written as JSON files with the extension `.caf.json`.
+
+
+### Loading files
+
+In order for a cobweb asset file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load) the file into your app.
+
+```rust
+app.load("path/to/file.caf.json");
+```
+
+You always need to load at least one `caf` file directly. The `#manifest` keyword can be used to transitively load other files (see below for details).
 
 
 ### Base layer
@@ -16,28 +26,38 @@ Each file must have one map at the base layer.
 
 ### Scenes
 
-In the base layer, you can construct nested maps of path ids, which we call scenes. Every root node can be loaded as a scene (a hierarchy of entities is automatically spawned), and any node in a scene can be loaded as an individual scene node (only the target entity is modified). Each node may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities (see [`LoadableRegistrationAppExt`](bevy_cobweb_ui::prelude::LoadableRegistrationAppExt)).
-
-Path ids must be lower-case.
+In the base layer, you can construct nested maps of path ids, which we call scenes. Path ids must be lower-case.
 
 ```json
 {
     "root": {
         "a": {
-            // Values
-
-            "inner": {
-                // More values
-            }
+            "inner": {}
         },
-        "b": {
-            // Other values
-        }
+        "b": {}
     }
 }
 ```
 
+Every root node can be loaded as a scene (a hierarchy of entities is automatically spawned), and any node in a scene can be loaded as an individual scene node (only the target entity is modified).
+
 A path can be written out by combining segments with "::", such as `root::a::inner`.
+
+For example:
+```rust
+let file = LoadableRef::from_file("example.caf.json");
+
+// Loads an individual root node into the spawned entity.
+commands.spawn_empty().load(file.e("root"));
+
+// Loads an individual inner node into the spawned entity.
+commands.spawn_empty().load(file.e("root::a"));
+
+// Spawns and loads an entire scene (entities: root, root::a, root::a::inner, root::b).
+commands.load_scene(file.e("root"), |_|{});
+```
+
+Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities.
 
 
 ### Loadable values
@@ -65,19 +85,25 @@ For example, with the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable def
 
 When the scene node `"root::a"` is loaded to an entity, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable will be applied to the entity.
 
-You can define three kinds of custom loadables: loadables inserted as a bundle, inserted as reactive component, or applied to an entity as a 'derived' effect via [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable). The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is a derived loadable that inserts the Bevy `BackgroundColor` component.
+You can define three kinds of loadables:
+- **Bundles**: Inserted as bundles.
+- **Reactive**: Inserted as reactive components.
+- **Derived**: Applied to an entity as a 'derived' effect via the [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable) trait. The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is a derived loadable that inserts the Bevy `BackgroundColor` component.
 
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct MyLoadable(usize);
 
-// Use this if you want MyLoadable to be inserted as a `Bundle`. The type must implement `Bundle`.
+// Use this if you want MyLoadable to be inserted as a `Bundle`.
+// The type must implement `Bundle` (or `Component`).
 app.register_loadable::<MyLoadable>();
 
-// Use this if you want MyLoadable to be inserted as a `React` component. The type must implement `ReactComponent`.
+// Use this if you want MyLoadable to be inserted as a `React` component.
+// The type must implement `ReactComponent`.
 app.register_reactive::<MyLoadable>();
 
-// Use this if you want MyLoadable to mutate the entity. The type must implement `ApplyLoadable`.
+// Use this if you want MyLoadable to mutate the entity.
+// The type must implement `ApplyLoadable`.
 app.register_derived::<MyLoadable>();
 
 impl ApplyLoadable for MyLoadable
@@ -89,55 +115,36 @@ impl ApplyLoadable for MyLoadable
 }
 ```
 
-To access loadables in your app, do the following:
-
-1. Register the file to be loaded (using its path in the asset directory)
-```rust
-app.load("path/to/file.caf.json");
-```
-2. Make a reference to the file. You can use the file path or its manifest key (see the `#manifest` keyword for details).
-```rust
-let file = LoadableRef::from_file("path/to/file.caf.json");
-```
-3. Extend the file with the path to access.
-```rust
-let a = file.e("root").e("a");
-let b = file.e("root::e"); // equivalent
-```
-4. Load the value onto your entity. All values stored at the scene node `root::a` will be loaded onto the entity.
-
-```rust
-commands.spawn_empty().load(a);
-```
-
-If you have the `hot_reload` feature enabled, then whenever a loadable is changed in the file it will be re-applied to all entities that loaded the associated scene node. If the feature is *not* enabled, then only values already loaded when an entity requests a scene node will be applied. This means you should only load scenes/scene nodes when in [`LoadState::Done`](bevy_cobweb_ui::prelude::LoadState::Done) so all loadables will be available.
+If you have the `hot_reload` feature enabled, then whenever a loadable is changed in a file it will be re-applied to all entities that loaded the associated scene node. If the feature is *not* enabled, then only values already loaded when an entity requests a scene node will be applied. This means you should only load scenes/scene nodes when in [`LoadState::Done`](bevy_cobweb_ui::prelude::LoadState::Done) so all loadables will be available.
 
 To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene` callback.
 
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
-let file = LoadableRef::from_file("path/to/file.caf.json");
+{
+    let file = LoadableRef::from_file("path/to/file.caf.json");
 
-c.load_scene(&mut s, file.e("game_menu_scene"), |loaded_scene: &mut LoadedScene<EntityCommands>| {
-    // Do something with loaded_scene, which points to the root node...
-    // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
-    loaded_scene.insert(MyComponent);
+    c.load_scene(&mut s, file.e("game_menu_scene"), |loaded_scene: &mut LoadedScene<EntityCommands>| {
+        // Do something with loaded_scene, which points to the root node...
+        // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
+        loaded_scene.insert(MyComponent);
 
-    // Edit a child of the root node.
-    loaded_scene.edit("header", |loaded_scene| {
-        // ...
-    });
-
-    // Edit a more deeply nested child.
-    loaded_scene.edit("footer::content", |loaded_scene| {
-        // ...
-
-        // Insert another scene as a child of this node.
-        loaded_scene.load_scene(file.e("footer_scene"), |loaded_scene| {
+        // Edit a child of the root node.
+        loaded_scene.edit("header", |loaded_scene| {
             // ...
         });
+
+        // Edit a more deeply nested child.
+        loaded_scene.edit("footer::content", |loaded_scene| {
+            // ...
+
+            // Insert another scene as a child of this node.
+            loaded_scene.load_scene(file.e("footer_scene"), |loaded_scene| {
+                // ...
+            });
+        });
     });
-});
+}
 ```
 
 
@@ -162,21 +169,31 @@ Several keywords are supported in `caf` files.
 
 #### Comments: `#c:`
 
-Comments can be added as map entries throughout `caf` files. They can't be added inside loadable values.
+Comments can be added as map entries throughout `caf` files (except inside loadable values).
 
 ```json
 {
-    "#c: My comment":1
+    "#c: My comment":0
 }
 ```
 
-We need to add `:1` here because the comment is a map entry, which means it needs *some* value (any value is fine). We write the comment in the key since map keys need to be unique (otherwise we couldn't have multiple comments in a single map).
+We need to add `:0` here because the comment is a map entry, which means it needs *some* value (any value is fine). We write the comment in the key since map keys need to be unique (otherwise we couldn't have multiple comments in a single map).
 
 #### Commands: `#commands`
 
 Scene nodes must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can add a `#commands` section with types that implement [`Command`](bevy::ecs::world::Command).
 
 We do not guarantee anything about the order that commands will be applied, even for commands from the same file.
+
+```json
+{
+    "#commands": {
+        "MyCommand": [10],
+    }
+}
+```
+
+Impementation of `MyCommand`. Note that `MyCommand` must be registered with the app:
 
 ```rust
 use bevy::ecs::world::Command;
@@ -196,14 +213,6 @@ impl Command for MyCommand
 app.register_command::<MyCommand>();
 ```
 
-```json
-{
-    "#commands": {
-        "MyCommand": [10],
-    }
-}
-```
-
 #### Name shortcuts: `#using`
 
 In each file we reference types using their 'short names' (e.g. `Color`). If there is a type conflict (which will happen if multiple registered [`Reflect`](bevy::prelude::Reflect) types have the same short name), then we need to clarify it in the file so values can be reflected correctly.
@@ -212,7 +221,7 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 ```json
 {
     "#using": [
-        "crate::my_module::Color",
+        "my_color_crate::custom_colors::Color",
         "bevy_cobweb_ui::ui_bevy::ui_ext::component_wrappers::BgColor"
     ]
 }
@@ -220,7 +229,7 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 
 #### Constants: `#constants`
 
-It is often useful to have the same value in multiple places throughout a file. Constants let you 'paste' sections of JSON to different places.
+It is often useful to have the same value in multiple places throughout a file. Constants let you 'paste' sections of JSON to different locations.
 
 The `#constants` section is a tree in the base layer where you define constants. Path segments in the tree must start with `$`. You can access other constants within the constants tree using `$$path::to::constant`.
 ```json
@@ -236,7 +245,7 @@ The `#constants` section is a tree in the base layer where you define constants.
 
 There are two ways to reference a constant, either as a value or a map key.
 
-When accessing a constant as a value (an array entry or a value in a map), the data pointed-to by the constant path is pasted in place of the constant.
+When accessing a constant as a value (an array entry or a value in a map), the data pointed to by the constant path is pasted in place of the constant.
 
 This example shows inserting a constant in the middle of a value. We use `$path::to::constant` when referencing a constant in a normal value tree.
 ```json
@@ -253,7 +262,16 @@ This example shows inserting a constant in the middle of a value. We use `$path:
 }
 ```
 
-When accessing a constant as a map key, you must end it with `::*`, which means to 'paste all contents'.
+Which expands to:
+```json
+{
+    "background": {
+        "BgColor": [{"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+    }
+}
+```
+
+When accessing a constant as a map key, you must end it with `::*`, which means 'paste all contents'.
 
 In this example, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) and [`AbsoluteStyle`]((bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
 ```json
@@ -284,6 +302,8 @@ When expanded, the result will be
 }
 ```
 
+Future versions of this crate may add more features to 'constants in map keys'.
+
 #### Specs: `#specs`
 
 When designing a widget, it is useful to have a base implementation and styling, and then to customize it as needed. To support this we have the `#specs` section. Specifications (specs) are parameterized JSON data that can be pasted into commands or scene trees. Overriding a spec is a simple as redefining some of its parameters.
@@ -291,13 +311,13 @@ When designing a widget, it is useful to have a base implementation and styling,
 Spec definitions have three pieces.
 1. **Parameters**: Parameters are written as `@my_param` and can be used to insert data anywhere within a spec's content.
 2. **Insertion points**: Insertion points are written as `!my_insertion_point` and can be added to any map key or array within a spec's content. Overriding an insertion point lets you paste arbitrary values into the spec content. This can be used to add loadables to positions in scene trees, add entries to arrays, or add normally-defaulted fields to structs. They also allow you to expand a spec's definition by adding more areas that can be parameterized to the spec content.
-3. **Content**: Marked with `*`, spec content is inserted when a spec is invoked in the `#commands` section or the scene tree.
+3. **Content**: Marked with `*`, spec content is inserted when a spec is requested in the `#commands` section or the scene tree.
 
-An existing spec can be invoked anywhere in a file's `#specs` section, `#commands` section, or its scene tree by adding a 'spec invocation' with format `IDENTIFIER(#spec:spec_to_invoke)`. Spec invocations can define parameters or add content to insertion points.
+A spec can be requested anywhere in a file's `#specs` section, `#commands` section, or its scene tree by adding a 'spec request' with format `IDENTIFIER(#spec:requested_spec)`. Spec requests can set parameter values, add content to insertion points, and add new parameters that are referenced by content added to insertion points.
 
-Note that constants are applied to the `#specs` section before specs are imported from other files, and before the `#specs` section is evaluated.
+Note that constants are applied to the `#specs` section in a file before specs are imported from other files, and before the `#specs` section is evaluated to extract spec definitions.
 
-Here is a spec for a trivial `text` widget:
+Here is a spec definition for a trivial `text` widget:
 ```json
 {
     "#specs": {
@@ -342,9 +362,9 @@ The spec would be used like this:
 }
 ```
 
-**`#specs` override**
+**`#specs` definition overrides**
 
-You can override an existing spec by adding a spec invocation like `new_spec_name(#spec:spec_to_override)` as a key in the `#specs` map. If the spec names are different, then a new spec will be created by copying the invoked spec. Otherwise the invoked spec will be overridden (its params and content will be overridden with new values specified by the invocation) and the updated version will be available in the remainder of the file and when importing the file to another file.
+You can override an existing spec by adding a spec definition-override like `new_spec_name(#spec:spec_to_override)` as a key in the `#specs` map. If the spec names are different, then a new spec will be created by copying the requested spec. Otherwise the requested spec will be overridden (its params and content will be overridden with new values specified by the request) and the updated version will be available in the remainder of the file and when importing the file to another file.
 
 Here is our trivial text spec again:
 ```json
@@ -390,9 +410,9 @@ And here we first override the text spec and then add a new spec derived from ou
 
 The `colorful_text` spec will have text size `45.0` and also a [`TextLineColor`](bevy_cobweb_ui::prelude::TextLineColor) loadable.
 
-**Scene node spec**
+**Spec request in scene node**
 
-You can insert a spec to a path position in the scene tree with `path_identifier(#spec:spec_to_insert)`. When the spec is inserted, all parameters saved in the spec will be inserted to their positions in the spec content. Any nested specs in the spec content will also be inserted and their params resolved.
+You can insert a spec to a scene node with `path_identifier(#spec:spec_to_insert)`. When the spec is inserted, all parameters saved in the spec will be inserted to their positions in the spec content. Any nested specs in the spec content will also be inserted and their params resolved.
 
 Here is a shortened version of the 'hello world' example from above:
 ```json
@@ -478,7 +498,7 @@ And then use the spec content to directly fill in the `TextLine` loadable:
 
 **Nested specs**
 
-It is allowed for specs to reference other specs internally. This allows making complex widget structures composed of smaller widgets when you want the small widgets to be externally customizable.
+Specs can reference other specs internally. This allows making complex widget structures composed of smaller widgets when you want the small widgets to be externally customizable.
 
 In this example we use the `text` spec as a component of a simple `button` spec:
 ```json
@@ -521,11 +541,32 @@ In this example we use the `text` spec as a component of a simple `button` spec:
 }
 ```
 
+If you provide an override definition for `button_text` when requesting the `button` spec, then the *override* definition will be used when the nested `button` is expanded.
+
+```json
+// file_b.caf.json
+{
+    "#import": {
+        "file_a.caf.json": ""
+    },
+
+    "#specs": {
+        "button_text(#spec::button_text)": {
+            "@size": 100.0
+        }
+    },
+
+    "my_big_button(#spec:button)": {}
+}
+```
+
+The `my_big_button` scene will have an inner text entity with `100.0` size font.
+
 #### Imports: `#import`
 
 You can import `#using`, `#constants`, and `#specs` sections from other files with the `#import` keyword.
 
-Add the `#import` section to the base map in a file. It should be a map between file names and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec invocations that are inside spec content.
+Add the `#import` section to the base map in a file. It should be a map between file names and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec requests that are inside spec content.
 
 ```json
 // my_constants.caf.json
@@ -560,7 +601,7 @@ Cobweb asset files can be transitively loaded by specifying them in a `#manifest
 
 Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`LoadableFile`](bevy_cobweb_ui::prelude::LoadableFile) references in place of explicit file paths.
 
-An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level sheet which must be loaded via [`CobwebAssetRegistrationAppExt::load`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load).
+An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`CobwebAssetRegistrationAppExt::load`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load).
 
 ```json
 // button_widget.caf.json
@@ -572,7 +613,7 @@ An empty map key `""` can be used to set a manifest key for the current file. Th
 
 // app.caf.json
 {
-    "my_node": {
+    "my_scene": {
         // ...
     }
 }
@@ -588,5 +629,26 @@ An empty map key `""` can be used to set a manifest key for the current file. Th
     "demo_scene_in_manifest_file": {
         // ...
     }
+}
+```
+
+Then you only need to load the manifest to get the other files loaded automatically:
+```rust
+app.load("manifest.caf.json");
+```
+
+And now manifest keys can be used instead of file paths to reference files:
+
+```rust
+fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
+{
+    // Load widget
+    c.load_scene(&mut s, LoadableRef::new("widgets.button", "widget"), |_|{});
+
+    // Load app scene
+    c.load_scene(&mut s, LoadableRef::new("app", "my_scene"), |_|{});
+
+    // Load demo scene
+    c.load_scene(&mut s, LoadableRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
 }
 ```
