@@ -136,8 +136,7 @@ impl CounterWidgetBuilder
 
         let button = self
             .spec
-            .unwrap_or_else(|| Self::default_file().e("counter_widget"))
-            .e("button");
+            .unwrap_or_else(|| Self::default_file().e("counter_widget"));
 
         let mut core_entity = Entity::PLACEHOLDER;
         let mut text_entity = Entity::PLACEHOLDER;

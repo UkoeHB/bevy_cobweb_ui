@@ -69,6 +69,7 @@ fn get_loaded_theme<C: Component>(
 #[derive(Debug, Clone)]
 struct SortableContextualAttribute
 {
+    //todo: placement: Option<&'static str>,
     context: Option<&'static str>,
     attribute: DynamicStyleAttribute,
 }

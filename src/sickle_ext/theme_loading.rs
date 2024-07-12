@@ -277,7 +277,7 @@ pub trait ThemedAttribute: Loadable + TypePath
     /// Specifies the value-type of the theme attribute.
     type Value: Loadable + TypePath;
 
-    /// Specifies how values should be updated on an entity for this themed attribute.
+    /// Updates the entity with the themed attribute's value.
     fn update(entity_commands: &mut EntityCommands, value: Self::Value);
 }
 

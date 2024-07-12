@@ -45,12 +45,10 @@
         },
 
         "*": {
-            "button": {
-                "!button":"",
+            "!button":"",
 
-                "text": {
-                    "!text":""
-                }
+            "text": {
+                "!text":""
             }
         }
     }

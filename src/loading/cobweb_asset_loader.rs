@@ -94,7 +94,7 @@ impl LoadedCobwebAssetFiles
 {
     fn add_preset_file(&mut self, file: &str)
     {
-        tracing::info!("registered CobwebAssetCache file \"{:?}\"", file);
+        tracing::info!("registered CobwebAssetCache file {:?}", file);
         self.preset_files.push(String::from(file));
     }
 

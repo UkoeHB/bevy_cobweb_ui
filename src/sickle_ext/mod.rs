@@ -1,3 +1,7 @@
+#![doc = include_str!("SICKLE.md")]
+#[allow(unused_imports)]
+use crate as bevy_cobweb_ui;
+
 mod builder_ext;
 mod default_assets;
 mod interaction_ext;

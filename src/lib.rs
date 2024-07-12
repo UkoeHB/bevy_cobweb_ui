@@ -4,15 +4,15 @@
 use crate as bevy_cobweb_ui;
 
 mod assets;
-mod assets_ext;
-mod bevy_ext;
+pub mod assets_ext;
+pub mod bevy_ext;
 pub mod loading;
 pub mod localization;
 mod plugin;
-mod react_ext;
-mod sickle_ext;
-mod tools;
-mod ui_bevy;
+pub mod react_ext;
+pub mod sickle_ext;
+pub mod tools;
+pub mod ui_bevy;
 
 #[cfg(feature = "widgets")]
 pub mod widgets;
