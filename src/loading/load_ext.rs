@@ -158,8 +158,14 @@ fn load_from_ref(
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
     mut caf_cache: ReactResMut<CobwebAssetCache>,
+    load_state: Res<State<LoadState>>,
 )
 {
+    if *load_state.get() != LoadState::Done {
+        tracing::error!("failed loading scene node {loadable_ref:?} into {id:?}, app state is not LoadState::Done");
+        return;
+    }
+
     caf_cache
         .get_noreact()
         .track_entity(id, loadable_ref, setter, &mut c, &loaders);

@@ -32,7 +32,6 @@ fn load_manifest(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-//todo: only modify manifest if locale contents are different from the last time this ran
 fn update_negotiated_languages(
     mut cached: ResMut<CachedNegotiatedLangs>,
     mut c: Commands,
@@ -275,7 +274,7 @@ impl LocalizationManifest
     }
 
     /// See [`Self::negotiated`].
-    pub fn negotiated_metas(&self) -> impl Iterator<Item = &LocalizationMeta> + '_
+    pub fn iter_negotiated_metas(&self) -> impl Iterator<Item = &LocalizationMeta> + '_
     {
         self.negotiated.iter().map(|id| self.get(id).unwrap())
     }

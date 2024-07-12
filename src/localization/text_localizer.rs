@@ -247,7 +247,7 @@ impl TextLocalizer
         let mut new_localizations = Vec::with_capacity(manifest.negotiated().len());
 
         // Build new localizations list while stealing existing languages from the previous list.
-        for negotiated in manifest.negotiated_metas() {
+        for negotiated in manifest.iter_negotiated_metas() {
             let next = match self
                 .localizations
                 .iter()

@@ -566,12 +566,23 @@ impl SceneLoader
         // Prepare scene instance.
         let mut scene_instance = {
             // Note: this reduces total memory use if there are very large scenes that get repeatedly constructed.
+            let mut largest_capacity = 0;
+            let mut largest_idx = 0;
             if let Some(cache_index) = self
                 .scene_instance_cache
                 .iter()
-                .position(|i| i.capacity() >= root_scene_layer.total_child_nodes())
+                .enumerate()
+                .position(|(idx, i)| {
+                    if largest_capacity < i.capacity() {
+                        largest_capacity = i.capacity();
+                        largest_idx = idx;
+                    }
+                    largest_capacity >= root_scene_layer.total_child_nodes()
+                })
             {
                 self.scene_instance_cache.swap_remove(cache_index)
+            } else if self.scene_instance_cache.len() > 0 {
+                self.scene_instance_cache.swap_remove(largest_idx)
             } else {
                 SceneInstance::default()
             }
