@@ -15,19 +15,19 @@ There are three kinds of attributes:
 To illustrate, here is our implementation of the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable:
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BgColor(pub Val);
+pub struct BgColor(pub Color);
 
 impl ApplyLoadable for BgColor
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        ec.try_insert(BorderRadius::all(self.0));
+        ec.try_insert(BackgroundColor(self.0));
     }
 }
 
 impl ThemedAttribute for BgColor
 {
-    type Value = Val;
+    type Value = Color;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
         // Make a BgColor and then call ApplyLoadable::apply.
@@ -215,7 +215,7 @@ app.add_plugins(ComponentThemePlugin::<CounterWidget>::new());
 
 ### Method 1: `bevy_cobweb_ui` specs
 
-In this method *structure* and *styling* are merged, and you customize widgets be overriding widget specs (see the [loading](bevy_cobweb_ui::loading) module for information about specs). The code-side widget will add all structure and attributes at once. Under the hood we use `sickle_ui` theming to store and manage the attributes, but there is no code-side overriding or style inheritence because all attributes are always inserted directly to the widget's `Theme<C>` component, so there is no room to inherit attributes from `Theme<C>` components on ancestors.
+In this method *structure* and *styling* are merged, and you customize widgets by overriding widget specs (see the [loading](bevy_cobweb_ui::loading) module for information about specs). The code-side widget will add all structure and attributes at once. Under the hood we use `sickle_ui` theming to store and manage the attributes, but there is no code-side overriding or style inheritence because all attributes are always inserted directly to the widget's `Theme<C>` component, so there is no room to inherit attributes from `Theme<C>` components on ancestors.
 
 Continuing the example from above, in this method we construct a `spec` for the widget containing default structure and styling.
 
@@ -299,7 +299,7 @@ fn build_ui(mut c: Commands)
 
 In this method we separate *structure* from *styling*. The code-side widget will only assemble the widget's structure (spawn the entity hierarchy and add non-themable details like interactivity and reactive behavior). Widget styling will come from theme attributes loaded separately.
 
-FOr our example we will define a *base theme* and load that to an ancestor entity, then override its attributes as needed.
+For our example we will define a *base theme* and load that to an ancestor entity, then override its attributes as needed.
 
 Here we define the widget structure and a base theme in the widget's cobweb asset file:
 
@@ -431,7 +431,7 @@ Here we extend our earlier reactive square by adding an inner square that is als
                 "press": {"duration": 0.1, "easing": "Linear"},
                 "release": {"duration": 0.1, "easing": "Linear"}
             },
-            "propagate_control": true
+            "inherit_control": true
         }
     }
 }
