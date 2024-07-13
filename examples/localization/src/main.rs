@@ -25,7 +25,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
                     // Spawn new buttons for everything in the manifest.
                     let mut n = c.ui_builder(id);
-                    let manager_entity = RadioButtonManager::setup(&mut n);
+                    let manager_entity = RadioButtonManager::insert(&mut n);
                     let current_lang = &manifest.negotiated()[0];
 
                     for language in manifest.languages() {

@@ -24,7 +24,7 @@ impl RadioButtonManager
     /// Inserts a new manager onto the builder entity.
     ///
     /// Returns the entity where the manager is stored.
-    pub fn setup(node: &mut UiBuilder<Entity>) -> Entity
+    pub fn insert(node: &mut UiBuilder<Entity>) -> Entity
     {
         node.insert(Self::default());
         node.id()

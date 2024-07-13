@@ -1,0 +1,177 @@
+{
+"#import": {
+    "bevy_cobweb_ui/radio_button.caf.json": "radio_button"
+},
+
+"#constants": {
+    "$title_pic": "images/test_320_240.png",
+    "$title_pic_size": {"x": 320.0, "y": 240.0}
+},
+
+"#commands": {
+    "LoadImages": [[
+        "$title_pic"
+    ]],
+    "LoadLocalizationManifest": {
+        "default": {
+            "id": "en-US",
+            "name": "English",
+            "manifest": "locales/en-US/main.ftl.ron"
+        },
+        "alts": [
+            {
+                "id": "fr-FR",
+                "name": "French",
+                "manifest": "locales/fr-FR/main.ftl.ron"
+            }
+        ]
+    }
+},
+
+"menu_scene": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
+    },
+    "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
+
+    "menu": {
+        "FlexStyle": {
+            "dims": {
+                "min_width": {"Px": 500.0},
+                "height": {"Percent": 100.0},
+                "border": {"right": {"Px": 2.0}}
+            },
+            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+        },
+        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.25, "alpha": 1.0}}],
+        "BrColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}],
+
+        "title": {
+            "FlexStyle": {
+                "flex": {
+                    "margin": {"top": {"Percent": 5.0}, "bottom": {"Percent": 5.0}, "left": {"Percent": 5.0}, "right": {"Percent": 5.0},},
+                    "flex_shrink": 1.0
+                }
+            },
+            "LoadedUiImage": {"texture": "$title_pic", "size": "$title_pic_size"},
+            "Animated<UiImageColor>": {
+                "values": {
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}},
+                    "idle_alt": {"Hsla": {"hue": 365.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}}
+                },
+                "settings": {
+                    "idle": {
+                        "duration": 10.0,
+                        "easing": "Linear",
+                        "loop_type": "Continuous"
+                    }
+                }
+            }
+        },
+
+        "options": {
+            "FlexStyle": {
+                "dims": {"min_width": {"Px": 200.0}},
+                "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+                "flex_grow": {
+                    "flex_grow": 1.0,
+                    "flex_shrink": 3.0
+                }
+            }
+        }
+    },
+
+    "content": {
+        "FlexStyle": {
+            "dims": {"height": {"Percent": 100.0}},
+            "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "FlexStart"},
+            "flex_grow": {"flex_grow": 1.0}
+        }
+    }
+},
+
+"menu_option_button(#spec:radio_button_with_basic_text)": {
+    "@base_justify_main": "Center",
+    "!base_dims": {"min_width": {"Percent": 100.0}},
+    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
+},
+
+"home_page": {
+    "AbsoluteStyle": {
+        "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+    },
+
+    "message": {
+        "LocalizedText": {},
+        "TextLine": {"text": "home-page-message"}
+    }
+},
+
+"play_page": {
+    "AbsoluteStyle": {
+        "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+    },
+
+    "message": {
+        "TextLine": {"text": "PLAY (TODO)"}
+    }
+},
+
+"settings_page": {
+    "AbsoluteStyle": {
+        "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+    },
+
+    "audio": {
+
+    },
+    "vsync": {
+
+    },
+    "language": {
+
+    }
+},
+
+"settings_radio_button(#spec:radio_button_with_indicator_and_basic_text)": {
+    "@base_background_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+    "@indicator_dot_unselected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.2}},
+    "!indicator_dot_color_animation": {
+        "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.3}}
+    },
+    "!indicator_dot_color_animation_selected": {
+        "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}
+    },
+    "@indicator_dot_animation_setting": {
+        "enter": {"duration": 0.0265, "easing": "Linear"},
+        "pointer_enter": {"duration": 0.0265, "easing": "Linear"},
+        "pointer_leave": {"duration": 0.0265, "easing": "Linear"},
+        "press": {"duration": 0.0265, "easing": "Linear"}
+    },
+
+    "!content": {
+        "Multi<Animated<TextLineColor>>": [[
+            {
+                "values": {
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.7, "alpha": 1.0}},
+                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}}
+                },
+                "settings": "@indicator_dot_animation_setting"
+            },
+            {
+                "state": ["Selected"],
+                "values": {
+                    "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}},
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}},
+                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}}
+                },
+                "settings": "@indicator_dot_animation_setting"
+            }
+        ]]
+    }
+}
+}

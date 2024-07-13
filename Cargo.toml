@@ -74,6 +74,7 @@ resolver = "2"
 members = [
     "examples/counter",
     "examples/counter_widget",
+    "examples/game_menu",
     "examples/hello_world",
     "examples/localization",
     "examples/radio_buttons",

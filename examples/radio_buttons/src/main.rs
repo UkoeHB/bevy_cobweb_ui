@@ -29,7 +29,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         // Insert radio buttons.
         l.edit("radio_frame", |l| {
             let n = l.deref_mut();
-            let manager_entity = RadioButtonManager::setup(n);
+            let manager_entity = RadioButtonManager::insert(n);
 
             for (i, option) in OPTIONS.iter().enumerate() {
                 // Add radio button.
