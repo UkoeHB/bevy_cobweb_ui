@@ -6,6 +6,7 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
+use bevy_cobweb_ui::write_text;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 l.update_on(entity_mutation::<Counter>(button_id), |text_id| {
                     move |mut e: TextEditor, counters: Reactive<Counter>| {
                         let Some(counter) = counters.get(button_id) else { return };
-                        e.write(text_id, |t| write!(t, "Counter: {}", **counter));
+                        write_text!(e, text_id, "Counter: {}", **counter);
                     }
                 });
             });

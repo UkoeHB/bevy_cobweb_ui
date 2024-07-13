@@ -20,25 +20,19 @@
 
 "#specs": {
     "radio_button_base": {
+        "@base_flex_direction": "Row",
+        "@base_justify_main": "FlexStart",
+        "@justify_cross": "Center",
         "@base_background_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}},
-        "@indicator_outline_thickness": {"Px": 2.0},
-        "@indicator_outline_margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 9.0}, "right": {"Px": 1.0}},
-        "@indicator_outline_radius": {"Px": 8.5},
-        "@indicator_outline_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
-        "@indicator_dot_unselected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
-        "@indicator_dot_selected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
-        "@indicator_dot_diameter": {"Px": 9.0},
-        "@indicator_dot_radius": {"Px": 4.5},
-        "@indicator_dot_animation_setting": {},
-        "@indicator_internal_spacing": {"Px": 2.0},
 
         "*": {
             "base": {
                 "FlexStyle": {
                     "dims": {"!base_dims":{}},
                     "content": {
-                        "justify_main": "FlexStart",
-                        "justify_cross": "Center",
+                        "flex_direction": "@base_flex_direction",
+                        "justify_main": "@base_justify_main",
+                        "justify_cross": "@justify_cross",
                         "!base_content":{}
                     },
                     "flex": {"!base_flex":{}}
@@ -46,44 +40,6 @@
                 "Interactive": [],
                 "BgColor": ["@base_background_color"],
                 "!base":{},
-
-                "indicator": {
-                    "FlexStyle": {
-                        "content": {"justify_main": "Center", "justify_cross": "Center"},
-                        "flex": {"margin": "@indicator_outline_margin"}
-                    },
-                    "Splat<Border>": ["@indicator_outline_thickness"],
-                    "BrRadius": ["@indicator_outline_radius"],
-                    "BrColor": ["@indicator_outline_color"],
-                    "!indicator":{},
-
-                    "indicator_dot": {
-                        "FlexStyle": {
-                            "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"}
-                        },
-                        "Splat<Margin>": ["@indicator_internal_spacing"],
-                        "BrRadius": ["@indicator_dot_radius"],
-                        "Multi<Animated<BgColor>>": [[
-                            {
-                                "values": {
-                                    "idle": "@indicator_dot_unselected_color",
-                                    "!indicator_dot_color_animation":{}
-                                },
-                                "settings": "@indicator_dot_animation_setting"
-                            },
-                            {
-                                "state": ["Selected"],
-                                "values": {
-                                    "enter_from": "@indicator_dot_unselected_color",
-                                    "idle": "@indicator_dot_selected_color"
-                                },
-                                "settings": "@indicator_dot_animation_setting"
-                            },
-                            "!indicator_dot_background_color_animation"
-                        ]],
-                        "!indicator_dot":{}
-                    }
-                },
 
                 "content": {
                     "FlexStyle": {
@@ -97,7 +53,76 @@
         }
     },
 
+    "radio_button_base_with_indicator(#spec:radio_button_base)": {
+        "@indicator_outline_thickness": {"Px": 2.0},
+        "@indicator_outline_margin": {"top": {"Px": 4.0}, "bottom": {"Px": 4.0}, "left": {"Px": 9.0}, "right": {"Px": 1.0}},
+        "@indicator_outline_radius": {"Px": 8.5},
+        "@indicator_outline_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@indicator_dot_unselected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+        "@indicator_dot_selected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@indicator_dot_diameter": {"Px": 9.0},
+        "@indicator_dot_radius": {"Px": 4.5},
+        "@indicator_dot_animation_setting": {},
+        "@indicator_internal_spacing": {"Px": 2.0},
+        "!base": {
+            "indicator": {
+                "FlexStyle": {
+                    "content": {"justify_main": "Center", "justify_cross": "Center"},
+                    "flex": {"margin": "@indicator_outline_margin"}
+                },
+                "Splat<Border>": ["@indicator_outline_thickness"],
+                "BrRadius": ["@indicator_outline_radius"],
+                "BrColor": ["@indicator_outline_color"],
+                "!indicator":{},
+
+                "indicator_dot": {
+                    "FlexStyle": {
+                        "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"}
+                    },
+                    "Splat<Margin>": ["@indicator_internal_spacing"],
+                    "BrRadius": ["@indicator_dot_radius"],
+                    "Multi<Animated<BgColor>>": [[
+                        {
+                            "values": {
+                                "idle": "@indicator_dot_unselected_color",
+                                "!indicator_dot_color_animation":{}
+                            },
+                            "settings": "@indicator_dot_animation_setting"
+                        },
+                        {
+                            "state": ["Selected"],
+                            "values": {
+                                "enter_from": "@indicator_dot_unselected_color",
+                                "idle": "@indicator_dot_selected_color",
+                                "!indicator_dot_color_animation_selected":{}
+                            },
+                            "settings": "@indicator_dot_animation_setting"
+                        },
+                        "!indicator_dot_background_color_animation"
+                    ]],
+                    "!indicator_dot":{}
+                }
+            }
+        }
+    },
+
     "radio_button_with_basic_text(#spec:radio_button_base)": {
+        "@text_size": 35.0,
+        "@text_string": "[empty-text]",
+        "@text_font": null,
+        "@text_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
+        "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}},
+
+        "!content_flex": {
+            "margin": "@text_margin"
+        },
+        "!content": {
+            "TextLine": { "size": "@text_size", "text": "@text_string", "font": "@text_font" },
+            "TextLineColor": ["@text_color"]
+        }
+    },
+
+    "radio_button_with_indicator_and_basic_text(#spec:radio_button_base_with_indicator)": {
         "@text_size": 35.0,
         "@text_string": "[empty-text]",
         "@text_font": null,
@@ -113,7 +138,7 @@
         }
     },
 
-    "radio_button_default(#spec:radio_button_with_basic_text)": {
+    "radio_button_default(#spec:radio_button_with_indicator_and_basic_text)": {
         "@text_color": {"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}},
         "@base_border_radius": {"Px": 6.0},
         "@base_starting_border_thickness": {"Px": 2.0},
@@ -193,6 +218,7 @@
 },
 
 "radio_button_with_basic_text(#spec:radio_button_with_basic_text)": {},
+"radio_button_with_indicator_and_basic_text(#spec:radio_button_with_indicator_and_basic_text)": {},
 
 "radio_button_default(#spec:radio_button_default)": {},
 

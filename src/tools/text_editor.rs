@@ -59,6 +59,8 @@ impl<'w, 's> TextEditor<'w, 's>
     /// This will automatically localize the text if the entity has the [`LocalizedText`] component.
     ///
     /// Returns `false` if the text section could not be accessed, if the writer fails, or if localization fails.
+    ///
+    /// See the [`write_text`] helper macro.
     pub fn write<E: Debug>(
         &mut self,
         text_entity: Entity,
@@ -73,6 +75,8 @@ impl<'w, 's> TextEditor<'w, 's>
     /// This will automatically localize the text if the entity has the [`LocalizedText`] component.
     ///
     /// Returns `false` if the text section could not be accessed, if the writer fails, or if localization fails.
+    ///
+    /// See the [`write_text_section`] helper macro.
     pub fn write_section<E: Debug>(
         &mut self,
         text_entity: Entity,
@@ -117,6 +121,58 @@ impl<'w, 's> TextEditor<'w, 's>
             }
         }
     }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper for writing text with a [`TextEditor`].
+///
+/// Example
+/*
+```rust
+fn example(mut commands: Commands, mut text_editor: TextEditor)
+{
+    let entity = commands.spawn(TextBundle::default()).ie();
+
+    // Macro call:
+    write_text!(text_editor, entity, "Count: {}", 42);
+
+    // Expands to:
+    text_editor.write(entity, |text| write!(text, "Count: {}", 42));
+}
+```
+*/
+#[macro_export]
+macro_rules! write_text {
+    ($editor: ident, $entity: expr, $($arg:tt)*) => {{
+        $editor.write($entity, |text| write!(text, $($arg)*))
+    }};
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper for writing text to a text section with a [`TextEditor`].
+///
+/// Example
+/*
+```rust
+fn example(mut commands: Commands, mut text_editor: TextEditor)
+{
+    let entity = commands.spawn(TextBundle::default()).ie();
+
+    // Macro call:
+    write_text_section!(text_editor, entity, 0, "Count: {}", 42);
+
+    // Expands to:
+    text_editor.write_section(entity, 0, |text| write!(text, "Count: {}", 42));
+}
+```
+*/
+#[macro_export]
+macro_rules! write_text_section {
+    ($editor: ident, $entity: expr, $section: expr, $($arg:tt)*) => {{
+        $editor.write_section($entity, $section, |text| write!(text, $($arg)*))
+    }};
 }
 
 //-------------------------------------------------------------------------------------------------------------------

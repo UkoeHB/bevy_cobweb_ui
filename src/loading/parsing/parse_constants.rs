@@ -140,25 +140,6 @@ fn try_replace_map_key_with_constant(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) fn path_to_constant_string<T: AsRef<str>>(path: &[T]) -> SmolStr
-{
-    // trim empties then concatenate a::b::c
-    let mut count = 0;
-    SmolStr::from_iter(
-        path.iter()
-            .filter(|p| !p.as_ref().is_empty())
-            .flat_map(|p| {
-                count += 1;
-                match count {
-                    1 => ["", p.as_ref()],
-                    _ => [CONSTANT_SEPARATOR, p.as_ref()],
-                }
-            }),
-    )
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Replaces constants throughout a map, ignoring sections that start with keywords.
 pub(crate) fn search_and_replace_map_constants(
     file: &LoadableFile,
@@ -285,7 +266,7 @@ fn constants_builder_recurse_into_value(
             tracing::warn!("overwriting duplicate terminal path segment {} in constants map at {:?}", key, file);
         }
     };
-    let base_path = path_to_constant_string(path);
+    let base_path = path_to_string(CONSTANT_SEPARATOR, path);
 
     if let Some(inner) = constants.get_mut(&base_path) {
         insert(inner);

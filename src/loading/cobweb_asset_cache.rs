@@ -467,7 +467,7 @@ impl CobwebAssetCache
             }
             for (k, v) in processed.constants.iter() {
                 // Prepend the import alias.
-                let path = path_to_constant_string(&[alias.as_str(), &*k]);
+                let path = path_to_string(CONSTANT_SEPARATOR, &[alias.as_str(), &*k]);
                 constants.insert(path, v.clone());
             }
             specs.import_specs(dependency, &preprocessed.file, &processed.specs);

@@ -49,7 +49,7 @@ where
 {
     scene_loader: &'b mut SceneLoader,
     builder: T,
-    path: LoadableRef,
+    loadable: LoadableRef,
     _p: PhantomData<&'a ()>,
 }
 
@@ -57,28 +57,23 @@ impl<'a, 'b, T> LoadedScene<'a, 'b, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
-    /// Calls `callback` on the `child` of the current scene node.
-    ///
-    /// Prints a warning and does nothing if `child` does not point to a child of the current node in the scene
-    /// that is currently being edited.
-    pub fn edit<C>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
+    fn edit_impl<C>(&mut self, loadable: LoadableRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
     {
-        let child_path = self.path.e(child);
-        let Some(child_entity) = self
+        let Some(entity) = self
             .scene_loader
             .active_scene()
-            .map(|s| s.get(&child_path.path))
+            .map(|s| s.get(&loadable.path))
             .flatten()
         else {
             match self.scene_loader.active_scene() {
                 Some(s) => {
                     tracing::warn!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
-                        child_path, s.loadable_ref(), s.root_entity());
+                        loadable, s.loadable_ref(), s.root_entity());
                 }
                 None => {
-                    tracing::error!("edit failed for scene node {:?}, no scene is active (this is a bug)", child_path);
+                    tracing::error!("edit failed for scene node {:?}, no scene is active (this is a bug)", loadable);
                 }
             }
             return self;
@@ -88,8 +83,8 @@ where
             let mut commands = self.builder.commands();
             let mut child_scene = LoadedScene {
                 scene_loader: self.scene_loader,
-                builder: T::loaded_scene_builder(&mut commands, child_entity),
-                path: child_path,
+                builder: T::loaded_scene_builder(&mut commands, entity),
+                loadable,
                 _p: PhantomData::default(),
             };
 
@@ -97,6 +92,58 @@ where
         }
 
         self
+    }
+
+    /// Calls `callback` on the `child` of the current scene node.
+    ///
+    /// Prints a warning and does nothing if `child` does not point to a child of the current node in the scene
+    /// that is currently being edited.
+    ///
+    /// Note that looking up the scene node allocates.
+    pub fn edit<C>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
+    where
+        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
+    {
+        let loadable = self.loadable.e(child);
+        self.edit_impl(loadable, callback)
+    }
+
+    /// Calls `callback` on the a scene node designated by `path` relative to the root node.
+    ///
+    /// Prints a warning and does nothing if `path` does not point to a node in the scene
+    /// that is currently being edited.
+    ///
+    /// Note that looking up the scene node allocates.
+    pub fn edit_from_root<C>(&mut self, path: impl AsRef<str>, callback: C) -> &mut Self
+    where
+        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
+    {
+        let loadable = self.loadable.extend_from_index(0, path);
+        self.edit_impl(loadable, callback)
+    }
+
+    /// Gets an entity relative to the current node.
+    ///
+    /// Note that this lookup allocates.
+    pub fn get_entity(&self, child: impl AsRef<str>) -> Option<Entity>
+    {
+        let child_path = self.loadable.path.extend(child);
+        self.scene_loader
+            .active_scene()
+            .map(|s| s.get(&child_path))
+            .flatten()
+    }
+
+    /// Gets an entity relative to the root node.
+    ///
+    /// Note that this lookup allocates.
+    pub fn get_entity_from_root(&self, path: impl AsRef<str>) -> Option<Entity>
+    {
+        let loadable = self.loadable.path.extend_from_index(0, path);
+        self.scene_loader
+            .active_scene()
+            .map(|s| s.get(&loadable))
+            .flatten()
     }
 
     /// See [`LoadSceneExt::load_scene`].
@@ -171,7 +218,7 @@ where
             let mut root_node = LoadedScene {
                 scene_loader,
                 builder: T::loaded_scene_builder(&mut commands, root_entity),
-                path,
+                loadable: path,
                 _p: PhantomData::default(),
             };
 

@@ -6,6 +6,7 @@ use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy::reflect::TypeRegistry;
 use serde::de::DeserializeSeed;
 use serde_json::Value;
+use smol_str::SmolStr;
 
 use crate::prelude::*;
 
@@ -81,6 +82,25 @@ pub(crate) fn try_parse_spec_invocation(key: &str) -> Result<Option<(&str, &str)
     let Some(("", maybe_spec_key)) = maybe_spec_req.split_once(SPEC_INVOCATION_KEYWORD) else { return Err(()) };
     let Some((spec_key, "")) = maybe_spec_key.split_once(')') else { return Err(()) };
     Ok(Some((new_key, spec_key)))
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
+{
+    // trim empties then concatenate a::b::c
+    let mut count = 0;
+    SmolStr::from_iter(
+        path.iter()
+            .filter(|p| !p.as_ref().is_empty())
+            .flat_map(|p| {
+                count += 1;
+                match count {
+                    1 => ["", p.as_ref()],
+                    _ => [separator, p.as_ref()],
+                }
+            }),
+    )
 }
 
 //-------------------------------------------------------------------------------------------------------------------

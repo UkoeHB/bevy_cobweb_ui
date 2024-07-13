@@ -147,6 +147,16 @@ impl LoadablePath
         Some(Self { path: Arc::from(path.as_slice()) })
     }
 
+    /// Extends a path starting after the requested index.
+    pub fn extend_from_index(&self, index: usize, extension: impl AsRef<str>) -> Self
+    {
+        let extension = extension.as_ref();
+        let mut path = SmallVec::<[SmolStr; 10]>::from(&self.path[0..=index]);
+        Self::extend_inner(extension, &mut path);
+
+        Self { path: Arc::from(path.as_slice()) }
+    }
+
     /// Gets the number of path segments.
     pub fn len(&self) -> usize
     {
@@ -226,6 +236,15 @@ impl LoadableRef
         Self {
             file: self.file.clone(),
             path: self.path.extend(extension.as_ref()),
+        }
+    }
+
+    /// Extends a path starting after the requested index.
+    pub fn extend_from_index(&self, index: usize, extension: impl AsRef<str>) -> Self
+    {
+        Self {
+            file: self.file.clone(),
+            path: self.path.extend_from_index(index, extension.as_ref()),
         }
     }
 
