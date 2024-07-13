@@ -6,42 +6,44 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
-use bevy_cobweb_ui::widgets::radio_button::RadioButtonBuilder;
-use bevy_cobweb_ui::widgets::radio_button::RadioButtonManager;
+use bevy_cobweb_ui::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_home_page_content<'a>(_l: &'a mut LoadedScene<'a, 'a, UiBuilder<'a, Entity>>)
-{
-
-}
+fn build_home_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_play_page_content<'a>(_l: &'a mut LoadedScene<'a, 'a, UiBuilder<'a, Entity>>)
-{
-
-}
+fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_settings_page_content<'a>(_l: &'a mut LoadedScene<'a, 'a, UiBuilder<'a, Entity>>)
+fn build_settings_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
 {
+    _l.edit("vsync", |_l| {});
     // TODO: audio control (slider)
     // TODO: vsync control (radio buttons)
+    /*
+    let manager_entity = RadioButtonManager::insert(l.deref_mut());
+    l.edit("options", |l| {
+        // Option: enable vsync
+
+        // Option: disable vsync
+    });
+    */
     // TODO: language control (drop-down)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_menu_option<'a>(
-    l: &'a mut LoadedScene<'a, 'a, UiBuilder<'a, Entity>>,
+    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
     file: &LoadableRef,
     content_path: &str,
     button_text: &str,
     page_scene: &str,
-    page_content_fn: impl FnOnce(&mut LoadedScene<UiBuilder<Entity>>),
-    start_selected: bool
+    page_content_fn: impl for<'b> FnOnce(&mut LoadedScene<'b, '_, UiBuilder<'b, Entity>>),
+    start_selected: bool,
 )
 {
     let manager_entity = l.id();
@@ -66,7 +68,8 @@ fn add_menu_option<'a>(
         .build(manager_entity, l.deref_mut())
         .on_select(move |mut c: Commands| {
             c.entity(page_entity).insert(Visibility::Inherited);
-        }).on_deselect(move |mut c: Commands| {
+        })
+        .on_deselect(move |mut c: Commands| {
             c.entity(page_entity).insert(Visibility::Hidden);
         })
         .id();
@@ -87,9 +90,33 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("menu::options", |l| {
             RadioButtonManager::insert(l.deref_mut());
-            add_menu_option(l, &file, "content", "menu-option-home", "home_page", build_home_page_content, true);
-            add_menu_option(l, &file, "content", "menu-option-play", "play_page", build_play_page_content, false);
-            add_menu_option(l, &file, "content", "menu-option-settings", "settings_page", build_settings_page_content, false);
+            add_menu_option(
+                l,
+                &file,
+                "content",
+                "menu-option-home",
+                "home_page",
+                build_home_page_content,
+                true,
+            );
+            add_menu_option(
+                l,
+                &file,
+                "content",
+                "menu-option-play",
+                "play_page",
+                build_play_page_content,
+                false,
+            );
+            add_menu_option(
+                l,
+                &file,
+                "content",
+                "menu-option-settings",
+                "settings_page",
+                build_settings_page_content,
+                false,
+            );
         });
     });
 }

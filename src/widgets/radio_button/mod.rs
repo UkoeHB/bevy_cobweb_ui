@@ -10,6 +10,17 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+enum Indicator
+{
+    #[default]
+    None,
+    Prime,
+    Reversed,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Coordinates toggling of radio buttons.
 ///
 /// See [`RadioButtonBuilder::build`].
@@ -44,10 +55,8 @@ pub struct RadioButtonContent;
 #[derive(Component, DefaultTheme, Clone, Debug)]
 pub struct RadioButton
 {
-    indicator_entity: Entity,
-    indicator_dot_entity: Entity,
     content_entity: Entity,
-    content_inner_entities: SmallVec<[(&'static str, Entity); 3]>,
+    inner_entities: SmallVec<[(&'static str, Entity); 5]>,
 }
 
 impl UiContext for RadioButton
@@ -55,15 +64,9 @@ impl UiContext for RadioButton
     fn get(&self, target: &str) -> Result<Entity, String>
     {
         match target {
-            RadioButtonIndicator::NAME => Ok(self.indicator_entity),
-            RadioButtonIndicatorDot::NAME => Ok(self.indicator_dot_entity),
             RadioButtonContent::NAME => Ok(self.content_entity),
             _ => {
-                let Some((_, entity)) = self
-                    .content_inner_entities
-                    .iter()
-                    .find(|(name, _)| *name == target)
-                else {
+                let Some((_, entity)) = self.inner_entities.iter().find(|(name, _)| *name == target) else {
                     return Err(format!("unknown UI context {target} for {}", type_name::<Self>()));
                 };
                 Ok(*entity)
@@ -73,10 +76,10 @@ impl UiContext for RadioButton
     fn contexts(&self) -> Vec<&'static str>
     {
         Vec::from_iter(
-            [RadioButtonIndicator::NAME, RadioButtonIndicatorDot::NAME, RadioButtonContent::NAME]
+            [RadioButtonContent::NAME]
                 .iter()
                 .map(|name| *name)
-                .chain(self.content_inner_entities.iter().map(|(name, _)| *name)),
+                .chain(self.inner_entities.iter().map(|(name, _)| *name)),
         )
     }
 }
@@ -130,6 +133,7 @@ impl RadioButtonType
 pub struct RadioButtonBuilder
 {
     button_type: RadioButtonType,
+    indicator: Indicator,
     localized: bool,
 }
 
@@ -139,6 +143,7 @@ impl RadioButtonBuilder
     {
         Self {
             button_type: RadioButtonType::Default { text: None },
+            indicator: Indicator::Prime, // Included by default
             localized: false,
         }
     }
@@ -147,22 +152,31 @@ impl RadioButtonBuilder
     {
         Self {
             button_type: RadioButtonType::DefaultInBox { text: None },
+            indicator: Indicator::Prime, // Included by default
             localized: false,
         }
     }
 
+    /// Builds from a custom scene.
+    ///
+    /// Does NOT include an indicator. Use [`Self::with_indicator`].
     pub fn custom(scene: LoadableRef) -> Self
     {
         Self {
             button_type: RadioButtonType::Custom(scene),
+            indicator: Indicator::None,
             localized: false,
         }
     }
 
+    /// Builds from a custom scene with text.
+    ///
+    /// Does NOT include an indicator. Use [`Self::with_indicator`].
     pub fn custom_with_text(scene: LoadableRef, text: impl Into<String>) -> Self
     {
         Self {
             button_type: RadioButtonType::CustomWithText { loadable: scene, text: Some(text.into()) },
+            indicator: Indicator::None,
             localized: false,
         }
     }
@@ -171,6 +185,7 @@ impl RadioButtonBuilder
     {
         Self {
             button_type: RadioButtonType::Default { text: Some(text.into()) },
+            indicator: Indicator::Prime, // Included by default
             localized: false,
         }
     }
@@ -179,8 +194,27 @@ impl RadioButtonBuilder
     {
         Self {
             button_type: RadioButtonType::DefaultInBox { text: Some(text.into()) },
+            indicator: Indicator::Prime, // Included by default
             localized: false,
         }
+    }
+
+    /// Include an indicator dot in the button to the left/top of the content.
+    ///
+    /// Use [`Self::with_indicator_rev`] if you want the button to the right/bottom of the content.
+    pub fn with_indicator(mut self) -> Self
+    {
+        self.indicator = Indicator::Prime;
+        self
+    }
+
+    /// Include an indicator dot in the button to the right/bottom of the content.
+    ///
+    /// Use [`Self::with_indicator`] if you want the button to the left/top of the content.
+    pub fn with_indicator_rev(mut self) -> Self
+    {
+        self.indicator = Indicator::Reversed;
+        self
     }
 
     /// Cause the text to be localized.
@@ -216,19 +250,19 @@ impl RadioButtonBuilder
         self,
         manager_entity: Entity,
         node: &'a mut UiBuilder<Entity>,
-        content_builder: impl FnOnce(&mut UiBuilder<Entity>) -> SmallVec<[(&'static str, Entity); 3]>,
+        content_builder: impl FnOnce(&mut UiBuilder<Entity>) -> SmallVec<[(&'static str, Entity); 10]>,
     ) -> UiBuilder<'a, Entity>
     {
         let scene = self.button_type.get_scene();
 
         let mut base_entity = Entity::PLACEHOLDER;
-        let mut indicator_entity = Entity::PLACEHOLDER;
-        let mut indicator_dot_entity = Entity::PLACEHOLDER;
         let mut content_entity = Entity::PLACEHOLDER;
-        let mut content_inner_entities = SmallVec::default();
+        let mut inner_entities = SmallVec::default();
 
         node.load_with_theme::<RadioButton>(scene.e("base"), &mut base_entity, |base, path| {
             let base_id = base.id();
+
+            // Setup behavior.
             base
                 // Select this button.
                 // TODO: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
@@ -251,18 +285,12 @@ impl RadioButtonBuilder
                     manager.selected = Some(base_id);
                 });
 
-            base.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
-                path.e("indicator"),
-                &mut indicator_entity,
-                |outline, path| {
-                    outline.load_with_subtheme::<RadioButton, RadioButtonIndicatorDot>(
-                        path.e("indicator_dot"),
-                        &mut indicator_dot_entity,
-                        |_, _| {},
-                    );
-                },
-            );
+            // Add a dot if requested. This dot will be before the content (to the right/bottom).
+            if self.indicator == Indicator::Prime {
+                Self::add_indicator(base, &path, &mut inner_entities);
+            }
 
+            // Add the content.
             base.load_with_subtheme::<RadioButton, RadioButtonContent>(
                 path.e("content"),
                 &mut content_entity,
@@ -283,20 +311,46 @@ impl RadioButtonBuilder
                     }
 
                     // Build contents.
-                    content_inner_entities = (content_builder)(content);
+                    let content_entities = (content_builder)(content);
+                    inner_entities.extend(content_entities);
                 },
             );
 
-            base.insert(RadioButton {
-                indicator_entity,
-                indicator_dot_entity,
-                content_entity,
-                content_inner_entities,
-            });
+            // Add a dot if requested. This dot will be after the content (to the right/bottom).
+            if self.indicator == Indicator::Reversed {
+                Self::add_indicator(base, &path, &mut inner_entities);
+            }
+
+            base.insert(RadioButton { content_entity, inner_entities });
         });
 
         // Return UiBuilder for root of button where interactions will be detected.
         node.commands().ui_builder(base_entity)
+    }
+
+    fn add_indicator(
+        node: &mut UiBuilder<Entity>,
+        path: &LoadableRef,
+        inner_entities: &mut SmallVec<[(&'static str, Entity); 5]>,
+    )
+    {
+        let mut indicator_entity = Entity::PLACEHOLDER;
+        let mut indicator_dot_entity = Entity::PLACEHOLDER;
+
+        node.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
+            path.e("indicator"),
+            &mut indicator_entity,
+            |outline, path| {
+                outline.load_with_subtheme::<RadioButton, RadioButtonIndicatorDot>(
+                    path.e("indicator_dot"),
+                    &mut indicator_dot_entity,
+                    |_, _| {},
+                );
+            },
+        );
+
+        inner_entities.push((RadioButtonIndicator::NAME, indicator_entity));
+        inner_entities.push((RadioButtonIndicatorDot::NAME, indicator_dot_entity));
     }
 }
 

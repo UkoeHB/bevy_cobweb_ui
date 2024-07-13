@@ -110,6 +110,9 @@ fn parse_scene_layer(
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
+    // Prep the node.
+    caf_cache.prepare_scene_node(LoadableRef { file: scene.file.clone(), path: current_path.clone() });
+
     // Begin layer update.
     scene_layer.start_update(data.len());
 

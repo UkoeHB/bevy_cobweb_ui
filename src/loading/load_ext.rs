@@ -189,7 +189,7 @@ impl LoaderCallbacks
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct ContextSetter
 {
     pub(crate) setter: fn(&mut EntityCommands),

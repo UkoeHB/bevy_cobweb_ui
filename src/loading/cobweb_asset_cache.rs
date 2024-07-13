@@ -179,6 +179,7 @@ struct ProcessedLoadableFile
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Debug)]
 struct ErasedLoadable
 {
     type_id: TypeId,
@@ -187,7 +188,7 @@ struct ErasedLoadable
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct SubscriptionRef
 {
     entity: Entity,
@@ -196,7 +197,7 @@ struct SubscriptionRef
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum ReflectedLoadable
 {
     Value(Arc<Box<dyn Reflect + 'static>>),
@@ -254,7 +255,7 @@ impl ReflectedLoadable
 /// [`CafLoadingEntityCommandsExt::load`].
 ///
 /// Note that command loadables in caf files are automatically applied to the world.
-#[derive(ReactResource, Default)]
+#[derive(ReactResource, Default, Debug)]
 pub struct CobwebAssetCache
 {
     /// Tracks which files have not initialized yet.
@@ -612,6 +613,14 @@ impl CobwebAssetCache
         entry.push((loadable.clone(), loadable_ref.clone()));
 
         true
+    }
+
+    /// Prepares a scene node.
+    ///
+    /// We need to prepare scene nodes because they may be empty, which means a loadable won't be inserted.
+    pub(crate) fn prepare_scene_node(&mut self, loadable_ref: LoadableRef)
+    {
+        self.loadables.entry(loadable_ref).or_default();
     }
 
     /// Inserts a loadable at the specified path if its value will change.

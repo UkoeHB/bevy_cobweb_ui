@@ -38,11 +38,11 @@
     "menu": {
         "FlexStyle": {
             "dims": {
-                "min_width": {"Px": 500.0},
+                "min_width": {"Px": 250.0},
                 "height": {"Percent": 100.0},
                 "border": {"right": {"Px": 2.0}}
             },
-            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+            "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "Center"}
         },
         "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.25, "alpha": 1.0}}],
         "BrColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}],
@@ -50,7 +50,7 @@
         "title": {
             "FlexStyle": {
                 "flex": {
-                    "margin": {"top": {"Percent": 5.0}, "bottom": {"Percent": 5.0}, "left": {"Percent": 5.0}, "right": {"Percent": 5.0},},
+                    "margin": {"top": {"Percent": 5.0}, "bottom": {"Percent": 5.0}, "left": {"Percent": 20.0}, "right": {"Percent": 20.0}},
                     "flex_shrink": 1.0
                 }
             },
@@ -64,7 +64,7 @@
                     "idle": {
                         "duration": 10.0,
                         "easing": "Linear",
-                        "loop_type": "Continuous"
+                        "loop_type": "Continous"
                     }
                 }
             }
@@ -73,8 +73,8 @@
         "options": {
             "FlexStyle": {
                 "dims": {"min_width": {"Px": 200.0}},
-                "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
-                "flex_grow": {
+                "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "Center"},
+                "flex": {
                     "flex_grow": 1.0,
                     "flex_shrink": 3.0
                 }
@@ -86,7 +86,7 @@
         "FlexStyle": {
             "dims": {"height": {"Percent": 100.0}},
             "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "FlexStart"},
-            "flex_grow": {"flex_grow": 1.0}
+            "flex": {"flex_grow": 1.0}
         }
     }
 },
@@ -94,13 +94,28 @@
 "menu_option_button(#spec:radio_button_with_basic_text)": {
     "@base_justify_main": "Center",
     "!base_dims": {"min_width": {"Percent": 100.0}},
-    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}}
+    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}},
+    "!base": {
+        "Multi<Responsive<BgColor>>": [[
+            {
+                "values": {
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}}
+                }
+            },
+            {
+                "state": ["Selected"],
+                "values": {
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.85, "alpha": 1.0}}
+                }
+            }
+        ]]
+    }
 },
 
 "home_page": {
     "AbsoluteStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
-        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
 
     "message": {
@@ -112,7 +127,7 @@
 "play_page": {
     "AbsoluteStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
-        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
 
     "message": {
@@ -123,17 +138,23 @@
 "settings_page": {
     "AbsoluteStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
-        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"},
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
 
     "audio": {
-
+        "message": {
+            "TextLine": {"text": "AUDIO"}
+        }
     },
     "vsync": {
-
+        "message": {
+            "TextLine": {"text": "VSYNC"}
+        }
     },
     "language": {
-
+        "message": {
+            "TextLine": {"text": "LANGUAGE"}
+        }
     }
 },
 

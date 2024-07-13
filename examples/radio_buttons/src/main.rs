@@ -34,6 +34,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             for (i, option) in OPTIONS.iter().enumerate() {
                 // Add radio button.
                 let entity = RadioButtonBuilder::custom_with_text(file.e("radio_button"), *option)
+                    .with_indicator()
                     .build(manager_entity, n)
                     .on_select(move |mut e: TextEditor| {
                         e.write(display_text, |t| write!(t, "Selected: {}", option));
