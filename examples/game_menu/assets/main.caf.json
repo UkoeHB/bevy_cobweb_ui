@@ -99,13 +99,13 @@
         "Multi<Responsive<BgColor>>": [[
             {
                 "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}}
+                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.63, "lightness": 0.55, "alpha": 1.0}}
                 }
             },
             {
                 "state": ["Selected"],
                 "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.85, "alpha": 1.0}}
+                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.7, "alpha": 1.0}}
                 }
             }
         ]]

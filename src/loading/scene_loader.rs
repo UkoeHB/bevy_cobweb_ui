@@ -104,22 +104,18 @@ impl SceneLayer
         let insertion_method = 'm: {
             #[cfg(feature = "hot_reload")]
             {
-                // Check if the requested id is at the current update position.
-                if self
-                    .children
-                    .get(position)
-                    .filter(|data| data.id == *id)
-                    .is_some()
-                {
-                    break 'm SceneLayerInsertionMethod::NoChange;
-                }
-
-                // Look for the requested id in the remaining nodes and move it to the update position.
-                if let Some(found_pos) = self.children[position..]
+                // Check if this node already exists.
+                // Note: we assume children before `position` can never equal `id`.
+                if let Some(offset_pos) = self.children[position..]
                     .iter()
                     .position(|data| data.id == *id)
                 {
-                    self.children.swap(position, found_pos);
+                    // Case: the requested id is at the current update position.
+                    if offset_pos == 0 {
+                        break 'm SceneLayerInsertionMethod::NoChange;
+                    }
+                    // Case: move the requested id to the update position.
+                    self.children.swap(position, position + offset_pos);
                     break 'm SceneLayerInsertionMethod::Updated;
                 }
             }
