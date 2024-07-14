@@ -37,7 +37,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     .with_indicator()
                     .build(manager_entity, n)
                     .on_select(move |mut e: TextEditor| {
-                        e.write(display_text, |t| write!(t, "Selected: {}", option));
+                        write_text!(e, display_text, "Selected: {}", option);
                     })
                     .id();
 

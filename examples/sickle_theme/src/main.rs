@@ -73,8 +73,8 @@ impl ExampleTextBuilder
             // Must use update_on so hot-reloads will be detected.
             let text_val = self.text;
             core.update_on((), |id| {
-                move |mut t: TextEditor| {
-                    t.write(id, |t| write!(t, "{:?}", text_val));
+                move |mut e: TextEditor| {
+                    write_text!(e, id, "{:?}", text_val);
                 }
             });
 

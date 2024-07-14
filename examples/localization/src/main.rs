@@ -77,8 +77,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 l.insert(LocalizedText::default());
                 l.insert_derived(TextLine::default());
                 l.update_on(broadcast::<TextLocalizerUpdated>(), |id| {
-                    move |mut count: Local<usize>, mut t: TextEditor| {
-                        t.write(id, |t| write!(t, "locale-counter?count={:?}", *count));
+                    move |mut count: Local<usize>, mut e: TextEditor| {
+                        write_text!(e, id, "locale-counter?count={:?}", *count);
                         *count += 1;
                     }
                 });

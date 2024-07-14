@@ -45,13 +45,8 @@ impl Counter
 
         IntoSystem::into_system(move |mut editor: TextEditor, counters: Reactive<Counter>| {
             let Some(counter) = counters.get(from) else { return };
-            counter.write_to_editor(&mut editor, to, pre_text.as_str(), post_text.as_str());
+            write_text!(editor, to, "{}{}{}", pre_text.as_str(), counter.0, post_text.as_str());
         })
-    }
-
-    fn write_to_editor(&self, editor: &mut TextEditor, to: Entity, pre_text: &str, post_text: &str)
-    {
-        editor.write(to, |t| write!(t, "{}{}{}", pre_text, self.0, post_text));
     }
 }
 
@@ -194,7 +189,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             .build(n)
             .edit_child::<CounterWidget>(CounterWidgetText::NAME, |c, core, text| {
                 c.ui_builder(core).on_pressed(move |mut e: TextEditor| {
-                    e.write(text, |t| write!(t, "Pressed"));
+                    write_text!(e, text, "Pressed");
                 });
             });
 
