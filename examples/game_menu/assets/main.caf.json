@@ -4,8 +4,10 @@
 },
 
 "#constants": {
-    "$title_pic": "images/test_320_240.png",
-    "$title_pic_size": {"x": 320.0, "y": 240.0}
+    "$title_pic": "images/example_280_220.png",
+    "$title_pic_x": 280.0,
+    "$title_pic_y": 220.0,
+    "$title_pic_size": {"x": "$$title_pic_x", "y": "$$title_pic_y"}
 },
 
 "#commands": {
@@ -49,24 +51,41 @@
 
         "title": {
             "FlexStyle": {
+                "dims": {"width": {"Px": "$title_pic_x"}, "height": {"Px": "$title_pic_y"}},
                 "flex": {
                     "margin": {"top": {"Px": 20.0}, "bottom": {"Px": 20.0}, "left": {"Px": 20.0}, "right": {"Px": 20.0}}
                 }
             },
             "LoadedUiImage": {"texture": "$title_pic", "size": "$title_pic_size"},
+            "Interactive": [],
             "Animated<UiImageColor>": {
                 "values": {
-                    "idle": {"Hsla": {"hue": 200.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}},
-                    "idle_alt": {"Hsla": {"hue": 365.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}}
+                    "idle": {"Hsla": {"hue": 42.0, "saturation": 0.6, "lightness": 0.7, "alpha": 1.0}},
+                    "idle_alt": {"Hsla": {"hue": 42.0, "saturation": 0.80, "lightness": 0.5, "alpha": 1.0}}
                 },
                 "settings": {
                     "idle": {
-                        "duration": 1.0,
-                        "easing": "Linear",
+                        "duration": 3.0,
+                        "easing": "InOutSine",
                         "loop_type": "PingPongContinous"
                     }
                 }
+            },
+
+            "#c: Add barrier so hovers don't make the animation reset.":0,
+            "interaction_barrier": {
+                "FlexStyle": {"dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}}},
+                "Interactive": [],
+                "SetFocusPolicy": "Block"
             }
+        },
+
+        "shim": {
+            "FlexStyle": {},
+            "Width": [{"Percent": 75.0}],
+            "Height": [{"Px": 3.0}],
+            "Margin": [{"bottom": {"Px": 21.0}, "top": {"Px": 10.0}}],
+            "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
         },
 
         "options": {
@@ -93,7 +112,6 @@
 "menu_option_button(#spec:radio_button_with_basic_text)": {
     "@base_justify_main": "Center",
     "!base_dims": {"min_width": {"Percent": 100.0}},
-    "!base_flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}},
     "!base": {
         "Multi<Responsive<BgColor>>": [[
             {
@@ -107,7 +125,11 @@
                     "idle": {"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.7, "alpha": 1.0}}
                 }
             }
-        ]]
+        ]],
+        "Margin": [{"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}],
+        "Splat<Border>": [{"Px": 2.0}],
+        "BrRadius": [{"Px": 12.0}],
+        "BrColor": [{"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.1, "alpha": 1.0}}]
     }
 },
 
