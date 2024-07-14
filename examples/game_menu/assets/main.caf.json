@@ -7,7 +7,8 @@
     "$title_pic": "images/example_280_220.png",
     "$title_pic_x": 280.0,
     "$title_pic_y": 220.0,
-    "$title_pic_size": {"x": "$$title_pic_x", "y": "$$title_pic_y"}
+    "$title_pic_size": {"x": "$$title_pic_x", "y": "$$title_pic_y"},
+    "$settings_text_size": 30.0
 },
 
 "#commands": {
@@ -109,30 +110,6 @@
     }
 },
 
-"menu_option_button(#spec:radio_button_with_basic_text)": {
-    "@base_justify_main": "Center",
-    "!base_dims": {"min_width": {"Percent": 100.0}},
-    "!base": {
-        "Multi<Responsive<BgColor>>": [[
-            {
-                "values": {
-                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.63, "lightness": 0.55, "alpha": 1.0}}
-                }
-            },
-            {
-                "state": ["Selected"],
-                "values": {
-                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.7, "alpha": 1.0}}
-                }
-            }
-        ]],
-        "Margin": [{"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}],
-        "Splat<Border>": [{"Px": 2.0}],
-        "BrRadius": [{"Px": 12.0}],
-        "BrColor": [{"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.1, "alpha": 1.0}}]
-    }
-},
-
 "home_page": {
     "AbsoluteStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
@@ -162,28 +139,95 @@
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
 
+    "shim1": {
+        "FlexStyle": {},
+        "Width": [{"Percent": 75.0}],
+        "Height": [{"Px": 3.0}],
+        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
+        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+    },
+
     "audio": {
         "message": {
             "TextLine": {"text": "AUDIO"}
         }
     },
+
+    "shim2": {
+        "FlexStyle": {},
+        "Width": [{"Percent": 75.0}],
+        "Height": [{"Px": 3.0}],
+        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
+        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+    },
+
     "vsync": {
-        "message": {
-            "TextLine": {"text": "VSYNC"}
+        "options": {
+            "FlexStyle": {
+                "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
+            },
+            "text": {
+                "FlexStyle": {
+                    "flex": {"margin": {"bottom": {"Px": 1.0}}}
+                },
+                "TextLine": {"text": "Vsync: ", "size": "$settings_text_size"}
+            }
         }
     },
+
+    "shim3": {
+        "FlexStyle": {},
+        "Width": [{"Percent": 75.0}],
+        "Height": [{"Px": 3.0}],
+        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
+        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+    },
+
     "language": {
         "message": {
             "TextLine": {"text": "LANGUAGE"}
         }
+    },
+
+    "shim4": {
+        "FlexStyle": {},
+        "Width": [{"Percent": 75.0}],
+        "Height": [{"Px": 3.0}],
+        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
+        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+    }
+},
+
+"menu_option_button(#spec:radio_button_with_basic_text)": {
+    "@base_justify_main": "Center",
+    "!base_dims": {"min_width": {"Percent": 100.0}},
+    "!base": {
+        "Multi<Responsive<BgColor>>": [[
+            {
+                "values": {
+                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.63, "lightness": 0.55, "alpha": 1.0}}
+                }
+            },
+            {
+                "state": ["Selected"],
+                "values": {
+                    "idle": {"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.7, "alpha": 1.0}}
+                }
+            }
+        ]],
+        "Margin": [{"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}],
+        "Splat<Border>": [{"Px": 2.0}],
+        "BrRadius": [{"Px": 12.0}],
+        "BrColor": [{"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.1, "alpha": 1.0}}]
     }
 },
 
 "settings_radio_button(#spec:radio_button_with_indicator_and_basic_text)": {
     "@base_background_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.0}},
+    "@text_size": "$settings_text_size",
     "@indicator_dot_unselected_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.2}},
     "!indicator_dot_color_animation": {
-        "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.3}}
+        "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 0.5}}
     },
     "!indicator_dot_color_animation_selected": {
         "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}
@@ -199,17 +243,16 @@
         "Multi<Animated<TextLineColor>>": [[
             {
                 "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.7, "alpha": 1.0}},
-                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}}
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}},
+                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}}
                 },
                 "settings": "@indicator_dot_animation_setting"
             },
             {
                 "state": ["Selected"],
                 "values": {
-                    "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.8, "alpha": 1.0}},
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}},
-                    "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}}
+                    "enter_from": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.9, "alpha": 1.0}},
+                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 1.0, "alpha": 1.0}}
                 },
                 "settings": "@indicator_dot_animation_setting"
             }

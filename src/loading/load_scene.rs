@@ -154,6 +154,12 @@ where
         self.builder.load_scene(self.scene_loader, path, callback);
         self
     }
+
+    /// Gets the location of the current scene node.
+    pub fn path(&self) -> &LoadableRef
+    {
+        &self.loadable
+    }
 }
 
 impl<'a, 'b, T> Deref for LoadedScene<'a, 'b, T>

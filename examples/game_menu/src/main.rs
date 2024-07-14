@@ -1,7 +1,7 @@
 //! An example game menu.
 
 use bevy::prelude::*;
-use bevy::window::WindowTheme;
+use bevy::window::{PresentMode, PrimaryWindow, WindowTheme};
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
@@ -18,19 +18,49 @@ fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_settings_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
+fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
 {
-    _l.edit("vsync", |_l| {});
     // TODO: audio control (slider)
-    // TODO: vsync control (radio buttons)
-    /*
-    let manager_entity = RadioButtonManager::insert(l.deref_mut());
-    l.edit("options", |l| {
-        // Option: enable vsync
 
-        // Option: disable vsync
+    l.edit("vsync", |l| {
+        let manager_entity = RadioButtonManager::insert(l.deref_mut());
+        l.edit("options", |l| {
+            let button_loc = LoadableRef::from_file(l.path().file.as_str()).e("settings_radio_button");
+
+            // Option: enable vsync
+            let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "On")
+                .with_indicator()
+                .build(manager_entity, l.deref_mut())
+                .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
+                    window.single_mut().present_mode = PresentMode::AutoVsync;
+                    tracing::info!("vsync set to on");
+                })
+                .id();
+
+            // Option: disable vsync
+            let disabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "Off")
+                .with_indicator()
+                .build(manager_entity, l.deref_mut())
+                .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
+                    window.single_mut().present_mode = PresentMode::AutoNoVsync;
+                    tracing::info!("vsync set to off");
+                })
+                .id();
+
+            // Get initial value.
+            l.commands().syscall(
+                (),
+                move |mut c: Commands, window: Query<&Window, With<PrimaryWindow>>| match window
+                    .single()
+                    .present_mode
+                {
+                    PresentMode::AutoNoVsync => c.react().entity_event(disabled, Deselect),
+                    _ => c.react().entity_event(enabled, Select),
+                },
+            );
+        });
     });
-    */
+
     // TODO: language control (drop-down)
 }
 
