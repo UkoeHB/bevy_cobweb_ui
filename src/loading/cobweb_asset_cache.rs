@@ -220,11 +220,7 @@ impl ReflectedLoadable
         match self {
             ReflectedLoadable::Value(loadable) => {
                 let Some(new_value) = T::from_reflect(loadable.as_reflect()) else {
-                    let temp = T::default();
-                    let mut hint = serde_json::to_string_pretty(&temp).unwrap();
-                    if hint.len() > 250 {
-                        hint = serde_json::to_string(&temp).unwrap();
-                    }
+                    let hint = Self::make_hint::<T>();
                     tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
                         serialization hint: {}",
                         type_name::<T>(), loadable_ref.path.path, loadable_ref.file, hint.as_str());
@@ -233,17 +229,29 @@ impl ReflectedLoadable
                 Some(new_value)
             }
             ReflectedLoadable::DeserializationFailed(err) => {
-                let temp = T::default();
-                let mut hint = serde_json::to_string_pretty(&temp).unwrap();
-                if hint.len() > 250 {
-                    hint = serde_json::to_string(&temp).unwrap();
-                }
+                let hint = Self::make_hint::<T>();
                 tracing::error!("failed deserializing loadable {:?} at path {:?} in file {:?}, {:?}\n\
                     serialization hint: {}",
                     type_name::<T>(), loadable_ref.path.path, loadable_ref.file, **err, hint.as_str());
                 None
             }
         }
+    }
+
+    fn make_hint<T: Loadable>() -> String
+    {
+        let temp = T::default();
+        let mut hint = serde_json::to_string_pretty(&temp).unwrap();
+        // Pretty JSON makes a lot of lines, so only use it for small types.
+        if hint.len() > 250 {
+            hint = serde_json::to_string(&temp).unwrap();
+        }
+        // We need to manually add this for some reason...
+        if matches!(*temp.get_represented_type_info().unwrap(), bevy::reflect::TypeInfo::TupleStruct(_)) {
+            hint.insert(0, '[');
+            hint.push(']');
+        }
+        hint
     }
 }
 

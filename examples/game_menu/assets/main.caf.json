@@ -60,8 +60,8 @@
             "Interactive": [],
             "Animated<UiImageColor>": {
                 "values": {
-                    "idle": {"Hsla": {"hue": 42.0, "saturation": 0.6, "lightness": 0.7, "alpha": 1.0}},
-                    "idle_alt": {"Hsla": {"hue": 42.0, "saturation": 0.80, "lightness": 0.5, "alpha": 1.0}}
+                    "idle": {"Hsla": {"hue": 42.0, "saturation": 0.80, "lightness": 0.5, "alpha": 1.0}},
+                    "idle_alt": {"Hsla": {"hue": 42.0, "saturation": 0.6, "lightness": 0.7, "alpha": 1.0}}
                 },
                 "settings": {
                     "idle": {
