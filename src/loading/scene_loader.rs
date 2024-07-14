@@ -167,10 +167,6 @@ impl SceneLayer
 #[derive(Debug, Default)]
 pub(crate) struct SceneRegistry
 {
-    //scene map: vec of vec of vecs to track the full tree structure; when reloading a file, rewrite the previous
-    // scene map while traversing the scene in the file; if nodes are removed, despawn subscribed entities; if
-    // nodes are rearranged, update the Children order in their parent for subscribed parents; if new nodes are
-    // added, spawn children and subscribe them for each existing subscriber parent
     /// [ root node reference : root node's child layer ]
     scenes: HashMap<LoadableRef, SceneLayer>,
 }

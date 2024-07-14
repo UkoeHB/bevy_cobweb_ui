@@ -50,21 +50,20 @@
         "title": {
             "FlexStyle": {
                 "flex": {
-                    "margin": {"top": {"Percent": 5.0}, "bottom": {"Percent": 5.0}, "left": {"Percent": 20.0}, "right": {"Percent": 20.0}},
-                    "flex_shrink": 1.0
+                    "margin": {"top": {"Px": 20.0}, "bottom": {"Px": 20.0}, "left": {"Px": 20.0}, "right": {"Px": 20.0}}
                 }
             },
             "LoadedUiImage": {"texture": "$title_pic", "size": "$title_pic_size"},
             "Animated<UiImageColor>": {
                 "values": {
-                    "idle": {"Hsla": {"hue": 0.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}},
+                    "idle": {"Hsla": {"hue": 200.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}},
                     "idle_alt": {"Hsla": {"hue": 365.0, "saturation": 0.4, "lightness": 0.8, "alpha": 1.0}}
                 },
                 "settings": {
                     "idle": {
-                        "duration": 10.0,
+                        "duration": 1.0,
                         "easing": "Linear",
-                        "loop_type": "Continous"
+                        "loop_type": "PingPongContinous"
                     }
                 }
             }
@@ -131,7 +130,7 @@
     },
 
     "message": {
-        "TextLine": {"text": "PLAY (TODO)"}
+        "TextLine": {"text": "TODO"}
     }
 },
 
