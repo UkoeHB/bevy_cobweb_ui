@@ -36,7 +36,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
         l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 0.0, true))
             .on_event::<SliderChanged>()
             .r(|event: EntityEvent<SliderChanged>, sliders: Query<&Slider>| {
-                let _slider = sliders.get(event.read().0).unwrap();
+                let _slider = sliders.get(event.entity()).unwrap();
 
                 // NOT IMPLEMENTED: Adjust app's audio settings with slider value.
             });
