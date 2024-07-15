@@ -148,8 +148,19 @@
     },
 
     "audio": {
+        "FlexStyle": {
+            "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
+        },
+
         "message": {
-            "TextLine": {"text": "AUDIO"}
+            "FlexStyle": {
+                "flex": {"margin": {"bottom": {"Px": 1.0}}}
+            },
+            "TextLine": {"text": "Audio: ", "size": "$settings_text_size"}
+        },
+        "slider": {
+            "FlexStyle": {},
+            "Width": [{"Px": 200.0}]
         }
     },
 
@@ -166,7 +177,7 @@
             "FlexStyle": {
                 "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
             },
-            "text": {
+            "message": {
                 "FlexStyle": {
                     "flex": {"margin": {"bottom": {"Px": 1.0}}}
                 },

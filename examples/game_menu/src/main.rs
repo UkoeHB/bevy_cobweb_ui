@@ -4,9 +4,20 @@ use bevy::prelude::*;
 use bevy::window::{PresentMode, PrimaryWindow, WindowTheme};
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::ui_builder::*;
+use bevy_cobweb_ui::sickle::prelude::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
 use bevy_cobweb_ui::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct SliderChanged;
+
+fn detect_silder_change(mut c: Commands, query: Query<Entity, Changed<Slider>>)
+{
+    for slider in query.iter() {
+        c.react().entity_event(slider, SliderChanged);
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -20,7 +31,16 @@ fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity
 
 fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
 {
-    // TODO: audio control (slider)
+    l.edit("audio::slider", |l| {
+        // TODO: Overwrite default styling.
+        l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 0.0, true))
+            .on_event::<SliderChanged>()
+            .r(|event: EntityEvent<SliderChanged>, sliders: Query<&Slider>| {
+                let _slider = sliders.get(event.read().0).unwrap();
+
+                // NOT IMPLEMENTED: Adjust app's audio settings with slider value.
+            });
+    });
 
     l.edit("vsync", |l| {
         let manager_entity = RadioButtonManager::insert(l.deref_mut());
@@ -176,6 +196,10 @@ fn main()
         .load("main.caf.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
+        // temporary hack for interop
+        //todo: move to custom schedule between Update and PostUpdate? or add system set to sickle_ui for ordering
+        // in update?
+        .add_systems(PostUpdate, detect_silder_change)
         .run();
 }
 
