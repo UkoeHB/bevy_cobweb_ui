@@ -171,7 +171,7 @@ fn add_menu_option<'a>(
     l.edit_from_root(content_path, |l| {
         l.load_scene(file.e(page_scene), |l| {
             page_entity = l.id();
-            l.insert(Visibility::Hidden);
+            l.insert_reactive(DisplayControl::Hide);
 
             // Add custom logic to the page.
             (page_content_fn)(l);
@@ -179,16 +179,16 @@ fn add_menu_option<'a>(
     });
 
     // Add button.
-    // - We toggle content visibility on select/deselect. Content pages should use AbsoluteStyle so their layouts
-    //   don't interfere.
+    // - We toggle content visibility on select/deselect.
     let button_entity = RadioButtonBuilder::custom_with_text(file.e("menu_option_button"), button_text)
         .localized()
         .build(manager_entity, l.deref_mut())
         .on_select(move |mut c: Commands| {
-            c.entity(page_entity).insert(Visibility::Inherited);
+            c.entity(page_entity)
+                .insert_reactive(DisplayControl::Display);
         })
         .on_deselect(move |mut c: Commands| {
-            c.entity(page_entity).insert(Visibility::Hidden);
+            c.entity(page_entity).insert_reactive(DisplayControl::Hide);
         })
         .id();
 

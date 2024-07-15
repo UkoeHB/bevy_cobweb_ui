@@ -110,7 +110,7 @@
 },
 
 "home_page": {
-    "AbsoluteStyle": {
+    "FlexStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
@@ -122,7 +122,7 @@
 },
 
 "play_page": {
-    "AbsoluteStyle": {
+    "FlexStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
@@ -133,7 +133,7 @@
 },
 
 "settings_page": {
-    "AbsoluteStyle": {
+    "FlexStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {
             "flex_direction": "Column",

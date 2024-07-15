@@ -759,16 +759,43 @@ impl Into<Style> for FlexStyle
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Reactive component that toggles the [`Style::display`] field.
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DisplayControl
+{
+    /// Corresponds to [`Display::Flex`].
+    #[default]
+    Display,
+    /// Corresponds to [`Display::None`].
+    Hide,
+}
+
+impl Into<Display> for DisplayControl
+{
+    fn into(self) -> Display
+    {
+        match self {
+            Self::Display => Display::Flex,
+            Self::Hide => Display::None,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn detect_absolute_style(
     mut commands: Commands,
     insertion: InsertionEvent<AbsoluteStyle>,
     mutation: MutationEvent<AbsoluteStyle>,
-    node: Query<&React<AbsoluteStyle>>,
+    node: Query<(&React<AbsoluteStyle>, Option<&React<DisplayControl>>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok(style) = node.get(entity) else { return };
-    let style: Style = (*style).clone().into();
+    let Ok((style, maybe_display_control)) = node.get(entity) else { return };
+    let mut style: Style = (*style).clone().into();
+    if let Some(control) = maybe_display_control {
+        style.display = (**control).into();
+    }
     commands.entity(entity).try_insert(style.clone());
 }
 
@@ -789,12 +816,15 @@ fn detect_flex_style(
     mut commands: Commands,
     insertion: InsertionEvent<FlexStyle>,
     mutation: MutationEvent<FlexStyle>,
-    node: Query<&React<FlexStyle>>,
+    node: Query<(&React<FlexStyle>, Option<&React<DisplayControl>>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok(style) = node.get(entity) else { return };
-    let style: Style = (*style).clone().into();
+    let Ok((style, maybe_display_control)) = node.get(entity) else { return };
+    let mut style: Style = (*style).clone().into();
+    if let Some(control) = maybe_display_control {
+        style.display = (**control).into();
+    }
     commands.entity(entity).try_insert(style.clone());
 }
 
@@ -806,6 +836,30 @@ impl WorldReactor for DetectFlexStyle
     fn reactor(self) -> SystemCommandCallback
     {
         SystemCommandCallback::new(detect_flex_style)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn detect_display_control(
+    insertion: InsertionEvent<DisplayControl>,
+    mutation: MutationEvent<DisplayControl>,
+    mut node: Query<(&mut Style, &React<DisplayControl>)>,
+)
+{
+    let entity = insertion.get().unwrap_or_else(|| mutation.entity());
+    let Ok((mut style, control)) = node.get_mut(entity) else { return };
+    style.display = (**control).into();
+}
+
+struct DetectDisplayControl;
+impl WorldReactor for DetectDisplayControl
+{
+    type StartingTriggers = (InsertionTrigger<DisplayControl>, MutationTrigger<DisplayControl>);
+    type Triggers = ();
+    fn reactor(self) -> SystemCommandCallback
+    {
+        SystemCommandCallback::new(detect_display_control)
     }
 }
 
@@ -833,8 +887,13 @@ impl Plugin for StyleWrappersPlugin
                 (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
             )
             .add_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
+            .add_reactor_with(
+                DetectDisplayControl,
+                (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
+            )
             .register_reactive_loadable::<AbsoluteStyle>()
-            .register_reactive_loadable::<FlexStyle>();
+            .register_reactive_loadable::<FlexStyle>()
+            .register_reactive_loadable::<DisplayControl>();
     }
 }
 
