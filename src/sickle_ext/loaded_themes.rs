@@ -1,5 +1,4 @@
 use std::any::{type_name, TypeId};
-use std::cmp::Ordering;
 use std::marker::PhantomData;
 
 use bevy::ecs::system::EntityCommands;
@@ -46,17 +45,19 @@ fn get_loaded_theme<C: Component>(
     };
 
     // Add all attributes from this pseudo theme to the style builder.
-    let mut ctx_ref: Option<&'static str> = None;
+    for CachedContextualAttribute { placement, context, attribute } in pseudo_theme.style.iter() {
+        // Set the placement.
+        if let Some(placement) = placement {
+            style_builder.switch_placement(placement);
+        } else {
+            style_builder.reset_placement();
+        }
 
-    for SortableContextualAttribute { context, attribute } in pseudo_theme.style.iter() {
-        // Switch targets when we reach a new partition.
-        if ctx_ref != *context {
-            ctx_ref = *context;
-            if let Some(target) = ctx_ref {
-                style_builder.switch_target(target);
-            } else {
-                style_builder.reset_target();
-            }
+        // Set the target.
+        if let Some(target) = context {
+            style_builder.switch_target(target);
+        } else {
+            style_builder.reset_target();
         }
 
         // Insert attribute.
@@ -67,32 +68,20 @@ fn get_loaded_theme<C: Component>(
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
-struct SortableContextualAttribute
+struct CachedContextualAttribute
 {
-    //todo: placement: Option<&'static str>,
+    placement: Option<&'static str>,
     context: Option<&'static str>,
     attribute: DynamicStyleAttribute,
 }
 
-impl SortableContextualAttribute
-{
-    /// Compares the contexts of two attributes for sorting purposes.
-    fn compare_by_context(a: &Self, b: &Self) -> Ordering
-    {
-        match (a.context, b.context) {
-            (Some(a), Some(b)) => a.cmp(b),
-            (Some(_), None) => Ordering::Greater,
-            (None, Some(_)) => Ordering::Less,
-            (None, None) => Ordering::Equal,
-        }
-    }
-}
-
-impl LogicalEq for SortableContextualAttribute
+impl LogicalEq for CachedContextualAttribute
 {
     fn logical_eq(&self, other: &Self) -> bool
     {
-        self.context == other.context && self.attribute.logical_eq(&other.attribute)
+        self.placement == other.placement
+            && self.context == other.context
+            && self.attribute.logical_eq(&other.attribute)
     }
 }
 
@@ -102,12 +91,12 @@ impl LogicalEq for SortableContextualAttribute
 struct EditablePseudoTheme
 {
     state: Option<Vec<PseudoState>>,
-    style: SmallVec<[SortableContextualAttribute; 3]>,
+    style: SmallVec<[CachedContextualAttribute; 3]>,
 }
 
 impl EditablePseudoTheme
 {
-    fn new(state: Option<Vec<PseudoState>>, attribute: SortableContextualAttribute) -> Self
+    fn new(state: Option<Vec<PseudoState>>, attribute: CachedContextualAttribute) -> Self
     {
         let mut style = SmallVec::new();
         style.push(attribute);
@@ -119,7 +108,7 @@ impl EditablePseudoTheme
         self.state == *state
     }
 
-    fn set_attribute(&mut self, attribute: SortableContextualAttribute)
+    fn set_attribute(&mut self, attribute: CachedContextualAttribute)
     {
         // Merge attribute with existing list.
         if let Some(index) = self
@@ -131,10 +120,6 @@ impl EditablePseudoTheme
         } else {
             self.style.push(attribute);
         }
-
-        // Sort list by context so attributes can be partitioned when building the pseudo theme.
-        self.style
-            .sort_unstable_by(SortableContextualAttribute::compare_by_context);
     }
 
     fn pseudo_theme<C: Component>(&self) -> PseudoTheme<C>
@@ -198,6 +183,7 @@ impl LoadedTheme
     pub(crate) fn set_attribute(
         &mut self,
         mut state: Option<Vec<PseudoState>>,
+        placement: Option<&'static str>,
         context: Option<&'static str>,
         attribute: DynamicStyleAttribute,
     )
@@ -208,7 +194,7 @@ impl LoadedTheme
             states.sort_unstable();
         }
 
-        let attribute = SortableContextualAttribute { context, attribute };
+        let attribute = CachedContextualAttribute { placement, context, attribute };
         match self.pseudo_themes.iter_mut().find(|t| t.matches(&state)) {
             Some(pseudo_theme) => pseudo_theme.set_attribute(attribute),
             None => self

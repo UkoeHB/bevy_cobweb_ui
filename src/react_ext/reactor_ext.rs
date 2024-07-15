@@ -20,7 +20,8 @@ fn despawn_syscommand(mut event: SystemEvent<SystemCommand>, mut c: Commands)
 //-------------------------------------------------------------------------------------------------------------------
 
 /// This is a hack to help despawn SystemCommands immediately after running them for system commands that are run
-/// from within a reaction tree (where normal commands are applied *before* system commands).
+/// from within a reaction tree (where normal commands are applied *before* system commands, so a normal despawn
+/// command would kill the in-flight system command).
 //todo: rework/rethink reaction tree design so this kind of problem doesn't occur
 #[derive(Resource)]
 struct DespawnSyscommandHelper(SystemCommand);

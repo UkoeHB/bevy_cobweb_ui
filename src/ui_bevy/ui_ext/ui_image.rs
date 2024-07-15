@@ -10,8 +10,6 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Inserts a UiImage to an entity.
-//note: in bevy 0.13 you need a non-transparent BackgroundColor for ui images to display, but in 0.14 it should be
-// fixed
 fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands: Commands, img_map: Res<ImageMap>)
 {
     // Extract
@@ -21,6 +19,8 @@ fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands:
     };
     let maybe_scale_mode = img.scale_mode.clone();
     let ui_image = img.to_ui_image(&img_map);
+
+    // TODO: prep localization
 
     // Insert
     let mut ec = commands.entity(entity);

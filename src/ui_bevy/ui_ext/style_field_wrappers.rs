@@ -96,8 +96,8 @@ fn apply_to_dims<T: ApplyToDims>(
         return;
     }
 
-    // Fall back to inserting absolute style.
-    let mut style = AbsoluteStyle::default();
+    // Fall back to inserting flex style.
+    let mut style = FlexStyle::default();
     param.apply_to_dims(&mut style.dims);
     c.react().insert(entity, style);
 }
@@ -124,8 +124,8 @@ fn apply_to_content_flex<T: ApplyToContentFlex>(
         return;
     }
 
-    // Fall back to inserting absolute style.
-    let mut style = AbsoluteStyle::default();
+    // Fall back to inserting flex style.
+    let mut style = FlexStyle::default();
     param.apply_to_content_flex(&mut style.content);
     c.react().insert(entity, style);
 }

@@ -82,8 +82,8 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
                 })
                 .id();
 
-            // Set initial value.
-            l.commands().syscall(
+            // Select correct button based on initial value.
+            l.commands().syscall_once(
                 (),
                 move |mut c: Commands, window: Query<&Window, With<PrimaryWindow>>| match window
                     .single()
@@ -98,9 +98,10 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
 
     l.edit("localization::dropdown", |l| {
         // Drop-down: sickle_ui built-in widget.
+        // TODO: Overwrite default styling.
         l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
             move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
-                // Delete current dropdown node.
+                // Delete current dropdown node in case we are rebuilding due to a new language list.
                 let mut n = c.ui_builder(id);
                 n.entity_commands().despawn_descendants();
 

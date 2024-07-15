@@ -1,6 +1,6 @@
 [package]
 name = "bevy_cobweb_ui"
-description = "UI tools and widgets built with bevy_cobweb"
+description = "UI tools and widgets built on bevy_cobweb and sickle_ui"
 authors = ["koe <ukoe@protonmail.com>"]
 version = "0.0.3"
 edition = "2021"

@@ -78,7 +78,7 @@ When an entity with theme target `C` gets an updated `Theme<C>`, `C`, or `Pseudo
 
 If you are building a multi-entity themed widget, then you need to implement `UiContext` on `C`. When an instance of that widget is spawned, you must store all the sub-entities in `C` so they can be retrieved by `UiContext`.
 
-If you want interactions on a specific entity in a widget to propagate to other entities in the widget, all responsive and animatable attributes for those other entities must be stored in the 'interactive' entity's `DynamicStyle` component. `sickle_ui` allows defining each attribute's `placement` entity, but currently this crate always stores all sub-entity attributes on the base entity, which means interactions automatically and always propagate to sub-entities (TODO).
+If you want interactions on a specific entity in a widget to propagate to other entities in the widget, all responsive and animatable attributes for those other entities must be stored in the 'interactive' entity's `DynamicStyle` component. By default all attributes from sub-entities in a widget will be added to the base entity's `DynamicStyle` component. You can instead place attributes on sub-entities with the `with_placement` and `and_placement` extension methods.
 
 
 ## Implementing themes (and widgets)
