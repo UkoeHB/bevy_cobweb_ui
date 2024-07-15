@@ -260,7 +260,13 @@ impl SceneInstance
     /// Gets a scene node at the given path.
     pub(crate) fn get(&self, path: &LoadablePath) -> Option<Entity>
     {
-        self.nodes.get(path).cloned()
+        self.nodes.get(path).cloned().or_else(|| {
+            if self.loadable_ref.path == *path {
+                Some(self.entity)
+            } else {
+                None
+            }
+        })
     }
 }
 

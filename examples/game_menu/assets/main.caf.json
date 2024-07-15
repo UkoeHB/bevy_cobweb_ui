@@ -118,7 +118,7 @@
 
     "message": {
         "LocalizedText": {},
-        "TextLine": {"text": "home-page-message"}
+        "TextLine": {"text": "home-page-message", "size": 60.0}
     }
 },
 
@@ -129,47 +129,19 @@
     },
 
     "message": {
-        "TextLine": {"text": "TODO"}
+        "TextLine": {"text": "Nothing here yet...", "size": 40.0}
     }
 },
 
 "settings_page": {
     "AbsoluteStyle": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
-        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
-    },
-
-    "shim1": {
-        "FlexStyle": {},
-        "Width": [{"Percent": 75.0}],
-        "Height": [{"Px": 3.0}],
-        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
-        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
-    },
-
-    "audio": {
-        "FlexStyle": {
-            "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
-        },
-
-        "message": {
-            "FlexStyle": {
-                "flex": {"margin": {"bottom": {"Px": 1.0}}}
-            },
-            "TextLine": {"text": "Audio: ", "size": "$settings_text_size"}
-        },
-        "slider": {
-            "FlexStyle": {},
-            "Width": [{"Px": 200.0}]
+        "content": {
+            "flex_direction": "Column",
+            "justify_main": "SpaceEvenly",
+            "justify_cross": "FlexStart",
+            "padding": {"top": {"Px": 0.0}, "bottom": {"Px": 100.0}, "left": {"Px": 160.0}}
         }
-    },
-
-    "shim2": {
-        "FlexStyle": {},
-        "Width": [{"Percent": 75.0}],
-        "Height": [{"Px": 3.0}],
-        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
-        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
     },
 
     "vsync": {
@@ -186,26 +158,36 @@
         }
     },
 
-    "shim3": {
-        "FlexStyle": {},
-        "Width": [{"Percent": 75.0}],
-        "Height": [{"Px": 3.0}],
-        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
-        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
-    },
+    "audio": {
+        "FlexStyle": {
+            "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
+        },
 
-    "language": {
         "message": {
-            "TextLine": {"text": "LANGUAGE"}
+            "FlexStyle": {
+                "flex": {"margin": {"bottom": {"Px": 1.0}}}
+            },
+            "TextLine": {"text": "Audio: ", "size": "$settings_text_size"}
+        },
+        "slider": {
+            "FlexStyle": {},
+            "Width": [{"Px": 350.0}]
         }
     },
 
-    "shim4": {
-        "FlexStyle": {},
-        "Width": [{"Percent": 75.0}],
-        "Height": [{"Px": 3.0}],
-        "Margin": [{"bottom": {"Px": 10.0}, "top": {"Px": 10.0}}],
-        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+    "localization": {
+        "FlexStyle": {
+            "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
+        },
+        "message": {
+            "FlexStyle": {
+                "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 10.0}}}
+            },
+            "TextLine": {"text": "Language: ", "size": "$settings_text_size"}
+        },
+        "dropdown": {
+
+        }
     }
 },
 

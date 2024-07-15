@@ -117,6 +117,8 @@ impl ApplyLoadable for MyLoadable
 
 If you have the `hot_reload` feature enabled, then whenever a loadable is changed in a file it will be re-applied to all entities that loaded the associated scene node. If the feature is *not* enabled, then only values already loaded when an entity requests a scene node will be applied. This means you should only load scenes/scene nodes when in [`LoadState::Done`](bevy_cobweb_ui::prelude::LoadState::Done) so all loadables will be available.
 
+- **Warning**: Loadables are 'non-reversible' so if you delete a loadable from a scene node, entities subscribed to that node won't be updated to reflect the change. To see the effects, you need to either restart your app or spawn new entities with that node.
+
 To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene` callback.
 
 ```rust

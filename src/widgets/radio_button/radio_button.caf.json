@@ -109,7 +109,6 @@
     "radio_button_with_basic_text(#spec:radio_button_base)": {
         "@text_size": 35.0,
         "@text_string": "[empty-text]",
-        "@text_font": null,
         "@text_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
         "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}},
 
@@ -117,7 +116,7 @@
             "margin": "@text_margin"
         },
         "!content": {
-            "TextLine": { "size": "@text_size", "text": "@text_string", "font": "@text_font" },
+            "TextLine": { "size": "@text_size", "text": "@text_string", "!text_font":0 },
             "TextLineColor": ["@text_color"]
         }
     },
@@ -125,7 +124,6 @@
     "radio_button_with_indicator_and_basic_text(#spec:radio_button_base_with_indicator)": {
         "@text_size": 35.0,
         "@text_string": "[empty-text]",
-        "@text_font": null,
         "@text_color": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}},
         "@text_margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 10.0}, "right": {"Px": 5.0}},
 
@@ -133,7 +131,7 @@
             "margin": "@text_margin"
         },
         "!content": {
-            "TextLine": { "size": "@text_size", "text": "@text_string", "font": "@text_font" },
+            "TextLine": { "size": "@text_size", "text": "@text_string", "!text_font":0 },
             "TextLineColor": ["@text_color"]
         }
     },

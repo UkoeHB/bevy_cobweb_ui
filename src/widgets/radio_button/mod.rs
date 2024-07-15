@@ -295,6 +295,11 @@ impl RadioButtonBuilder
                 path.e("content"),
                 &mut content_entity,
                 |content, _| {
+                    // Localize if necessary.
+                    if self.localized {
+                        content.insert(LocalizedText::default());
+                    }
+
                     // Add text if necessary.
                     if let Some(text) = self.button_type.take_text() {
                         // Note: The text needs to be updated on load otherwise it may be overwritten.
@@ -303,11 +308,6 @@ impl RadioButtonBuilder
                                 e.write(id, |t| write!(t, "{}", text.as_str()));
                             }
                         });
-                    }
-
-                    // Localize if necessary.
-                    if self.localized {
-                        content.insert(LocalizedText::default());
                     }
 
                     // Build contents.

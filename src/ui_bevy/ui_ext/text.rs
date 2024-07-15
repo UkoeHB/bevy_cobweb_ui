@@ -11,16 +11,27 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 fn insert_text_line(
-    In((entity, line)): In<(Entity, TextLine)>,
+    In((entity, mut line)): In<(Entity, TextLine)>,
     mut commands: Commands,
     mut font_map: ResMut<FontMap>,
     color: Query<&TextLineColor>,
+    mut localized: Query<&mut LocalizedText>,
+    localizer: Res<TextLocalizer>,
 )
 {
+    // Prep color.
     let color = color
         .get(entity)
         .map(|c| c.0)
         .unwrap_or_else(|_| TextLine::default_font_color());
+
+    // Prep localization.
+    if let Ok(mut localized) = localized.get_mut(entity) {
+        localized.set_localization(line.text.as_str());
+        localized.localize(&localizer, &mut line.text);
+    }
+
+    // Add text to entity.
     let mut ec = commands.entity(entity);
     ec.try_insert((
         line.as_text(&mut font_map, color),

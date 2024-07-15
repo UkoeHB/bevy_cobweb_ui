@@ -22,7 +22,7 @@ Check out the [`hello_world`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/mast
 
 ## NOTICE
 
-You may encounter a [compiler diagnostic bug](https://github.com/rust-lang/rust/issues/124563) when using `LoadedScene` with nested closures/functions. Checkout out the `game_menu` example for how to manage the lifetimes properly. The bug is fixed on nightly so if you compile with `+nightly` or [add nightly to your build toolchain](https://stackoverflow.com/questions/75959388/how-to-switch-rust-analyzer-from-stable-to-nightly-in-vscode) then it will error properly instead of panicking.
+You may encounter a [compiler diagnostic bug](https://github.com/rust-lang/rust/issues/124563) when using `LoadedScene` with nested closures/functions. Check out the `game_menu` example for how to manage the lifetimes properly. The bug is fixed on nightly so if you compile with `+nightly` or [add nightly to your build toolchain](https://stackoverflow.com/questions/75959388/how-to-switch-rust-analyzer-from-stable-to-nightly-in-vscode) then it will error properly instead of panicking.
 
 
 ## `bevy` compatability

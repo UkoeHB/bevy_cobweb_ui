@@ -21,6 +21,17 @@ fn detect_silder_change(mut c: Commands, query: Query<Entity, Changed<Slider>>)
 
 //-------------------------------------------------------------------------------------------------------------------
 
+struct DropdownChanged;
+
+fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown>>)
+{
+    for slider in query.iter() {
+        c.react().entity_event(slider, DropdownChanged);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn build_home_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {}
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -32,6 +43,7 @@ fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity
 fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
 {
     l.edit("audio::slider", |l| {
+        // Slider: sickle_ui built-in widget.
         // TODO: Overwrite default styling.
         l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 0.0, true))
             .on_event::<SliderChanged>()
@@ -43,12 +55,14 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
     });
 
     l.edit("vsync", |l| {
+        // Radio buttons: bevy_cobweb_ui built-in widget.
         let manager_entity = RadioButtonManager::insert(l.deref_mut());
         l.edit("options", |l| {
-            let button_loc = LoadableRef::from_file(l.path().file.as_str()).e("settings_radio_button");
+            let button_loc = LoadableRef::new(l.path().file.as_str(), "settings_radio_button");
 
             // Option: enable vsync
-            let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "On")
+            let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-on")
+                .localized()
                 .with_indicator()
                 .build(manager_entity, l.deref_mut())
                 .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
@@ -58,7 +72,8 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
                 .id();
 
             // Option: disable vsync
-            let disabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "Off")
+            let disabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-off")
+                .localized()
                 .with_indicator()
                 .build(manager_entity, l.deref_mut())
                 .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
@@ -67,21 +82,73 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
                 })
                 .id();
 
-            // Get initial value.
+            // Set initial value.
             l.commands().syscall(
                 (),
                 move |mut c: Commands, window: Query<&Window, With<PrimaryWindow>>| match window
                     .single()
                     .present_mode
                 {
-                    PresentMode::AutoNoVsync => c.react().entity_event(disabled, Deselect),
+                    PresentMode::AutoNoVsync => c.react().entity_event(disabled, Select),
                     _ => c.react().entity_event(enabled, Select),
                 },
             );
         });
     });
 
-    // TODO: language control (drop-down)
+    l.edit("localization::dropdown", |l| {
+        // Drop-down: sickle_ui built-in widget.
+        l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
+            move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
+                // Delete current dropdown node.
+                let mut n = c.ui_builder(id);
+                n.entity_commands().despawn_descendants();
+
+                // Get languages and identify position of current language.
+                let languages: Vec<String> = manifest
+                    .languages()
+                    .iter()
+                    .map(LocalizationMeta::display_name)
+                    .collect();
+
+                // Find position of current language.
+                let position = manifest
+                    .negotiated()
+                    .get(0)
+                    .map(|main_lang| manifest.languages().iter().position(|m| m.id == *main_lang))
+                    .flatten();
+
+                // Add dropdown.
+                let mut dropdown = n.dropdown(languages.clone(), position);
+
+                // When the dropdown selection changes, update the locale's requested language.
+                let mut selection = position;
+                let dropdown_id = dropdown.id();
+                dropdown.on_event::<DropdownChanged>().r(
+                    move |mut locale: ResMut<Locale>,
+                          manifest: ReactRes<LocalizationManifest>,
+                          dropdowns: Query<&Dropdown>| {
+                        let dropdown = dropdowns.get(dropdown_id).unwrap();
+                        if selection == dropdown.value() {
+                            return;
+                        }
+                        selection = dropdown.value();
+
+                        if let Some(selection) = selection {
+                            let new_id = manifest.languages()[selection].id.clone();
+                            locale.requested = vec![new_id];
+                        } else {
+                            locale.requested = manifest
+                                .get_default()
+                                .map(|m| m.id.clone())
+                                .into_iter()
+                                .collect();
+                        }
+                    },
+                );
+            }
+        });
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -197,9 +264,9 @@ fn main()
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         // temporary hack for interop
-        //todo: move to custom schedule between Update and PostUpdate? or add system set to sickle_ui for ordering
-        // in update?
-        .add_systems(PostUpdate, detect_silder_change)
+        // TODO: move to custom schedule between Update and PostUpdate? or add system sets to sickle_ui for
+        // ordering in update?
+        .add_systems(PostUpdate, (detect_silder_change, detect_dropdown_change))
         .run();
 }
 
