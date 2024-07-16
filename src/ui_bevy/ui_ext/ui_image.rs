@@ -10,14 +10,26 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Inserts a UiImage to an entity.
-fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands: Commands, img_map: Res<ImageMap>)
+fn insert_ui_image(
+    In((entity, mut img)): In<(Entity, LoadedUiImage)>,
+    mut commands: Commands,
+    img_map: Res<ImageMap>,
+    mut layout_assets: ResMut<Assets<TextureAtlasLayout>>,
+    mut atlas_map: ResMut<TextureAtlasMap>,
+)
 {
     // Extract
     let content_size = match img.size {
         Some(size) => ContentSize::fixed_size(size),
         None => ContentSize::default(),
     };
-    let maybe_scale_mode = img.scale_mode.clone();
+    let maybe_atlas = img.atlas.take().map(|mut a| TextureAtlas {
+        layout: a
+            .layout
+            .get_handle(&img.texture, &mut layout_assets, &mut atlas_map),
+        index: a.index,
+    });
+    let maybe_scale_mode = img.scale_mode.take();
     let ui_image = img.to_ui_image(&img_map);
 
     // TODO: prep localization
@@ -26,11 +38,21 @@ fn insert_ui_image(In((entity, img)): In<(Entity, LoadedUiImage)>, mut commands:
     let mut ec = commands.entity(entity);
     let bundle = (ui_image, UiImageSize::default(), content_size);
 
-    if let Some(scale_mode) = maybe_scale_mode {
-        let scale_mode: ImageScaleMode = scale_mode.into();
-        ec.try_insert((scale_mode, bundle));
-    } else {
-        ec.try_insert(bundle);
+    match (maybe_atlas, maybe_scale_mode) {
+        (Some(atlas), Some(scale_mode)) => {
+            let scale_mode: ImageScaleMode = scale_mode.into();
+            ec.try_insert((atlas, scale_mode, bundle));
+        }
+        (Some(atlas), None) => {
+            ec.try_insert((atlas, bundle));
+        }
+        (None, Some(scale_mode)) => {
+            let scale_mode: ImageScaleMode = scale_mode.into();
+            ec.try_insert((scale_mode, bundle));
+        }
+        _ => {
+            ec.try_insert(bundle);
+        }
     }
 }
 
@@ -52,8 +74,9 @@ pub struct LoadedUiImage
 {
     /// The location of the UiImage.
     pub texture: String,
-    // The [`TextureAtlas`] to pull this image from. (TODO: broken w/ nine-slicing until Bevy v0.14)
-    // atlas: Option<LoadedTextureAtlas>
+    /// The [`TextureAtlas`] to process this image with.
+    #[reflect(default)]
+    pub atlas: Option<LoadedTextureAtlas>,
     /// The scale mode for this image.
     ///
     /// [`LoadedImageScaleMode::Sliced`] can be used for nine-slicing.

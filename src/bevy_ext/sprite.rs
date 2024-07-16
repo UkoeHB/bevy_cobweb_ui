@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that stores handles to [`TextureAtlasLayouts`](TextureAtlasLayout).
+///
+/// Currently assumes each image only uses one `TextureAtlasLayout`.
 //TODO: this assumes each image only uses one TextureAtlasLayout, but it's possible for an image to be divided
 // into sections with different layouts.
 //TODO: add pre-loading and progress tracking
