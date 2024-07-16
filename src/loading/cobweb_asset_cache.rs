@@ -799,6 +799,19 @@ impl CobwebAssetCache
     }
 }
 
+impl AssetLoadProgress for CobwebAssetCache
+{
+    fn pending_assets(&self) -> usize
+    {
+        self.loading_progress().0
+    }
+
+    fn total_assets(&self) -> usize
+    {
+        self.loading_progress().1
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// System set in [`First`] where files are processed.
@@ -817,6 +830,7 @@ impl Plugin for CobwebAssetCachePlugin
         let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
         app.insert_react_resource(CobwebAssetCache::new(manifest_map.clone()))
             .insert_resource(SceneLoader::new(manifest_map))
+            .register_reactive_asset_tracker::<CobwebAssetCache>()
             .add_systems(
                 First,
                 (

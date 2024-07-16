@@ -5,7 +5,7 @@
 
 "#constants": {
     "$title_texture": "images/example_280_220.png",
-    "$title_texture_alias": "title",
+    "$title_texture_alias": "",
     "$title_texture_x": 280.0,
     "$title_texture_x_uint": 280,
     "$title_texture_y": 220.0,
@@ -90,7 +90,7 @@
             },
             "Animated<UiImageColor>": {
                 "values": {
-                    "idle": {"Hsla": {"hue": 42.0, "saturation": 0.80, "lightness": 0.5, "alpha": 1.0}},
+                    "idle": {"Hsla": {"hue": 42.0, "saturation": 0.8, "lightness": 0.5, "alpha": 1.0}},
                     "idle_alt": {"Hsla": {"hue": 42.0, "saturation": 0.6, "lightness": 0.7, "alpha": 1.0}}
                 },
                 "settings": {

@@ -10,7 +10,7 @@ Example:
 #[derive(TypeName)]
 struct MyStruct;
 
-assert_eq!("MyStruct", MyStruct::type_name());
+assert_eq!("MyStruct", MyStruct::NAME);
 ```
 */
 pub trait TypeName

@@ -36,7 +36,7 @@ impl TextureAtlasLayoutMap
 {
     /// Inserts a layout entry.
     ///
-    /// Layouts are indexed by `texture` and an `alias` in case you need multiple layouts for a given texture.
+    /// Layouts are indexed by `texture` and also an `alias` in case you need multiple layouts for a given texture.
     pub fn insert(
         &mut self,
         texture: String,

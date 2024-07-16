@@ -1,54 +1,83 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 
-use crate::prelude::*;
-
 //-------------------------------------------------------------------------------------------------------------------
 
-fn clear_asset_progress(mut tracker: ResMut<AssetLoadProgressTracker>)
+fn clear_asset_progress(mut progress: ResMut<LoadProgress>)
 {
-    tracker.clear();
+    progress.clear();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn collect_asset_progress<T: AssetLoadProgress>(mut tracker: ResMut<AssetLoadProgressTracker>, res: Res<T>)
+fn get_asset_progress<T: AssetLoadProgress + Resource>(world: &mut World) -> (usize, usize)
 {
-    tracker.insert(res.pending_assets(), res.total_assets());
+    let res = world.resource::<T>();
+    (res.pending_assets(), res.total_assets())
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_asset_progress_reactive<T: AssetLoadProgress + ReactResource>(world: &mut World) -> (usize, usize)
+{
+    let res = world.react_resource::<T>();
+    (res.pending_assets(), res.total_assets())
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn collect_asset_progress(world: &mut World)
+{
+    world.resource_scope(|world, mut progress: Mut<LoadProgress>| {
+        let tracked = std::mem::take(&mut progress.tracked);
+        for tracked_fn in tracked.iter() {
+            let (pending, total) = (tracked_fn)(world);
+            progress.insert(pending, total);
+        }
+        progress.tracked = tracked;
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn check_load_progress(
-    mut c: Commands,
-    caf_cache: ReactRes<CobwebAssetCache>,
-    asset_tracker: ResMut<AssetLoadProgressTracker>,
+    mut prev_pending: Local<bool>,
+    progress: Res<LoadProgress>,
     mut next: ResMut<NextState<LoadState>>,
 )
 {
-    let (pending_files, total_files) = caf_cache.loading_progress();
-    let (pending_assets, total_assets) = asset_tracker.loading_progress();
+    let (pending, total) = progress.loading_progress();
 
-    let pending = pending_files + pending_assets;
-    if pending > 0 {
-        return;
+    let is_post_pending = *prev_pending;
+    let is_pending = pending > 0;
+    *prev_pending = is_pending;
+
+    // We only change state if load progress changed from pending to not pending.
+    match (is_post_pending, is_pending) {
+        (true, false) => {
+            tracing::info!("Loading done: {total} asset(s)");
+            next.set(LoadState::Done);
+        }
+        _ => (),
     }
-
-    tracing::info!("Startup loading done: {total_files} file(s), {total_assets} asset(s)");
-    c.react().broadcast(StartupLoadingDone);
-    next.set(LoadState::Done);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Tracks the global loading progress of asset trackers.
+///
+/// Cleared in [`LoadProgressSet::Prepare`], updated in [`LoadProgressSet::AssetProgress`], evaluated in
+/// [`LoadProgressSet::Check`].
 #[derive(Resource, Default)]
-struct AssetLoadProgressTracker
+pub struct LoadProgress
 {
     pending: usize,
     total: usize,
+
+    tracked: Vec<fn(&mut World) -> (usize, usize)>,
 }
 
-impl AssetLoadProgressTracker
+impl LoadProgress
 {
     fn insert(&mut self, pending: usize, total: usize)
     {
@@ -62,9 +91,19 @@ impl AssetLoadProgressTracker
         self.total = 0;
     }
 
-    fn loading_progress(&self) -> (usize, usize)
+    /// Returns (num pending assets, num total assets).
+    ///
+    /// The total number of assets should be considered an approximation, since for efficiency asset managers may
+    /// double-count some assets.
+    pub fn loading_progress(&self) -> (usize, usize)
     {
         (self.pending, self.total)
+    }
+
+    /// Returns `true` if there are pending assets.
+    pub fn is_loading(&self) -> bool
+    {
+        self.pending > 0
     }
 }
 
@@ -73,9 +112,9 @@ impl AssetLoadProgressTracker
 /// Trait for resources that track asset loading in state [`LoadState::Loading`].
 ///
 /// If a resource is registered with
-/// [`App::register_asset_tracker`](AssetLoadProgressTrackerAppExt::register_asset_tracker)
+/// [`App::register_asset_tracker`](AssetLoadProgressAppExt::register_asset_tracker)
 /// then state [`LoadState::Done`] will be postponed until the resource returns 0 from [`Self::pending_assets`].
-pub trait AssetLoadProgress: Resource
+pub trait AssetLoadProgress
 {
     /// Gets the number of assets currently loading.
     fn pending_assets(&self) -> usize;
@@ -86,23 +125,39 @@ pub trait AssetLoadProgress: Resource
 //-------------------------------------------------------------------------------------------------------------------
 
 /// App extension trait for registering types that implement [`AssetLoadProgress`].
-pub trait AssetLoadProgressTrackerAppExt
+pub trait AssetLoadProgressAppExt
 {
     /// Registers a resource that reports asset load progress in state [`LoadState::Loading`].
     ///
     /// It is recommended to load all assets in state [`LoadState::Loading`] so they are available
     /// post-initialization.
-    fn register_asset_tracker<T: AssetLoadProgress>(&mut self) -> &mut Self;
+    fn register_asset_tracker<T: AssetLoadProgress + Resource>(&mut self) -> &mut Self;
+
+    /// Registers a reactive resource that reports asset load progress in state [`LoadState::Loading`].
+    ///
+    /// It is recommended to load all assets in state [`LoadState::Loading`] so they are available
+    /// post-initialization.
+    fn register_reactive_asset_tracker<T: AssetLoadProgress + ReactResource>(&mut self) -> &mut Self;
 }
 
-impl AssetLoadProgressTrackerAppExt for App
+impl AssetLoadProgressAppExt for App
 {
-    fn register_asset_tracker<T: AssetLoadProgress>(&mut self) -> &mut Self
+    fn register_asset_tracker<T: AssetLoadProgress + Resource>(&mut self) -> &mut Self
     {
-        self.add_systems(
-            PreUpdate,
-            collect_asset_progress::<T>.in_set(LoadProgressSet::AssetProgress),
-        )
+        self.world_mut()
+            .resource_mut::<LoadProgress>()
+            .tracked
+            .push(get_asset_progress::<T>);
+        self
+    }
+
+    fn register_reactive_asset_tracker<T: AssetLoadProgress + ReactResource>(&mut self) -> &mut Self
+    {
+        self.world_mut()
+            .resource_mut::<LoadProgress>()
+            .tracked
+            .push(get_asset_progress_reactive::<T>);
+        self
     }
 }
 
@@ -124,12 +179,7 @@ pub enum LoadState
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when state [`LoadState::Done`] is entered.
-pub struct StartupLoadingDone;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// System set in [`PreUpdate`] where load progress is checked.
+/// System sets in [`PreUpdate`] where load progress is checked.
 #[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub enum LoadProgressSet
 {
@@ -150,21 +200,23 @@ impl Plugin for LoadProgressPlugin
     fn build(&self, app: &mut App)
     {
         app.init_state::<LoadState>()
-            .init_resource::<AssetLoadProgressTracker>()
+            .init_resource::<LoadProgress>()
             .configure_sets(
                 PreUpdate,
                 (
                     LoadProgressSet::Prepare,
                     LoadProgressSet::AssetProgress,
-                    LoadProgressSet::Check,
+                    //todo: need a more sophisticated loading state abstraction to capture 'initial loading' vs
+                    // 'additional loads' (and then there is the Game Areas idea...)
+                    LoadProgressSet::Check.run_if(in_state(LoadState::Loading)),
                 )
-                    .chain()
-                    .run_if(in_state(LoadState::Loading)),
+                    .chain(),
             )
             .add_systems(
                 PreUpdate,
                 (
                     clear_asset_progress.in_set(LoadProgressSet::Prepare),
+                    collect_asset_progress.in_set(LoadProgressSet::AssetProgress),
                     check_load_progress.in_set(LoadProgressSet::Check),
                 ),
             );

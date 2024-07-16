@@ -642,11 +642,6 @@ impl SceneLoader
             prev_path_length = scene_node_path.len();
         });
 
-        //todo: when a path is loaded, find root entities that loaded a scene with that path; if path doesn't have
-        // an entry in that entity's hierarchy, spawn a new one and subscribe it to the path; flag the root
-        // entities to check for removed paths, then recursively despawn nodes that were removed
-        //todo: make sure to check for deleted scenes so their instances can be cleaned up
-
         // Save the scene stack for use when editing the scene contents.
         self.active_scene_stack.push(scene_instance);
         true

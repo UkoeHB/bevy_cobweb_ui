@@ -53,19 +53,15 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_localization(
+fn handle_new_lang_list(
     mut c: Commands,
     asset_server: Res<AssetServer>,
-    manifest: ReactRes<LocalizationManifest>,
+    manifest: Res<LocalizationManifest>,
     mut localizer: ResMut<TextLocalizer>,
 )
 {
     localizer.update_localizations(&manifest, &asset_server);
-
-    // Assume the update modified the localizations list in some way, so we need to relocalize all text.
-    if !localizer.is_loading() {
-        c.react().broadcast(TextLocalizerUpdated);
-    }
+    localizer.try_emit_load_event(&mut c);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -121,9 +117,8 @@ fn get_localization_data(
     }
 
     // Check if the text localizer updated and is fully loaded.
-    let ended_loading = localizer.is_loading();
-    if (started_loading || refresh_count > 0) && !ended_loading {
-        c.react().broadcast(TextLocalizerUpdated);
+    if started_loading || refresh_count > 0 {
+        localizer.try_emit_load_event(&mut c);
     }
 }
 
@@ -190,10 +185,11 @@ impl TextLocalization
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when [`TextLocalizer`] has been updated.
+/// Reactive event broadcasted when [`TextLocalizer`] has been updated with loaded/reloaded assets.
 ///
-/// Fires *after* all localization data has been loaded.
-pub struct TextLocalizerUpdated;
+/// Is *not* emitted if `TextLocalizer` updates due to a [`LanguagesNegotiated`] event. Use the [`RelocalizeApp`]
+/// event instead for that case.
+pub struct TextLocalizerLoaded;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -203,10 +199,14 @@ pub struct TextLocalizerUpdated;
 /// resources.
 ///
 /// When this resource has been updated due to a [`LocalizationManifest`] or [`Locale`] change, the
-/// [`TextLocalizerUpdated`] reactive event will be broadcasted.
+/// [`TextLocalizerLoaded`] reactive event will be broadcasted.
 #[derive(Resource)]
 pub struct TextLocalizer
 {
+    /// Flag that coordinates sending `TextLocalizerLoaded` only when `TextLocalizer` is updated due to
+    /// assets reloading and not due to assets loaded via `LanguagesNegotiated`.
+    is_awaiting_renegotiation: bool,
+
     is_loading: bool,
     localizations: Vec<TextLocalization>,
 }
@@ -217,6 +217,19 @@ impl TextLocalizer
     pub fn is_loading(&self) -> bool
     {
         self.is_loading
+    }
+
+    fn try_emit_load_event(&mut self, c: &mut Commands)
+    {
+        if self.is_loading() {
+            return;
+        }
+        if self.is_awaiting_renegotiation {
+            self.is_awaiting_renegotiation = false;
+            return;
+        }
+
+        c.react().broadcast(TextLocalizerLoaded);
     }
 
     /// Localizes a string containing a localization template.
@@ -285,6 +298,7 @@ impl TextLocalizer
         self.localizations = new_localizations;
 
         // Cache the loading state to reduce lookups when localizing text.
+        self.is_awaiting_renegotiation = true;
         self.update_is_loading();
     }
 
@@ -330,7 +344,11 @@ impl Default for TextLocalizer
 {
     fn default() -> Self
     {
-        Self { is_loading: false, localizations: Vec::default() }
+        Self {
+            is_awaiting_renegotiation: false,
+            is_loading: false,
+            localizations: Vec::default(),
+        }
     }
 }
 
@@ -357,7 +375,7 @@ impl Plugin for TextLocalizerPlugin
     {
         app.init_resource::<TextLocalizer>()
             .register_asset_tracker::<TextLocalizer>()
-            .react(|rc| rc.on_persistent(resource_mutation::<LocalizationManifest>(), load_localization))
+            .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .add_systems(First, get_localization_data.after(FileProcessingSet));
     }
 }

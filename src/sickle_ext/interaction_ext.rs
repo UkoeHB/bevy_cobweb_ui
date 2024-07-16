@@ -134,8 +134,6 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
     }
 }
 
-// TODO: same extensions for UiBuilder2d
-
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
@@ -149,8 +147,6 @@ impl ApplyLoadable for Interactive
         ec.try_insert((Interaction::default(), TrackedInteraction::default()));
     }
 }
-
-// TODO: Interactive2d
 
 //-------------------------------------------------------------------------------------------------------------------
 

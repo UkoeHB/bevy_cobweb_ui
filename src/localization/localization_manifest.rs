@@ -12,20 +12,25 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default, Deref, DerefMut)]
-struct CachedNegotiatedLangs(Vec<LanguageIdentifier>);
+struct CachedRequestedLangs(Vec<LanguageIdentifier>);
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn load_manifest(
     In((default_meta, alt_metas)): In<(LocalizationMeta, Vec<LocalizationMeta>)>,
+    mut cached: ResMut<CachedRequestedLangs>,
     mut c: Commands,
-    mut manifest: ReactResMut<LocalizationManifest>,
+    mut manifest: ResMut<LocalizationManifest>,
     locale: Res<Locale>,
 )
 {
-    let manifest = manifest.get_mut(&mut c);
+    if **cached != locale.requested {
+        **cached = locale.requested.clone();
+    }
+
     manifest.reset(default_meta, alt_metas);
     manifest.negotiate(&locale.requested);
+    tracing::info!("app languages set to {:?} from requested {:?}", manifest.negotiated(), locale.requested);
     c.react().broadcast(LocalizationManifestUpdated);
     c.react().broadcast(LanguagesNegotiated);
 }
@@ -33,9 +38,9 @@ fn load_manifest(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn update_negotiated_languages(
-    mut cached: ResMut<CachedNegotiatedLangs>,
+    mut cached: ResMut<CachedRequestedLangs>,
     mut c: Commands,
-    mut manifest: ReactResMut<LocalizationManifest>,
+    mut manifest: ResMut<LocalizationManifest>,
     locale: Res<Locale>,
 )
 {
@@ -45,7 +50,6 @@ fn update_negotiated_languages(
     }
     **cached = locale.requested.clone();
 
-    let manifest = manifest.get_mut(&mut c);
     manifest.negotiate(&locale.requested);
     tracing::info!("app languages set to {:?} from requested {:?}", manifest.negotiated(), locale.requested);
     c.react().broadcast(LanguagesNegotiated);
@@ -148,7 +152,7 @@ impl TryFrom<LocalizationMetaReflected> for LocalizationMeta
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that tracks [`LocalizationMetas`](LocalizationMeta).
-#[derive(ReactResource, Debug, Default)]
+#[derive(Resource, Debug, Default)]
 pub struct LocalizationManifest
 {
     /// All languages that can potentially be used to localize text or assets in your app.
@@ -358,13 +362,12 @@ impl Plugin for LocalizationManifestPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<CachedNegotiatedLangs>()
-            .init_react_resource::<LocalizationManifest>()
+        app.init_resource::<CachedRequestedLangs>()
+            .init_resource::<LocalizationManifest>()
             .register_type::<LocalizationMetaReflected>()
             .register_type::<Vec<LocalizationMetaReflected>>()
             .register_type::<Option<String>>()
             .register_command::<LoadLocalizationManifest>()
-            .add_systems(OnExit(LoadState::Loading), update_negotiated_languages)
             .add_systems(
                 PostUpdate,
                 update_negotiated_languages

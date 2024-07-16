@@ -1,4 +1,4 @@
-//! Demonstrates localization of text (TODO: and fonts, images).
+//! Demonstrates localization of text, fonts, and (TODO) images.
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
@@ -19,7 +19,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         l.edit("selection_section::selection_box", |l| {
             // Update the selection whenever the manifest is updated with a new base language list.
             l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
-                move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
+                move |mut c: Commands, manifest: Res<LocalizationManifest>| {
                     // Despawn existing buttons.
                     c.entity(id).despawn_descendants();
 
@@ -48,6 +48,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             });
         });
 
+        //todo: localized image
+
         l.edit("text_section", |l| {
             // Unlocalized text.
             l.edit("unlocalized", |l| {
@@ -72,12 +74,22 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 l.insert_derived(TextLine::from_text("fully-translated"));
             });
 
+            // Localized text with different font fallbacks for different languages.
+            l.edit("font_fallbacks", |l| {
+                l.insert(LocalizedText::default());
+                l.insert_derived(
+                    TextLine::from_text("font-fallbacks")
+                        .with_font("embedded://sickle_ui/fonts/FiraSans-Bold.ttf"),
+                );
+            });
+
             // Localized dynamic text.
             l.edit("dynamic", |l| {
                 l.insert(LocalizedText::default());
                 l.insert_derived(TextLine::default());
-                l.update_on(broadcast::<TextLocalizerUpdated>(), |id| {
+                l.update_on(broadcast::<RelocalizeApp>(), |id| {
                     move |mut count: Local<usize>, mut e: TextEditor| {
+                        // Displays count for the number of times the app was localized.
                         write_text!(e, id, "locale-counter?count={:?}", *count);
                         *count += 1;
                     }

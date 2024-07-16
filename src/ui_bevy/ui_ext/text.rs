@@ -10,13 +10,17 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+const TEXT_LINE_DEFAULT_TEXT: &str = "[text line]";
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn insert_text_line(
     In((entity, mut line)): In<(Entity, TextLine)>,
     mut commands: Commands,
-    mut font_map: ResMut<FontMap>,
+    localizer: Res<TextLocalizer>,
+    font_map: Res<FontMap>,
     color: Query<&TextLineColor>,
     mut localized: Query<&mut LocalizedText>,
-    localizer: Res<TextLocalizer>,
 )
 {
     // Prep color.
@@ -25,16 +29,25 @@ fn insert_text_line(
         .map(|c| c.0)
         .unwrap_or_else(|_| TextLine::default_font_color());
 
+    // Get font.
+    let mut font = line.font.map(|f| font_map.get(&f)).unwrap_or_default();
+
     // Prep localization.
-    if let Ok(mut localized) = localized.get_mut(entity) {
-        localized.set_localization(line.text.as_str());
-        localized.localize(&localizer, &mut line.text);
+    // - We need to manually localize inserted text incase the text line is hot reloaded into an entity that
+    //   already has Text (i.e. because auto-localization won't occur).
+    if line.text.as_str() != TEXT_LINE_DEFAULT_TEXT {
+        if let Ok(mut localized) = localized.get_mut(entity) {
+            localized.set_localization(line.text.as_str());
+            //todo: what happens if line.font is None? it should use bevy's default font
+            localized.localization_mut().set_font_backup(font.clone());
+            localized.localize(&localizer, &font_map, &mut line.text, &mut font);
+        }
     }
 
     // Add text to entity.
     let mut ec = commands.entity(entity);
     ec.try_insert((
-        line.as_text(&mut font_map, color),
+        Text::from_section(line.text, TextStyle { font, font_size: line.size, color }).with_no_wrap(),
         TextLayoutInfo::default(),
         TextFlags::default(),
         ContentSize::default(),
@@ -67,9 +80,15 @@ impl TextLine
         Self { text: text.into(), ..default() }
     }
 
+    pub fn with_font(mut self, font: impl Into<String>) -> Self
+    {
+        self.font = Some(font.into());
+        self
+    }
+
     fn default_text() -> String
     {
-        "[text line]".into()
+        TEXT_LINE_DEFAULT_TEXT.into()
     }
 
     fn default_font() -> Option<String>
@@ -85,19 +104,6 @@ impl TextLine
     fn default_font_color() -> Color
     {
         Color::WHITE
-    }
-
-    fn as_text(self, font_map: &mut FontMap, color: Color) -> Text
-    {
-        Text::from_section(
-            self.text,
-            TextStyle {
-                font: self.font.map(|f| font_map.get(&f)).unwrap_or_default(),
-                font_size: self.size,
-                color,
-            },
-        )
-        .with_no_wrap()
     }
 }
 
@@ -137,8 +143,7 @@ impl ApplyLoadable for TextLineSize
         ec.commands().syscall(
             (id, self.0),
             |In((id, size)): In<(Entity, f32)>, mut editor: TextEditor| {
-                let Some(style) = editor.style(id) else { return };
-                style.font_size = size;
+                editor.set_font_size(id, size);
             },
         );
         ec.try_insert(self);
@@ -168,8 +173,7 @@ impl ApplyLoadable for TextLineColor
         ec.commands().syscall(
             (id, self.0),
             |In((id, color)): In<(Entity, Color)>, mut editor: TextEditor| {
-                let Some(style) = editor.style(id) else { return };
-                style.color = color;
+                editor.set_font_color(id, color);
             },
         );
         ec.try_insert(self);

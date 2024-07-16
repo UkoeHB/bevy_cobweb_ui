@@ -100,7 +100,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
         // Drop-down: sickle_ui built-in widget.
         // TODO: Overwrite default styling.
         l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
-            move |mut c: Commands, manifest: ReactRes<LocalizationManifest>| {
+            move |mut c: Commands, manifest: Res<LocalizationManifest>| {
                 // Delete current dropdown node in case we are rebuilding due to a new language list.
                 let mut n = c.ui_builder(id);
                 n.entity_commands().despawn_descendants();
@@ -127,7 +127,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
                 let dropdown_id = dropdown.id();
                 dropdown.on_event::<DropdownChanged>().r(
                     move |mut locale: ResMut<Locale>,
-                          manifest: ReactRes<LocalizationManifest>,
+                          manifest: Res<LocalizationManifest>,
                           dropdowns: Query<&Dropdown>| {
                         let dropdown = dropdowns.get(dropdown_id).unwrap();
                         if selection == dropdown.value() {

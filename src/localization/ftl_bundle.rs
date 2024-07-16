@@ -25,10 +25,6 @@ struct FtlBundleData
 
 //-------------------------------------------------------------------------------------------------------------------
 
-//todo: hot reloading language contents -> save the paths for ftl resources (hot_reload only), watch for
-// AssetSourceEvent events for those files, trigger reload of main bundle on change and move corresponding
-// localization entry in TextLocalizer to Loading
-
 async fn load_ftl_bundle_contents(
     data: FtlBundleData,
     load_context: &mut LoadContext<'_>,
