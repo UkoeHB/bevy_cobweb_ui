@@ -5,7 +5,9 @@ use crate as bevy_cobweb_ui;
 mod fonts;
 mod images;
 mod plugin;
+mod texture_atlases;
 
 pub use fonts::*;
 pub use images::*;
 pub(crate) use plugin::*;
+pub use texture_atlases::*;

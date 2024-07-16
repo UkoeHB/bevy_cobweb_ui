@@ -1,38 +1,66 @@
 use std::collections::HashMap;
 
+use bevy::ecs::world::Command;
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+
+use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn load_texture_atlas_layouts(
+    In(mut layouts): In<Vec<LoadedTextureAtlasLayout>>,
+    mut map: ResMut<TextureAtlasLayoutMap>,
+    mut layout_assets: ResMut<Assets<TextureAtlasLayout>>,
+)
+{
+    for loaded_layout in layouts.drain(..) {
+        let layout = loaded_layout.get_layout();
+        map.insert(loaded_layout.texture, loaded_layout.alias, &mut layout_assets, layout);
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Resource that stores handles to [`TextureAtlasLayouts`](TextureAtlasLayout).
 ///
-/// Currently assumes each image only uses one `TextureAtlasLayout`.
-//TODO: this assumes each image only uses one TextureAtlasLayout, but it's possible for an image to be divided
-// into sections with different layouts.
-//TODO: add pre-loading and progress tracking
+/// Values can be loaded via [`LoadTextureAtlasLayouts`].
 #[derive(Resource, Default)]
-pub struct TextureAtlasMap
+pub struct TextureAtlasLayoutMap
 {
-    map: HashMap<String, Handle<TextureAtlasLayout>>,
+    map: HashMap<String, HashMap<String, Handle<TextureAtlasLayout>>>,
 }
 
-impl TextureAtlasMap
+impl TextureAtlasLayoutMap
 {
-    /// Gets a handle from the map.
-    pub fn get(
+    /// Inserts a layout entry.
+    ///
+    /// Layouts are indexed by `texture` and an `alias` in case you need multiple layouts for a given texture.
+    pub fn insert(
         &mut self,
-        image: impl AsRef<str>,
+        texture: String,
+        alias: String,
         assets: &mut Assets<TextureAtlasLayout>,
         layout: TextureAtlasLayout,
-    ) -> Handle<TextureAtlasLayout>
+    )
     {
-        let Some(entry) = self.map.get(image.as_ref()) else {
-            let entry = assets.add(layout);
-            self.map.insert(String::from(image.as_ref()), entry.clone());
-            return entry;
-        };
-        entry.clone()
+        self.map
+            .entry(texture)
+            .or_default()
+            .insert(alias, assets.add(layout));
+    }
+
+    /// Gets a handle from the map.
+    ///
+    /// Returns `Handle::default` if the layout was not found.
+    pub fn get(&self, texture: impl AsRef<str>, alias: impl AsRef<str>) -> Handle<TextureAtlasLayout>
+    {
+        self.map
+            .get(texture.as_ref())
+            .and_then(|l| l.get(alias.as_ref()))
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -184,23 +212,23 @@ impl Into<ImageScaleMode> for LoadedImageScaleMode
 
 /// Mirrors [`TextureAtlasLayout`] for serialization.
 ///
-/// Used in combination with [`TextureAtlasMap`] to get atlas layout handles.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum LoadedTextureAtlasLayout
+/// Used in combination with [`TextureAtlasLayoutMap`] to get atlas layout handles.
+///
+/// Includes an `alias`, which can be used by [`TextureAtlasReference`] to access the layout.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadedTextureAtlasLayout
 {
-    Layout
-    {
-        tile_size: UVec2,
-        columns: u32,
-        rows: u32,
-        #[reflect(default)]
-        padding: Option<UVec2>,
-        #[reflect(default)]
-        offset: Option<UVec2>,
-    },
-    #[reflect(ignore)]
-    #[serde(skip)]
-    Handle(Handle<TextureAtlasLayout>),
+    /// The texture this layout is affiliated with.
+    pub texture: String,
+    /// The alias assigned to this layout, for use in accessing the layout's handle in [`TextureAtlasLayoutMap`].
+    pub alias: String,
+    pub tile_size: UVec2,
+    pub columns: u32,
+    pub rows: u32,
+    #[reflect(default)]
+    pub padding: Option<UVec2>,
+    #[reflect(default)]
+    pub offset: Option<UVec2>,
 }
 
 impl LoadedTextureAtlasLayout
@@ -208,59 +236,50 @@ impl LoadedTextureAtlasLayout
     /// Gets a handle to the atlas layout.
     ///
     /// To avoid re-allocating the layout, it is mapped to a string representing the associated image.
-    pub fn get_handle(
-        &mut self,
-        image: impl AsRef<str>,
-        assets: &mut Assets<TextureAtlasLayout>,
-        map: &mut TextureAtlasMap,
-    ) -> Handle<TextureAtlasLayout>
+    pub fn get_layout(&self) -> TextureAtlasLayout
     {
-        match self.clone() {
-            Self::Handle(handle) => handle,
-            Self::Layout { tile_size, columns, rows, padding, offset } => {
-                let layout = TextureAtlasLayout::from_grid(tile_size, columns, rows, padding, offset);
-                let handle = map.get(image, assets, layout);
-                *self = Self::Handle(handle.clone());
-                handle
-            }
-        }
-    }
-}
-
-impl Default for LoadedTextureAtlasLayout
-{
-    fn default() -> Self
-    {
-        Self::Layout {
-            tile_size: UVec2::default(),
-            columns: 0,
-            rows: 0,
-            padding: None,
-            offset: None,
-        }
+        TextureAtlasLayout::from_grid(self.tile_size, self.columns, self.rows, self.padding, self.offset)
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`TextureAtlas`] for serialization.
+/// Loadable command for registering texture altases that need to be pre-loaded.
 ///
-/// Note that this must include a [`LoadedTextureAtlasLayout::Layout`] when serialized.
-//todo: possibly reduce duplication by referring to layout by image path?
+/// The loaded atlases can be accessed via [`TextureAtlasLayoutMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedTextureAtlas
+pub struct LoadTextureAtlasLayouts(pub Vec<LoadedTextureAtlasLayout>);
+
+impl Command for LoadTextureAtlasLayouts
 {
+    fn apply(self, world: &mut World)
+    {
+        world.syscall(self.0, load_texture_atlas_layouts);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Used to create a [`TextureAtlas`] by accessing a [`TextureAtlasLayout`] by reference via
+/// [`TextureAtlasLayoutMap`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TextureAtlasReference
+{
+    /// The identifier for this texture atlas map, which can be used to reference this atlas
     /// The index into the atlas for the desired sprite.
     pub index: usize,
-    /// The layout of the atlas.
-    pub layout: LoadedTextureAtlasLayout,
+    /// The alias of the [`TextureAtlasLayout`] that is referenced.
+    ///
+    /// Note that to get a layout handle from [`TextureAtlasLayoutMap`] you also need the texture, which we assume
+    /// is stored adjacent to this atlas reference.
+    pub alias: String,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct BevySpriteExtPlugin;
+pub(crate) struct TextureAtlasLoadPlugin;
 
-impl Plugin for BevySpriteExtPlugin
+impl Plugin for TextureAtlasLoadPlugin
 {
     fn build(&self, app: &mut App)
     {
@@ -268,9 +287,10 @@ impl Plugin for BevySpriteExtPlugin
             .register_type::<LoadedSliceScaleMode>()
             .register_type::<LoadedTextureSlicer>()
             .register_type::<LoadedImageScaleMode>()
-            .register_type::<LoadedTextureAtlas>()
             .register_type::<LoadedTextureAtlasLayout>()
-            .init_resource::<TextureAtlasMap>();
+            .register_type::<TextureAtlasReference>()
+            .register_command::<LoadTextureAtlasLayouts>()
+            .init_resource::<TextureAtlasLayoutMap>();
     }
 }
 

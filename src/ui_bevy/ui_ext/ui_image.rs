@@ -14,8 +14,7 @@ fn insert_ui_image(
     In((entity, mut img)): In<(Entity, LoadedUiImage)>,
     mut commands: Commands,
     img_map: Res<ImageMap>,
-    mut layout_assets: ResMut<Assets<TextureAtlasLayout>>,
-    mut atlas_map: ResMut<TextureAtlasMap>,
+    layout_map: Res<TextureAtlasLayoutMap>,
 )
 {
     // Extract
@@ -23,10 +22,8 @@ fn insert_ui_image(
         Some(size) => ContentSize::fixed_size(size),
         None => ContentSize::default(),
     };
-    let maybe_atlas = img.atlas.take().map(|mut a| TextureAtlas {
-        layout: a
-            .layout
-            .get_handle(&img.texture, &mut layout_assets, &mut atlas_map),
+    let maybe_atlas = img.atlas.take().map(|a| TextureAtlas {
+        layout: layout_map.get(&img.texture, &a.alias),
         index: a.index,
     });
     let maybe_scale_mode = img.scale_mode.take();
@@ -74,9 +71,11 @@ pub struct LoadedUiImage
 {
     /// The location of the UiImage.
     pub texture: String,
-    /// The [`TextureAtlas`] to process this image with.
+    /// A reference to the [`TextureAtlas`] to process this image with.
+    ///
+    /// The atlas's layout should be loaded into [`TextureAtlasLayoutMap`].
     #[reflect(default)]
-    pub atlas: Option<LoadedTextureAtlas>,
+    pub atlas: Option<TextureAtlasReference>,
     /// The scale mode for this image.
     ///
     /// [`LoadedImageScaleMode::Sliced`] can be used for nine-slicing.
