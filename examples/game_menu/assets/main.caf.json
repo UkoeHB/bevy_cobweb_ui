@@ -4,16 +4,28 @@
 },
 
 "#constants": {
-    "$title_pic": "images/example_280_220.png",
-    "$title_pic_x": 280.0,
-    "$title_pic_y": 220.0,
-    "$title_pic_size": {"x": "$$title_pic_x", "y": "$$title_pic_y"},
+    "$title_texture": "images/example_280_220.png",
+    "$title_texture_alias": "title",
+    "$title_texture_x": 280.0,
+    "$title_texture_x_uint": 280,
+    "$title_texture_y": 220.0,
+    "$title_texture_y_uint": 220,
+    "$title_tile_size": {"x": "$$title_texture_x_uint", "y": "$$title_texture_y_uint"},
     "$settings_text_size": 30.0
 },
 
 "#commands": {
     "LoadImages": [[
-        "$title_pic"
+        "$title_texture"
+    ]],
+    "LoadTextureAtlasLayouts": [[
+        {
+            "texture": "$title_texture",
+            "alias": "$title_texture_alias",
+            "tile_size": "$title_tile_size",
+            "rows": 1,
+            "columns": 2
+        }
     ]],
     "LoadLocalizationManifest": {
         "default": {
@@ -52,13 +64,30 @@
 
         "title": {
             "FlexStyle": {
-                "dims": {"width": {"Px": "$title_pic_x"}, "height": {"Px": "$title_pic_y"}},
+                "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}},
                 "flex": {
                     "margin": {"top": {"Px": 20.0}, "bottom": {"Px": 20.0}, "left": {"Px": 20.0}, "right": {"Px": 20.0}}
                 }
             },
-            "LoadedUiImage": {"texture": "$title_pic", "size": "$title_pic_size"},
             "Interactive": [],
+            "LoadedUiImage": {
+                "texture": "$title_texture",
+                "atlas": {"index": 0, "alias": "$title_texture_alias"},
+                "size": "$title_tile_size"
+            },
+            "Animated<UiImageIndex>": {
+                "values": {
+                    "idle": 0,
+                    "idle_alt": 1
+                },
+                "settings": {
+                    "idle": {
+                        "duration": 0.75,
+                        "easing": "Linear",
+                        "loop_type": "PingPongContinous"
+                    }
+                }
+            },
             "Animated<UiImageColor>": {
                 "values": {
                     "idle": {"Hsla": {"hue": 42.0, "saturation": 0.80, "lightness": 0.5, "alpha": 1.0}},

@@ -5,6 +5,7 @@ use crate as bevy_cobweb_ui;
 
 mod assets;
 pub mod assets_ext;
+pub mod bevy_ext;
 pub mod loading;
 pub mod localization;
 mod plugin;
@@ -28,6 +29,7 @@ pub mod prelude
 
     pub(crate) use crate::assets::*;
     pub use crate::assets_ext::*;
+    pub use crate::bevy_ext::*;
     pub use crate::loading::*;
     pub use crate::localization::*;
     pub use crate::plugin::*;

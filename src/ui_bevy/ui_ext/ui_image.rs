@@ -63,6 +63,14 @@ fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut TextureAtlas, With<UiImage>>)
+{
+    let Ok(mut atlas) = q.get_mut(entity) else { return };
+    atlas.index = index;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Mirrors [`UiImage`] for serialization.
 ///
 /// Must be inserted to an entity with [`NodeBundle`].
@@ -72,6 +80,8 @@ pub struct LoadedUiImage
     /// The location of the UiImage.
     pub texture: String,
     /// A reference to the [`TextureAtlas`] to process this image with.
+    ///
+    /// The image can be animated using this texture atlas with [`Animated<UiImageIndex>`].
     ///
     /// The atlas's layout should be loaded into [`TextureAtlasLayoutMap`].
     #[reflect(default)]
@@ -133,9 +143,6 @@ impl ThemedAttribute for LoadedUiImage
         value.apply(ec);
     }
 }
-//todo: animate ui images by lerping between indices into a texture map? and panic if not pointing to the same
-//      spritesheet
-// - might need custom AnimatedUiImage, especially for the case with more than 2 end states
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -166,6 +173,35 @@ impl AnimatableAttribute for UiImageColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Allows setting the [`TextureAtlas`] index of a UI image.
+///
+/// Primarily useful for animating UI textures using `sickle_ui`.
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct UiImageIndex(pub usize);
+
+impl ApplyLoadable for UiImageIndex
+{
+    fn apply(self, ec: &mut EntityCommands)
+    {
+        let id = ec.id();
+        ec.syscall((id, self.0), update_ui_image_index);
+    }
+}
+
+impl ThemedAttribute for UiImageIndex
+{
+    type Value = usize;
+    fn update(ec: &mut EntityCommands, value: Self::Value)
+    {
+        Self(value).apply(ec);
+    }
+}
+
+impl ResponsiveAttribute for UiImageIndex {}
+impl AnimatableAttribute for UiImageIndex {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct UiImageExtPlugin;
 
 impl Plugin for UiImageExtPlugin
@@ -173,7 +209,8 @@ impl Plugin for UiImageExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_themed::<LoadedUiImage>()
-            .register_animatable::<UiImageColor>();
+            .register_animatable::<UiImageColor>()
+            .register_animatable::<UiImageIndex>();
     }
 }
 

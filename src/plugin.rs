@@ -24,6 +24,7 @@ impl Plugin for CobwebUiPlugin
 
         app.add_plugins(BuiltinAssetsPlugin)
             .add_plugins(ReactExtPlugin)
+            .add_plugins(BevyExtPlugin)
             .add_plugins(LoadingPlugin)
             .add_plugins(LocalizationPlugin)
             .add_plugins(SickleExtPlugin)
