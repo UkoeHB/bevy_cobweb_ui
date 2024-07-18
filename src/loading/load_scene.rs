@@ -108,7 +108,7 @@ where
         self.edit_impl(loadable, callback)
     }
 
-    /// Calls `callback` on the a scene node designated by `path` relative to the root node.
+    /// Calls `callback` on the scene node designated by `path` relative to the root node of the scene.
     ///
     /// Prints a warning and does nothing if `path` does not point to a node in the scene
     /// that is currently being edited.
