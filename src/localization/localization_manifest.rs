@@ -16,6 +16,8 @@ struct CachedRequestedLangs(Vec<LanguageIdentifier>);
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// This system contains similar logic to `update_negotiated_languages`, but we separate the two for more precise
+/// logic flow during app initialization.
 fn load_manifest(
     In((default_meta, alt_metas)): In<(LocalizationMeta, Vec<LocalizationMeta>)>,
     mut cached: ResMut<CachedRequestedLangs>,

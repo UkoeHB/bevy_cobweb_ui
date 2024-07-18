@@ -123,7 +123,7 @@ impl Plugin for ImageLoadPlugin
         app.init_resource::<ImageMap>()
             .register_asset_tracker::<ImageMap>()
             .register_command::<LoadImages>()
-            .add_systems(PreUpdate, check_loaded_images.before(LoadProgressSet::AssetProgress));
+            .add_systems(PreUpdate, check_loaded_images.before(LoadProgressSet::Collect));
     }
 }
 

@@ -40,33 +40,23 @@ fn collect_asset_progress(world: &mut World)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn check_load_progress(
-    mut prev_pending: Local<bool>,
-    progress: Res<LoadProgress>,
-    mut next: ResMut<NextState<LoadState>>,
-)
+fn check_load_progress(progress: Res<LoadProgress>, mut next: ResMut<NextState<LoadState>>)
 {
     let (pending, total) = progress.loading_progress();
 
-    let is_post_pending = *prev_pending;
-    let is_pending = pending > 0;
-    *prev_pending = is_pending;
-
-    // We only change state if load progress changed from pending to not pending.
-    match (is_post_pending, is_pending) {
-        (true, false) => {
-            tracing::info!("Loading done: {total} asset(s)");
-            next.set(LoadState::Done);
-        }
-        _ => (),
+    if pending > 0 {
+        return;
     }
+
+    tracing::info!("Loading done: {total} asset(s)");
+    next.set(LoadState::Done);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Tracks the global loading progress of asset trackers.
 ///
-/// Cleared in [`LoadProgressSet::Prepare`], updated in [`LoadProgressSet::AssetProgress`], evaluated in
+/// Cleared in [`LoadProgressSet::Prepare`], updated in [`LoadProgressSet::Collect`], evaluated in
 /// [`LoadProgressSet::Check`].
 #[derive(Resource, Default)]
 pub struct LoadProgress
@@ -127,16 +117,10 @@ pub trait AssetLoadProgress
 /// App extension trait for registering types that implement [`AssetLoadProgress`].
 pub trait AssetLoadProgressAppExt
 {
-    /// Registers a resource that reports asset load progress in state [`LoadState::Loading`].
-    ///
-    /// It is recommended to load all assets in state [`LoadState::Loading`] so they are available
-    /// post-initialization.
+    /// Registers a resource that reports asset load progress in [`LoadProgressSet::Collect`].
     fn register_asset_tracker<T: AssetLoadProgress + Resource>(&mut self) -> &mut Self;
 
-    /// Registers a reactive resource that reports asset load progress in state [`LoadState::Loading`].
-    ///
-    /// It is recommended to load all assets in state [`LoadState::Loading`] so they are available
-    /// post-initialization.
+    /// Registers a reactive resource that reports asset load progress in [`LoadProgressSet::Collect`].
     fn register_reactive_asset_tracker<T: AssetLoadProgress + ReactResource>(&mut self) -> &mut Self;
 }
 
@@ -186,7 +170,7 @@ pub enum LoadProgressSet
     /// Set where load progress checking is prepared.
     Prepare,
     /// Set where asset load progress is collected.
-    AssetProgress,
+    Collect,
     /// Set where total load progress is checked.
     Check,
 }
@@ -205,7 +189,7 @@ impl Plugin for LoadProgressPlugin
                 PreUpdate,
                 (
                     LoadProgressSet::Prepare,
-                    LoadProgressSet::AssetProgress,
+                    LoadProgressSet::Collect,
                     //todo: need a more sophisticated loading state abstraction to capture 'initial loading' vs
                     // 'additional loads' (and then there is the Game Areas idea...)
                     LoadProgressSet::Check.run_if(in_state(LoadState::Loading)),
@@ -216,7 +200,7 @@ impl Plugin for LoadProgressPlugin
                 PreUpdate,
                 (
                     clear_asset_progress.in_set(LoadProgressSet::Prepare),
-                    collect_asset_progress.in_set(LoadProgressSet::AssetProgress),
+                    collect_asset_progress.in_set(LoadProgressSet::Collect),
                     check_load_progress.in_set(LoadProgressSet::Check),
                 ),
             );

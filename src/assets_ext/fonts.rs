@@ -84,14 +84,6 @@ pub struct FontMap
     pending: HashSet<AssetId<Font>>,
     /// Fonts that are permanently cached, including main fonts.
     ///
-    /// This can contain stale 'main fonts' if you hot reload `LoadFonts` and the reloaded version removes some
-    /// main fonts. It should not affect users in any way.
-    // [ font path : font handle ]
-    cached_fonts: HashMap<String, Handle<Font>>,
-    /// All 'main fonts'.
-    ///
-    /// This is updated whenever a new font list is inserted via `LoadedFont`.
-    ///
     /// We keep all main fonts loaded because to spawn a new text entity, the user needs to get a
     /// `Handle<Font>` for their main font. Font localization happens separate from the 'insert Text component'
     /// step because when inserting a Text component you don't always know what language each text section
@@ -99,8 +91,11 @@ pub struct FontMap
     ///
     /// When localization *does* occur for a newly-inserted Text component, we use existing font handles on
     /// the text sections to look up font fallbacks.
-    // [ main font id : main font handle ]
-    main_fonts: HashMap<AssetId<Font>, Handle<Font>>,
+    ///
+    /// This can contain stale 'main fonts' if you hot reload `LoadFonts` and the reloaded version removes some
+    /// main fonts. It should not affect users in any way.
+    // [ font path : font handle ]
+    cached_fonts: HashMap<String, Handle<Font>>,
     /// Map between main fonts and language-specific fallbacks.
     ///
     /// This is updated whenever a new font list is inserted.
@@ -211,11 +206,8 @@ impl FontMap
                     new_handle
                 });
 
-            let main_id = main_handle.id();
-            self.main_fonts.insert(main_id, main_handle);
-
             // Add fallbacks.
-            let fallbacks = self.localization_map.entry(main_id).or_default();
+            let fallbacks = self.localization_map.entry(main_handle.id()).or_default();
             if fallbacks.len() > 0 {
                 // Note: this warning may be spurious if hot reloading LoadFonts.
                 tracing::warn!("overwritting font fallbacks for main font {:?}; main fonts should only appear in one \
@@ -299,11 +291,75 @@ impl FontMap
             .and_then(|lang_font| {
                 self.localization_fonts.get(lang_font).or_else(|| {
                     tracing::error!("font fallback {:?} is missing from loaded fonts, the requested language {:?} \
-                    is probably not in the negotiated languages list of LocalizationManifest", lang_font, lang_id);
+                        is probably not in the negotiated languages list of LocalizationManifest", lang_font, lang_id);
                     None
                 })
             })
             .cloned()
+    }
+
+    /// Gets the font localized to `lang_id` for the given `main_font`.
+    ///
+    /// Will load and cache the font if it's not already cached.
+    ///
+    /// This should be used if you need to localize the font of text that should be displayed in another
+    /// language (e.g. usernames).
+    ///
+    /// Will return the requested main font if no language-specific fallback is found.
+    pub fn get_or_load_localized(
+        &mut self,
+        lang_id: &LanguageIdentifier,
+        main_font: impl AsRef<str>,
+        asset_server: &AssetServer,
+    ) -> Handle<Font>
+    {
+        let main_font = main_font.as_ref();
+        let mut to_cache: Option<(String, Handle<Font>)> = None;
+        let req_handle = self.cached_fonts
+            .get(main_font)
+            .map(|main| {
+                // Look up the fallback and clone it into the `cached_fonts` map.
+                // - If the fallback exists but isn't loaded, then load it.
+                // - If there is no fallback, just use the `main` font.
+                self.localization_map
+                    .get(&main.id())
+                    .and_then(|fallbacks| fallbacks.get(lang_id))
+                    .map(|lang_font| {
+                        self.cached_fonts.get(lang_font)
+                            .or_else(|| {
+                                self.localization_fonts.get(lang_font).inspect(|handle| {
+                                    to_cache = Some((lang_font.clone(), (*handle).clone()));
+                                })
+                            })
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                let new_handle = asset_server.load(lang_font.clone());
+                                to_cache = Some((lang_font.clone(), new_handle.clone()));
+                                self.pending.insert(new_handle.id());
+                                new_handle
+                            })
+                    })
+                    .unwrap_or_else(|| {
+                        tracing::debug!("failed get-or-load-localized font, requested main font does not have a fallback \
+                            for language {:?}; returning main font {:?} instead", lang_id, main_font);
+                        main.clone()
+                    })
+            })
+            .unwrap_or_else(|| {
+                tracing::debug!("failed get-or-load-localized font, requested main font {:?} is not registered, loading it \
+                    directy instead for language {:?}", main_font, lang_id);
+
+                let new_handle = asset_server.load(String::from(main_font));
+                to_cache = Some((String::from(main_font), new_handle.clone()));
+                self.pending.insert(new_handle.id());
+                new_handle
+            });
+
+        if let Some((lang, handle)) = to_cache {
+            self.cached_fonts.insert(lang, handle);
+        }
+
+        req_handle
     }
 }
 
@@ -381,7 +437,7 @@ impl Plugin for FontLoadPlugin
             .register_asset_tracker::<FontMap>()
             .register_command::<LoadFonts>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
-            .add_systems(PreUpdate, check_loaded_fonts.before(LoadProgressSet::AssetProgress));
+            .add_systems(PreUpdate, check_loaded_fonts.before(LoadProgressSet::Collect));
     }
 }
 

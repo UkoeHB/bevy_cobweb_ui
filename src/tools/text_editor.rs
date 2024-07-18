@@ -120,7 +120,7 @@ impl<'w, 's> TextEditor<'w, 's>
 
     /// Sets the font on the first text section of an entity.
     ///
-    /// See [`set_font_section`].
+    /// See [`Self::set_font_section`].
     ///
     /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
     pub fn set_font(&mut self, entity: Entity, font: impl AsRef<str>) -> bool
