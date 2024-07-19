@@ -16,7 +16,15 @@
 
 "#commands": {
     "LoadImages": [[
-        "$title_texture"
+        {
+            "image": "$title_texture",
+            "fallbacks": [
+                {
+                    "lang": "fr-FR",
+                    "image": "images/example_280_220_fr_FR.png"
+                }
+            ]
+        }
     ]],
     "LoadTextureAtlasLayouts": [[
         {
@@ -179,9 +187,10 @@
             },
             "message": {
                 "FlexStyle": {
-                    "flex": {"margin": {"bottom": {"Px": 1.0}}}
+                    "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 2.0}}}
                 },
-                "TextLine": {"text": "Vsync: ", "size": "$settings_text_size"}
+                "LocalizedText": {},
+                "TextLine": {"text": "settings-tag-vsync", "size": "$settings_text_size"}
             }
         }
     },
@@ -193,9 +202,10 @@
 
         "message": {
             "FlexStyle": {
-                "flex": {"margin": {"bottom": {"Px": 1.0}}}
+                "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 5.0}}}
             },
-            "TextLine": {"text": "Audio: ", "size": "$settings_text_size"}
+            "LocalizedText": {},
+            "TextLine": {"text": "settings-tag-audio", "size": "$settings_text_size"}
         },
         "slider": {
             "FlexStyle": {},
@@ -209,12 +219,13 @@
         },
         "message": {
             "FlexStyle": {
-                "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 10.0}}}
+                "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 12.0}}}
             },
-            "TextLine": {"text": "Language: ", "size": "$settings_text_size"}
+            "LocalizedText": {},
+            "TextLine": {"text": "settings-tag-language", "size": "$settings_text_size"}
         },
         "dropdown": {
-
+            "#c: This is implemented in-code.":0
         }
     }
 },

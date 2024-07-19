@@ -147,42 +147,10 @@ impl Into<ImageScaleMode> for LoadedImageScaleMode
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`TextureAtlasLayout`] for serialization.
-///
-/// Used in combination with [`TextureAtlasLayoutMap`] to get atlas layout handles.
-///
-/// Includes an `alias`, which can be used by [`TextureAtlasReference`] to access the layout.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedTextureAtlasLayout
-{
-    /// The texture this layout is affiliated with.
-    pub texture: String,
-    /// The alias assigned to this layout, for use in accessing the layout's handle in [`TextureAtlasLayoutMap`].
-    pub alias: String,
-    pub tile_size: UVec2,
-    pub columns: u32,
-    pub rows: u32,
-    #[reflect(default)]
-    pub padding: Option<UVec2>,
-    #[reflect(default)]
-    pub offset: Option<UVec2>,
-}
-
-impl LoadedTextureAtlasLayout
-{
-    /// Gets a handle to the atlas layout.
-    ///
-    /// To avoid re-allocating the layout, it is mapped to a string representing the associated image.
-    pub fn get_layout(&self) -> TextureAtlasLayout
-    {
-        TextureAtlasLayout::from_grid(self.tile_size, self.columns, self.rows, self.padding, self.offset)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Used to create a [`TextureAtlas`] by accessing a [`TextureAtlasLayout`] by reference via
 /// [`TextureAtlasLayoutMap`].
+///
+/// See [`LoadedTextureAtlasLayout`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextureAtlasReference
 {
@@ -208,7 +176,6 @@ impl Plugin for TextureAtlasExtPlugin
             .register_type::<LoadedSliceScaleMode>()
             .register_type::<LoadedTextureSlicer>()
             .register_type::<LoadedImageScaleMode>()
-            .register_type::<LoadedTextureAtlasLayout>()
             .register_type::<TextureAtlasReference>();
     }
 }

@@ -12,12 +12,16 @@ FontLocalizer ?
 ImageLocalizer ?
 
 
+Weakness of current design: until the first RelocalizeApp event is emitted, localization is not ready. This means initial loading screens *cannot* be localized using this crate, since the first RelocalizeApp event won't be emitted until all initial assets are done loading.
+
 ## Events
 
 LocalizationManifestUpdated
 LanguagesNegotiated
 
 RelocalizeApp vs \*Loaded events: post-negotiation of lang list (global) vs reload of assets (asset-specific, mainly for hot reloading)
+
+- Can use LanguagesNegotiated -> RelocalizeApp event sequence to display 'loading' indicator when languages are changed.
 
 
 Explain about not using date/time/etc. formatting fallbacks due to potential font issues. If a text section fails to localize due to formatting issues, then it should just fall back within the negotiated languages list.

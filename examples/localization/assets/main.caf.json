@@ -3,6 +3,20 @@
     "": "localization"
 },
 
+"#constants": {
+    "$title_texture": "images/example_280_220.png",
+    "$title_texture_x": 280.0,
+    "$title_texture_x_uint": 280,
+    "$title_texture_y": 220.0,
+    "$title_texture_y_uint": 220,
+    "$title_tile_size": {"x": "$$title_texture_x_uint", "y": "$$title_texture_y_uint"},
+    "$text_margin": {
+        "FlexStyle": {
+            "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}}}
+        }
+    }
+},
+
 "#commands": {
     "LoadLocalizationManifest": {
         "default": {
@@ -37,58 +51,89 @@
                 }
             ]
         }
-    ]]
-},
-
-"#constants": {
-    "$text_margin": {
-        "FlexStyle": {
-            "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}}}
+    ]],
+    "LoadImages": [[
+        {
+            "image": "$title_texture",
+            "fallbacks": [
+                {
+                    "lang": "fr-FR",
+                    "image": "images/example_280_220_fr_FR.png"
+                },
+                {
+                    "lang": "de-DE",
+                    "image": "images/example_280_220_de_DE.png"
+                }
+            ]
         }
-    }
+    ]]
 },
 
 "root": {
     "FlexStyle": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
-        "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
+        "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
     "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
 
-    "selection_section": {
+    "header": {
         "FlexStyle": {
-            "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}},
-            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+            "dims": {"width": {"Percent": 100.0}, "min_height": {"Percent": 30.0}},
+            "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
 
-        "selection_box": {
+        "title": {
             "FlexStyle": {
-                "content": {
-                    "flex_direction": "Column",
-                    "justify_main": "SpaceEvenly",
-                    "justify_cross": "Center",
-                    "padding": {"top": {"Px": 8.0}, "bottom": {"Px": 8.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}
-                }
+                "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}}
+            },
+            "LoadedUiImage": {
+                "texture": "$title_texture",
+                "size": "$title_tile_size"
             }
         }
     },
 
-    "text_section": {
+    "content": {
         "FlexStyle": {
-            "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}, "left": {"Percent": -5.0}},
-            "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "FlexStart"}
+            "dims": {"width": {"Percent": 100.0}},
+            "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
         },
 
-        "unlocalized": { "$text_margin::*": {} },
-        "untranslated": { "$text_margin::*": {} },
-        "partially_translated": { "$text_margin::*": {} },
-        "fully_translated": { "$text_margin::*": {} },
-        "font_fallbacks": { "$text_margin::*": {} },
-        "dynamic": { "$text_margin::*": {} },
-        "from-file": {
-            "$text_margin::*": {},
-            "LocalizedText": {},
-            "TextLine": {"text": "file-text"}
+        "selection_section": {
+            "FlexStyle": {
+                "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}},
+                "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
+            },
+
+            "selection_box": {
+                "FlexStyle": {
+                    "content": {
+                        "flex_direction": "Column",
+                        "justify_main": "SpaceEvenly",
+                        "justify_cross": "Center",
+                        "padding": {"top": {"Px": 8.0}, "bottom": {"Px": 8.0}, "left": {"Px": 10.0}, "right": {"Px": 10.0}}
+                    }
+                }
+            }
+        },
+
+        "text_section": {
+            "FlexStyle": {
+                "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}, "left": {"Percent": -5.0}},
+                "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "FlexStart"}
+            },
+
+            "unlocalized": { "$text_margin::*": {} },
+            "untranslated": { "$text_margin::*": {} },
+            "partially_translated": { "$text_margin::*": {} },
+            "fully_translated": { "$text_margin::*": {} },
+            "font_fallbacks": { "$text_margin::*": {} },
+            "dynamic": { "$text_margin::*": {} },
+            "from-file": {
+                "$text_margin::*": {},
+                "LocalizedText": {},
+                "TextLine": {"text": "file-text"}
+            }
         }
     }
 }

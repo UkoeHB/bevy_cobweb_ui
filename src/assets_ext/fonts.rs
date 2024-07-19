@@ -67,11 +67,14 @@ pub struct FontMapLoaded;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Resource that stores handles to loaded fonts.
+/// Resource that stores handles to loaded fonts and manages font localization.
 ///
 /// Localization font fallbacks are supported. If you use [`LocalizedText`] then fallbacks will be applied
 /// automatically. You only need to insert 'main fonts' to entity text via [`Self::get`] (when initially
 /// constructing text sections) or [`TextEditor::set_font`] (when editing existing text).
+///
+/// Fonts are automatically loaded and unloaded when languages are changed, so that only fonts that might be
+/// needed are kept in memory.
 #[derive(Resource, Default)]
 pub struct FontMap
 {
@@ -116,6 +119,16 @@ impl FontMap
         !self.pending.is_empty()
     }
 
+    fn try_add_pending(handle: &Handle<Font>, asset_server: &AssetServer, pending: &mut HashSet<AssetId<Font>>)
+    {
+        match asset_server.load_state(handle) {
+            bevy::asset::LoadState::Loaded => (),
+            _ => {
+                pending.insert(handle.id());
+            }
+        }
+    }
+
     fn try_emit_load_event(&mut self, c: &mut Commands)
     {
         if self.is_loading() {
@@ -132,6 +145,8 @@ impl FontMap
     fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer)
     {
         let prev_localization_fonts = std::mem::take(&mut self.localization_fonts);
+        self.localization_fonts
+            .reserve(prev_localization_fonts.len());
         let negotiated = manifest.negotiated();
 
         self.localization_map.iter().for_each(|(_main, fallbacks)| {
@@ -146,7 +161,7 @@ impl FontMap
                     .cloned()
                     .unwrap_or_else(|| {
                         let new_handle = asset_server.load(font);
-                        self.pending.insert(new_handle.id());
+                        Self::try_add_pending(&new_handle, asset_server, &mut self.pending);
                         new_handle
                     });
                 self.localization_fonts.insert(font.clone(), handle);
@@ -202,22 +217,26 @@ impl FontMap
                     let new_handle = asset_server.load(&loaded.font);
                     self.cached_fonts
                         .insert(String::from(loaded.font.as_str()), new_handle.clone());
-                    self.pending.insert(new_handle.id());
+                    Self::try_add_pending(&new_handle, asset_server, &mut self.pending);
                     new_handle
                 });
 
             // Add fallbacks.
             let fallbacks = self.localization_map.entry(main_handle.id()).or_default();
+
+            #[cfg(not(feature = "hot_reload"))]
             if fallbacks.len() > 0 {
-                // Note: this warning may be spurious if hot reloading LoadFonts.
+                // This is feature-gated by hot_reload to avoid spam when hot reloading large lists.
                 tracing::warn!("overwritting font fallbacks for main font {:?}; main fonts should only appear in one \
                     LoadFonts command per app", loaded.font);
             }
+
             fallbacks.clear();
+            fallbacks.reserve(loaded.fallbacks.len());
 
             for LoadedFontFallback { lang, font } in loaded.fallbacks.drain(..) {
-                let lang = match LanguageIdentifier::from_str(lang.as_str()) {
-                    Ok(lang) => lang,
+                let lang_id = match LanguageIdentifier::from_str(lang.as_str()) {
+                    Ok(lang_id) => lang_id,
                     Err(err) => {
                         tracing::error!("failed parsing target language id for font fallback {:?} for main font \
                             {:?}: {:?}", font, loaded.font, err);
@@ -225,7 +244,10 @@ impl FontMap
                     }
                 };
 
-                fallbacks.insert(lang, font);
+                if let Some(prev) = fallbacks.insert(lang_id, font) {
+                    tracing::warn!("overwriting font fallback {:?} for font {:?} for lang {:?}",
+                        prev, loaded.font, lang);
+                }
             }
         }
 
@@ -237,7 +259,10 @@ impl FontMap
 
     /// Gets a font handle for the given path.
     ///
-    /// Returns a default handle if the font was not pre-inserted via [`LoadFonts`] or [`Self::insert`].
+    /// The returned handle will *not* be localized. Use [`Self::get_localized`] or
+    /// [`Self::get_or_load_localized`] instead.
+    ///
+    /// Returns a default handle if the font was not pre-inserted via [`Self::insert`].
     pub fn get(&self, path: impl AsRef<str>) -> Handle<Font>
     {
         // Look in cached map only.
@@ -275,7 +300,7 @@ impl FontMap
                 let new_handle = asset_server.load(String::from(path));
                 self.cached_fonts
                     .insert(String::from(path), new_handle.clone());
-                self.pending.insert(new_handle.id());
+                Self::try_add_pending(&new_handle, asset_server, &mut self.pending);
                 new_handle
             })
     }
@@ -300,9 +325,9 @@ impl FontMap
 
     /// Gets the font localized to `lang_id` for the given `main_font`.
     ///
-    /// Will load and cache the font if it's not already cached.
+    /// Will cache the font if it's not already cached, and will load it if it's not loaded.
     ///
-    /// This should be used if you need to localize the font of text that should be displayed in another
+    /// This can be used if you need to localize the font of text that should be displayed in another
     /// language (e.g. usernames).
     ///
     /// Will return the requested main font if no language-specific fallback is found.
@@ -335,7 +360,7 @@ impl FontMap
                             .unwrap_or_else(|| {
                                 let new_handle = asset_server.load(lang_font.clone());
                                 to_cache = Some((lang_font.clone(), new_handle.clone()));
-                                self.pending.insert(new_handle.id());
+                                Self::try_add_pending(&new_handle, asset_server, &mut self.pending);
                                 new_handle
                             })
                     })
@@ -351,7 +376,7 @@ impl FontMap
 
                 let new_handle = asset_server.load(String::from(main_font));
                 to_cache = Some((String::from(main_font), new_handle.clone()));
-                self.pending.insert(new_handle.id());
+                Self::try_add_pending(&new_handle, asset_server, &mut self.pending);
                 new_handle
             });
 
@@ -437,7 +462,7 @@ impl Plugin for FontLoadPlugin
             .register_asset_tracker::<FontMap>()
             .register_command::<LoadFonts>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
-            .add_systems(PreUpdate, check_loaded_fonts.before(LoadProgressSet::Collect));
+            .add_systems(PreUpdate, check_loaded_fonts.in_set(LoadProgressSet::Prepare));
     }
 }
 

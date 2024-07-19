@@ -29,6 +29,7 @@ fn load_texture_atlas_layouts(
 #[derive(Resource, Default)]
 pub struct TextureAtlasLayoutMap
 {
+    /// [ texture : [ alias : layout handle ] ]
     map: HashMap<String, HashMap<String, Handle<TextureAtlasLayout>>>,
 }
 
@@ -66,6 +67,42 @@ impl TextureAtlasLayoutMap
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Mirrors [`TextureAtlasLayout`] for serialization.
+///
+/// Used in combination with [`TextureAtlasLayoutMap`] to get atlas layout handles.
+///
+/// Includes an `alias`, which can be used by [`TextureAtlasReference`] to access the layout.
+///
+/// See [`LoadTextureAtlasLayouts`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadedTextureAtlasLayout
+{
+    /// The texture this layout is affiliated with.
+    pub texture: String,
+    /// The alias assigned to this layout, for use in accessing the layout's handle in [`TextureAtlasLayoutMap`].
+    pub alias: String,
+    pub tile_size: UVec2,
+    pub columns: u32,
+    pub rows: u32,
+    #[reflect(default)]
+    pub padding: Option<UVec2>,
+    #[reflect(default)]
+    pub offset: Option<UVec2>,
+}
+
+impl LoadedTextureAtlasLayout
+{
+    /// Gets a handle to the atlas layout.
+    ///
+    /// To avoid re-allocating the layout, it is mapped to a string representing the associated image.
+    pub fn get_layout(&self) -> TextureAtlasLayout
+    {
+        TextureAtlasLayout::from_grid(self.tile_size, self.columns, self.rows, self.padding, self.offset)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Loadable command for registering texture altases that need to be pre-loaded.
 ///
 /// The loaded atlases can be accessed via [`TextureAtlasLayoutMap`].
@@ -88,8 +125,9 @@ impl Plugin for TextureAtlasLoadPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_command::<LoadTextureAtlasLayouts>()
-            .init_resource::<TextureAtlasLayoutMap>();
+        app.init_resource::<TextureAtlasLayoutMap>()
+            .register_command::<LoadTextureAtlasLayouts>()
+            .register_type::<LoadedTextureAtlasLayout>();
     }
 }
 

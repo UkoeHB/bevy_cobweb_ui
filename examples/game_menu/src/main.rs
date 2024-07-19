@@ -79,7 +79,7 @@ fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, them
         })
         .font_color(Color::WHITE);
 
-    if slider.config.label.is_none() {
+    if slider.config().label.is_none() {
         style_builder
             .switch_target(Slider::LABEL)
             .display(Display::None)
@@ -91,7 +91,7 @@ fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, them
             .visibility(Visibility::Inherited);
     }
 
-    if !slider.config.show_current {
+    if !slider.config().show_current {
         style_builder
             .switch_target(Slider::READOUT_CONTAINER)
             .display(Display::None)

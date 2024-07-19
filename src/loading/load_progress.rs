@@ -108,7 +108,10 @@ pub trait AssetLoadProgress
 {
     /// Gets the number of assets currently loading.
     fn pending_assets(&self) -> usize;
-    /// Gets the total number of assets loaded and loading.
+    /// Gets the approximate total number of assets loaded and loading.
+    ///
+    /// This value does not need to be exact, since for efficiency some asset managers may need to double-count
+    /// assets.
     fn total_assets(&self) -> usize;
 }
 

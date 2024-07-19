@@ -32,6 +32,8 @@ fn insert_ui_image(
     // TODO: prep localization
 
     // Insert
+    // - Note this is a bit messy to avoid archetype moves on insert.
+    //todo: simplify when Bevy has batched ECS commands
     let mut ec = commands.entity(entity);
     let bundle = (ui_image, UiImageSize::default(), content_size);
 
@@ -81,7 +83,7 @@ pub struct LoadedUiImage
     pub texture: String,
     /// A reference to the [`TextureAtlas`] to process this image with.
     ///
-    /// The image can be animated using this texture atlas with [`Animated<UiImageIndex>`].
+    /// The image can be animated using the referenced texture atlas with [`Animated<UiImageIndex>`].
     ///
     /// The atlas's layout should be loaded into [`TextureAtlasLayoutMap`].
     #[reflect(default)]
