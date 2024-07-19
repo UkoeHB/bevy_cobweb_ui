@@ -72,6 +72,7 @@ opt-level = 2
 [workspace]
 resolver = "2"
 members = [
+    "examples/calculator",
     "examples/counter",
     "examples/counter_widget",
     "examples/game_menu",

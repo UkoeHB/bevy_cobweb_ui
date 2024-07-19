@@ -1,0 +1,13 @@
+[package]
+name = "calculator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.14", default-features = true, features = ["serialize"] }
+bevy_cobweb = { version = "0.10" }
+bevy_cobweb_ui = { path = "../../", default-features = false }
+calc = { version = "0.4" }
+itertools = { version = "0.13" }
+rust_decimal = { version = "1.35" }
+tracing = { version = "0.1" }
