@@ -68,72 +68,65 @@ fn build_ui(mut c: Commands)
         "1", "2", "3", "-", "0", ".", "=", "+",
     ];
 
-    c.ui_builder(UiRoot).container(
-        NodeBundle {
-            style: Style {
-                display: Display::Grid,
-                grid_template_columns: RepeatedGridTrack::auto(4),
-                margin: UiRect::all(Val::Auto),
-                ..default()
-            },
-            ..default()
-        },
-        |ui| {
-            ui.insert_reactive(Calculator::default());
-            let calc_entity = ui.id();
+    c.ui_builder(UiRoot).container(NodeBundle::default(), |ui| {
+        ui.style()
+            .display(Display::Grid)
+            .grid_template_columns(RepeatedGridTrack::auto(4))
+            .margin(UiRect::all(Val::Auto));
+        ui.insert_reactive(Calculator::default());
+        let calc_entity = ui.id();
 
-            for item in items {
-                let is_display = item == "";
-                let (span, br_radius, br_color) = match is_display {
-                    true => (3, Val::Px(0.), BORDER_DISPLAY.into()),
-                    false => (1, Val::Px(5.), BORDER_BUTTON.into()),
-                };
+        for item in items {
+            let is_display = item == "";
+            let (span, br_radius, br_color) = match is_display {
+                true => (3, Val::Px(0.), BORDER_DISPLAY.into()),
+                false => (1, Val::Px(5.), BORDER_BUTTON.into()),
+            };
+
+            ui.container(NodeBundle::default(), |ui| {
+                ui.style()
+                    .grid_column(GridPlacement::span(span))
+                    .border(UiRect::all(Val::Px(1.)))
+                    .padding(UiRect::all(Val::Px(20.)))
+                    .margin(UiRect::all(Val::Px(5.)))
+                    .border_radius(BorderRadius::all(br_radius))
+                    .border_color(br_color)
+                    .justify_content(JustifyContent::Center);
+                if is_display {
+                    ui.style().background_color(NORMAL_BUTTON.into());
+                } else {
+                    ui.insert_derived(Interactive)
+                        .insert_derived(Responsive::<BgColor> {
+                            values: InteractiveVals::<Color> {
+                                idle: NORMAL_BUTTON.into(),
+                                hover: Some(HOVERED_BUTTON.into()),
+                                press: Some(PRESSED_BUTTON.into()),
+                                ..default()
+                            },
+                            ..default()
+                        })
+                        .on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
+                            calc.get_mut(&mut c, calc_entity)
+                                .unwrap()
+                                .add_instruction(item);
+                        });
+                }
 
                 ui.container(NodeBundle::default(), |ui| {
-                    ui.style()
-                        .grid_column(GridPlacement::span(span))
-                        .border(UiRect::all(Val::Px(1.)))
-                        .padding(UiRect::all(Val::Px(20.)))
-                        .margin(UiRect::all(Val::Px(5.)))
-                        .border_radius(BorderRadius::all(br_radius))
-                        .border_color(br_color)
-                        .justify_content(JustifyContent::Center);
+                    ui.insert_derived(TextLine { text: item.into(), size: 30.0, ..default() });
+
                     if is_display {
-                        ui.style().background_color(NORMAL_BUTTON.into());
-                    } else {
-                        ui.insert_derived(Interactive)
-                            .insert_derived(Responsive::<BgColor> {
-                                values: InteractiveVals::<Color> {
-                                    idle: NORMAL_BUTTON.into(),
-                                    hover: Some(HOVERED_BUTTON.into()),
-                                    press: Some(PRESSED_BUTTON.into()),
-                                    ..default()
-                                },
-                                ..default()
-                            })
-                            .on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
-                                calc.get_mut(&mut c, calc_entity)
-                                    .unwrap()
-                                    .add_instruction(item);
-                            });
+                        ui.update_on(entity_mutation::<Calculator>(calc_entity), |id| {
+                            move |calc: Reactive<Calculator>, mut e: TextEditor| {
+                                let text = calc.get(calc_entity).unwrap().buffer_display();
+                                write_text!(e, id, "{}", text);
+                            }
+                        });
                     }
-
-                    ui.container(NodeBundle::default(), |ui| {
-                        ui.insert_derived(TextLine { text: item.into(), size: 30.0, ..default() });
-
-                        if is_display {
-                            ui.update_on(entity_mutation::<Calculator>(calc_entity), |id| {
-                                move |calc: Reactive<Calculator>, mut e: TextEditor| {
-                                    let text = calc.get(calc_entity).unwrap().buffer_display();
-                                    write_text!(e, id, "{}", text);
-                                }
-                            });
-                        }
-                    });
                 });
-            }
-        },
-    );
+            });
+        }
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
