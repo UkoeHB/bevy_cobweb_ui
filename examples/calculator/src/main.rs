@@ -96,7 +96,8 @@ fn build_ui(mut c: Commands)
                         .padding(UiRect::all(Val::Px(20.)))
                         .margin(UiRect::all(Val::Px(5.)))
                         .border_radius(BorderRadius::all(br_radius))
-                        .border_color(br_color);
+                        .border_color(br_color)
+                        .justify_content(JustifyContent::Center);
                     if is_display {
                         ui.style().background_color(NORMAL_BUTTON.into());
                     } else {
