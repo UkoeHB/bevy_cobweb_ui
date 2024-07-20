@@ -655,7 +655,7 @@ pub struct SelfFlex
     pub flex_shrink: f32,
     /// Controls how this node should be aligned on its parent's cross axis.
     ///
-    /// If not set to [`JustifyCross::Auto`], then this overrides the parent's [`ContentFlex::justify_cross`]
+    /// If not set to [`JustifySelfCross::Auto`], then this overrides the parent's [`ContentFlex::justify_cross`]
     /// setting.
     ///
     /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.

@@ -263,9 +263,9 @@ impl LocalizationManifest
     /// negotiation):
     /// - Filter available languages (see [`Self::languages`]) against the user's requested languages (see
     ///   [`Locale`]). This gives a list of languages prioritized by how well they match the user's request.
-    /// - In case the previous list's languages can't fully localize the app, we try to add a fallback to the
+    /// - In case the previous list's languages can't fully localize the app, try to add a fallback to the
     ///   user's system language. This entails filtering languages with [`LocalizationMeta::allow_as_fallback`] set
-    ///   to `true` against the user's system language (which is detected automatically).
+    ///   to `true` against the user's primary system language (which is detected automatically).
     /// - Trim the language list so there is at most one language with [`LocalizationMeta::allow_as_fallback`] set
     ///   to true. This minimizes the chance for jank caused by multiple fallback languages (which should generally
     ///   localize all text/assets) that don't completely overlap their localization coverage. It also reduces the

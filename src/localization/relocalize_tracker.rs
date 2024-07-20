@@ -60,6 +60,8 @@ impl Plugin for RelocalizeTrackerPlugin
     {
         app.init_resource::<RelocalizeTracker>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), set_tracker))
+            // Note: when transitioning LoadState::Loading -> LoadState::Done, the trigger will fire
+            // *before* the state transition is applied even though at this point it will already be scheduled.
             .add_systems(PreUpdate, try_trigger_tracker.after(LoadProgressSet::Check));
     }
 }
