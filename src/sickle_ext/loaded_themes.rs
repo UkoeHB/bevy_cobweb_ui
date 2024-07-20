@@ -278,7 +278,7 @@ impl LoadedThemes
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Command for calling [`LoadedThemes::add`] on an entity.
+/// Command for calling `LoadedThemes::add` on an entity.
 ///
 /// Inserts a [`LoadedThemes`] component if the entity doesn't have one.
 pub struct AddLoadedTheme<C: DefaultTheme>

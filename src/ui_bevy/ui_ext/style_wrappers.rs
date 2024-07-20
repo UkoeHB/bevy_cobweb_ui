@@ -244,7 +244,7 @@ impl Into<JustifyContent> for JustifyMain
 ///
 /// Mirrors [`AlignItems`].
 /// Excludes [`AlignItems::Baseline`] which is too confusing to use easily.
-/// Excludes [`AlignItems::Auto`] which is usually [`Self::Stretch`] but sometimes [`Self::FlexStart`].
+/// Excludes [`AlignItems::Default`] which is usually [`Self::Stretch`] but sometimes [`Self::FlexStart`].
 /// Excludes [`AlignItems::Start`] and [`AlignItems::End`] which are equivalent to the `FlexStart`/`FlexEnd`
 /// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
@@ -267,8 +267,8 @@ pub enum JustifyCross
     ///
     /// Stretch is applied after other sizing and positioning is calculated. It's a kind of 'bonus sizing'.
     ///
-    /// If using [`AbsoluteStyle`] and [`Dims::offset`] is set to all auto, then this falls back to
-    /// [`Self::FlexStart`].
+    /// If using [`AbsoluteStyle`] and [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] are set to
+    /// all auto, then this falls back to [`JustifyCross::FlexStart`].
     Stretch,
 }
 
@@ -700,7 +700,7 @@ impl Default for SelfFlex
 ///
 /// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Absolute`].
 /// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
-/// the node's [`Dims::offset`] fields to [`Val::Auto`].
+/// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

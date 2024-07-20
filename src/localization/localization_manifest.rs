@@ -121,8 +121,8 @@ pub struct LocalizationMeta
     /// user may encounter up to three languages in their app (their requested language, their system language,
     /// and the global default language).
     ///
-    /// This option does nothing for the `default` field in [`LoadLocalizationMeta`], which will be used as the
-    /// global default fallback.
+    /// This option does nothing for the `default` field in [`LoadLocalizationManifest`], which will be used as
+    /// the global default fallback.
     pub allow_as_fallback: bool,
 }
 
@@ -263,9 +263,9 @@ impl LocalizationManifest
     /// negotiation):
     /// - Filter available languages (see [`Self::languages`]) against the user's requested languages (see
     ///   [`Locale`]). This gives a list of languages prioritized by how well they match the user's request.
-    /// - In case the previous list's languages can't fully localize the app, try to add a fallback to the
-    ///   user's system language. This entails filtering languages with [`LocalizationMeta::allow_as_fallback`] set
-    ///   to `true` against the user's primary system language (which is detected automatically).
+    /// - In case the previous list's languages can't fully localize the app, try to add a fallback to the user's
+    ///   system language. This entails filtering languages with [`LocalizationMeta::allow_as_fallback`] set to
+    ///   `true` against the user's primary system language (which is detected automatically).
     /// - Trim the language list so there is at most one language with [`LocalizationMeta::allow_as_fallback`] set
     ///   to true. This minimizes the chance for jank caused by multiple fallback languages (which should generally
     ///   localize all text/assets) that don't completely overlap their localization coverage. It also reduces the
@@ -308,7 +308,7 @@ impl LocalizationManifest
 /// Command loadable for adding language folders to [`LocalizationManifest`].
 ///
 /// Languages are inserted to the manifest in the order they appear in this loadable. You should organize the
-/// manifest according to the order you want languages to appear in [`LocalizationManifest::iter()`] (this is
+/// manifest according to the order you want languages to appear in [`LocalizationManifest::languages`] (this is
 /// useful for automatically generating localization options lists).
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadLocalizationManifest

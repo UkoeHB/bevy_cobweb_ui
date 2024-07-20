@@ -195,9 +195,6 @@ pub struct TextLocalizerLoaded;
 
 /// Tool for localizing text.
 ///
-/// The current [`Self::language`] is set automatically using the [`LocalizationManifest`] and [`Locale`]
-/// resources.
-///
 /// When this resource has been updated due to a [`LocalizationManifest`] or [`Locale`] change, the
 /// [`TextLocalizerLoaded`] reactive event will be broadcasted.
 #[derive(Resource)]

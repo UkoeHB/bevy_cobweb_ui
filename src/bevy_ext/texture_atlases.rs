@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[allow(unused_imports)]
+use crate::prelude::*;
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BorderRect`] for serialization.

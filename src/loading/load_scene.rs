@@ -14,6 +14,9 @@ pub mod scene_traits
     use bevy::ecs::system::EntityCommands;
     use bevy::prelude::*;
 
+    #[allow(unused_imports)]
+    use crate::prelude::*;
+
     /// Helper trait for loading a scene. See [`LoadedScene`] and [`LoadSceneExt::load_scene`].
     pub trait SceneNodeLoader
     {
@@ -190,7 +193,8 @@ where
 pub trait LoadSceneExt: scene_traits::SceneNodeLoader
 {
     /// Spawns an entity (and optionally makes it a child of
-    /// [`Self::entity`](scene_traits::SceneNodeLoader::entity)), then loads the scene at `path` into it.
+    /// [`Self::scene_parent_entity`](scene_traits::SceneNodeLoader::scene_parent_entity)), then loads the scene at
+    /// `path` into it.
     ///
     /// The `callback` can be used to edit the scene's root node, which in turn can be used to edit inner nodes
     /// of the scene via [`LoadedScene::edit`].

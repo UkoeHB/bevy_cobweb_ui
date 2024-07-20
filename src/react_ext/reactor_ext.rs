@@ -138,7 +138,7 @@ pub trait UiReactEntityCommandsExt
 
     /// Inserts a derived value to the entity.
     ///
-    /// Uses [`T::ApplyLoadable`] to convert the value into entity mutations.
+    /// Uses `T::ApplyLoadable` to convert the value into entity mutations.
     fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self;
 
     /// Registers an [`entity_event`] reactor for the current entity.
@@ -157,7 +157,8 @@ pub trait UiReactEntityCommandsExt
     /// The system runs:
     /// - Immediately after being registered.
     /// - Whenever the triggers fire.
-    /// - When an entity with [`HasLoadables`] receives [`Loaded`] events.
+    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
+    ///   only).
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
     where
         C: IntoSystem<(), (), M> + Send + Sync + 'static,

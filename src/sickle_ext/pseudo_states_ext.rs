@@ -164,25 +164,25 @@ impl WorldReactor for DetectCloseReactor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Entity event that can be sent to set [`FluxInteraction::Enabled`] on an entity (and remove
-/// [`FluxInteraction::Disabled`]).
+/// Entity event that can be sent to set [`PseudoState::Enabled`] on an entity (and remove
+/// [`PseudoState::Disabled`]).
 pub struct Enable;
-/// Entity event that can be sent to set [`FluxInteraction::Disabled`] on an entity (and remove
-/// [`FluxInteraction::Enabled`]).
+/// Entity event that can be sent to set [`PseudoState::Disabled`] on an entity (and remove
+/// [`PseudoState::Enabled`]).
 pub struct Disable;
-/// Entity event that can be sent to set [`FluxInteraction::Selected`] on an entity.
+/// Entity event that can be sent to set [`PseudoState::Selected`] on an entity.
 pub struct Select;
-/// Entity event that can be sent to remove [`FluxInteraction::Selected`] from an entity.
+/// Entity event that can be sent to remove [`PseudoState::Selected`] from an entity.
 pub struct Deselect;
-/// Entity event that can be sent to set [`FluxInteraction::Checked`] on an entity.
+/// Entity event that can be sent to set [`PseudoState::Checked`] on an entity.
 pub struct Check;
-/// Entity event that can be sent to remove [`FluxInteraction::Checked`] from an entity.
+/// Entity event that can be sent to remove [`PseudoState::Checked`] from an entity.
 pub struct Uncheck;
-/// Entity event that can be sent to set [`FluxInteraction::Open`] on an entity (and remove
-/// [`FluxInteraction::Closed`]).
+/// Entity event that can be sent to set [`PseudoState::Open`] on an entity (and remove
+/// [`PseudoState::Closed`]).
 pub struct Open;
-/// Entity event that can be sent to set [`FluxInteraction::Closed`] on an entity (and remove
-/// [`FluxInteraction::Open`]).
+/// Entity event that can be sent to set [`PseudoState::Closed`] on an entity (and remove
+/// [`PseudoState::Open`]).
 pub struct Close;
 
 //-------------------------------------------------------------------------------------------------------------------

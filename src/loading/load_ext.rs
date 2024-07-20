@@ -206,7 +206,7 @@ pub trait CobwebAssetRegistrationAppExt
     /// Combines [`App::register_type`] with [`Self::register_command_loadable`].
     fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
+    /// Registers a loadable type that will be inserted as `T` bundles on entities that subscribe to
     /// cobweb asset file paths containing the type.
     fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
@@ -214,7 +214,7 @@ pub trait CobwebAssetRegistrationAppExt
     /// cobweb asset file paths containing the type.
     fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a loadable type that will be inserted as [`T`] bundles on entities that subscribe to
+    /// Registers a loadable type that will be inserted as `T` bundles on entities that subscribe to
     /// cobweb asset file paths containing the type.
     fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
 

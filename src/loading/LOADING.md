@@ -5,7 +5,7 @@ Cobweb assets are written as JSON files with the extension `.caf.json`.
 
 ### Loading files
 
-In order for a cobweb asset file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load) the file into your app.
+In order for a cobweb asset file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load) the file into your app.
 
 ```rust
 app.load("path/to/file.caf.json");
@@ -62,7 +62,7 @@ Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude
 
 ### Loadable values
 
-A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`LoadableRegistrationAppExt`](bevy_cobweb_ui::prelude::LoadableRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
+A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobwebAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
 
 For example, with the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable defined in this crate:
 
@@ -275,7 +275,7 @@ Which expands to:
 
 When accessing a constant as a map key, you must end it with `::*`, which means 'paste all contents'.
 
-In this example, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) and [`AbsoluteStyle`]((bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
+In this example, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
 ```json
 {
     "#constants": {
@@ -603,7 +603,7 @@ Cobweb asset files can be transitively loaded by specifying them in a `#manifest
 
 Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`LoadableFile`](bevy_cobweb_ui::prelude::LoadableFile) references in place of explicit file paths.
 
-An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`CobwebAssetRegistrationAppExt::load`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt::load).
+An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
 
 ```json
 // button_widget.caf.json

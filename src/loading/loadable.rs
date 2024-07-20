@@ -21,9 +21,9 @@ impl<T> Loadable for T where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait for converting [`Self`] into entity modifications.
+/// Trait for converting `Self` into entity modifications.
 ///
-/// Used by [`register_derived_loadable`].
+/// Used by [`register_derived_loadable`](crate::prelude::CobwebAssetRegistrationAppExt::register_derived_loadable).
 pub trait ApplyLoadable: Loadable
 {
     fn apply(self, ec: &mut EntityCommands);

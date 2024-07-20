@@ -55,7 +55,7 @@ impl<'w, 's> TextEditor<'w, 's>
     ///
     /// See [`Self::write_section`].
     ///
-    /// This is used in the [`write_text`] helper macro.
+    /// This is used in the [`write_text`](crate::write_text) helper macro.
     pub fn write<E: Debug>(
         &mut self,
         text_entity: Entity,
@@ -71,7 +71,7 @@ impl<'w, 's> TextEditor<'w, 's>
     ///
     /// Returns `false` if the text section could not be accessed, if the writer fails, or if localization fails.
     ///
-    /// This is used in the [`write_text_section`] helper macro.
+    /// This is used in the [`write_text_section`](crate::write_text_section) helper macro.
     pub fn write_section<E: Debug>(
         &mut self,
         text_entity: Entity,
@@ -120,7 +120,7 @@ impl<'w, 's> TextEditor<'w, 's>
 
     /// Sets the font on the first text section of an entity.
     ///
-    /// See [`Self::set_font_section`].
+    /// See [`Self::set_section_font`].
     ///
     /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
     pub fn set_font(&mut self, entity: Entity, font: impl AsRef<str>) -> bool
