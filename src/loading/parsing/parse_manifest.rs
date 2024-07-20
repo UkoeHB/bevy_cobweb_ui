@@ -42,7 +42,8 @@ pub(crate) fn extract_manifest_section(
             }
             _ => {
                 if !LoadableFile::str_is_file_path(manifest_file) {
-                    tracing::error!("ignoring manifest entry in {:?} with invalid file path {:?} (key: {:?})",
+                    tracing::error!("ignoring manifest entry in {:?} with invalid file path {:?} (key: {:?}); \
+                        cobweb asset files should terminate with `.caf.json`",
                         file.as_str(), manifest_file.as_str(), manifest_key);
                     continue;
                 }

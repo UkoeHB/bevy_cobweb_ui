@@ -69,7 +69,7 @@ fn relocalize_audios(audios: Res<AudioMap>, mut query: Query<&mut Handle<AudioSo
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when [`AudioMap`] has updated and become fully loaded *after* a [`LoadAudios`]
+/// Reactive event broadcasted when [`AudioMap`] has updated and become fully loaded *after* a [`LoadAudio`]
 /// instance was applied.
 ///
 /// This event is *not* emitted when audio sources are reloaded due to language renegotiation. Listen for the
@@ -153,7 +153,7 @@ impl AudioMap
     fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer)
     {
         // We remove `localized_audios` because we assume it might be stale (e.g. if we are negotiating because
-        // LoadAudios was hot-reloaded).
+        // LoadAudio was hot-reloaded).
         let prev_localized_audios = std::mem::take(&mut self.localized_audios);
         self.localized_audios.reserve(self.localization_map.len());
 
@@ -170,7 +170,7 @@ impl AudioMap
                 // Negotiate the language we should use, then look up its asset path.
                 // - Note: `negotiated_languages` may allocate multiple times, but we don't think this is a huge
                 //   issue since it's unlikely users will localize a *lot* of audio sources. It *could* be an issue
-                //   if a user loads audio sources from many LoadAudios commands, causing this loop to run many
+                //   if a user loads audio sources from many LoadAudio commands, causing this loop to run many
                 //   times.
                 let asset_path =
                     negotiate_languages(&langs_buffer, app_negotiated, None, NegotiationStrategy::Lookup)
@@ -294,7 +294,7 @@ impl AudioMap
             if fallbacks.len() > 0 {
                 // This is feature-gated by hot_reload to avoid spam when hot reloading large lists.
                 tracing::warn!("overwritting audio fallbacks for main audio {:?}; main audio sources should only appear \
-                    in one LoadAudios command per app", main_path);
+                    in one LoadAudio command per app", main_path);
             }
 
             fallbacks.clear();
@@ -435,7 +435,7 @@ pub struct LoadedAudioFallback
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// See [`LoadAudios`].
+/// See [`LoadAudio`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadedAudio
 {
@@ -455,9 +455,9 @@ pub struct LoadedAudio
 ///
 /// The loaded audio sources can be accessed via [`AudioMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadAudios(pub Vec<LoadedAudio>);
+pub struct LoadAudio(pub Vec<LoadedAudio>);
 
-impl Command for LoadAudios
+impl Command for LoadAudio
 {
     fn apply(self, world: &mut World)
     {
@@ -475,7 +475,7 @@ impl Plugin for AudioLoadPlugin
     {
         app.init_resource::<AudioMap>()
             .register_asset_tracker::<AudioMap>()
-            .register_command::<LoadAudios>()
+            .register_command::<LoadAudio>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .react(|rc| {
                 rc.on_persistent(
