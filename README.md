@@ -1,7 +1,5 @@
 # Bevy Cobweb UI
 
-**This crate is under development (v0.1.0 release SOON).**
-
 Provides a framework for building UI and managing assets in a Bevy app. Built on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), [sickle_ui](https://github.com/UmbraLuminosa/sickle_ui), and standard `bevy_ui`/`bevy_assets`/etc.
 
 

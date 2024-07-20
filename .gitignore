@@ -2,5 +2,6 @@ target
 Cargo.lock
 .vscode
 .notes
+*/.DS_Store
 
 rust-toolchain.toml
