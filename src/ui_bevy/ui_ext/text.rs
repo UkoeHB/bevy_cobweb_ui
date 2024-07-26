@@ -1,6 +1,6 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
-use bevy::text::TextLayoutInfo;
+use bevy::text::{BreakLineOn, TextLayoutInfo};
 use bevy::ui::widget::TextFlags;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
@@ -44,10 +44,15 @@ fn insert_text_line(
         }
     }
 
+    // Set up text.
+    let mut text = Text::from_section(line.text, TextStyle { font, font_size: line.size, color });
+    text.justify = line.justify;
+    text.linebreak_behavior = line.linebreak;
+
     // Add text to entity.
     let mut ec = commands.entity(entity);
     ec.try_insert((
-        Text::from_section(line.text, TextStyle { font, font_size: line.size, color }).with_no_wrap(),
+        text,
         TextLayoutInfo::default(),
         TextFlags::default(),
         ContentSize::default(),
@@ -71,6 +76,16 @@ pub struct TextLine
     /// The desired font size.
     #[reflect(default = "TextLine::default_font_size")]
     pub size: f32,
+    /// The line's [`BreakLineOn`] behavior.
+    ///
+    /// Defaults to [`BreakLineOn::NoWrap`].
+    #[reflect(default = "TextLine::default_line_break")]
+    pub linebreak: BreakLineOn,
+    /// The line's [`JustifyText`] behavior.
+    ///
+    /// Defaults to [`JustifyText::Left`].
+    #[reflect(default = "TextLine::default_justify_text")]
+    pub justify: JustifyText,
 }
 
 impl TextLine
@@ -105,6 +120,16 @@ impl TextLine
     {
         Color::WHITE
     }
+
+    fn default_line_break() -> BreakLineOn
+    {
+        BreakLineOn::NoWrap
+    }
+
+    fn default_justify_text() -> JustifyText
+    {
+        JustifyText::Left
+    }
 }
 
 impl ApplyLoadable for TextLine
@@ -124,6 +149,8 @@ impl Default for TextLine
             text: Self::default_text(),
             font: Self::default_font(),
             size: Self::default_font_size(),
+            linebreak: Self::default_line_break(),
+            justify: Self::default_justify_text(),
         }
     }
 }

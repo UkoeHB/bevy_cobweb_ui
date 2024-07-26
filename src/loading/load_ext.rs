@@ -73,6 +73,8 @@ fn command_loader<T: Command + Loadable>(world: &mut World)
         let Some(command) = loadable.get_value::<T>(&loadable_ref) else { continue };
         command.apply(world);
     }
+
+    world.flush();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
