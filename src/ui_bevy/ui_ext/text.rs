@@ -1,4 +1,3 @@
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::text::{BreakLineOn, TextLayoutInfo};
 use bevy::ui::widget::TextFlags;
@@ -33,7 +32,7 @@ fn insert_text_line(
     let mut font = line.font.map(|f| font_map.get(&f)).unwrap_or_default();
 
     // Prep localization.
-    // - We need to manually localize inserted text incase the text line is hot reloaded into an entity that
+    // - We need to manually localize inserted text in case the text line is hot reloaded into an entity that
     //   already has Text (i.e. because auto-localization won't occur).
     if line.text.as_str() != TEXT_LINE_DEFAULT_TEXT {
         if let Ok(mut localized) = localized.get_mut(entity) {
@@ -134,10 +133,9 @@ impl TextLine
 
 impl ApplyLoadable for TextLine
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let entity = ec.id();
-        ec.commands().syscall((entity, self), insert_text_line);
+        world.syscall((entity, self), insert_text_line);
     }
 }
 
@@ -164,25 +162,26 @@ pub struct TextLineSize(pub f32);
 
 impl ApplyLoadable for TextLineSize
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall(
-            (id, self.0),
+        world.syscall(
+            (entity, self.0),
             |In((id, size)): In<(Entity, f32)>, mut editor: TextEditor| {
                 editor.set_font_size(id, size);
             },
         );
-        ec.try_insert(self);
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(self);
+        });
     }
 }
 
 impl ThemedAttribute for TextLineSize
 {
     type Value = f32;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        TextLineSize(value).apply(ec);
+        TextLineSize(value).apply(entity, world);
     }
 }
 
@@ -194,25 +193,26 @@ pub struct TextLineColor(pub Color);
 
 impl ApplyLoadable for TextLineColor
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall(
-            (id, self.0),
+        world.syscall(
+            (entity, self.0),
             |In((id, color)): In<(Entity, Color)>, mut editor: TextEditor| {
                 editor.set_font_color(id, color);
             },
         );
-        ec.try_insert(self);
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(self);
+        });
     }
 }
 
 impl ThemedAttribute for TextLineColor
 {
     type Value = Color;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        TextLineColor(value).apply(ec);
+        TextLineColor(value).apply(entity, world);
     }
 }
 

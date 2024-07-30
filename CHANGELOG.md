@@ -2,11 +2,12 @@
 
 ## WIP
 
-- Registered `DisplayControl` for reflection.
+- Register `DisplayControl` for reflection.
+- Refactor `ApplyLoadable` to take `Entity` and `&mut World` instead of `EntityCommands`. This should be a small optimization.
 
 ## 0.1.1
 
-- Added `JustifyText` and `BreakLineOn` options to `TextLine`.
+- Add `JustifyText` and `BreakLineOn` options to `TextLine`.
 
 ## 0.1.0
 

@@ -1,4 +1,3 @@
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_cobweb::prelude::*;
@@ -81,18 +80,20 @@ pub struct BgColor(pub Color);
 
 impl ApplyLoadable for BgColor
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        ec.try_insert(BackgroundColor(self.0));
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(BackgroundColor(self.0));
+        });
     }
 }
 
 impl ThemedAttribute for BgColor
 {
     type Value = Color;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -107,18 +108,20 @@ pub struct BrColor(pub Color);
 
 impl ApplyLoadable for BrColor
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        ec.try_insert(BorderColor(self.0));
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(BorderColor(self.0));
+        });
     }
 }
 
 impl ThemedAttribute for BrColor
 {
     type Value = Color;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -136,18 +139,20 @@ pub struct BrRadius(pub Val);
 
 impl ApplyLoadable for BrRadius
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        ec.try_insert(BorderRadius::all(self.0));
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(BorderRadius::all(self.0));
+        });
     }
 }
 
 impl ThemedAttribute for BrRadius
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -164,19 +169,18 @@ pub struct BrRadiusTopLeft(pub Val);
 
 impl ApplyLoadable for BrRadiusTopLeft
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), set_border_radius_top_left);
+        world.syscall((entity, self.0), set_border_radius_top_left);
     }
 }
 
 impl ThemedAttribute for BrRadiusTopLeft
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -193,19 +197,18 @@ pub struct BrRadiusTopRight(pub Val);
 
 impl ApplyLoadable for BrRadiusTopRight
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), set_border_radius_top_right);
+        world.syscall((entity, self.0), set_border_radius_top_right);
     }
 }
 
 impl ThemedAttribute for BrRadiusTopRight
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -222,19 +225,18 @@ pub struct BrRadiusBottomLeft(pub Val);
 
 impl ApplyLoadable for BrRadiusBottomLeft
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), set_border_radius_bottom_left);
+        world.syscall((entity, self.0), set_border_radius_bottom_left);
     }
 }
 
 impl ThemedAttribute for BrRadiusBottomLeft
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -251,19 +253,18 @@ pub struct BrRadiusBottomRight(pub Val);
 
 impl ApplyLoadable for BrRadiusBottomRight
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), set_border_radius_bottom_right);
+        world.syscall((entity, self.0), set_border_radius_bottom_right);
     }
 }
 
 impl ThemedAttribute for BrRadiusBottomRight
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -306,19 +307,21 @@ impl Lerp for NodeOutline
 
 impl ApplyLoadable for NodeOutline
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         let outline: Outline = self.into();
-        ec.try_insert(outline);
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(outline);
+        });
     }
 }
 
 impl ThemedAttribute for NodeOutline
 {
     type Value = Self;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        value.apply(ec);
+        value.apply(entity, world);
     }
 }
 
@@ -349,19 +352,21 @@ impl Into<FocusPolicy> for SetFocusPolicy
 
 impl ApplyLoadable for SetFocusPolicy
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         let policy: FocusPolicy = self.into();
-        ec.try_insert(policy);
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(policy);
+        });
     }
 }
 
 impl ThemedAttribute for SetFocusPolicy
 {
     type Value = Self;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        value.apply(ec);
+        value.apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetFocusPolicy {}
@@ -397,19 +402,21 @@ impl Into<ZIndex> for SetZIndex
 
 impl ApplyLoadable for SetZIndex
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         let z: ZIndex = self.into();
-        ec.try_insert(z);
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(z);
+        });
     }
 }
 
 impl ThemedAttribute for SetZIndex
 {
     type Value = Self;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        value.apply(ec);
+        value.apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetZIndex {}

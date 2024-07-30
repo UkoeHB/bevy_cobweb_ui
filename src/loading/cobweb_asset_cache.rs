@@ -189,10 +189,10 @@ struct ErasedLoadable
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
-struct SubscriptionRef
+pub(crate) struct SubscriptionRef
 {
-    entity: Entity,
-    setter: ContextSetter,
+    pub(crate) entity: Entity,
+    pub(crate) setter: ContextSetter,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -783,13 +783,23 @@ impl CobwebAssetCache
             .unwrap_or_default()
     }
 
+    /// Takes entity loadables for entites that subscribed to `T` found at recently-updated loadable paths.
+    pub(crate) fn take_loadables<T: Loadable>(
+        &mut self,
+    ) -> SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[SubscriptionRef; 1]>); 1]>
+    {
+        self.needs_updates
+            .remove(&TypeId::of::<T>())
+            .unwrap_or_default()
+    }
+
     /// Updates entities that subscribed to `T` found at recently-updated loadable paths.
     pub(crate) fn update_loadables<T: Loadable>(
         &mut self,
         mut callback: impl FnMut(Entity, ContextSetter, &LoadableRef, &ReflectedLoadable),
     )
     {
-        let Some(mut needs_updates) = self.needs_updates.remove(&TypeId::of::<T>()) else { return };
+        let mut needs_updates = self.take_loadables::<T>();
 
         for (loadable, loadable_ref, mut subscriptions) in needs_updates.drain(..) {
             for subscription in subscriptions.drain(..) {

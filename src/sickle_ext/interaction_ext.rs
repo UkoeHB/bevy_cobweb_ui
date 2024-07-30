@@ -1,4 +1,3 @@
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -142,9 +141,11 @@ pub struct Interactive;
 
 impl ApplyLoadable for Interactive
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        ec.try_insert((Interaction::default(), TrackedInteraction::default()));
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert((Interaction::default(), TrackedInteraction::default()));
+        });
     }
 }
 

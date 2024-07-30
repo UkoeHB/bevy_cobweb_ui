@@ -1,4 +1,3 @@
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::ui::widget::UiImageSize;
 use bevy::ui::ContentSize;
@@ -129,18 +128,17 @@ impl LoadedUiImage
 
 impl ApplyLoadable for LoadedUiImage
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let entity = ec.id();
-        ec.commands().syscall((entity, self), insert_ui_image);
+        world.syscall((entity, self), insert_ui_image);
     }
 }
 impl ThemedAttribute for LoadedUiImage
 {
     type Value = Self;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        value.apply(ec);
+        value.apply(entity, world);
     }
 }
 
@@ -152,19 +150,18 @@ pub struct UiImageColor(pub Color);
 
 impl ApplyLoadable for UiImageColor
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), update_ui_image_color);
+        world.syscall((entity, self.0), update_ui_image_color);
     }
 }
 
 impl ThemedAttribute for UiImageColor
 {
     type Value = Color;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 
@@ -181,19 +178,18 @@ pub struct UiImageIndex(pub usize);
 
 impl ApplyLoadable for UiImageIndex
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.syscall((id, self.0), update_ui_image_index);
+        world.syscall((entity, self.0), update_ui_image_index);
     }
 }
 
 impl ThemedAttribute for UiImageIndex
 {
     type Value = usize;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 

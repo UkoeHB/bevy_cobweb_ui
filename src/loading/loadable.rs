@@ -26,7 +26,7 @@ impl<T> Loadable for T where
 /// Used by [`register_derived_loadable`](crate::prelude::CobwebAssetRegistrationAppExt::register_derived_loadable).
 pub trait ApplyLoadable: Loadable
 {
-    fn apply(self, ec: &mut EntityCommands);
+    fn apply(self, entity: Entity, world: &mut World);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -34,14 +34,14 @@ pub trait ApplyLoadable: Loadable
 pub trait ApplyLoadableExt
 {
     /// Calls [`ApplyLoadable::apply`].
-    fn apply_loadable(&mut self, loadable: impl ApplyLoadable) -> &mut Self;
+    fn apply(&mut self, loadable: impl ApplyLoadable) -> &mut Self;
 }
 
 impl ApplyLoadableExt for EntityCommands<'_>
 {
-    fn apply_loadable(&mut self, loadable: impl ApplyLoadable) -> &mut Self
+    fn apply(&mut self, loadable: impl ApplyLoadable + Send + Sync + 'static) -> &mut Self
     {
-        loadable.apply(self);
+        self.add(move |e: Entity, w: &mut World| loadable.apply(e, w));
         self
     }
 }
@@ -54,10 +54,10 @@ pub struct Multi<T>(Vec<T>);
 
 impl<T: ApplyLoadable + TypePath + FromReflect + GetTypeRegistration> ApplyLoadable for Multi<T>
 {
-    fn apply(mut self, ec: &mut EntityCommands)
+    fn apply(mut self, entity: Entity, world: &mut World)
     {
         for item in self.0.drain(..) {
-            item.apply(ec);
+            item.apply(entity, world);
         }
     }
 }
@@ -105,9 +105,9 @@ impl<T> ApplyLoadable for Splat<T>
 where
     T: Splattable + ApplyLoadable + TypePath + FromReflect + GetTypeRegistration,
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        T::splat(self.0).apply(ec);
+        T::splat(self.0).apply(entity, world);
     }
 }
 

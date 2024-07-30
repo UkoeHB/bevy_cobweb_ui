@@ -1,6 +1,7 @@
 use std::any::{type_name, TypeId};
 
 use bevy::ecs::component::Components;
+use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
@@ -141,9 +142,14 @@ fn add_attribute_to_theme(
     contexts: Query<&ThemeLoadContext>,
     parents: Query<&Parent>,
     components: &Components,
+    entities: &Entities,
     mut params: ParamSet<(&World, Query<&mut LoadedThemes>, Commands)>,
 )
 {
+    if !entities.contains(entity) {
+        return;
+    }
+
     // Get load context for entity.
     let Ok(load_context) = contexts.get(entity) else {
         // Fall back to inserting as a plain dynamic style attribute.
@@ -211,7 +217,7 @@ fn add_attribute_to_theme(
             loaded_theme.set_attribute(state, load_context.placement, load_context.context, attribute);
             let mut c = params.p2();
             let mut ec = c.entity(entity);
-            ec.insert(loaded_themes);
+            ec.try_insert(loaded_themes);
             return;
         }
     }
@@ -225,10 +231,7 @@ fn add_attribute_to_theme(
 fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
 {
     move |entity: Entity, world: &mut World| {
-        // Apply the value to the entity.
-        let mut c = world.commands();
-        let Some(mut ec) = c.get_entity(entity) else { return };
-        T::update(&mut ec, val.clone());
+        T::update(entity, world, val.clone());
         world.flush();
     }
 }
@@ -244,9 +247,7 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
         let new_value = vals.to_value(state);
 
         // Apply the value to the entity.
-        let mut c = world.commands();
-        let Some(mut ec) = c.get_entity(entity) else { return };
-        T::update(&mut ec, new_value);
+        T::update(entity, world, new_value);
         world.flush();
     }
 }
@@ -264,9 +265,7 @@ where
         let new_value = vals.to_value(&state);
 
         // Apply the value to the entity.
-        let mut c = world.commands();
-        let Some(mut ec) = c.get_entity(entity) else { return };
-        T::update(&mut ec, new_value);
+        T::update(entity, world, new_value);
         world.flush();
     }
 }
@@ -280,7 +279,7 @@ pub trait ThemedAttribute: Loadable + TypePath
     type Value: Loadable + TypePath;
 
     /// Updates the entity with the themed attribute's value.
-    fn update(entity_commands: &mut EntityCommands, value: Self::Value);
+    fn update(entity: Entity, world: &mut World, value: Self::Value);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -304,9 +303,9 @@ where
     T: ApplyLoadable + Splattable + ThemedAttribute,
 {
     type Value = T::Splat;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        T::splat(value).apply(ec);
+        T::splat(value).apply(entity, world);
     }
 }
 impl<T> ResponsiveAttribute for Splat<T> where T: Splattable + ResponsiveAttribute {}
@@ -333,15 +332,14 @@ impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
             CustomStaticStyleAttribute::new(extract_static_value::<T>(self.value)),
         ));
 
-        let id = ec.id();
-        ec.syscall((id, false, self.state, attribute), add_attribute_to_theme);
+        world.syscall((entity, false, self.state, attribute), add_attribute_to_theme);
     }
 }
 
@@ -376,16 +374,15 @@ impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
             CustomInteractiveStyleAttribute::new(extract_responsive_value::<T>(self.values)),
         ));
 
-        let id = ec.id();
-        ec.syscall(
-            (id, self.inherit_control, self.state, attribute),
+        world.syscall(
+            (entity, self.inherit_control, self.state, attribute),
             add_attribute_to_theme,
         );
     }
@@ -424,7 +421,7 @@ impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
 where
     <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
@@ -434,9 +431,8 @@ where
             controller: DynamicStyleController::new(self.settings, AnimationState::default()),
         };
 
-        let id = ec.id();
-        ec.syscall(
-            (id, self.inherit_control, self.state, attribute),
+        world.syscall(
+            (entity, self.inherit_control, self.state, attribute),
             add_attribute_to_theme,
         );
     }
@@ -444,7 +440,7 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub trait ThemeLoadingEntityCommandsExt
+pub trait ThemeSettingExt
 {
     /// Sets `C` in the theme load context so manually-inserted themable attributes will be applied properly.
     fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self;
@@ -459,37 +455,9 @@ pub trait ThemeLoadingEntityCommandsExt
     ///
     /// Proxies interactions on the `Pm` sub-entity to the `Ctx` sub-entity.
     fn set_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(&mut self) -> &mut Self;
-    /// Sets up the current entity to receive loadable theme data.
-    ///
-    /// This is useful if you want to add subthemes to a theme that doesn't need to use [`Self::load_theme`]
-    /// because it doesn't have any attributes on the root entity.
-    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self;
-    /// Loads [`Theme<C>`] into the current entity from the loadable reference.
-    ///
-    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
-    /// insert attributes to the theme when they are loaded onto this entity.
-    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
-    /// See [`Self::load_theme`].
-    ///
-    /// Proxies interactions on the `Pm` sub-entity to the main entity.
-    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: LoadableRef)
-        -> &mut Self;
-    /// Loads context-bound subtheme attributes to the nearest ancestor entity that has `C` or `LoadedThemes` with
-    /// an entry for `C`.
-    ///
-    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
-    /// insert attributes to the theme for context `Ctx::type_name()` when they are loaded onto this entity.
-    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
-    /// See [`Self::load_subtheme`].
-    ///
-    /// Proxies interactions on the `Pm` sub-entity to the `Ctx` sub-entity.
-    fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: LoadableRef,
-    ) -> &mut Self;
 }
 
-impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
+impl ThemeSettingExt for EntityCommands<'_>
 {
     fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self
     {
@@ -546,7 +514,103 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
         });
         self
     }
+}
 
+impl ThemeSettingExt for EntityWorldMut<'_>
+{
+    fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            placement: None,
+            context: None,
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+
+    fn set_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            placement: Some(Pm::NAME),
+            context: None,
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+
+    fn set_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            placement: None,
+            context: Some(Ctx::NAME),
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+
+    fn set_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(&mut self) -> &mut Self
+    {
+        let marker = TypeId::of::<C>();
+        let marker_name = type_name::<C>();
+        self.insert(ThemeLoadContext {
+            marker,
+            marker_name,
+            placement: Some(Pm::NAME),
+            context: Some(Ctx::NAME),
+            theme_adder_fn: theme_adder_fn::<C>,
+        });
+        self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub trait ThemeLoadingEntityCommandsExt
+{
+    /// Sets up the current entity to receive loadable theme data.
+    ///
+    /// This is useful if you want to add subthemes to a theme that doesn't need to use [`Self::load_theme`]
+    /// because it doesn't have any attributes on the root entity.
+    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self;
+    /// Loads [`Theme<C>`] into the current entity from the loadable reference.
+    ///
+    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
+    /// insert attributes to the theme when they are loaded onto this entity.
+    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    /// See [`Self::load_theme`].
+    ///
+    /// Proxies interactions on the `Pm` sub-entity to the main entity.
+    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: LoadableRef)
+        -> &mut Self;
+    /// Loads context-bound subtheme attributes to the nearest ancestor entity that has `C` or `LoadedThemes` with
+    /// an entry for `C`.
+    ///
+    /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
+    /// insert attributes to the theme for context `Ctx::type_name()` when they are loaded onto this entity.
+    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    /// See [`Self::load_subtheme`].
+    ///
+    /// Proxies interactions on the `Pm` sub-entity to the `Ctx` sub-entity.
+    fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
+        &mut self,
+        loadable_ref: LoadableRef,
+    ) -> &mut Self;
+}
+
+impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
+{
     fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self
     {
         let entity = self.id();
@@ -557,8 +621,10 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
     fn load_theme<C: DefaultTheme + Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
         self.prepare_theme::<C>();
-        self.load_with_context_setter(loadable_ref, |ec| {
-            ec.set_theme::<C>();
+        self.load_with_context_setter(loadable_ref, |entity, world| {
+            world.get_entity_mut(entity).map(|mut e| {
+                e.set_theme::<C>();
+            });
         });
         self
     }
@@ -569,16 +635,20 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
     ) -> &mut Self
     {
         self.prepare_theme::<C>();
-        self.load_with_context_setter(loadable_ref, |ec| {
-            ec.set_theme_with_placement::<C, Pm>();
+        self.load_with_context_setter(loadable_ref, |entity, world| {
+            world.get_entity_mut(entity).map(|mut e| {
+                e.set_theme_with_placement::<C, Pm>();
+            });
         });
         self
     }
 
     fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
-        self.load_with_context_setter(loadable_ref, |ec| {
-            ec.set_subtheme::<C, Ctx>();
+        self.load_with_context_setter(loadable_ref, |entity, world| {
+            world.get_entity_mut(entity).map(|mut e| {
+                e.set_subtheme::<C, Ctx>();
+            });
         });
         self
     }
@@ -588,8 +658,10 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
         loadable_ref: LoadableRef,
     ) -> &mut Self
     {
-        self.load_with_context_setter(loadable_ref, |ec| {
-            ec.set_subtheme_with_placement::<C, Ctx, Pm>();
+        self.load_with_context_setter(loadable_ref, |entity, world| {
+            world.get_entity_mut(entity).map(|mut e| {
+                e.set_subtheme_with_placement::<C, Ctx, Pm>();
+            });
         });
         self
     }

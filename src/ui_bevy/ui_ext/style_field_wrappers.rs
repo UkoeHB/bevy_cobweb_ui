@@ -1,6 +1,5 @@
 use std::any::type_name;
 
-use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -76,87 +75,80 @@ fn initialize_flex_style(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_to_dims<T: ApplyToDims>(
-    In((entity, param)): In<(Entity, T)>,
-    mut c: Commands,
-    mut query: Query<(Option<&mut React<AbsoluteStyle>>, Option<&mut React<FlexStyle>>)>,
-)
+fn apply_to_dims<T: ApplyToDims>(param: T, entity: Entity, world: &mut World)
 {
-    let Ok((maybe_absolute, maybe_flex)) = query.get_mut(entity) else { return };
+    let Some(mut ec) = world.get_entity_mut(entity) else { return };
 
-    // Prioritize absolute style.
-    if let Some(mut absolute) = maybe_absolute {
-        param.apply_to_dims(&mut absolute.get_mut(&mut c).dims);
+    // Check flex style.
+    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+        param.apply_to_dims(&mut flex.get_noreact().dims);
+        React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
-    // Check flex style.
-    if let Some(mut flex) = maybe_flex {
-        param.apply_to_dims(&mut flex.get_mut(&mut c).dims);
+    // Check absolute style.
+    if let Some(mut absolute) = ec.get_mut::<React<AbsoluteStyle>>() {
+        param.apply_to_dims(&mut absolute.get_noreact().dims);
+        React::<AbsoluteStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Fall back to inserting flex style.
     let mut style = FlexStyle::default();
     param.apply_to_dims(&mut style.dims);
-    c.react().insert(entity, style);
+    world.react(|rc| rc.insert(entity, style));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_to_content_flex<T: ApplyToContentFlex>(
-    In((entity, param)): In<(Entity, T)>,
-    mut c: Commands,
-    mut query: Query<(Option<&mut React<AbsoluteStyle>>, Option<&mut React<FlexStyle>>)>,
-)
+fn apply_to_content_flex<T: ApplyToContentFlex>(param: T, entity: Entity, world: &mut World)
 {
-    let Ok((maybe_absolute, maybe_flex)) = query.get_mut(entity) else { return };
+    let Some(mut ec) = world.get_entity_mut(entity) else { return };
 
-    // Prioritize absolute style.
-    if let Some(mut absolute) = maybe_absolute {
-        param.apply_to_content_flex(&mut absolute.get_mut(&mut c).content);
+    // Check flex style.
+    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+        param.apply_to_content_flex(&mut flex.get_noreact().content);
+        React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
-    // Check flex style.
-    if let Some(mut flex) = maybe_flex {
-        param.apply_to_content_flex(&mut flex.get_mut(&mut c).content);
+    // Check absolute style.
+    if let Some(mut absolute) = ec.get_mut::<React<AbsoluteStyle>>() {
+        param.apply_to_content_flex(&mut absolute.get_noreact().content);
+        React::<AbsoluteStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Fall back to inserting flex style.
     let mut style = FlexStyle::default();
     param.apply_to_content_flex(&mut style.content);
-    c.react().insert(entity, style);
+    world.react(|rc| rc.insert(entity, style));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_to_self_flex<T: ApplyToSelfFlex>(
-    In((entity, param)): In<(Entity, T)>,
-    mut c: Commands,
-    mut query: Query<(Has<React<AbsoluteStyle>>, Option<&mut React<FlexStyle>>)>,
-)
+fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut World)
 {
-    let Ok((has_absolute, maybe_flex)) = query.get_mut(entity) else { return };
+    let Some(mut ec) = world.get_entity_mut(entity) else { return };
 
-    // Check absolute style.
-    if has_absolute {
-        tracing::warn!("tried to apply {} to {:?} that has AbsoluteStyle; only FlexStyle is supported",
-            type_name::<T>(), entity);
+    // Check flex style.
+    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+        param.apply_to_self_flex(&mut flex.get_noreact().flex);
+        React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
-    // Check flex style.
-    if let Some(mut flex) = maybe_flex {
-        param.apply_to_self_flex(&mut flex.get_mut(&mut c).flex);
+    // Check absolute style.
+    if ec.get::<React<AbsoluteStyle>>().is_some() {
+        tracing::warn!("tried to apply {} to {:?} that has AbsoluteStyle; only FlexStyle is supported",
+            type_name::<T>(), entity);
         return;
     }
 
     // Fall back to inserting flex style.
     let mut style = FlexStyle::default();
     param.apply_to_self_flex(&mut style.flex);
-    c.react().insert(entity, style);
+    world.react(|rc| rc.insert(entity, style));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -169,18 +161,17 @@ pub struct WithAbsoluteStyle;
 
 impl ApplyLoadable for WithAbsoluteStyle
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall(id, initialize_absolute_style);
+        world.syscall(entity, initialize_absolute_style);
     }
 }
 impl ThemedAttribute for WithAbsoluteStyle
 {
     type Value = ();
-    fn update(ec: &mut EntityCommands, _value: Self::Value)
+    fn update(entity: Entity, world: &mut World, _value: Self::Value)
     {
-        Self.apply(ec);
+        Self.apply(entity, world);
     }
 }
 
@@ -194,18 +185,17 @@ pub struct WithFlexStyle;
 
 impl ApplyLoadable for WithFlexStyle
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall(id, initialize_flex_style);
+        world.syscall(entity, initialize_flex_style);
     }
 }
 impl ThemedAttribute for WithFlexStyle
 {
     type Value = ();
-    fn update(ec: &mut EntityCommands, _value: Self::Value)
+    fn update(entity: Entity, world: &mut World, _value: Self::Value)
     {
-        Self.apply(ec);
+        Self.apply(entity, world);
     }
 }
 
@@ -225,19 +215,18 @@ impl ApplyToDims for Width
 
 impl ApplyLoadable for Width
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for Width
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for Width {}
@@ -259,19 +248,18 @@ impl ApplyToDims for Height
 
 impl ApplyLoadable for Height
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for Height
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for Height {}
@@ -293,19 +281,18 @@ impl ApplyToDims for MinWidth
 
 impl ApplyLoadable for MinWidth
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for MinWidth
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for MinWidth {}
@@ -327,19 +314,18 @@ impl ApplyToDims for MinHeight
 
 impl ApplyLoadable for MinHeight
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for MinHeight
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for MinHeight {}
@@ -361,19 +347,18 @@ impl ApplyToDims for MaxWidth
 
 impl ApplyLoadable for MaxWidth
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for MaxWidth
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for MaxWidth {}
@@ -395,19 +380,18 @@ impl ApplyToDims for MaxHeight
 
 impl ApplyLoadable for MaxHeight
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for MaxHeight
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for MaxHeight {}
@@ -429,19 +413,18 @@ impl ApplyToDims for AspectRatio
 
 impl ApplyLoadable for AspectRatio
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for AspectRatio
 {
     type Value = f32;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for AspectRatio {}
@@ -463,19 +446,18 @@ impl ApplyToDims for Border
 
 impl ApplyLoadable for Border
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for Border
 {
     type Value = StyleRect;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for Border {}
@@ -506,19 +488,18 @@ impl ApplyToDims for DimsTop
 
 impl ApplyLoadable for DimsTop
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for DimsTop
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for DimsTop {}
@@ -540,19 +521,18 @@ impl ApplyToDims for DimsBottom
 
 impl ApplyLoadable for DimsBottom
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for DimsBottom
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for DimsBottom {}
@@ -574,19 +554,18 @@ impl ApplyToDims for DimsLeft
 
 impl ApplyLoadable for DimsLeft
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for DimsLeft
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for DimsLeft {}
@@ -608,19 +587,18 @@ impl ApplyToDims for DimsRight
 
 impl ApplyLoadable for DimsRight
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_dims);
+        apply_to_dims(self, entity, world);
     }
 }
 
 impl ThemedAttribute for DimsRight
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for DimsRight {}
@@ -642,19 +620,18 @@ impl ApplyToContentFlex for SetClipping
 
 impl ApplyLoadable for SetClipping
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetClipping
 {
     type Value = Clipping;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetClipping {}
@@ -675,19 +652,18 @@ impl ApplyToContentFlex for Padding
 
 impl ApplyLoadable for Padding
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for Padding
 {
     type Value = StyleRect;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for Padding {}
@@ -718,19 +694,18 @@ impl ApplyToContentFlex for SetFlexDirection
 
 impl ApplyLoadable for SetFlexDirection
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetFlexDirection
 {
     type Value = FlexDirection;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetFlexDirection {}
@@ -751,19 +726,18 @@ impl ApplyToContentFlex for SetFlexWrap
 
 impl ApplyLoadable for SetFlexWrap
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetFlexWrap
 {
     type Value = FlexWrap;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetFlexWrap {}
@@ -784,19 +758,18 @@ impl ApplyToContentFlex for SetJustifyLines
 
 impl ApplyLoadable for SetJustifyLines
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetJustifyLines
 {
     type Value = JustifyLines;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetJustifyLines {}
@@ -817,19 +790,18 @@ impl ApplyToContentFlex for SetJustifyMain
 
 impl ApplyLoadable for SetJustifyMain
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetJustifyMain
 {
     type Value = JustifyMain;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetJustifyMain {}
@@ -850,19 +822,18 @@ impl ApplyToContentFlex for SetJustifyCross
 
 impl ApplyLoadable for SetJustifyCross
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetJustifyCross
 {
     type Value = JustifyCross;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetJustifyCross {}
@@ -883,19 +854,18 @@ impl ApplyToContentFlex for SetTextDirection
 
 impl ApplyLoadable for SetTextDirection
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetTextDirection
 {
     type Value = Direction;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetTextDirection {}
@@ -916,19 +886,18 @@ impl ApplyToContentFlex for ColumnGap
 
 impl ApplyLoadable for ColumnGap
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for ColumnGap
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for ColumnGap {}
@@ -950,19 +919,18 @@ impl ApplyToContentFlex for RowGap
 
 impl ApplyLoadable for RowGap
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_content_flex);
+        apply_to_content_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for RowGap
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for RowGap {}
@@ -984,19 +952,18 @@ impl ApplyToSelfFlex for Margin
 
 impl ApplyLoadable for Margin
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_self_flex);
+        apply_to_self_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for Margin
 {
     type Value = StyleRect;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for Margin {}
@@ -1027,19 +994,18 @@ impl ApplyToSelfFlex for FlexBasis
 
 impl ApplyLoadable for FlexBasis
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_self_flex);
+        apply_to_self_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for FlexBasis
 {
     type Value = Val;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for FlexBasis {}
@@ -1061,19 +1027,18 @@ impl ApplyToSelfFlex for FlexGrow
 
 impl ApplyLoadable for FlexGrow
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_self_flex);
+        apply_to_self_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for FlexGrow
 {
     type Value = f32;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for FlexGrow {}
@@ -1095,19 +1060,18 @@ impl ApplyToSelfFlex for FlexShrink
 
 impl ApplyLoadable for FlexShrink
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_self_flex);
+        apply_to_self_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for FlexShrink
 {
     type Value = f32;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for FlexShrink {}
@@ -1129,19 +1093,18 @@ impl ApplyToSelfFlex for SetJustifySelfCross
 
 impl ApplyLoadable for SetJustifySelfCross
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        let id = ec.id();
-        ec.commands().syscall((id, self), apply_to_self_flex);
+        apply_to_self_flex(self, entity, world);
     }
 }
 
 impl ThemedAttribute for SetJustifySelfCross
 {
     type Value = JustifySelfCross;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn update(entity: Entity, world: &mut World, value: Self::Value)
     {
-        Self(value).apply(ec);
+        Self(value).apply(entity, world);
     }
 }
 impl ResponsiveAttribute for SetJustifySelfCross {}

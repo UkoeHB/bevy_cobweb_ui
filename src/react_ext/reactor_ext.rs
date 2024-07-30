@@ -177,7 +177,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
 
     fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self
     {
-        value.apply(self);
+        self.add(move |entity: Entity, world: &mut World| value.apply(entity, world));
         self
     }
 

@@ -80,22 +80,37 @@ fn command_loader<T: Command + Loadable>(world: &mut World)
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Updates the loadable bundle `T` on entities.
-fn bundle_loader<T: Bundle + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
+fn bundle_loader<T: Bundle + Loadable>(world: &mut World)
 {
-    caf_cache
-        .get_noreact()
-        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-            let Some(bundle) = loadable.get_value::<T>(loadable_ref) else { return };
-            let Some(mut ec) = c.get_entity(entity) else { return };
+    let mut loadables = world
+        .react_resource_mut_noreact::<CobwebAssetCache>()
+        .take_loadables::<T>();
 
-            (context_setter.setter)(&mut ec);
-            ec.try_insert(bundle);
+    for (loadable, loadable_ref, mut subscriptions) in loadables.drain(..) {
+        let Some(bundle) = loadable.get_value::<T>(&loadable_ref) else { continue };
+
+        let mut applier = |entity: Entity, setter: ContextSetter, bundle: T| {
+            let Some(mut ec) = world.get_entity_mut(entity) else { return };
+            ec.world_scope(|w| (setter.setter)(entity, w));
+            ec.insert(bundle);
 
             #[cfg(feature = "hot_reload")]
             {
-                c.react().entity_event(entity, Loaded);
+                world.react(|rc| rc.entity_event(entity, Loaded));
             }
-        });
+        };
+
+        // Do a little dance to avoid an extra clone.
+        for SubscriptionRef { entity, setter } in subscriptions.drain(0..subscriptions.len().saturating_sub(1)) {
+            (applier)(entity, setter, bundle.clone());
+        }
+        if subscriptions.len() == 1 {
+            let SubscriptionRef { entity, setter } = subscriptions.remove(0);
+            (applier)(entity, setter, bundle);
+        }
+    }
+
+    world.flush();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -114,7 +129,7 @@ fn reactive_loader<T: ReactComponent + Loadable>(
             let Some(new_val) = loadable.get_value(loadable_ref) else { return };
 
             let mut ec = c.entity(entity);
-            (context_setter.setter)(&mut ec);
+            ec.add(move |entity: Entity, world: &mut World| (context_setter.setter)(entity, world));
 
             match component {
                 Some(mut component) => {
@@ -135,22 +150,36 @@ fn reactive_loader<T: ReactComponent + Loadable>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Uses `T` to derive changes on subscribed entities.
-fn derived_loader<T: ApplyLoadable + Loadable>(mut c: Commands, mut caf_cache: ReactResMut<CobwebAssetCache>)
+fn derived_loader<T: ApplyLoadable + Loadable>(world: &mut World)
 {
-    caf_cache
-        .get_noreact()
-        .update_loadables::<T>(|entity, context_setter, loadable_ref, loadable| {
-            let Some(value) = loadable.get_value::<T>(loadable_ref) else { return };
-            let Some(mut ec) = c.get_entity(entity) else { return };
+    let mut loadables = world
+        .react_resource_mut_noreact::<CobwebAssetCache>()
+        .take_loadables::<T>();
 
-            (context_setter.setter)(&mut ec);
-            value.apply(&mut ec);
+    for (loadable, loadable_ref, mut subscriptions) in loadables.drain(..) {
+        let Some(value) = loadable.get_value::<T>(&loadable_ref) else { continue };
+
+        let mut applier = |entity: Entity, setter: ContextSetter, value: T| {
+            (setter.setter)(entity, world);
+            value.apply(entity, world);
 
             #[cfg(feature = "hot_reload")]
             {
-                c.react().entity_event(entity, Loaded);
+                world.react(|rc| rc.entity_event(entity, Loaded));
             }
-        });
+        };
+
+        // Do a little dance to avoid an extra clone.
+        for SubscriptionRef { entity, setter } in subscriptions.drain(0..subscriptions.len().saturating_sub(1)) {
+            (applier)(entity, setter, value.clone());
+        }
+        if subscriptions.len() == 1 {
+            let SubscriptionRef { entity, setter } = subscriptions.remove(0);
+            (applier)(entity, setter, value);
+        }
+    }
+
+    world.flush();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -194,7 +223,7 @@ impl LoaderCallbacks
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct ContextSetter
 {
-    pub(crate) setter: fn(&mut EntityCommands),
+    pub(crate) setter: fn(Entity, &mut World),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -287,21 +316,18 @@ pub trait CafLoadingEntityCommandsExt
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_context_setter(
-        &mut self,
-        loadable_ref: LoadableRef,
-        setter: fn(&mut EntityCommands),
-    ) -> &mut Self;
+    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(Entity, &mut World))
+        -> &mut Self;
 }
 
 impl CafLoadingEntityCommandsExt for EntityCommands<'_>
 {
     fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
     {
-        self.load_with_context_setter(loadable_ref, |_| {})
+        self.load_with_context_setter(loadable_ref, |_, _| {})
     }
 
-    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(&mut EntityCommands))
+    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(Entity, &mut World))
         -> &mut Self
     {
         self.insert(HasLoadables);
