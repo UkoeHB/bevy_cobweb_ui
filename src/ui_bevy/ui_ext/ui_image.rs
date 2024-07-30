@@ -29,8 +29,6 @@ fn insert_ui_image(
     let maybe_scale_mode = img.scale_mode.take();
     let ui_image = img.to_ui_image(&img_map);
 
-    // TODO: prep localization
-
     // Insert
     // - Note this is a bit messy to avoid archetype moves on insert.
     //todo: simplify when Bevy has batched ECS commands

@@ -882,6 +882,7 @@ impl Plugin for StyleWrappersPlugin
             .register_type::<SelfFlex>()
             .register_type::<AbsoluteStyle>()
             .register_type::<FlexStyle>()
+            .register_type::<DisplayControl>()
             .add_reactor_with(
                 DetectAbsoluteStyle,
                 (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),

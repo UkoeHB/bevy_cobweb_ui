@@ -170,7 +170,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
 {
     l.edit("audio::slider", |l| {
         // Slider: sickle_ui built-in widget.
-        let mut ui = l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 0.0, true));
+        let mut ui = l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 100.0, true));
         let mut n =
             ui.on_event::<SliderChanged>()
                 .r(|event: EntityEvent<SliderChanged>, sliders: Query<&Slider>| {
