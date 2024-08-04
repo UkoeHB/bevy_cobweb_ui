@@ -13,15 +13,24 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_audio_sources(
-    In(loaded): In<Vec<LoadedAudio>>,
+fn load_localized_audio_sources(
+    In(loaded): In<Vec<LocalizedAudio>>,
     mut c: Commands,
     asset_server: Res<AssetServer>,
     mut audios: ResMut<AudioMap>,
     manifest: Res<LocalizationManifest>,
 )
 {
-    audios.insert_loaded(loaded, &asset_server, &manifest, &mut c);
+    audios.insert_localized(loaded, &asset_server, &manifest, &mut c);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn load_audio_sources(In(loaded): In<Vec<String>>, asset_server: Res<AssetServer>, mut audios: ResMut<AudioMap>)
+{
+    for path in loaded {
+        audios.insert(&path, &asset_server);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -69,8 +78,8 @@ fn relocalize_audios(audios: Res<AudioMap>, mut query: Query<&mut Handle<AudioSo
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when [`AudioMap`] has updated and become fully loaded *after* a [`LoadAudio`]
-/// instance was applied.
+/// Reactive event broadcasted when [`AudioMap`] has updated and become fully loaded *after* a
+/// [`LoadLocalizedAudio`] instance was applied.
 ///
 /// This event is *not* emitted when audio sources are reloaded due to language renegotiation. Listen for the
 /// [`RelocalizeApp`] event instead.
@@ -139,6 +148,8 @@ impl AudioMap
 
     fn try_emit_load_event(&mut self, c: &mut Commands)
     {
+        // Note/todo: This waits for both localized and non-localized images to load, even though the loaded
+        // event is used for localization.
         if self.is_loading() {
             return;
         }
@@ -150,14 +161,21 @@ impl AudioMap
         c.react().broadcast(AudioMapLoaded);
     }
 
-    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer)
+    /// Returns `false` if no localized assets were loaded.
+    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer) -> bool
     {
+        // Skip negotiation of there are no negotiated languages yet.
+        // - This avoids spuriously loading assets that will be replaced once the language list is known.
+        let app_negotiated = manifest.negotiated();
+        if app_negotiated.len() == 0 {
+            return false;
+        }
+
         // We remove `localized_audios` because we assume it might be stale (e.g. if we are negotiating because
         // LoadAudio was hot-reloaded).
         let prev_localized_audios = std::mem::take(&mut self.localized_audios);
         self.localized_audios.reserve(self.localization_map.len());
 
-        let app_negotiated = manifest.negotiated();
         let mut langs_buffer = Vec::default();
 
         self.localization_map
@@ -204,6 +222,8 @@ impl AudioMap
 
         // Note: old audio sources that are no longer needed will be released when `prev_localized_audios` is
         // dropped.
+
+        true
     }
 
     fn remove_pending(&mut self, id: &AssetId<AudioSource>)
@@ -253,15 +273,15 @@ impl AudioMap
         self.cached_audios.insert(Arc::from(path), handle);
     }
 
-    /// Adds a new set of [`LoadedAudios`](`LoadedAudio`).
+    /// Adds a new set of [`LocalizedAudios`](`LocalizedAudio`).
     ///
     /// Will automatically renegotiate languages and emit [`AudioMapLoaded`] if appropriate.
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for new audio sources to be loaded.
-    pub fn insert_loaded(
+    pub fn insert_localized(
         &mut self,
-        mut loaded: Vec<LoadedAudio>,
+        mut loaded: Vec<LocalizedAudio>,
         asset_server: &AssetServer,
         manifest: &LocalizationManifest,
         c: &mut Commands,
@@ -300,7 +320,7 @@ impl AudioMap
             fallbacks.clear();
             fallbacks.reserve(loaded.fallbacks.len());
 
-            for LoadedAudioFallback { lang, audio } in loaded.fallbacks.drain(..) {
+            for LocalizedAudioFallback { lang, audio } in loaded.fallbacks.drain(..) {
                 // Save fallback.
                 let lang_id = match LanguageIdentifier::from_str(lang.as_str()) {
                     Ok(lang_id) => lang_id,
@@ -333,9 +353,10 @@ impl AudioMap
         }
 
         // Load audio sources as needed.
-        self.waiting_for_load = true;
-        self.negotiate_languages(manifest, asset_server);
-        self.try_emit_load_event(c);
+        if self.negotiate_languages(manifest, asset_server) {
+            self.waiting_for_load = true;
+            self.try_emit_load_event(c);
+        }
     }
 
     /// Updates an audio handle with the correct localized handle.
@@ -423,9 +444,9 @@ impl AssetLoadProgress for AudioMap
 
 /// Contains information for a audio fallback.
 ///
-/// See [`LoadedAudio`].
+/// See [`LocalizedAudio`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedAudioFallback
+pub struct LocalizedAudioFallback
 {
     /// The language id for the fallback.
     pub lang: String,
@@ -435,9 +456,9 @@ pub struct LoadedAudioFallback
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// See [`LoadAudio`].
+/// See [`LoadLocalizedAudio`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedAudio
+pub struct LocalizedAudio
 {
     /// Path to the audio asset.
     pub audio: String,
@@ -446,7 +467,23 @@ pub struct LoadedAudio
     /// Add fallbacks if `self.audio` cannot be used for all languages. Any reference to `self.audio` will be
     /// automatically localized to the right fallback if you use [`AudioMap::get`].
     #[reflect(default)]
-    pub fallbacks: Vec<LoadedAudioFallback>,
+    pub fallbacks: Vec<LocalizedAudioFallback>,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable command for registering localized audio assets that need to be pre-loaded.
+///
+/// The loaded audio sources can be accessed via [`AudioMap`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadLocalizedAudio(pub Vec<LocalizedAudio>);
+
+impl Command for LoadLocalizedAudio
+{
+    fn apply(self, world: &mut World)
+    {
+        world.syscall(self.0, load_localized_audio_sources);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -455,7 +492,7 @@ pub struct LoadedAudio
 ///
 /// The loaded audio sources can be accessed via [`AudioMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadAudio(pub Vec<LoadedAudio>);
+pub struct LoadAudio(pub Vec<String>);
 
 impl Command for LoadAudio
 {
@@ -476,6 +513,7 @@ impl Plugin for AudioLoadPlugin
         app.init_resource::<AudioMap>()
             .register_asset_tracker::<AudioMap>()
             .register_command::<LoadAudio>()
+            .register_command::<LoadLocalizedAudio>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .react(|rc| {
                 rc.on_persistent(

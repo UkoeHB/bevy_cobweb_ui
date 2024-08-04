@@ -12,15 +12,24 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_fonts(
-    In(loaded): In<Vec<LoadedFont>>,
+fn load_localized_fonts(
+    In(loaded): In<Vec<LocalizedFont>>,
     mut c: Commands,
     asset_server: Res<AssetServer>,
     mut fonts: ResMut<FontMap>,
     manifest: Res<LocalizationManifest>,
 )
 {
-    fonts.insert_loaded(loaded, &asset_server, &manifest, &mut c);
+    fonts.insert_localized(loaded, &asset_server, &manifest, &mut c);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn load_fonts(In(loaded): In<Vec<String>>, asset_server: Res<AssetServer>, mut fonts: ResMut<FontMap>)
+{
+    for path in loaded {
+        fonts.insert(&path, &asset_server);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -142,12 +151,19 @@ impl FontMap
         c.react().broadcast(FontMapLoaded);
     }
 
-    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer)
+    /// Returns `false` if no localized assets were loaded.
+    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer) -> bool
     {
+        // Skip negotiation of there are no negotiated languages yet.
+        // - This avoids spuriously loading assets that will be replaced once the language list is known.
+        let negotiated = manifest.negotiated();
+        if negotiated.len() == 0 {
+            return false;
+        }
+
         let prev_localization_fonts = std::mem::take(&mut self.localization_fonts);
         self.localization_fonts
             .reserve(prev_localization_fonts.len());
-        let negotiated = manifest.negotiated();
 
         self.localization_map.iter().for_each(|(_main, fallbacks)| {
             // Save fallbacks for currently-negotiated languages.
@@ -167,6 +183,8 @@ impl FontMap
                 self.localization_fonts.insert(font.clone(), handle);
             }
         });
+
+        true
     }
 
     fn remove_pending(&mut self, id: &AssetId<Font>) -> bool
@@ -189,9 +207,9 @@ impl FontMap
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for new fonts to be loaded.
-    pub fn insert_loaded(
+    pub fn insert_localized(
         &mut self,
-        mut loaded: Vec<LoadedFont>,
+        mut loaded: Vec<LocalizedFont>,
         asset_server: &AssetServer,
         manifest: &LocalizationManifest,
         c: &mut Commands,
@@ -234,7 +252,7 @@ impl FontMap
             fallbacks.clear();
             fallbacks.reserve(loaded.fallbacks.len());
 
-            for LoadedFontFallback { lang, font } in loaded.fallbacks.drain(..) {
+            for LocalizedFontFallback { lang, font } in loaded.fallbacks.drain(..) {
                 let lang_id = match LanguageIdentifier::from_str(lang.as_str()) {
                     Ok(lang_id) => lang_id,
                     Err(err) => {
@@ -252,9 +270,10 @@ impl FontMap
         }
 
         // Load fallback fonts as needed.
-        self.waiting_for_load = true;
-        self.negotiate_languages(manifest, asset_server);
-        self.try_emit_load_event(c);
+        if self.negotiate_languages(manifest, asset_server) {
+            self.waiting_for_load = true;
+            self.try_emit_load_event(c);
+        }
     }
 
     /// Gets a font handle for the given path.
@@ -408,7 +427,7 @@ impl AssetLoadProgress for FontMap
 ///
 /// See [`LoadedFont`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedFontFallback
+pub struct LocalizedFontFallback
 {
     /// The language id for the fallback.
     pub lang: String,
@@ -420,7 +439,7 @@ pub struct LoadedFontFallback
 
 /// See [`LoadFonts`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedFont
+pub struct LocalizedFont
 {
     /// Path to the font asset.
     pub font: String,
@@ -431,7 +450,23 @@ pub struct LoadedFont
     /// [`LocalizedText`] keeps track of the main font (`self.font`) for every text section in case the user
     /// changes languages and it is necessary to switch to a different fallback.
     #[reflect(default)]
-    pub fallbacks: Vec<LoadedFontFallback>,
+    pub fallbacks: Vec<LocalizedFontFallback>,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable command for registering localized font assets that need to be pre-loaded.
+///
+/// The loaded fonts can be accessed via [`FontMap`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadLocalizedFonts(pub Vec<LocalizedFont>);
+
+impl Command for LoadLocalizedFonts
+{
+    fn apply(self, world: &mut World)
+    {
+        world.syscall(self.0, load_localized_fonts);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -440,7 +475,7 @@ pub struct LoadedFont
 ///
 /// The loaded fonts can be accessed via [`FontMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadFonts(pub Vec<LoadedFont>);
+pub struct LoadFonts(pub Vec<String>);
 
 impl Command for LoadFonts
 {
@@ -461,6 +496,7 @@ impl Plugin for FontLoadPlugin
         app.init_resource::<FontMap>()
             .register_asset_tracker::<FontMap>()
             .register_command::<LoadFonts>()
+            .register_command::<LoadLocalizedFonts>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .add_systems(PreUpdate, check_loaded_fonts.in_set(LoadProgressSet::Prepare));
     }

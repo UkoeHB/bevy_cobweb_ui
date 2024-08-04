@@ -13,15 +13,24 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_images(
-    In(loaded): In<Vec<LoadedImage>>,
+fn load_localized_images(
+    In(loaded): In<Vec<LocalizedImage>>,
     mut c: Commands,
     asset_server: Res<AssetServer>,
     mut images: ResMut<ImageMap>,
     manifest: Res<LocalizationManifest>,
 )
 {
-    images.insert_loaded(loaded, &asset_server, &manifest, &mut c);
+    images.insert_localized(loaded, &asset_server, &manifest, &mut c);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn load_images(In(loaded): In<Vec<String>>, asset_server: Res<AssetServer>, mut images: ResMut<ImageMap>)
+{
+    for path in loaded {
+        images.insert(&path, &asset_server);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -77,8 +86,8 @@ fn relocalize_images(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when [`ImageMap`] has updated and become fully loaded *after* a [`LoadImages`]
-/// instance was applied.
+/// Reactive event broadcasted when [`ImageMap`] has updated and become fully loaded *after* a
+/// [`LoadLocalizedImages`] instance was applied.
 ///
 /// This event is *not* emitted when images are reloaded due to language renegotiation. Listen for the
 /// [`RelocalizeApp`] event instead.
@@ -100,8 +109,8 @@ pub struct ImageMapLoaded;
 #[derive(Resource, Default)]
 pub struct ImageMap
 {
-    /// Indicates the current pending images came from `LoadedImage` entries, rather than from negotiating
-    /// languages.
+    /// Indicates the current pending images came from `LoadImages` and `LoadLocalizedImages` entries, rather than
+    /// from negotiating languages.
     ///
     /// This is used to emit `ImageMapLoaded` events accurately.
     waiting_for_load: bool,
@@ -143,6 +152,8 @@ impl ImageMap
 
     fn try_emit_load_event(&mut self, c: &mut Commands)
     {
+        // Note/todo: This waits for both localized and non-localized images to load, even though the loaded
+        // event is used for localization.
         if self.is_loading() {
             return;
         }
@@ -154,14 +165,20 @@ impl ImageMap
         c.react().broadcast(ImageMapLoaded);
     }
 
-    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer)
+    fn negotiate_languages(&mut self, manifest: &LocalizationManifest, asset_server: &AssetServer) -> bool
     {
+        // Skip negotiation of there are no negotiated languages yet.
+        // - This avoids spuriously loading assets that will be replaced once the language list is known.
+        let app_negotiated = manifest.negotiated();
+        if app_negotiated.len() == 0 {
+            return false;
+        }
+
         // We remove `localized_images` because we assume it might be stale (e.g. if we are negotiating because
         // LoadImages was hot-reloaded).
         let prev_localized_images = std::mem::take(&mut self.localized_images);
         self.localized_images.reserve(self.localization_map.len());
 
-        let app_negotiated = manifest.negotiated();
         let mut langs_buffer = Vec::default();
 
         self.localization_map
@@ -206,6 +223,8 @@ impl ImageMap
             });
 
         // Note: old images that are no longer needed will be released when `prev_localized_images` is dropped.
+
+        true
     }
 
     fn remove_pending(&mut self, id: &AssetId<Image>)
@@ -255,15 +274,15 @@ impl ImageMap
         self.cached_images.insert(Arc::from(path), handle);
     }
 
-    /// Adds a new set of [`LoadedImages`](`LoadedImage`).
+    /// Adds a new set of [`LocalizedImages`](`LocalizedImage`).
     ///
     /// Will automatically renegotiate languages and emit [`ImageMapLoaded`] if appropriate.
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for new images to be loaded.
-    pub fn insert_loaded(
+    pub fn insert_localized(
         &mut self,
-        mut loaded: Vec<LoadedImage>,
+        mut loaded: Vec<LocalizedImage>,
         asset_server: &AssetServer,
         manifest: &LocalizationManifest,
         c: &mut Commands,
@@ -302,7 +321,7 @@ impl ImageMap
             fallbacks.clear();
             fallbacks.reserve(loaded.fallbacks.len());
 
-            for LoadedImageFallback { lang, image } in loaded.fallbacks.drain(..) {
+            for LocalizedImageFallback { lang, image } in loaded.fallbacks.drain(..) {
                 // Save fallback.
                 let lang_id = match LanguageIdentifier::from_str(lang.as_str()) {
                     Ok(lang_id) => lang_id,
@@ -335,9 +354,10 @@ impl ImageMap
         }
 
         // Load images as needed.
-        self.waiting_for_load = true;
-        self.negotiate_languages(manifest, asset_server);
-        self.try_emit_load_event(c);
+        if self.negotiate_languages(manifest, asset_server) {
+            self.waiting_for_load = true;
+            self.try_emit_load_event(c);
+        }
     }
 
     /// Updates an image handle with the correct localized handle.
@@ -423,11 +443,11 @@ impl AssetLoadProgress for ImageMap
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Contains information for a image fallback.
+/// Contains information for an image fallback.
 ///
-/// See [`LoadedImage`].
+/// See [`LocalizedImage`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedImageFallback
+pub struct LocalizedImageFallback
 {
     /// The language id for the fallback.
     pub lang: String,
@@ -439,7 +459,7 @@ pub struct LoadedImageFallback
 
 /// See [`LoadImages`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadedImage
+pub struct LocalizedImage
 {
     /// Path to the image asset.
     pub image: String,
@@ -448,7 +468,23 @@ pub struct LoadedImage
     /// Add fallbacks if `self.image` cannot be used for all languages. Any reference to `self.image` will be
     /// automatically localized to the right fallback if you use [`ImageMap::get`].
     #[reflect(default)]
-    pub fallbacks: Vec<LoadedImageFallback>,
+    pub fallbacks: Vec<LocalizedImageFallback>,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable command for registering localized image assets that need to be pre-loaded.
+///
+/// The loaded images can be accessed via [`ImageMap`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LoadLocalizedImages(pub Vec<LocalizedImage>);
+
+impl Command for LoadLocalizedImages
+{
+    fn apply(self, world: &mut World)
+    {
+        world.syscall(self.0, load_localized_images);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -457,7 +493,7 @@ pub struct LoadedImage
 ///
 /// The loaded images can be accessed via [`ImageMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LoadImages(pub Vec<LoadedImage>);
+pub struct LoadImages(pub Vec<String>);
 
 impl Command for LoadImages
 {
@@ -478,6 +514,7 @@ impl Plugin for ImageLoadPlugin
         app.init_resource::<ImageMap>()
             .register_asset_tracker::<ImageMap>()
             .register_command::<LoadImages>()
+            .register_command::<LoadLocalizedImages>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .react(|rc| {
                 rc.on_persistent(

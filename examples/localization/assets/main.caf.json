@@ -37,7 +37,7 @@
             }
         ]
     },
-    "LoadFonts": [[
+    "LoadLocalizedFonts": [[
         {
             "font": "embedded://sickle_ui/fonts/FiraSans-Bold.ttf",
             "fallbacks": [
@@ -52,7 +52,7 @@
             ]
         }
     ]],
-    "LoadImages": [[
+    "LoadLocalizedImages": [[
         {
             "image": "$title_texture",
             "fallbacks": [
