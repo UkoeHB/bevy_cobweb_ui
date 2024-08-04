@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.2.0
 
 - Register `DisplayControl` for reflection.
 - Refactor `ApplyLoadable` to take `Entity` and `&mut World` instead of `EntityCommands`. This should be a small optimization.
