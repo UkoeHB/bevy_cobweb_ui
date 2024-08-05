@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use serde_json::{Map, Value};
 use smallvec::SmallVec;
@@ -13,8 +12,8 @@ fn get_constants_set<'a>(
     file: &SceneFile,
     prefix: &'static str,
     value_str: &'a str,
-    constants: &'a HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
-) -> Option<(&'a str, &'a HashMap<SmolStr, Arc<Value>>)>
+    constants_buff: &'a ConstantsBuffer,
+) -> Option<(&'a str, &'a HashMap<SmolStr, Value>)>
 {
     let Some(("", path_ref)) = value_str.split_once(prefix) else { return None };
 
@@ -28,7 +27,7 @@ fn get_constants_set<'a>(
     let terminator = rev_iterator.next().unwrap();
     let path = rev_iterator.next().unwrap_or("");
 
-    let Some(constant_value) = constants.get(path) else {
+    let Some(constant_value) = constants_buff.get_path(path) else {
         tracing::warn!("ignoring unknown constant reference {:?} in constants \
             section of {:?}; {path:?} {terminator:?}", value_str, file);
         return None;
@@ -43,11 +42,12 @@ fn try_replace_string_with_constant(
     file: &SceneFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &ConstantsBuffer,
 )
 {
     let Value::String(value_str) = &value else { return };
-    let Some((terminator, constants_set)) = get_constants_set(file, prefix, value_str.as_str(), constants) else {
+    let Some((terminator, constants_set)) = get_constants_set(file, prefix, value_str.as_str(), constants_buff)
+    else {
         return;
     };
 
@@ -57,7 +57,7 @@ fn try_replace_string_with_constant(
         return;
     };
 
-    *value = (**constant_data).clone();
+    *value = (*constant_data).clone();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ fn try_replace_map_key_with_constant(
     prefix: &'static str,
     key: &str,
     map: &mut Map<String, Value>,
-    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &ConstantsBuffer,
 )
 {
     let Some(("", path_ref)) = key.split_once(prefix) else { return };
@@ -86,14 +86,14 @@ fn try_replace_map_key_with_constant(
             let real_terminator = rev_iterator.next().unwrap_or("");
             let path = rev_iterator.next().unwrap_or("");
 
-            let Some(constants_set) = constants.get(path) else {
+            let Some(constants_set) = constants_buff.get_path(path) else {
                 tracing::warn!("ignoring unknown constant reference {:?} in {:?}", key, file);
                 return;
             };
 
             let Value::Object(constants_value) = constants_set
                 .get(real_terminator)
-                .map(|v| &**v)
+                .map(|v| &*v)
                 .unwrap_or(&Value::Null)
             else {
                 tracing::warn!("ignoring invalid paste-all constant reference {:?} in {:?}; \
@@ -145,7 +145,7 @@ pub(crate) fn search_and_replace_map_constants(
     file: &SceneFile,
     prefix: &'static str,
     map: &mut Map<String, Value>,
-    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &ConstantsBuffer,
 )
 {
     for key in map
@@ -155,7 +155,7 @@ pub(crate) fn search_and_replace_map_constants(
         .collect::<Vec<SmolStr>>()
         .drain(..)
     {
-        try_replace_map_key_with_constant(file, prefix, key.as_str(), map, constants);
+        try_replace_map_key_with_constant(file, prefix, key.as_str(), map, constants_buff);
     }
 
     for (key, value) in map.iter_mut() {
@@ -166,7 +166,7 @@ pub(crate) fn search_and_replace_map_constants(
         if is_keyword_for_non_constant_editable_section(key) {
             continue;
         }
-        search_and_replace_constants(file, prefix, value, constants);
+        search_and_replace_constants(file, prefix, value, constants_buff);
     }
 }
 
@@ -177,21 +177,21 @@ fn search_and_replace_constants(
     file: &SceneFile,
     prefix: &'static str,
     value: &mut Value,
-    constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &ConstantsBuffer,
 )
 {
     match value {
         Value::Null | Value::Bool(_) | Value::Number(_) => (),
         Value::String(_) => {
-            try_replace_string_with_constant(file, prefix, value, constants);
+            try_replace_string_with_constant(file, prefix, value, constants_buff);
         }
         Value::Array(vec) => {
             for value in vec.iter_mut() {
-                search_and_replace_constants(file, prefix, value, constants);
+                search_and_replace_constants(file, prefix, value, constants_buff);
             }
         }
         Value::Object(map) => {
-            search_and_replace_map_constants(file, prefix, map, constants);
+            search_and_replace_map_constants(file, prefix, map, constants_buff);
         }
     }
 }
@@ -203,19 +203,19 @@ fn constants_builder_recurse_into_value(
     key: &str,
     value: &mut Value,
     path: &mut SmallVec<[SmolStr; 10]>,
-    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &mut ConstantsBuffer,
 )
 {
     // Update the value if it references a constant.
     // - We do this in a separate step in case expanding the constant introduces more constants/path segments.
-    try_replace_string_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
+    try_replace_string_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, value, constants_buff);
 
     // Parse constants from the value.
     match value {
         Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_) => (),
         Value::Array(vec) => {
             for value in vec.iter_mut() {
-                search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
+                search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants_buff);
             }
         }
         //todo: it's ugly
@@ -236,7 +236,7 @@ fn constants_builder_recurse_into_value(
                     is_constants_segment = true;
 
                     // This entry in the data map adds to the constants map.
-                    constants_builder_recurse_into_value(file, key, value, path, constants);
+                    constants_builder_recurse_into_value(file, key, value, path, constants_buff);
                 } else {
                     if is_constants_segment {
                         tracing::error!("ignoring value section at {:?} in {:?}, constant path mixed up with value map",
@@ -246,7 +246,7 @@ fn constants_builder_recurse_into_value(
                     is_normal_segment = true;
 
                     // This key is a normal map entry, so its value is a normal value.
-                    search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants);
+                    search_and_replace_constants(file, CONSTANT_IN_CONSTANT_MARKER, value, constants_buff);
                 }
             }
 
@@ -260,20 +260,20 @@ fn constants_builder_recurse_into_value(
     }
 
     // If value was not a map of constant path segments, then the value is a *value* and can be saved.
-    let insert = |inner: &mut HashMap<SmolStr, Arc<Value>>| {
-        let prev = inner.insert(SmolStr::from(key), Arc::new(value.clone()));
+    let insert = |inner: &mut HashMap<SmolStr, Value>| {
+        let prev = inner.insert(SmolStr::from(key), value.clone());
         if prev.is_some() {
             tracing::warn!("overwriting duplicate terminal path segment {} in constants map at {:?}", key, file);
         }
     };
     let base_path = path_to_string(CONSTANT_SEPARATOR, path);
 
-    if let Some(inner) = constants.get_mut(&base_path) {
+    if let Some(inner) = constants_buff.get_entry_mut(&base_path) {
         insert(inner);
     } else {
         let mut inner = HashMap::default();
         insert(&mut inner);
-        constants.insert(base_path, inner);
+        constants_buff.add_entry(base_path, inner);
     }
 }
 
@@ -283,7 +283,7 @@ fn constants_builder_recurse_into_value(
 pub(crate) fn extract_constants_section(
     file: &SceneFile,
     data: &mut Map<String, Value>,
-    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: &mut ConstantsBuffer,
 )
 {
     let Some(constants_section) = data.get_mut(CONSTANTS_KEYWORD) else {
@@ -305,10 +305,12 @@ pub(crate) fn extract_constants_section(
         .collect::<Vec<SmolStr>>()
         .drain(..)
     {
-        try_replace_map_key_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, &key, data, constants);
+        try_replace_map_key_with_constant(file, CONSTANT_IN_CONSTANT_MARKER, &key, data, constants_buff);
     }
 
     // Iterate into the map to replace values.
+    constants_buff.start_new_file();
+
     for (key, value) in data.iter_mut() {
         // Check if value.
         let Some(("", key)) = key.split_once(CONSTANT_MARKER) else {
@@ -319,8 +321,10 @@ pub(crate) fn extract_constants_section(
             continue;
         };
 
-        constants_builder_recurse_into_value(file, key, value, &mut path, constants);
+        constants_builder_recurse_into_value(file, key, value, &mut path, constants_buff);
     }
+
+    constants_buff.end_new_file();
 }
 
 //-------------------------------------------------------------------------------------------------------------------

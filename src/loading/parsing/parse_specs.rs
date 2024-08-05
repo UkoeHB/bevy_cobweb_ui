@@ -51,6 +51,7 @@ impl InsertValues
 
 //-------------------------------------------------------------------------------------------------------------------
 
+//todo: store values in Arcs so cloning of the spec is cheap
 #[derive(Default, Debug, Clone)]
 struct SpecData
 {
@@ -458,6 +459,8 @@ impl SpecsMap
     /// names cannot be contextual).
     pub(crate) fn import_specs(&mut self, import_file: &SceneFile, file: &SceneFile, imported: &SpecsMap)
     {
+        self.map.reserve(imported.map.len());
+
         for (spec_key, data) in imported.map.iter() {
             if let Some(_) = self.map.insert(spec_key.clone(), data.clone()) {
                 tracing::warn!("overwriting spec definition {} in {:?} with version imported from {:?}",

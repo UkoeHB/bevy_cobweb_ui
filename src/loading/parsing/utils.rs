@@ -88,7 +88,7 @@ pub(crate) fn try_parse_spec_invocation(key: &str) -> Result<Option<(&str, &str)
 
 pub(crate) fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
 {
-    // trim empties then concatenate a::b::c
+    // skip empties and concatenate: a::b::c
     let mut count = 0;
     SmolStr::from_iter(
         path.iter()

@@ -79,8 +79,7 @@ pub(crate) fn parse_caf_file(
     mut data: Map<String, Value>,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-    // [ path : [ terminal identifier : constant value ] ]
-    constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buffer: &mut ConstantsBuffer,
     // tracks specs
     specs: &mut SpecsMap,
 )
@@ -91,10 +90,10 @@ pub(crate) fn parse_caf_file(
     extract_using_section(type_registry, &file, &data, name_shortcuts);
 
     // Extract constants section.
-    extract_constants_section(&file, &mut data, constants);
+    extract_constants_section(&file, &mut data, constants_buffer);
 
     // Search and replace constants.
-    search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants);
+    search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
 
     // Extract specifications section.
     extract_specs_section(&file, &mut data, specs);

@@ -166,7 +166,7 @@ struct ProcessedSceneFile
     /// Using info cached for use by dependents.
     using: HashMap<&'static str, &'static str>,
     /// Constants info cached for use by dependents.
-    constants: HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
+    constants_buff: ConstantsBuffer,
     /// Specs that can be imported into other files.
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
@@ -462,8 +462,7 @@ impl CobwebAssetCache
         // Initialize using/constants maps from dependencies.
         // [ shortname : longname ]
         let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
-        // [ path : [ terminal identifier : constant value ] ]
-        let mut constants: HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>> = HashMap::default();
+        let mut constants_buff = ConstantsBuffer::default();
         // specs collector
         let mut specs = SpecsMap::default();
 
@@ -473,11 +472,7 @@ impl CobwebAssetCache
             for (k, v) in processed.using.iter() {
                 name_shortcuts.insert(k, v);
             }
-            for (k, v) in processed.constants.iter() {
-                // Prepend the import alias.
-                let path = path_to_string(CONSTANT_SEPARATOR, &[alias.as_str(), &*k]);
-                constants.insert(path, v.clone());
-            }
+            constants_buff.append(alias, &processed.constants_buff);
             specs.import_specs(dependency, &preprocessed.file, &processed.specs);
         }
 
@@ -500,13 +495,13 @@ impl CobwebAssetCache
             preprocessed.file.clone(),
             preprocessed.data,
             &mut name_shortcuts,
-            &mut constants,
+            &mut constants_buff,
             &mut specs,
         );
 
         // Save final maps.
         processed.using = name_shortcuts;
-        processed.constants = constants;
+        processed.constants_buff = constants_buff;
         processed.specs = specs;
 
         self.processed.insert(preprocessed.file.clone(), processed);
