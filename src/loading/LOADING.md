@@ -45,7 +45,7 @@ A path can be written out by combining segments with "::", such as `root::a::inn
 
 For example:
 ```rust
-let file = LoadableRef::from_file("example.caf.json");
+let file = SceneFile::new("example.caf.json");
 
 // Loads an individual root node into the spawned entity.
 commands.spawn_empty().load(file.e("root"));
@@ -124,7 +124,7 @@ To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::p
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("path/to/file.caf.json");
+    let file = SceneFile::new("path/to/file.caf.json");
 
     c.load_scene(&mut s, file.e("game_menu_scene"), |loaded_scene: &mut LoadedScene<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
@@ -601,7 +601,7 @@ Imports will be implicitly treated as manifests (see the next section), but *wit
 
 Cobweb asset files can be transitively loaded by specifying them in a `#manifest` section.
 
-Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`LoadableFile`](bevy_cobweb_ui::prelude::LoadableFile) references in place of explicit file paths.
+Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`SceneFile`](bevy_cobweb_ui::prelude::SceneFile) references in place of explicit file paths.
 
 An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
 
@@ -645,12 +645,12 @@ And now manifest keys can be used instead of file paths to reference files:
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     // Load widget
-    c.load_scene(&mut s, LoadableRef::new("widgets.button", "widget"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("widgets.button", "widget"), |_|{});
 
     // Load app scene
-    c.load_scene(&mut s, LoadableRef::new("app", "my_scene"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("app", "my_scene"), |_|{});
 
     // Load demo scene
-    c.load_scene(&mut s, LoadableRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
 }
 ```

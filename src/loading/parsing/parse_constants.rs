@@ -10,7 +10,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 fn get_constants_set<'a>(
-    file: &LoadableFile,
+    file: &SceneFile,
     prefix: &'static str,
     value_str: &'a str,
     constants: &'a HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
@@ -40,7 +40,7 @@ fn get_constants_set<'a>(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn try_replace_string_with_constant(
-    file: &LoadableFile,
+    file: &SceneFile,
     prefix: &'static str,
     value: &mut Value,
     constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
@@ -63,7 +63,7 @@ fn try_replace_string_with_constant(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn try_replace_map_key_with_constant(
-    file: &LoadableFile,
+    file: &SceneFile,
     prefix: &'static str,
     key: &str,
     map: &mut Map<String, Value>,
@@ -142,7 +142,7 @@ fn try_replace_map_key_with_constant(
 
 /// Replaces constants throughout a map, ignoring sections that start with keywords.
 pub(crate) fn search_and_replace_map_constants(
-    file: &LoadableFile,
+    file: &SceneFile,
     prefix: &'static str,
     map: &mut Map<String, Value>,
     constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
@@ -174,7 +174,7 @@ pub(crate) fn search_and_replace_map_constants(
 
 /// Replaces constants throughout a value.
 fn search_and_replace_constants(
-    file: &LoadableFile,
+    file: &SceneFile,
     prefix: &'static str,
     value: &mut Value,
     constants: &HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
@@ -199,7 +199,7 @@ fn search_and_replace_constants(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn constants_builder_recurse_into_value(
-    file: &LoadableFile,
+    file: &SceneFile,
     key: &str,
     value: &mut Value,
     path: &mut SmallVec<[SmolStr; 10]>,
@@ -281,7 +281,7 @@ fn constants_builder_recurse_into_value(
 
 /// Pulls constants from a constants section.
 pub(crate) fn extract_constants_section(
-    file: &LoadableFile,
+    file: &SceneFile,
     data: &mut Map<String, Value>,
     constants: &mut HashMap<SmolStr, HashMap<SmolStr, Arc<Value>>>,
 )

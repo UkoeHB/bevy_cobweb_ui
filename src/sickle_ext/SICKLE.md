@@ -134,22 +134,22 @@ struct CounterWidgetBuilder
 {
     /// METHOD 1: Spec override.
     /// METHOD 2: Theme override.
-    custom: Option<LoadableRef>,
+    custom: Option<SceneRef>,
 }
 
 impl CounterWidgetBuilder
 {
     /// Sets the path where the widget theme/specification override should be loaded from.
-    fn customize(mut self, custom: LoadableRef) -> Self
+    fn customize(mut self, custom: SceneRef) -> Self
     {
         self.custom = custom.into();
         self
     }
 
     /// Returns a reference to the cobweb asset file where the widget is defined.
-    fn widget_file() -> LoadableRef
+    fn widget_file() -> SceneFile
     {
-        LoadableRef::from_file("widgets.counter")
+        SceneFile::new("widgets.counter")
     }
 
     /// Builds the widget as a child of an entity.
@@ -288,7 +288,7 @@ fn build_ui(mut c: Commands)
 
         // Add customized widget.
         CounterWidgetBuilder::default()
-            .customize(LoadableRef::new("main.caf.json", "counter_widget_bigtext"))
+            .customize(SceneRef::new("main.caf.json", "counter_widget_bigtext"))
             .build(n);
     });
 }
@@ -384,7 +384,7 @@ fn build_ui(mut c: Commands)
         // - NOTE: If the default theme wasn't loaded anywhere, then non-overridden
         //   attributes won't display!
         CounterWidgetBuilder::default()
-            .customize(LoadableFile::new("main.caf.json", "counter_widget_bigtext"))
+            .customize(SceneFile::new("main.caf.json", "counter_widget_bigtext"))
             .build(n);
     });
 }

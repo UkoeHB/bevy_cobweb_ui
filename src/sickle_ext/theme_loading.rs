@@ -588,24 +588,23 @@ pub trait ThemeLoadingEntityCommandsExt
     ///
     /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
     /// insert attributes to the theme when they are loaded onto this entity.
-    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: SceneRef) -> &mut Self;
     /// See [`Self::load_theme`].
     ///
     /// Proxies interactions on the `Pm` sub-entity to the main entity.
-    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: LoadableRef)
-        -> &mut Self;
+    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self;
     /// Loads context-bound subtheme attributes to the nearest ancestor entity that has `C` or `LoadedThemes` with
     /// an entry for `C`.
     ///
     /// The [`Themed<T>`], [`Responsive<T>`], and [`Animated<T>`] loadable wrappers found at `loadable_ref` will
     /// insert attributes to the theme for context `Ctx::type_name()` when they are loaded onto this entity.
-    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self;
     /// See [`Self::load_subtheme`].
     ///
     /// Proxies interactions on the `Pm` sub-entity to the `Ctx` sub-entity.
     fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
         &mut self,
-        loadable_ref: LoadableRef,
+        loadable_ref: SceneRef,
     ) -> &mut Self;
 }
 
@@ -618,7 +617,7 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn load_theme<C: DefaultTheme + Component>(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    fn load_theme<C: DefaultTheme + Component>(&mut self, loadable_ref: SceneRef) -> &mut Self
     {
         self.prepare_theme::<C>();
         self.load_with_context_setter(loadable_ref, |entity, world| {
@@ -631,7 +630,7 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
 
     fn load_theme_with_placement<C: DefaultTheme + Component, Pm: TypeName>(
         &mut self,
-        loadable_ref: LoadableRef,
+        loadable_ref: SceneRef,
     ) -> &mut Self
     {
         self.prepare_theme::<C>();
@@ -643,7 +642,7 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self
     {
         self.load_with_context_setter(loadable_ref, |entity, world| {
             world.get_entity_mut(entity).map(|mut e| {
@@ -655,7 +654,7 @@ impl ThemeLoadingEntityCommandsExt for EntityCommands<'_>
 
     fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
         &mut self,
-        loadable_ref: LoadableRef,
+        loadable_ref: SceneRef,
     ) -> &mut Self
     {
         self.load_with_context_setter(loadable_ref, |entity, world| {

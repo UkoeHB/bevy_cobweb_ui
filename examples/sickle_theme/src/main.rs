@@ -20,7 +20,7 @@ impl ExampleText
 {
     fn load_base_theme(ui: &mut UiBuilder<Entity>)
     {
-        let theme = LoadableRef::new(ExampleTextBuilder::widget_file(), "theme");
+        let theme = SceneRef::new(ExampleTextBuilder::widget_file(), "theme");
 
         // This loads `Theme<ExampleText>` into the entity without adding an `ExampleText` component. The theme
         // data is stored for inheritence, but is not *used* by this entity.
@@ -33,7 +33,7 @@ impl ExampleText
 struct ExampleTextBuilder
 {
     text: String,
-    theme_override: Option<LoadableRef>,
+    theme_override: Option<SceneRef>,
 }
 
 impl ExampleTextBuilder
@@ -44,7 +44,7 @@ impl ExampleTextBuilder
     }
 
     /// Sets the location to load theme override data from.
-    fn theme_override(mut self, theme: LoadableRef) -> Self
+    fn theme_override(mut self, theme: SceneRef) -> Self
     {
         self.theme_override = Some(theme);
         self
@@ -58,7 +58,7 @@ impl ExampleTextBuilder
     /// Builds the text as a child of the builder entity.
     fn build<'a>(mut self, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
     {
-        let structure = LoadableRef::new(&Self::widget_file(), "structure");
+        let structure = SceneRef::new(&Self::widget_file(), "structure");
 
         let mut core_entity = Entity::PLACEHOLDER;
 
@@ -93,7 +93,7 @@ impl ExampleTextBuilder
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("examples.trivial_text", "scene");
+    let scene = SceneRef::new("examples.trivial_text", "scene");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         let n = l.deref_mut();
@@ -106,12 +106,12 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
         // Add text with 'large text' theme.
         ExampleTextBuilder::new("Text with 'large text' theme override.")
-            .theme_override(LoadableRef::new("examples.trivial_text", "large_text_override"))
+            .theme_override(SceneRef::new("examples.trivial_text", "large_text_override"))
             .build(n);
 
         // Add text with 'black text' theme.
         ExampleTextBuilder::new("Text with 'yellow text' theme override.")
-            .theme_override(LoadableRef::new("examples.trivial_text", "yellow_text_override"))
+            .theme_override(SceneRef::new("examples.trivial_text", "yellow_text_override"))
             .build(n);
     });
 }

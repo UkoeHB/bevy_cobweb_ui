@@ -11,8 +11,8 @@ use crate::prelude::*;
 fn handle_loadable(
     type_registry: &TypeRegistry,
     caf_cache: &mut CobwebAssetCache,
-    file: &LoadableFile,
-    current_path: &LoadablePath,
+    file: &SceneFile,
+    current_path: &ScenePath,
     short_name: &str,
     value: Value,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -30,7 +30,7 @@ fn handle_loadable(
 
     // Save this loadable.
     caf_cache.insert_loadable(
-        &LoadableRef { file: file.clone(), path: current_path.clone() },
+        &SceneRef { file: file.clone(), path: current_path.clone() },
         loadable_value,
         type_id,
         long_name,
@@ -45,8 +45,8 @@ fn handle_scene_node(
     caf_cache: &mut CobwebAssetCache,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
-    scene: &LoadableRef,
-    parent_path: &LoadablePath,
+    scene: &SceneRef,
+    parent_path: &ScenePath,
     key: &str,
     value: Value,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -104,14 +104,14 @@ fn parse_scene_layer(
     caf_cache: &mut CobwebAssetCache,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
-    scene: &LoadableRef,
-    current_path: &LoadablePath,
+    scene: &SceneRef,
+    current_path: &ScenePath,
     mut data: Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
     // Prep the node.
-    caf_cache.prepare_scene_node(LoadableRef { file: scene.file.clone(), path: current_path.clone() });
+    caf_cache.prepare_scene_node(SceneRef { file: scene.file.clone(), path: current_path.clone() });
 
     // Begin layer update.
     scene_layer.start_update(data.len());
@@ -177,7 +177,7 @@ pub(crate) fn parse_scenes(
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
     scene_loader: &mut SceneLoader,
-    file: &LoadableFile,
+    file: &SceneFile,
     mut data: Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
@@ -204,12 +204,12 @@ pub(crate) fn parse_scenes(
         }
 
         // Get this scene for editing.
-        let Some(path) = LoadablePath::parse_single(key) else {
+        let Some(path) = ScenePath::parse_single(key) else {
             tracing::error!("failed parsing scene {:?} in {:?}, scene root ID is a multi-segment path, only \
                 single-segment node ids are allowed in scene definitions", key, file);
             continue;
         };
-        let scene_ref = LoadableRef { file: file.clone(), path };
+        let scene_ref = SceneRef { file: file.clone(), path };
         let scene_layer = scene_registry.get_or_insert(scene_ref.clone());
 
         // Expect the scene to have a map in it.

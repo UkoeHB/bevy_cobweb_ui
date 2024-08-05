@@ -52,7 +52,7 @@ where
 {
     scene_loader: &'b mut SceneLoader,
     builder: T,
-    loadable: LoadableRef,
+    loadable: SceneRef,
     _p: PhantomData<&'a ()>,
 }
 
@@ -60,7 +60,7 @@ impl<'a, 'b, T> LoadedScene<'a, 'b, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
-    fn edit_impl<C>(&mut self, loadable: LoadableRef, callback: C) -> &mut Self
+    fn edit_impl<C>(&mut self, loadable: SceneRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
     {
@@ -150,7 +150,7 @@ where
     }
 
     /// See [`LoadSceneExt::load_scene`].
-    pub fn load_scene<C>(&mut self, path: LoadableRef, callback: C) -> &mut Self
+    pub fn load_scene<C>(&mut self, path: SceneRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
     {
@@ -159,7 +159,7 @@ where
     }
 
     /// Gets the location of the current scene node.
-    pub fn path(&self) -> &LoadableRef
+    pub fn path(&self) -> &SceneRef
     {
         &self.loadable
     }
@@ -198,7 +198,7 @@ pub trait LoadSceneExt: scene_traits::SceneNodeLoader
     ///
     /// The `callback` can be used to edit the scene's root node, which in turn can be used to edit inner nodes
     /// of the scene via [`LoadedScene::edit`].
-    fn load_scene<C>(&mut self, scene_loader: &mut SceneLoader, path: LoadableRef, callback: C) -> &mut Self
+    fn load_scene<C>(&mut self, scene_loader: &mut SceneLoader, path: SceneRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <Self as scene_traits::SceneNodeLoader>::Loaded<'c>>);
 }
@@ -207,7 +207,7 @@ impl<T> LoadSceneExt for T
 where
     T: scene_traits::SceneNodeLoader,
 {
-    fn load_scene<C>(&mut self, scene_loader: &mut SceneLoader, path: LoadableRef, callback: C) -> &mut Self
+    fn load_scene<C>(&mut self, scene_loader: &mut SceneLoader, path: SceneRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
     {

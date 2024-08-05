@@ -25,8 +25,8 @@ pub(crate) fn is_loadable_entry(key: &str) -> bool
 
 pub(crate) fn get_loadable_meta<'a>(
     type_registry: &'a TypeRegistry,
-    file: &LoadableFile,
-    current_path: &LoadablePath,
+    file: &SceneFile,
+    current_path: &ScenePath,
     short_name: &str,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> Option<(&'static str, &'static str, TypeId, TypedReflectDeserializer<'a>)>

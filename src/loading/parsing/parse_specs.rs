@@ -62,7 +62,7 @@ struct SpecData
 
 impl SpecData
 {
-    fn new(file: &LoadableFile, spec_invocation: &str, map: &mut Map<String, Value>) -> Self
+    fn new(file: &SceneFile, spec_invocation: &str, map: &mut Map<String, Value>) -> Self
     {
         let mut spec = Self::default();
         spec.update_from_specs_override(file, spec_invocation, map);
@@ -72,7 +72,7 @@ impl SpecData
         spec
     }
 
-    fn clear_cached_edits_and_check_used(&mut self, file: &LoadableFile, spec_invocation: &str)
+    fn clear_cached_edits_and_check_used(&mut self, file: &SceneFile, spec_invocation: &str)
     {
         self.params.retain(|key, (saved, temp, used)| {
             if !*used {
@@ -96,7 +96,7 @@ impl SpecData
     /// Extracts spec edits from a map of params and inserts.
     fn extract_specs(
         &mut self,
-        file: &LoadableFile,
+        file: &SceneFile,
         spec_invocation: &str,
         map: &mut Map<String, Value>,
         inserts: &mut InsertValues,
@@ -149,7 +149,7 @@ impl SpecData
         map.len() > 0
     }
 
-    fn apply_insertions_to_spec_content(&self, file: &LoadableFile, value: &mut Value, inserts: &mut InsertValues)
+    fn apply_insertions_to_spec_content(&self, file: &SceneFile, value: &mut Value, inserts: &mut InsertValues)
     {
         let mut insertion_cache = SmallVec::<[usize; 4]>::default();
         match value {
@@ -229,7 +229,7 @@ impl SpecData
 
     fn recursively_resolve_spec_content(
         &mut self,
-        file: &LoadableFile,
+        file: &SceneFile,
         value: &mut Value,
         inserts: &InsertValues,
         is_resolving_insertion: bool,
@@ -388,7 +388,7 @@ impl SpecData
     /// Overwrites params, adds new params, applies insertions.
     fn update_from_specs_override(
         &mut self,
-        file: &LoadableFile,
+        file: &SceneFile,
         spec_invocation: &str,
         overrides: &mut Map<String, Value>,
     )
@@ -412,7 +412,7 @@ impl SpecData
     /// Extracts spec edits from a value, then overwrites the value with the spec content.
     ///
     /// Spec content is resolved by applying params and inserting new sections.
-    fn write_to_value(&mut self, file: &LoadableFile, spec_invocation: &str, value: &mut Value)
+    fn write_to_value(&mut self, file: &SceneFile, spec_invocation: &str, value: &mut Value)
     {
         // Extract local edits specified in the value.
         let mut inserts = InsertValues::default();
@@ -456,7 +456,7 @@ impl SpecsMap
     /// Imported specs are inserted directly, which means there is no way to disambiguate which file a spec came
     /// from. This is necessary to support nested specs, where the internal spec name cannot be overridden (so spec
     /// names cannot be contextual).
-    pub(crate) fn import_specs(&mut self, import_file: &LoadableFile, file: &LoadableFile, imported: &SpecsMap)
+    pub(crate) fn import_specs(&mut self, import_file: &SceneFile, file: &SceneFile, imported: &SpecsMap)
     {
         for (spec_key, data) in imported.map.iter() {
             if let Some(_) = self.map.insert(spec_key.clone(), data.clone()) {
@@ -472,7 +472,7 @@ impl SpecsMap
     ///   overwritten.
     /// - If `key` is a spec-invocation with key name different from spec name, then a new spec is inserted that
     ///   clones and updates the exisitng spec with that spec name.
-    fn update_or_insert_spec(&mut self, file: &LoadableFile, key: &str, value: &mut Value)
+    fn update_or_insert_spec(&mut self, file: &SceneFile, key: &str, value: &mut Value)
     {
         let Value::Object(map) = value else {
             tracing::warn!("failed evaluating spec {} in {:?}, value is not a map", key, file);
@@ -515,7 +515,7 @@ impl SpecsMap
     }
 
     /// Extracts a spec into a (non-spec-section) spec invocation (which may override parts of the spec).
-    fn try_extract_spec_entry(&mut self, file: &LoadableFile, key: &str, value: &mut Value) -> bool
+    fn try_extract_spec_entry(&mut self, file: &SceneFile, key: &str, value: &mut Value) -> bool
     {
         let (_invocation_id, spec_key) = match try_parse_spec_invocation(key) {
             Ok(Some(parsed_keys)) => parsed_keys,
@@ -540,7 +540,7 @@ impl SpecsMap
 
 /// Extracts a specs section from a file and inserts its contents to the file's specs map (which was initialized by
 /// imports).
-pub(crate) fn extract_specs_section(file: &LoadableFile, map: &mut Map<String, Value>, specs: &mut SpecsMap)
+pub(crate) fn extract_specs_section(file: &SceneFile, map: &mut Map<String, Value>, specs: &mut SpecsMap)
 {
     let Some(specs_section) = map.get_mut(SPECS_KEYWORD) else {
         return;
@@ -561,7 +561,7 @@ pub(crate) fn extract_specs_section(file: &LoadableFile, map: &mut Map<String, V
 /// Iterates through an entire `data` map to insert specs where requested.
 ///
 /// Insertion is recursive, which means specs within specs are allowed.
-pub(crate) fn insert_specs(file: &LoadableFile, data: &mut Map<String, Value>, specs: &mut SpecsMap)
+pub(crate) fn insert_specs(file: &SceneFile, data: &mut Map<String, Value>, specs: &mut SpecsMap)
 {
     // Iterate through the map to insert specs where requested.
     for (key, value) in data.iter_mut() {

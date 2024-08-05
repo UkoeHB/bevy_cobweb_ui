@@ -185,7 +185,7 @@ fn derived_loader<T: ApplyLoadable + Loadable>(world: &mut World)
 //-------------------------------------------------------------------------------------------------------------------
 
 fn load_from_ref(
-    In((id, loadable_ref, setter)): In<(Entity, LoadableRef, ContextSetter)>,
+    In((id, loadable_ref, setter)): In<(Entity, SceneRef, ContextSetter)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
     mut caf_cache: ReactResMut<CobwebAssetCache>,
@@ -307,7 +307,7 @@ pub trait CafLoadingEntityCommandsExt
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self;
+    fn load(&mut self, loadable_ref: SceneRef) -> &mut Self;
 
     /// Registers the current entity to load loadables from `loadable_ref`.
     ///
@@ -316,19 +316,17 @@ pub trait CafLoadingEntityCommandsExt
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(Entity, &mut World))
-        -> &mut Self;
+    fn load_with_context_setter(&mut self, loadable_ref: SceneRef, setter: fn(Entity, &mut World)) -> &mut Self;
 }
 
 impl CafLoadingEntityCommandsExt for EntityCommands<'_>
 {
-    fn load(&mut self, loadable_ref: LoadableRef) -> &mut Self
+    fn load(&mut self, loadable_ref: SceneRef) -> &mut Self
     {
         self.load_with_context_setter(loadable_ref, |_, _| {})
     }
 
-    fn load_with_context_setter(&mut self, loadable_ref: LoadableRef, setter: fn(Entity, &mut World))
-        -> &mut Self
+    fn load_with_context_setter(&mut self, loadable_ref: SceneRef, setter: fn(Entity, &mut World)) -> &mut Self
     {
         self.insert(HasLoadables);
 

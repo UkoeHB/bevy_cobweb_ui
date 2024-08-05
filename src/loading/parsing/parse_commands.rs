@@ -10,8 +10,8 @@ use crate::prelude::*;
 fn handle_commands_entry(
     type_registry: &TypeRegistry,
     caf_cache: &mut CobwebAssetCache,
-    file: &LoadableFile,
-    current_path: &LoadablePath,
+    file: &SceneFile,
+    current_path: &ScenePath,
     short_name: &str,
     value: Value,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -29,7 +29,7 @@ fn handle_commands_entry(
 
     // Save this command.
     caf_cache.insert_command(
-        &LoadableRef { file: file.clone(), path: current_path.clone() },
+        &SceneRef { file: file.clone(), path: current_path.clone() },
         command_value,
         type_id,
         long_name,
@@ -41,7 +41,7 @@ fn handle_commands_entry(
 pub(crate) fn parse_commands_section(
     type_registry: &TypeRegistry,
     caf_cache: &mut CobwebAssetCache,
-    file: &LoadableFile,
+    file: &SceneFile,
     data: &mut Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
@@ -55,7 +55,7 @@ pub(crate) fn parse_commands_section(
         return;
     };
 
-    let pseudo_path = LoadablePath::new(COMMANDS_KEYWORD);
+    let pseudo_path = ScenePath::new(COMMANDS_KEYWORD);
 
     for (key, value) in commands_section.iter_mut() {
         let value = value.take();

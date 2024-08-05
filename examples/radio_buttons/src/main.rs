@@ -15,7 +15,7 @@ use bevy_cobweb_ui::widgets::radio_button::{RadioButtonBuilder, RadioButtonManag
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("examples.radio_buttons");
+    let file = SceneFile::new("examples.radio_buttons");
     let scene = file.e("scene");
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 

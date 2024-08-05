@@ -8,7 +8,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) fn extract_manifest_section(
-    file: &LoadableFile,
+    file: &SceneFile,
     map: &Map<String, Value>,
     manifests: &mut HashMap<String, Arc<str>>,
 )
@@ -41,7 +41,7 @@ pub(crate) fn extract_manifest_section(
                 }
             }
             _ => {
-                if !LoadableFile::str_is_file_path(manifest_file) {
+                if !SceneFile::str_is_file_path(manifest_file) {
                     tracing::error!("ignoring manifest entry in {:?} with invalid file path {:?} (key: {:?}); \
                         cobweb asset files should terminate with `.caf.json`",
                         file.as_str(), manifest_file.as_str(), manifest_key);

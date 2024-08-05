@@ -30,7 +30,7 @@ impl AssetLoader for CobwebAssetLoader
         reader.read_to_end(&mut bytes).await?;
         let data: serde_json::Value = from_slice(&bytes)?;
         Ok(CobwebAssetFile {
-            file: LoadableFile::new(&load_context.asset_path().path().to_string_lossy()),
+            file: SceneFile::new(&load_context.asset_path().path().to_string_lossy()),
             data,
         })
     }
@@ -76,7 +76,7 @@ pub enum CobwebAssetLoaderError
 #[derive(Debug, Asset, TypePath)]
 pub(crate) struct CobwebAssetFile
 {
-    pub(crate) file: LoadableFile,
+    pub(crate) file: SceneFile,
     pub(crate) data: serde_json::Value,
 }
 
@@ -110,7 +110,7 @@ impl LoadedCobwebAssetFiles
         asset_server: &AssetServer,
     )
     {
-        caf_cache.prepare_file(LoadableFile::new(file.as_str()));
+        caf_cache.prepare_file(SceneFile::new(file.as_str()));
         let handle = asset_server.load(file);
         self.handles.insert(handle.id(), handle);
     }

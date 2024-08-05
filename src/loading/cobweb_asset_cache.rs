@@ -108,8 +108,8 @@ fn cleanup_cobweb_asset_cache(mut caf_cache: ReactResMut<CobwebAssetCache>)
 //-------------------------------------------------------------------------------------------------------------------
 
 fn insert_loadable_entry(
-    loadables: &mut HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
-    loadable_ref: &LoadableRef,
+    loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
+    loadable_ref: &SceneRef,
     loadable: ReflectedLoadable,
     type_id: TypeId,
     full_type_name: &str,
@@ -148,12 +148,12 @@ fn insert_loadable_entry(
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Default, Debug)]
-struct PreprocessedLoadableFile
+struct PreprocessedSceneFile
 {
     /// This file.
-    file: LoadableFile,
+    file: SceneFile,
     /// Imports for detecting when a re-load is required.
-    imports: HashMap<LoadableFile, SmolStr>,
+    imports: HashMap<SceneFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
     data: Map<String, Value>,
 }
@@ -161,7 +161,7 @@ struct PreprocessedLoadableFile
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Default, Debug)]
-struct ProcessedLoadableFile
+struct ProcessedSceneFile
 {
     /// Using info cached for use by dependents.
     using: HashMap<&'static str, &'static str>,
@@ -171,7 +171,7 @@ struct ProcessedLoadableFile
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
     #[cfg(feature = "hot_reload")]
-    imports: HashMap<LoadableFile, SmolStr>,
+    imports: HashMap<SceneFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
     #[cfg(feature = "hot_reload")]
     data: Map<String, Value>,
@@ -215,7 +215,7 @@ impl ReflectedLoadable
         this.reflect_partial_eq(other.as_reflect())
     }
 
-    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &LoadableRef) -> Option<T>
+    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &SceneRef) -> Option<T>
     {
         match self {
             ReflectedLoadable::Value(loadable) => {
@@ -267,7 +267,7 @@ impl ReflectedLoadable
 pub struct CobwebAssetCache
 {
     /// Tracks which files have not initialized yet.
-    pending: HashSet<LoadableFile>,
+    pending: HashSet<SceneFile>,
     /// Tracks the total number of files that should load.
     ///
     /// Used for progress tracking on initial load.
@@ -277,33 +277,32 @@ pub struct CobwebAssetCache
     /// - Inside an arc/mutex so the SceneLoader can also use it.
     manifest_map: Arc<Mutex<ManifestMap>>,
     /// Tracks which files have been assigned manifest keys.
-    file_to_manifest_key: HashMap<LoadableFile, Option<Arc<str>>>,
+    file_to_manifest_key: HashMap<SceneFile, Option<Arc<str>>>,
 
     /// Tracks pre-processed files.
-    preprocessed: Vec<PreprocessedLoadableFile>,
+    preprocessed: Vec<PreprocessedSceneFile>,
 
     /// Records processed files.
-    processed: HashMap<LoadableFile, ProcessedLoadableFile>,
+    processed: HashMap<SceneFile, ProcessedSceneFile>,
 
     /// Tracks loadable commands from all loaded files.
-    command_loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
+    command_loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks loadables from all loaded files.
-    loadables: HashMap<LoadableRef, SmallVec<[ErasedLoadable; 4]>>,
+    loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
 
     /// Tracks subscriptions to scene paths.
     #[cfg(feature = "hot_reload")]
-    subscriptions: HashMap<LoadableRef, SmallVec<[SubscriptionRef; 1]>>,
+    subscriptions: HashMap<SceneRef, SmallVec<[SubscriptionRef; 1]>>,
     /// Tracks entities for cleanup.
     #[cfg(feature = "hot_reload")]
-    subscriptions_rev: HashMap<Entity, SmallVec<[LoadableRef; 1]>>,
+    subscriptions_rev: HashMap<Entity, SmallVec<[SceneRef; 1]>>,
 
     /// Records commands that need to be applied.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    commands_need_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef); 1]>>,
+    commands_need_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, SceneRef); 1]>>,
     /// Records entities that need loadable updates.
     /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    needs_updates:
-        HashMap<TypeId, SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[SubscriptionRef; 1]>); 1]>>,
+    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, SceneRef, SmallVec<[SubscriptionRef; 1]>); 1]>>,
 }
 
 impl CobwebAssetCache
@@ -335,7 +334,7 @@ impl CobwebAssetCache
     }
 
     /// Prepares a cobweb asset file.
-    pub(crate) fn prepare_file(&mut self, file: LoadableFile)
+    pub(crate) fn prepare_file(&mut self, file: SceneFile)
     {
         let _ = self.pending.insert(file.clone());
         self.total_expected_sheets += 1;
@@ -352,7 +351,7 @@ impl CobwebAssetCache
     ///
     /// Returns `true` if this is the first time this file's manifest key has been registered. This can be used
     /// to decide whether to start loading transitive imports/manifests.
-    pub(crate) fn register_manifest_key(&mut self, file: LoadableFile, manifest_key: Option<Arc<str>>) -> bool
+    pub(crate) fn register_manifest_key(&mut self, file: SceneFile, manifest_key: Option<Arc<str>>) -> bool
     {
         match self.file_to_manifest_key.entry(file.clone()) {
             Vacant(entry) => {
@@ -403,7 +402,7 @@ impl CobwebAssetCache
     }
 
     /// Initializes a file that has been loaded.
-    pub(crate) fn initialize_file(&mut self, file: &LoadableFile)
+    pub(crate) fn initialize_file(&mut self, file: &SceneFile)
     {
         let _ = self.pending.remove(file);
     }
@@ -411,8 +410,8 @@ impl CobwebAssetCache
     /// Inserts a preprocessed file for later processing.
     pub(crate) fn add_preprocessed_file(
         &mut self,
-        file: LoadableFile,
-        mut imports: HashMap<LoadableFile, SmolStr>,
+        file: SceneFile,
+        mut imports: HashMap<SceneFile, SmolStr>,
         data: Map<String, Value>,
     )
     {
@@ -445,7 +444,7 @@ impl CobwebAssetCache
             return;
         }
 
-        let preprocessed = PreprocessedLoadableFile { file, imports, data };
+        let preprocessed = PreprocessedSceneFile { file, imports, data };
         self.preprocessed.push(preprocessed);
     }
 
@@ -454,7 +453,7 @@ impl CobwebAssetCache
     /// Assumes all imports are available.
     fn process_cobweb_asset_file(
         &mut self,
-        preprocessed: PreprocessedLoadableFile,
+        preprocessed: PreprocessedSceneFile,
         type_registry: &TypeRegistry,
         c: &mut Commands,
         scene_loader: &mut SceneLoader,
@@ -483,7 +482,7 @@ impl CobwebAssetCache
         }
 
         // Prepare to process the file.
-        let mut processed = ProcessedLoadableFile::default();
+        let mut processed = ProcessedSceneFile::default();
 
         #[cfg(feature = "hot_reload")]
         {
@@ -515,7 +514,7 @@ impl CobwebAssetCache
         // Check for already-processed files that need to rebuild since they depend on this file.
         #[cfg(feature = "hot_reload")]
         {
-            let needs_rebuild: Vec<LoadableFile> = self
+            let needs_rebuild: Vec<SceneFile> = self
                 .processed
                 .iter()
                 .filter_map(|(file, processed)| {
@@ -601,7 +600,7 @@ impl CobwebAssetCache
     /// Returns `true` if the command's saved value changed.
     pub(crate) fn insert_command(
         &mut self,
-        loadable_ref: &LoadableRef,
+        loadable_ref: &SceneRef,
         loadable: ReflectedLoadable,
         type_id: TypeId,
         full_type_name: &str,
@@ -626,7 +625,7 @@ impl CobwebAssetCache
     /// Prepares a scene node.
     ///
     /// We need to prepare scene nodes because they may be empty, which means a loadable won't be inserted.
-    pub(crate) fn prepare_scene_node(&mut self, loadable_ref: LoadableRef)
+    pub(crate) fn prepare_scene_node(&mut self, loadable_ref: SceneRef)
     {
         self.loadables.entry(loadable_ref).or_default();
     }
@@ -636,7 +635,7 @@ impl CobwebAssetCache
     /// Returns `true` if this method added any pending subscriber updates.
     pub(crate) fn insert_loadable(
         &mut self,
-        loadable_ref: &LoadableRef,
+        loadable_ref: &SceneRef,
         loadable: ReflectedLoadable,
         type_id: TypeId,
         full_type_name: &str,
@@ -685,7 +684,7 @@ impl CobwebAssetCache
     pub(crate) fn track_entity(
         &mut self,
         entity: Entity,
-        mut loadable_ref: LoadableRef,
+        mut loadable_ref: SceneRef,
         setter: ContextSetter,
         c: &mut Commands,
         callbacks: &LoaderCallbacks,
@@ -776,27 +775,27 @@ impl CobwebAssetCache
     }
 
     /// Takes command loadables of type `T` extracted from `#commands` sections.
-    pub(crate) fn take_commands<T: Loadable>(&mut self) -> SmallVec<[(ReflectedLoadable, LoadableRef); 1]>
+    pub(crate) fn take_commands<T: Loadable>(&mut self) -> SmallVec<[(ReflectedLoadable, SceneRef); 1]>
     {
         self.commands_need_updates
             .remove(&TypeId::of::<T>())
             .unwrap_or_default()
     }
 
-    /// Takes entity loadables for entites that subscribed to `T` found at recently-updated loadable paths.
+    /// Takes entity loadables for entites that subscribed to `T` found at recently-updated scene paths.
     pub(crate) fn take_loadables<T: Loadable>(
         &mut self,
-    ) -> SmallVec<[(ReflectedLoadable, LoadableRef, SmallVec<[SubscriptionRef; 1]>); 1]>
+    ) -> SmallVec<[(ReflectedLoadable, SceneRef, SmallVec<[SubscriptionRef; 1]>); 1]>
     {
         self.needs_updates
             .remove(&TypeId::of::<T>())
             .unwrap_or_default()
     }
 
-    /// Updates entities that subscribed to `T` found at recently-updated loadable paths.
+    /// Updates entities that subscribed to `T` found at recently-updated scene paths.
     pub(crate) fn update_loadables<T: Loadable>(
         &mut self,
-        mut callback: impl FnMut(Entity, ContextSetter, &LoadableRef, &ReflectedLoadable),
+        mut callback: impl FnMut(Entity, ContextSetter, &SceneRef, &ReflectedLoadable),
     )
     {
         let mut needs_updates = self.take_loadables::<T>();

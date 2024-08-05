@@ -48,7 +48,7 @@ enum SceneLayerInsertionMethod
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SceneLayerData
 {
-    pub(crate) id: LoadablePath,
+    pub(crate) id: ScenePath,
     pub(crate) layer: SceneLayer,
 }
 
@@ -61,7 +61,7 @@ impl SceneLayerData
     }
 
     /// Inspects this layer's id, then traverses its child layer.
-    pub(crate) fn traverse(&self, inspector: &mut impl FnMut(&LoadablePath))
+    pub(crate) fn traverse(&self, inspector: &mut impl FnMut(&ScenePath))
     {
         (inspector)(&self.id);
         self.layer.traverse(inspector);
@@ -90,7 +90,7 @@ impl SceneLayer
     }
 
     /// Inserts a node with `id` at the current update position.
-    pub(crate) fn insert(&mut self, id: &LoadablePath) -> SceneLayerInsertionResult
+    pub(crate) fn insert(&mut self, id: &ScenePath) -> SceneLayerInsertionResult
     {
         let position = self.end_index;
         self.end_index += 1;
@@ -154,7 +154,7 @@ impl SceneLayer
     }
 
     /// Iterates over the node's children in order, applying the inspector function to each one.
-    pub(crate) fn traverse(&self, inspector: &mut impl FnMut(&LoadablePath))
+    pub(crate) fn traverse(&self, inspector: &mut impl FnMut(&ScenePath))
     {
         for child in self.children.iter() {
             child.traverse(inspector);
@@ -168,19 +168,19 @@ impl SceneLayer
 pub(crate) struct SceneRegistry
 {
     /// [ root node reference : root node's child layer ]
-    scenes: HashMap<LoadableRef, SceneLayer>,
+    scenes: HashMap<SceneRef, SceneLayer>,
 }
 
 impl SceneRegistry
 {
     /// Accesses the child layer of a scene's root node to edit it.
-    pub(crate) fn get_or_insert(&mut self, loadable_ref: LoadableRef) -> &mut SceneLayer
+    pub(crate) fn get_or_insert(&mut self, loadable_ref: SceneRef) -> &mut SceneLayer
     {
         self.scenes.entry(loadable_ref).or_default()
     }
 
     /// Accesses the child layer of a scene's root node.
-    pub(crate) fn get(&self, loadable_ref: &LoadableRef) -> Option<&SceneLayer>
+    pub(crate) fn get(&self, loadable_ref: &SceneRef) -> Option<&SceneLayer>
     {
         self.scenes.get(loadable_ref)
     }
@@ -192,13 +192,13 @@ impl SceneRegistry
 pub(crate) struct SceneInstance
 {
     /// Reference to the scene root.
-    loadable_ref: LoadableRef,
+    loadable_ref: SceneRef,
     /// Root entity.
     entity: Entity,
     /// Prep function for new nodes.
     new_node_prep_fn: fn(&mut EntityCommands),
     // [ scene node path : scene node entity ]
-    nodes: HashMap<LoadablePath, Entity>,
+    nodes: HashMap<ScenePath, Entity>,
 }
 
 impl SceneInstance
@@ -206,7 +206,7 @@ impl SceneInstance
     /// Prepares the instance to be filled by a scene.
     pub(crate) fn prepare(
         &mut self,
-        loadable_ref: LoadableRef,
+        loadable_ref: SceneRef,
         entity: Entity,
         new_node_prep_fn: fn(&mut EntityCommands),
         node_count: usize,
@@ -226,20 +226,20 @@ impl SceneInstance
     }
 
     /// Inserts a scene node.
-    pub(crate) fn insert(&mut self, path: LoadablePath, entity: Entity)
+    pub(crate) fn insert(&mut self, path: ScenePath, entity: Entity)
     {
         self.nodes.insert(path, entity);
     }
 
     /// Removes a scene node with the given path.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn remove(&mut self, path: &LoadablePath) -> Option<Entity>
+    pub(crate) fn remove(&mut self, path: &ScenePath) -> Option<Entity>
     {
         self.nodes.remove(path)
     }
 
     /// Returns the file location of this scene.
-    pub(crate) fn loadable_ref(&self) -> &LoadableRef
+    pub(crate) fn loadable_ref(&self) -> &SceneRef
     {
         &self.loadable_ref
     }
@@ -258,7 +258,7 @@ impl SceneInstance
     }
 
     /// Gets a scene node at the given path.
-    pub(crate) fn get(&self, path: &LoadablePath) -> Option<Entity>
+    pub(crate) fn get(&self, path: &ScenePath) -> Option<Entity>
     {
         self.nodes.get(path).cloned().or_else(|| {
             if self.loadable_ref.path == *path {
@@ -275,7 +275,7 @@ impl Default for SceneInstance
     fn default() -> Self
     {
         Self {
-            loadable_ref: LoadableRef::default(),
+            loadable_ref: SceneRef::default(),
             entity: Entity::PLACEHOLDER,
             new_node_prep_fn: |_| {},
             nodes: HashMap::default(),
@@ -308,7 +308,7 @@ pub struct SceneLoader
     ///
     /// Used to update scene structures (add/remove/rearrange entities) in response to hot reloaded changes.
     #[cfg(feature = "hot_reload")]
-    scene_instances: HashMap<LoadableRef, SmallVec<[SceneInstance; 1]>>,
+    scene_instances: HashMap<SceneRef, SmallVec<[SceneInstance; 1]>>,
 }
 
 impl SceneLoader
@@ -347,9 +347,9 @@ impl SceneLoader
     pub(crate) fn handle_inserted_scene_node(
         &mut self,
         c: &mut Commands,
-        scene: &LoadableRef,
-        parent: &LoadablePath,
-        inserted: &LoadablePath,
+        scene: &SceneRef,
+        parent: &ScenePath,
+        inserted: &ScenePath,
         insertion_index: usize,
     )
     {
@@ -397,7 +397,7 @@ impl SceneLoader
             (scene_instance.node_prep_fn())(&mut ec);
 
             // Load the scene node to the entity.
-            let node_ref = LoadableRef { file: scene.file.clone(), path: inserted.clone() };
+            let node_ref = SceneRef { file: scene.file.clone(), path: inserted.clone() };
             ec.load(node_ref);
 
             // Save the entity.
@@ -414,9 +414,9 @@ impl SceneLoader
     pub(crate) fn handle_rearranged_scene_node(
         &self,
         c: &mut Commands,
-        scene: &LoadableRef,
-        parent: &LoadablePath,
-        moved: &LoadablePath,
+        scene: &SceneRef,
+        parent: &ScenePath,
+        moved: &ScenePath,
         new_index: usize,
     )
     {
@@ -463,12 +463,7 @@ impl SceneLoader
     ///
     /// Used to repair hierarchies after a scene structure change is hot reloaded.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn cleanup_deleted_scene_node(
-        &mut self,
-        c: &mut Commands,
-        scene: &LoadableRef,
-        deleted: &LoadablePath,
-    )
+    pub(crate) fn cleanup_deleted_scene_node(&mut self, c: &mut Commands, scene: &SceneRef, deleted: &ScenePath)
     {
         // Look up scene.
         let Some(scene_instances) = self.scene_instances.get_mut(scene) else { return };
@@ -498,7 +493,7 @@ impl SceneLoader
     /// Used to clean up hierarchies after a scene deletion is hot reloaded.
     //todo: how to detect these?
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn _cleanup_deleted_scene(&mut self, c: &mut Commands, scene: &LoadableRef)
+    pub(crate) fn _cleanup_deleted_scene(&mut self, c: &mut Commands, scene: &SceneRef)
     {
         // Get scene.
         let Some(mut scene_instances) = self.scene_instances.remove(scene) else { return };
@@ -512,7 +507,7 @@ impl SceneLoader
 
     /// Cleans up despawned root entities.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn cleanup_dead_entity(&mut self, loadable_ref: &LoadableRef, dead_entity: Entity)
+    pub(crate) fn cleanup_dead_entity(&mut self, loadable_ref: &SceneRef, dead_entity: Entity)
     {
         let Some(scene_instances) = self.scene_instances.get_mut(&loadable_ref) else { return };
         let Some(dead_idx) = scene_instances
@@ -529,12 +524,7 @@ impl SceneLoader
     ///
     /// The scene hierarchy is saved temporarily in a `SceneInstance`. It will be discarded when
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
-    pub(crate) fn load_scene<T>(
-        &mut self,
-        c: &mut Commands,
-        root_entity: Entity,
-        mut scene_ref: LoadableRef,
-    ) -> bool
+    pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
     where
         T: crate::loading::load_scene::scene_traits::SceneNodeLoader,
     {
@@ -631,7 +621,7 @@ impl SceneLoader
             T::initialize_scene_node(&mut ec);
 
             // Load the scene node to the entity.
-            let node_ref = LoadableRef { file: scene_ref.file.clone(), path: scene_node_path.clone() };
+            let node_ref = SceneRef { file: scene_ref.file.clone(), path: scene_node_path.clone() };
             ec.load(node_ref.clone());
 
             // Save the entity.

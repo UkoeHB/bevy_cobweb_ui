@@ -19,7 +19,7 @@ pub(crate) fn preprocess_caf_file(
     asset_server: &AssetServer,
     caf_files: &mut LoadedCobwebAssetFiles,
     caf_cache: &mut CobwebAssetCache,
-    file: LoadableFile,
+    file: SceneFile,
     data: Value,
 )
 {
@@ -39,24 +39,23 @@ pub(crate) fn preprocess_caf_file(
     extract_import_section(&file, &data, imports);
 
     // Convert import file references.
-    let mut imports_to_save: HashMap<LoadableFile, SmolStr> = HashMap::default();
+    let mut imports_to_save: HashMap<SceneFile, SmolStr> = HashMap::default();
     for (file, alias) in imports.iter() {
-        imports_to_save.insert(LoadableFile::new(file.as_str()), alias.clone());
+        imports_to_save.insert(SceneFile::new(file.as_str()), alias.clone());
     }
 
     // Register manifest keys.
     // - We also register imported files for loading to ensure they are tracked properly and to reduce
     //   duplication/race conditions/complexity between manifest loading and imports.
-    // - NOTE: We start with String keys and then convert to LoadableFiles because files may target a specific
-    //   asset loader (e.g. `embedded://my_file.caf.json`), but we strip that information when converting to a
-    //   LoadableFile.
+    // - NOTE: We start with String keys and then convert to SceneFiles because files may target a specific asset
+    //   loader (e.g. `embedded://my_file.caf.json`), but we strip that information when converting to a SceneFile.
     for (file, manifest_key) in manifest
         .drain()
         .map(|(f, m)| (f, Some(m)))
         .chain(imports.drain(..).map(|(k, _)| (k, None)))
     {
         // Continue if this file has been registered before.
-        if !caf_cache.register_manifest_key(LoadableFile::new(file.as_str()), manifest_key) {
+        if !caf_cache.register_manifest_key(SceneFile::new(file.as_str()), manifest_key) {
             continue;
         }
 
@@ -76,7 +75,7 @@ pub(crate) fn parse_caf_file(
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
     scene_loader: &mut SceneLoader,
-    file: LoadableFile,
+    file: SceneFile,
     mut data: Map<String, Value>,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,

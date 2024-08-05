@@ -6,7 +6,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) fn extract_import_section(
-    file: &LoadableFile,
+    file: &SceneFile,
     map: &Map<String, Value>,
     imports: &mut Vec<(String, SmolStr)>,
 )
@@ -27,7 +27,7 @@ pub(crate) fn extract_import_section(
             continue;
         };
 
-        if !LoadableFile::str_is_file_path(import) {
+        if !SceneFile::str_is_file_path(import) {
             tracing::error!("ignoring import entry in {:?} that does not have a valid file path {:?}",
                 file, import.as_str());
             continue;

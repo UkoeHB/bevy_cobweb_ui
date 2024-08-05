@@ -14,7 +14,7 @@ use bevy_cobweb_ui::sickle::SickleUiPlugin;
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("main.caf.json", "scene");
+    let scene = SceneRef::new("main.caf.json", "scene");
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |_| {});
 }
 

@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 pub(crate) fn extract_using_section(
     type_registry: &TypeRegistry,
-    file: &LoadableFile,
+    file: &SceneFile,
     map: &Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )

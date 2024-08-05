@@ -96,22 +96,22 @@ enum RadioButtonType
     {
         text: Option<String>,
     },
-    Custom(LoadableRef),
+    Custom(SceneRef),
     CustomWithText
     {
-        loadable: LoadableRef,
+        loadable: SceneRef,
         text: Option<String>,
     },
 }
 
 impl RadioButtonType
 {
-    fn get_scene(&self) -> LoadableRef
+    fn get_scene(&self) -> SceneRef
     {
         match self {
-            Self::Default { .. } => LoadableRef::new("builtin.widgets.radio_button", "radio_button_default"),
+            Self::Default { .. } => SceneRef::new("builtin.widgets.radio_button", "radio_button_default"),
             Self::DefaultInBox { .. } => {
-                LoadableRef::new("builtin.widgets.radio_button", "radio_button_default_in_vertical_box")
+                SceneRef::new("builtin.widgets.radio_button", "radio_button_default_in_vertical_box")
             }
             Self::Custom(loadable) => loadable.clone(),
             Self::CustomWithText { loadable, .. } => loadable.clone(),
@@ -160,7 +160,7 @@ impl RadioButtonBuilder
     /// Builds from a custom scene.
     ///
     /// Does NOT include an indicator. Use [`Self::with_indicator`].
-    pub fn custom(scene: LoadableRef) -> Self
+    pub fn custom(scene: SceneRef) -> Self
     {
         Self {
             button_type: RadioButtonType::Custom(scene),
@@ -172,7 +172,7 @@ impl RadioButtonBuilder
     /// Builds from a custom scene with text.
     ///
     /// Does NOT include an indicator. Use [`Self::with_indicator`].
-    pub fn custom_with_text(scene: LoadableRef, text: impl Into<String>) -> Self
+    pub fn custom_with_text(scene: SceneRef, text: impl Into<String>) -> Self
     {
         Self {
             button_type: RadioButtonType::CustomWithText { loadable: scene, text: Some(text.into()) },
@@ -330,7 +330,7 @@ impl RadioButtonBuilder
 
     fn add_indicator(
         node: &mut UiBuilder<Entity>,
-        path: &LoadableRef,
+        path: &SceneRef,
         inner_entities: &mut SmallVec<[(&'static str, Entity); 5]>,
     )
     {

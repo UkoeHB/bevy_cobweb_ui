@@ -3,6 +3,7 @@
 ## WIP
 
 - Update to `bevy_cobweb` v0.11.
+- Rename `LoadableFile`/`LoadablePath`/`LoadableRef` to `SceneFile`/`ScenePath`/`SceneRef`.
 
 ## 0.2.0
 

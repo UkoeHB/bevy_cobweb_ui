@@ -185,7 +185,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
         // Radio buttons: bevy_cobweb_ui built-in widget.
         let manager_entity = RadioButtonManager::insert(l.deref_mut());
         l.edit("options", |l| {
-            let button_loc = LoadableRef::new(l.path().file.as_str(), "settings_radio_button");
+            let button_loc = SceneRef::new(l.path().file.as_str(), "settings_radio_button");
 
             // Option: enable vsync
             let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-on")
@@ -284,7 +284,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
 
 fn add_menu_option<'a>(
     l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
-    file: &LoadableRef,
+    file: &SceneFile,
     content_path: &str,
     button_text: &str,
     page_scene: &str,
@@ -330,7 +330,7 @@ fn add_menu_option<'a>(
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("main.caf.json");
+    let file = SceneFile::new("main.caf.json");
     let scene = file.e("menu_scene");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {

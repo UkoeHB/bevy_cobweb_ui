@@ -12,7 +12,7 @@ use bevy_cobweb_ui::widgets::radio_button::{RadioButtonBuilder, RadioButtonManag
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = LoadableRef::new("localization", "root");
+    let scene = SceneRef::new("localization", "root");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         // Header

@@ -5,10 +5,10 @@ use smol_str::SmolStr;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// The token that separates parts of a loadable path.
+/// The token that separates parts of a scene path.
 ///
 /// Example: `menu::header::title`, where `menu`, `header`, and `title` are path extensions.
-pub const LOADABLE_PATH_SEPARATOR: &str = "::";
+pub const SCENE_PATH_SEPARATOR: &str = "::";
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -19,13 +19,13 @@ pub const LOADABLE_PATH_SEPARATOR: &str = "::";
 ///
 /// Example: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum LoadableFile
+pub enum SceneFile
 {
     File(Arc<str>),
     ManifestKey(Arc<str>),
 }
 
-impl LoadableFile
+impl SceneFile
 {
     /// Creates a new loadable file reference from a file name.
     ///
@@ -78,9 +78,21 @@ impl LoadableFile
     {
         string.as_ref().ends_with(".caf.json")
     }
+
+    /// Extends an existing scene file with a path extension.
+    pub fn extend(&self, extension: impl AsRef<str>) -> SceneRef
+    {
+        SceneRef { file: self.clone(), path: ScenePath::new(extension) }
+    }
+
+    /// Shorthand for [`Self::extend`].
+    pub fn e(&self, extension: impl AsRef<str>) -> SceneRef
+    {
+        self.extend(extension)
+    }
 }
 
-impl Default for LoadableFile
+impl Default for SceneFile
 {
     fn default() -> Self
     {
@@ -96,14 +108,14 @@ impl Default for LoadableFile
 ///
 /// Example: `menu::header::title` for accessing the `title` scene node in the `menu` scene in a cobweb asset file.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub struct LoadablePath
+pub struct ScenePath
 {
     pub(crate) path: Arc<[SmolStr]>,
 }
 
-impl LoadablePath
+impl ScenePath
 {
-    /// Creates a new loadable path.
+    /// Creates a new scene path.
     pub fn new(new_path: impl AsRef<str>) -> Self
     {
         let new_path = new_path.as_ref();
@@ -124,7 +136,7 @@ impl LoadablePath
         Some(Self { path: Arc::from([SmolStr::from(segment)]) })
     }
 
-    /// Extends an existing loadable path with a path extension.
+    /// Extends an existing scene path with a path extension.
     pub fn extend(&self, extension: impl AsRef<str>) -> Self
     {
         let extension = extension.as_ref();
@@ -134,7 +146,7 @@ impl LoadablePath
         Self { path: Arc::from(path.as_slice()) }
     }
 
-    /// Extends an existing loadable path with a path extension.
+    /// Extends an existing scene path with a path extension.
     ///
     /// Returns `None` if `extension` is not exactly one non-empty segment.
     pub fn extend_single(&self, extension: impl AsRef<str>) -> Option<Self>
@@ -165,7 +177,7 @@ impl LoadablePath
 
     fn extend_inner(extension: &str, path: &mut SmallVec<[SmolStr; 10]>)
     {
-        for path_element in extension.split(LOADABLE_PATH_SEPARATOR) {
+        for path_element in extension.split(SCENE_PATH_SEPARATOR) {
             if path_element.is_empty() {
                 continue;
             }
@@ -175,7 +187,7 @@ impl LoadablePath
 
     fn parse_single_inner(extension: &str) -> Option<&str>
     {
-        let mut segments = extension.split(LOADABLE_PATH_SEPARATOR);
+        let mut segments = extension.split(SCENE_PATH_SEPARATOR);
         let first_segment = segments.next()?;
         if first_segment.is_empty() {
             return None;
@@ -188,7 +200,7 @@ impl LoadablePath
     }
 }
 
-impl Default for LoadablePath
+impl Default for ScenePath
 {
     fn default() -> Self
     {
@@ -205,32 +217,32 @@ impl Default for LoadablePath
 /// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
 /// asset.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
-pub struct LoadableRef
+pub struct SceneRef
 {
-    /// See [`LoadableFile`].
-    pub file: LoadableFile,
-    /// See [`LoadablePath`].
-    pub path: LoadablePath,
+    /// See [`SceneFile`].
+    pub file: SceneFile,
+    /// See [`ScenePath`].
+    pub path: ScenePath,
 }
 
-impl LoadableRef
+impl SceneRef
 {
-    /// Creates a new loadable reference from a file name.
+    /// Creates a new scene reference from a file name.
     pub fn from_file(file: impl AsRef<str>) -> Self
     {
         Self::new(file.as_ref(), "")
     }
 
-    /// Creates a new loadable reference from a file name and path.
+    /// Creates a new scene reference from a file name and path.
     pub fn new(file: impl AsRef<str>, path: impl AsRef<str>) -> Self
     {
         Self {
-            file: LoadableFile::new(file.as_ref()),
-            path: LoadablePath::new(path),
+            file: SceneFile::new(file.as_ref()),
+            path: ScenePath::new(path),
         }
     }
 
-    /// Extends an existing loadable reference with a path extension.
+    /// Extends an existing scene reference with a path extension.
     pub fn extend(&self, extension: impl AsRef<str>) -> Self
     {
         Self {

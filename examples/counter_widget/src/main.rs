@@ -83,7 +83,7 @@ impl UiContext for CounterWidget
 #[derive(Default)]
 struct CounterWidgetBuilder
 {
-    spec: Option<LoadableRef>,
+    spec: Option<SceneRef>,
     pre_text: Option<String>,
     post_text: Option<String>,
 }
@@ -97,7 +97,7 @@ impl CounterWidgetBuilder
     }
 
     /// Sets the path where the widget specification should be loaded from.
-    fn spec(mut self, spec: LoadableRef) -> Self
+    fn spec(mut self, spec: SceneRef) -> Self
     {
         self.spec = spec.into();
         self
@@ -118,9 +118,9 @@ impl CounterWidgetBuilder
     }
 
     /// Returns a reference to the default counter widget file.
-    fn default_file() -> LoadableRef
+    fn default_file() -> SceneFile
     {
-        LoadableRef::from_file("widgets.counter")
+        SceneFile::new("widgets.counter")
     }
 
     /// Builds the widget on an entity.
@@ -167,7 +167,7 @@ impl CounterWidgetBuilder
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = LoadableRef::from_file("examples.counter_widget");
+    let file = SceneFile::new("examples.counter_widget");
     let scene = file.e("root");
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
