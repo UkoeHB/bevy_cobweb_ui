@@ -6,6 +6,7 @@
 - Rename `LoadableFile`/`LoadablePath`/`LoadableRef` to `SceneFile`/`ScenePath`/`SceneRef`.
 - Fix bug with hot-reloading scene nodes not taking into account non-loaded sibling entities in the entity hierarchy.
 - Optimize importing constants in cobweb asset files.
+- Optimize importing specs in cobweb asset files.
 
 ## 0.2.0
 

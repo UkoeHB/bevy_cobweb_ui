@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use serde_json::{Map, Value};
 use smallvec::SmallVec;
@@ -51,14 +52,13 @@ impl InsertValues
 
 //-------------------------------------------------------------------------------------------------------------------
 
-//todo: store values in Arcs so cloning of the spec is cheap
 #[derive(Default, Debug, Clone)]
 struct SpecData
 {
     /// [ param key : { saved value, cached temp override value, flag indicating the param was used } ]
-    params: HashMap<SmolStr, (Option<Value>, Option<Value>, bool)>,
+    params: HashMap<SmolStr, (Option<Arc<Value>>, Option<Value>, bool)>,
     /// The unresolved value of this spec.
-    content: Value,
+    content: Arc<Value>,
 }
 
 impl SpecData
@@ -67,7 +67,7 @@ impl SpecData
     {
         let mut spec = Self::default();
         spec.update_from_specs_override(file, spec_invocation, map);
-        if spec.content == Value::Null {
+        if *spec.content == Value::Null {
             tracing::warn!("new spec {} defined in {:?} has no content", spec_invocation, file);
         }
         spec
@@ -106,12 +106,12 @@ impl SpecData
     {
         for (key, value) in map.iter_mut() {
             if key == SPEC_CONTENT_SYMBOL {
-                if self.content != Value::Null {
+                if *self.content != Value::Null {
                     tracing::warn!("ignoring content in {:?} for spec {} that already has content",
                         file, spec_invocation);
                     continue;
                 }
-                self.content = value.take();
+                self.content = Arc::new(value.take());
             } else if key.starts_with(SPEC_PARAMETER_MARKER) {
                 match self.params.contains_key(key.as_str()) {
                     true => {
@@ -119,7 +119,7 @@ impl SpecData
                         match merge_params {
                             true => {
                                 // This overwrites the previous value.
-                                *saved_param = Some(value.take());
+                                *saved_param = Some(Arc::new(value.take()));
                             }
                             false => {
                                 *temp_param = Some(value.take());
@@ -129,7 +129,7 @@ impl SpecData
                     false => match merge_params {
                         true => {
                             self.params
-                                .insert(key.into(), (Some(value.take()), None, false));
+                                .insert(key.into(), (Some(Arc::new(value.take())), None, false));
                         }
                         false => {
                             self.params
@@ -373,7 +373,11 @@ impl SpecData
                     return;
                 };
 
-                let Some(next_value) = temp.as_ref().or_else(|| saved.as_ref()).cloned() else {
+                let Some(next_value) = temp
+                    .as_ref()
+                    .cloned()
+                    .or_else(|| saved.as_ref().map(|s| (**s).clone()))
+                else {
                     tracing::error!("failed setting param {} in {:?} while resolving a spec, the spec values for this param \
                         are unexpectedly missing", value, file);
                     return;
@@ -399,9 +403,9 @@ impl SpecData
         self.extract_specs(file, spec_invocation, overrides, &mut inserts, true);
 
         // Insert cached insertions to the spec.
-        let mut content = self.content.take();
+        let mut content = (*self.content).clone();
         self.apply_insertions_to_spec_content(file, &mut content, &mut inserts);
-        self.content = content;
+        self.content = Arc::new(content);
 
         // Validate that provided insertions were used.
         for (unused_insert_key, _) in inserts.iter_unused_values() {
@@ -426,7 +430,7 @@ impl SpecData
         };
 
         // Write the spec to the value and apply params/inserts.
-        *value = self.content.clone();
+        *value = (*self.content).clone();
         self.recursively_resolve_spec_content(file, value, &mut inserts, false);
 
         // Cleanup

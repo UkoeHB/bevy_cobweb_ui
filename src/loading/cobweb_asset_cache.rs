@@ -469,9 +469,7 @@ impl CobwebAssetCache
         for (dependency, alias) in preprocessed.imports.iter() {
             let processed = self.processed.get(dependency).unwrap();
 
-            for (k, v) in processed.using.iter() {
-                name_shortcuts.insert(k, v);
-            }
+            name_shortcuts.extend(processed.using.iter());
             constants_buff.append(alias, &processed.constants_buff);
             specs.import_specs(dependency, &preprocessed.file, &processed.specs);
         }
