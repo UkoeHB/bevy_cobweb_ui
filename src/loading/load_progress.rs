@@ -85,6 +85,9 @@ impl LoadProgress
     ///
     /// The total number of assets should be considered an approximation, since for efficiency asset managers may
     /// double-count some assets.
+    ///
+    /// Also note that total loaded assets may be higher than expected due to assets that were loaded manually, or
+    /// due to embedded assets loaded automatically (e.g. built-in widgets from this crate).
     pub fn loading_progress(&self) -> (usize, usize)
     {
         (self.pending, self.total)
