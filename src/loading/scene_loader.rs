@@ -10,6 +10,35 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn find_loadable_child_pos(world: &World, parent_entity: Entity, new_index: usize) -> usize
+{
+    let mut count = 0;
+    let children = world.get::<Children>(parent_entity);
+    let num_children = children.map(|c| c.len()).unwrap_or_default();
+    let calculated_position = world
+        .get::<Children>(parent_entity)
+        .and_then(|c| {
+            c.iter().position(|entity| {
+                // Skip children without loadables.
+                if !world.get::<HasLoadables>(*entity).is_some() {
+                    return false;
+                }
+
+                if count < new_index {
+                    count += 1;
+                    return false;
+                }
+
+                true
+            })
+        })
+        .unwrap_or(num_children);
+
+    std::cmp::min(calculated_position, new_index)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) enum SceneLayerInsertionResult<'a>
 {
     #[cfg(feature = "hot_reload")]
@@ -381,8 +410,7 @@ impl SceneLoader
             let root_entity = scene_instance.root_entity();
             let inserted_inner = inserted.clone();
             c.add(move |world: &mut World| {
-                let num_children = world.get::<Children>(parent_entity).map(|c| c.len()).unwrap_or_default();
-                let position = std::cmp::min(num_children, insertion_index);
+                let position = find_loadable_child_pos(world, parent_entity, insertion_index);
 
                 let Some(mut ec) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
@@ -446,8 +474,7 @@ impl SceneLoader
             let root_entity = scene_instance.root_entity();
             let moved = moved.clone();
             c.add(move |world: &mut World| {
-                let num_children = world.get::<Children>(parent_entity).map(|c| c.len()).unwrap_or_default();
-                let position = std::cmp::min(num_children, new_index);
+                let position = find_loadable_child_pos(world, parent_entity, new_index);
 
                 let Some(mut ec) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's

@@ -4,6 +4,7 @@
 
 - Update to `bevy_cobweb` v0.11.
 - Rename `LoadableFile`/`LoadablePath`/`LoadableRef` to `SceneFile`/`ScenePath`/`SceneRef`.
+- Fix bug with hot-reloading scene nodes not taking into account non-loaded sibling entities in the entity hierarchy.
 
 ## 0.2.0
 
