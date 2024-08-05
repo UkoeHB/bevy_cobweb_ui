@@ -1,5 +1,9 @@
 # Changelog
 
+## WIP
+
+- Update to `bevy_cobweb` v0.11.
+
 ## 0.2.0
 
 - Register `DisplayControl` for reflection.
