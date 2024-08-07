@@ -10,7 +10,7 @@ Provides a framework for building UI and managing assets in a Bevy app. Built on
 - Robust localization support for text, fonts, images, and audio, with extensibility to other assets. See the [`localization`](bevy_cobweb_ui::localization) module.
 - Asset manager resources that keep track of asset handles, take care of localization automatically, and are easily populated using asset manifests specified in cobweb asset files. See the [`assets_ext`](bevy_cobweb_ui::assets_ext) module.
 - Wrappers around `bevy_ui` for loading UI into scenes via cobweb asset files. See the [`ui_bevy`](bevy_cobweb_ui::ui_bevy) module.
-- Built-in UI widgets. See the [widgets](bevy_cobweb_ui::widgets) module. Note that the `widgets` feature is enabled by default.
+- Built-in UI widgets and collor palettes. See the [builtin](bevy_cobweb_ui::builtin) module. Note that the `widgets` and `colors` features are enabled by default.
 
 
 ## Getting Started

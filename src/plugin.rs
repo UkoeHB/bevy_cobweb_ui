@@ -22,7 +22,7 @@ impl Plugin for CobwebUiPlugin
             panic!("failed building CobwebUiPlugin, sickle_ui::prelude::SickleUiPlugin is missing");
         }
 
-        app.add_plugins(BuiltinAssetsPlugin)
+        app.add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)
             .add_plugins(LoadingPlugin)
@@ -30,11 +30,6 @@ impl Plugin for CobwebUiPlugin
             .add_plugins(SickleExtPlugin)
             .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin);
-
-        #[cfg(feature = "widgets")]
-        {
-            app.add_plugins(crate::widgets::CobwebWidgetsPlugin);
-        }
     }
 }
 

@@ -4,10 +4,10 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::window::{PresentMode, PrimaryWindow, WindowTheme};
 use bevy_cobweb::prelude::*;
+use bevy_cobweb_ui::builtin::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::prelude::*;
 use bevy_cobweb_ui::sickle::SickleUiPlugin;
-use bevy_cobweb_ui::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 
 //-------------------------------------------------------------------------------------------------------------------
 

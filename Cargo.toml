@@ -34,10 +34,13 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 
 [features]
 # Default features.
-default = ["widgets"]
+default = ["colors", "widgets"]
+
+# Enables built-in colors.
+colors = []
 
 # Enables built-in widgets.
-widgets = []
+widgets = ["colors"]
 
 # Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.
 hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]

@@ -1,0 +1,10 @@
+{
+"#manifest": {
+    "": "builtin.colors"
+},
+"#import": {
+    "builtin.colors.basic": "",
+    "builtin.colors.css": "",
+    "builtin.colors.tailwind": ""
+}
+}

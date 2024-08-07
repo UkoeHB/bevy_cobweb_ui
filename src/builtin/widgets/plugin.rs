@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 
-use crate::widgets::*;
+use crate::builtin::widgets::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct CobwebWidgetsPlugin;
+pub(crate) struct BuiltinWidgetsPlugin;
 
-impl Plugin for CobwebWidgetsPlugin
+impl Plugin for BuiltinWidgetsPlugin
 {
     fn build(&self, app: &mut App)
     {

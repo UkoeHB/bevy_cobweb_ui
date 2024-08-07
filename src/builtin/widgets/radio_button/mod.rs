@@ -5,7 +5,7 @@ use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
 use smallvec::SmallVec;
 
-use crate::load_embedded_widget;
+use crate::load_embedded_scene_file;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ impl Plugin for CobwebRadioButtonPlugin
 {
     fn build(&self, app: &mut App)
     {
-        load_embedded_widget!(app, "bevy_cobweb_ui", "src/widgets/radio_button", "radio_button.caf.json");
+        load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button", "radio_button.caf.json");
         app.add_plugins(ComponentThemePlugin::<RadioButton>::new());
     }
 }

@@ -726,15 +726,15 @@ impl Plugin for MyWidgetsPlugin
     fn build(&self, app: &mut App)
     {
         // Load constants reference.
-        load_embedded_widget!(app, "my_widget_crate", "src/widgets", "global_constants_ref.caf.json");
+        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants_ref.caf.json");
 
         // Conditionally load re-export shim.
         if self.with_default_constants {
-            load_embedded_widget!(app, "my_widget_crate", "src/widgets", "global_constants.caf.json");
+            load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants.caf.json");
         }
 
         // Load widget.
-        load_embedded_widget!(app, "my_widget_crate", "src/widgets/example_widget", "example_widget.caf.json");
+        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets/example_widget", "example_widget.caf.json");
     }
 }
 ```

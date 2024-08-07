@@ -4,9 +4,9 @@
 #[allow(unused_imports)]
 use crate as bevy_cobweb_ui;
 
-mod assets;
 pub mod assets_ext;
 pub mod bevy_ext;
+pub mod builtin;
 pub mod loading;
 pub mod localization;
 mod plugin;
@@ -14,9 +14,6 @@ pub mod react_ext;
 pub mod sickle_ext;
 pub mod tools;
 pub mod ui_bevy;
-
-#[cfg(feature = "widgets")]
-pub mod widgets;
 
 pub mod sickle
 {
@@ -28,7 +25,6 @@ pub mod prelude
 {
     pub use bevy_cobweb_ui_derive::*;
 
-    pub(crate) use crate::assets::*;
     pub use crate::assets_ext::*;
     pub use crate::bevy_ext::*;
     pub use crate::loading::*;
