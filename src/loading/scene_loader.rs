@@ -10,6 +10,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[cfg(feature = "hot_reload")]
 fn find_loadable_child_pos(world: &World, parent_entity: Entity, new_index: usize) -> usize
 {
     let mut count = 0;

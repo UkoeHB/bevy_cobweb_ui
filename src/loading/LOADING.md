@@ -568,7 +568,7 @@ The `my_big_button` scene will have an inner text entity with `100.0` size font.
 
 You can import `#using`, `#constants`, and `#specs` sections from other files with the `#import` keyword.
 
-Add the `#import` section to the base map in a file. It should be a map between file names and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec requests that are inside spec content.
+Add the `#import` section to the base map in a file. It should be a map between file names or manifest keys and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec requests that are inside spec content.
 
 ```json
 // my_constants.caf.json
@@ -595,7 +595,7 @@ Add the `#import` section to the base map in a file. It should be a map between 
 }
 ```
 
-Imports will be implicitly treated as manifests (see the next section), but *without* manifest keys. You can have a file in multiple manifest and import sections.
+If you import a file name explicitly, then it will be treated as a 'manifest request' and the file will be automatically loaded (but the file *won't* have a manifest key assigned to it). You can have a file in multiple manifest and import sections.
 
 #### Transitive loading: `#manifest`
 
@@ -652,5 +652,137 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 
     // Load demo scene
     c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
+}
+```
+
+
+### Overriding imports
+
+When using widgets defined in third-party libraries, it is useful to customize the global theming/styling of those widgets so individual widgets don't need to be manually overridden. Similarly, it is useful to customize the theming/styling of a *class* of widgets without overriding individual specs.
+
+We enable global customization through import overrides. Since it is allowed to import via manifest key, we can 'swap' the file that a manifest key points to at runtime.
+
+#### Example
+
+**Widget crate**
+
+Define a reference file for the global constants:
+
+`embedded://my_widget_crate/global_constants_ref.caf.json`
+```json
+{
+"#manifest": {
+    "": "builtin.global_constants_ref",
+},
+"#constants": {
+    "$constant_a": 10,
+    "$constant_b": 20,
+}
+}
+```
+
+Add a re-export shim that will be used by default:
+
+`embedded://my_widget_crate/global_constants.caf.json`
+```json
+{
+"#manifest": {
+    "": "builtin.global_constants",
+},
+"#import": {
+    "builtin.global_constants_ref": ""
+}
+}
+```
+
+Write your built-in widget:
+
+`embedded://my_widget_crate/example_widget.caf.json`
+```json
+{
+"#manifest": {
+    "": "builtin.widgets.example_widget"
+},
+"#import": {
+    "builtin.global_constants": "glob"
+},
+
+"scene": {
+    "DataA": "$glob::constant_a",
+    "DataB": "$glob::constant_b"
+}
+}
+```
+
+Add a plugin for importing your widgets:
+```rust
+pub struct MyWidgetsPlugin
+{
+    pub with_default_constants: bool
+}
+
+impl Plugin for MyWidgetsPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        // Load constants reference.
+        load_embedded_widget!(app, "my_widget_crate", "src/widgets", "global_constants_ref.caf.json");
+
+        // Conditionally load re-export shim.
+        if self.with_default_constants {
+            load_embedded_widget!(app, "my_widget_crate", "src/widgets", "global_constants.caf.json");
+        }
+
+        // Load widget.
+        load_embedded_widget!(app, "my_widget_crate", "src/widgets/example_widget", "example_widget.caf.json");
+    }
+}
+```
+
+**User-land crate**
+
+Write your override for the external crate's constants. In this example we override only one of the original file's constants. Note that to override a constant you *can't* use an import alias for the file where the values to override originate.
+
+`global_constants_override.caf.json`
+```json
+{
+"#manifest": {
+    "": "builtin.global_constants"
+},
+"#import": {
+    "builtin.global_constants_ref": ""
+},
+"#constants": {
+    "constant_a": 42
+}
+}
+```
+
+Setup your app, configuring `MyWidgetsPlugin` not to use default constants:
+
+```rust
+pub struct MyAppPlugin;
+
+impl Plugin for MyAppPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app
+            .add_plugins(ReactPlugin)
+            .add_plugins(CobwebUiPlugin)
+            .add_plugins(my_widget_crate::MyWidgetsPlugin{ with_default_constants: false })
+            .load("global_constants_override.caf.json")
+            .add_systems(OnEnter(LoadState::Done), build_scene);
+    }
+}
+```
+
+Now when you load the built-in widget, it will use your override for `constant_a`, and the original value of `constant_b`.
+
+```rust
+fn build_scene(mut c: Commands, mut s: ResMut<SceneLoader>)
+{
+    let scene = SceneRef::new("builtin.widgets.example_widget", "scene");
+    c.load_scene(&mut s, scene, |_|{});
 }
 ```

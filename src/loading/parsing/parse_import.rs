@@ -27,11 +27,6 @@ pub(crate) fn extract_import_section(
             continue;
         };
 
-        if !SceneFile::str_is_file_path(import) {
-            tracing::error!("ignoring import entry in {:?} that does not have a valid file path {:?}",
-                file, import.as_str());
-            continue;
-        }
         imports.push((import.clone(), alias.as_str().into()));
     }
 }

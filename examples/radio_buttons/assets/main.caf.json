@@ -5,7 +5,7 @@
 },
 
 "#import": {
-    "bevy_cobweb_ui/radio_button.caf.json": ""
+    "builtin.widgets.radio_button": ""
 },
 
 "scene": {

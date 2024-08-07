@@ -1,5 +1,9 @@
 # Changelog
 
+## WIP
+
+- Add importing via manifest key to cobweb asset file syntax.
+
 ## 0.3.0
 
 - Update to `bevy_cobweb` v0.11.

@@ -49,13 +49,25 @@ pub(crate) fn preprocess_caf_file(
     //   duplication/race conditions/complexity between manifest loading and imports.
     // - NOTE: We start with String keys and then convert to SceneFiles because files may target a specific asset
     //   loader (e.g. `embedded://my_file.caf.json`), but we strip that information when converting to a SceneFile.
-    for (file, manifest_key) in manifest
+    for (file, scenefile, manifest_key) in manifest
         .drain()
-        .map(|(f, m)| (f, Some(m)))
-        .chain(imports.drain(..).map(|(k, _)| (k, None)))
+        .map(|(f, m)| {
+            let scenefile = SceneFile::new(f.as_str());
+            (f, scenefile, Some(m))
+        })
+        .chain(
+            imports
+                .drain(..)
+                .map(|(k, _)| {
+                    let scenefile = SceneFile::new(k.as_str());
+                    (k, scenefile, None)
+                })
+                // Don't try to load imported manifest keys.
+                .filter(|(_, scenefile, _)| scenefile.is_file_path()),
+        )
     {
         // Continue if this file has been registered before.
-        if !caf_cache.register_manifest_key(SceneFile::new(file.as_str()), manifest_key) {
+        if !caf_cache.register_manifest_key(scenefile, manifest_key) {
             continue;
         }
 

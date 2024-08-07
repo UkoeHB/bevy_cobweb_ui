@@ -1,6 +1,6 @@
 {
 "#import": {
-    "bevy_cobweb_ui/radio_button.caf.json": "radio_button"
+    "builtin.widgets.radio_button": "radio_button"
 },
 
 "#constants": {

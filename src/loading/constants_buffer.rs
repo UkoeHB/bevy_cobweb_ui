@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::Value;
+use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -19,7 +20,7 @@ type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, Value>>;
 #[derive(Default, Debug)]
 pub(crate) struct ConstantsBuffer
 {
-    stack: Vec<(SmolStr, Arc<ConstantsMap>)>,
+    stack: SmallVec<[(SmolStr, Arc<ConstantsMap>); 5]>,
     new_file: ConstantsMap,
 }
 

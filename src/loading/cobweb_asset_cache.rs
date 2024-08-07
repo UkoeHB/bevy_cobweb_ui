@@ -153,6 +153,7 @@ struct PreprocessedSceneFile
     /// This file.
     file: SceneFile,
     /// Imports for detecting when a re-load is required.
+    /// - Can include both manifest keys and file paths.
     imports: HashMap<SceneFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
     data: Map<String, Value>,
@@ -170,6 +171,7 @@ struct ProcessedSceneFile
     /// Specs that can be imported into other files.
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
+    /// - Can include both manifest keys and file paths.
     #[cfg(feature = "hot_reload")]
     imports: HashMap<SceneFile, SmolStr>,
     /// Data cached for re-loading when dependencies are reloaded.
@@ -425,18 +427,21 @@ impl CobwebAssetCache
         //   by seeing if there are any pending files remaining. Once all pending files are loaded, if a file fails
         //   to process that implies it has circular dependencies.
         for import in imports.keys() {
+            // If manifest key, try to convert.
+            let Some(import) = self.manifest_map().get(import) else { continue };
+
             // Check if pending.
-            if self.pending.contains(import) {
+            if self.pending.contains(&import) {
                 continue;
             }
 
             // Check if processed.
-            if self.processed.contains_key(import) {
+            if self.processed.contains_key(&import) {
                 continue;
             }
 
             // Check if preprocessed.
-            if self.preprocessed.iter().any(|p| p.file == *import) {
+            if self.preprocessed.iter().any(|p| p.file == import) {
                 continue;
             }
 
@@ -467,11 +472,12 @@ impl CobwebAssetCache
         let mut specs = SpecsMap::default();
 
         for (dependency, alias) in preprocessed.imports.iter() {
-            let processed = self.processed.get(dependency).unwrap();
+            let Some(dependency) = self.manifest_map().get(&dependency) else { continue };
+            let processed = self.processed.get(&dependency).unwrap();
 
             name_shortcuts.extend(processed.using.iter());
             constants_buff.append(alias, &processed.constants_buff);
-            specs.import_specs(dependency, &preprocessed.file, &processed.specs);
+            specs.import_specs(&dependency, &preprocessed.file, &processed.specs);
         }
 
         // Prepare to process the file.
@@ -507,10 +513,21 @@ impl CobwebAssetCache
         // Check for already-processed files that need to rebuild since they depend on this file.
         #[cfg(feature = "hot_reload")]
         {
+            let preprocessed_manifest_key = self
+                .file_to_manifest_key
+                .get(&preprocessed.file)
+                .cloned()
+                .flatten()
+                .map(|m| SceneFile::ManifestKey(m));
             let needs_rebuild: Vec<SceneFile> = self
                 .processed
                 .iter()
                 .filter_map(|(file, processed)| {
+                    if let Some(manifest_key) = &preprocessed_manifest_key {
+                        if processed.imports.contains_key(&manifest_key) {
+                            return Some(file.clone());
+                        }
+                    }
                     if processed.imports.contains_key(&preprocessed.file) {
                         return Some(file.clone());
                     }
@@ -547,13 +564,17 @@ impl CobwebAssetCache
 
             for preprocessed in preprocessed.drain(..) {
                 // Check if dependencies are ready.
-                if preprocessed
-                    .imports
-                    .keys()
-                    .any(|i| !self.processed.contains_key(i))
                 {
-                    self.preprocessed.push(preprocessed);
-                    continue;
+                    let manifest_map = self.manifest_map.lock().unwrap();
+                    if preprocessed
+                        .imports
+                        .keys()
+                        .map(|i| manifest_map.get(i).unwrap_or_else(|| i.clone()))
+                        .any(|i| !self.processed.contains_key(&i))
+                    {
+                        self.preprocessed.push(preprocessed);
+                        continue;
+                    }
                 }
 
                 self.process_cobweb_asset_file(preprocessed, type_registry, c, scene_loader);
@@ -566,11 +587,11 @@ impl CobwebAssetCache
             }
         }
 
-        // Check for circular dependencies.
+        // Check for failed loads.
         if self.pending.is_empty() && !self.preprocessed.is_empty() {
             for preproc in self.preprocessed.drain(..) {
-                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it probably has a \
-                    dependency cycle; fix the cycle and restart your app", preproc.file.as_str());
+                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it either has a \
+                    dependency cycle or tries to import unknown manifest keys", preproc.file.as_str());
             }
         }
 
