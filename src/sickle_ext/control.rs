@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use smol_str::SmolStr;
 
-//use smol_str::SmolStr;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -12,21 +12,19 @@ use crate::prelude::*;
 ///
 /// Children of the root node can be accessed through their [`ControlLabels`](ControlLabel) using
 /// [`ControlBuilderExt::edit_child`].
-//todo: use SmolStr in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
 #[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ControlRoot(pub String);
+pub struct ControlRoot(pub SmolStr);
 
 impl ControlRoot
 {
     /// Makes a control root from a static string.
     pub fn new(label: &'static str) -> Self
     {
-        //Self(SmolStr::new_static(label))
-        Self(String::from(label))
+        Self(SmolStr::new_static(label))
     }
 }
 
-impl<T: Into<String>> From<T> for ControlRoot
+impl<T: Into<SmolStr>> From<T> for ControlRoot
 {
     fn from(string: T) -> Self
     {
@@ -59,21 +57,19 @@ impl ApplyLoadable for ControlRoot
 ///
 /// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
 /// loadables.
-//todo: use SmolStr in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ControlLabel(pub String);
+pub struct ControlLabel(pub SmolStr);
 
 impl ControlLabel
 {
     /// Makes a label from a static string.
     pub fn new(label: &'static str) -> Self
     {
-        //Self(SmolStr::new_static(label))
-        Self(String::from(label))
+        Self(SmolStr::new_static(label))
     }
 }
 
-impl<T: Into<String>> From<T> for ControlLabel
+impl<T: Into<SmolStr>> From<T> for ControlLabel
 {
     fn from(string: T) -> Self
     {
@@ -130,7 +126,9 @@ impl Plugin for ControlPlugin
     fn build(&self, app: &mut App)
     {
         app.register_derived::<ControlRoot>()
-            .register_derived::<ControlLabel>();
+            .register_derived::<ControlLabel>()
+            //todo: remove in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
+            .register_type_data::<SmolStr, ReflectDeserialize>();
     }
 }
 

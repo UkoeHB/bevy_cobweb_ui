@@ -47,8 +47,8 @@ fn add_attribute_to_dynamic_style(
 fn add_attribute(
     In((entity, source, target, state, attribute)): In<(
         Entity,
-        Option<String>,
-        Option<String>,
+        Option<SmolStr>,
+        Option<SmolStr>,
         Option<SmallVec<[PseudoState; 3]>>,
         DynamicStyleAttribute,
     )>,
@@ -63,8 +63,6 @@ fn add_attribute(
     if !entities.contains(entity) {
         return;
     }
-    let source = source.map(|s| SmolStr::from(s));
-    let target = target.map(|s| SmolStr::from(s));
 
     // Get the current entity's control label.
     let Ok(label) = labels.get(entity) else {
@@ -103,7 +101,7 @@ fn add_attribute(
     for ancestor in parents.iter_ancestors(entity) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
         // Target falls back to self.
-        let target = target.or_else(|| Some(SmolStr::from(label.deref().as_str())));
+        let target = target.or_else(|| Some(label.deref().clone()));
         control_map.set_attribute(state, source, target, attribute);
         return;
     }
@@ -219,7 +217,7 @@ where
     ///
     /// If `None`, then the value will be applied to the current entity.
     #[reflect(default)]
-    pub target: Option<String>,
+    pub target: Option<SmolStr>,
 }
 
 impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
@@ -265,12 +263,12 @@ where
     /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
-    pub source: Option<String>,
+    pub source: Option<SmolStr>,
     /// The [`ControlLabel`] of an entity in the current widget. The value will be applied to that entity.
     ///
     /// If `None`, then the value will be applied to the current entity.
     #[reflect(default)]
-    pub target: Option<String>,
+    pub target: Option<SmolStr>,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
@@ -318,12 +316,12 @@ where
     /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
-    pub source: Option<String>,
+    pub source: Option<SmolStr>,
     /// The [`ControlLabel`] of an entity in the current widget. The value will be applied to that entity.
     ///
     /// If `None`, then the value will be applied to the current entity.
     #[reflect(default)]
-    pub target: Option<String>,
+    pub target: Option<SmolStr>,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
