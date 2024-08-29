@@ -15,17 +15,6 @@ fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands)
     c.entity(entity).remove_pseudo_state(PseudoState::Disabled);
 }
 
-struct DetectEnableReactor;
-impl WorldReactor for DetectEnableReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Enable>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_enable_reactor)
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands)
@@ -33,17 +22,6 @@ fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands)
     let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Disabled);
     c.entity(entity).remove_pseudo_state(PseudoState::Enabled);
-}
-
-struct DetectDisableReactor;
-impl WorldReactor for DetectDisableReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Disable>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_disable_reactor)
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -54,34 +32,12 @@ fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
     c.entity(entity).add_pseudo_state(PseudoState::Selected);
 }
 
-struct DetectSelectReactor;
-impl WorldReactor for DetectSelectReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Select>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_select_reactor)
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 {
     let entity = event.entity();
     c.entity(entity).remove_pseudo_state(PseudoState::Selected);
-}
-
-struct DetectDeselectReactor;
-impl WorldReactor for DetectDeselectReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Deselect>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_deselect_reactor)
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -92,34 +48,12 @@ fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
     c.entity(entity).add_pseudo_state(PseudoState::Checked);
 }
 
-struct DetectCheckReactor;
-impl WorldReactor for DetectCheckReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Check>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_check_reactor)
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 {
     let entity = event.entity();
     c.entity(entity).remove_pseudo_state(PseudoState::Checked);
-}
-
-struct DetectUncheckReactor;
-impl WorldReactor for DetectUncheckReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Uncheck>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_uncheck_reactor)
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -131,17 +65,6 @@ fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
     c.entity(entity).remove_pseudo_state(PseudoState::Closed);
 }
 
-struct DetectOpenReactor;
-impl WorldReactor for DetectOpenReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Open>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_open_reactor)
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
@@ -149,17 +72,6 @@ fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
     let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Closed);
     c.entity(entity).remove_pseudo_state(PseudoState::Open);
-}
-
-struct DetectCloseReactor;
-impl WorldReactor for DetectCloseReactor
-{
-    type StartingTriggers = AnyEntityEventTrigger<Close>;
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_close_reactor)
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -311,14 +223,14 @@ impl Plugin for PseudoStatesExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_reactor_with(DetectEnableReactor, any_entity_event::<Enable>());
-        app.add_reactor_with(DetectDisableReactor, any_entity_event::<Disable>());
-        app.add_reactor_with(DetectSelectReactor, any_entity_event::<Select>());
-        app.add_reactor_with(DetectDeselectReactor, any_entity_event::<Deselect>());
-        app.add_reactor_with(DetectCheckReactor, any_entity_event::<Check>());
-        app.add_reactor_with(DetectUncheckReactor, any_entity_event::<Uncheck>());
-        app.add_reactor_with(DetectOpenReactor, any_entity_event::<Open>());
-        app.add_reactor_with(DetectCloseReactor, any_entity_event::<Close>());
+        app.add_simple_reactor(any_entity_event::<Enable>(), detect_enable_reactor);
+        app.add_simple_reactor(any_entity_event::<Disable>(), detect_disable_reactor);
+        app.add_simple_reactor(any_entity_event::<Select>(), detect_select_reactor);
+        app.add_simple_reactor(any_entity_event::<Deselect>(), detect_deselect_reactor);
+        app.add_simple_reactor(any_entity_event::<Check>(), detect_check_reactor);
+        app.add_simple_reactor(any_entity_event::<Uncheck>(), detect_uncheck_reactor);
+        app.add_simple_reactor(any_entity_event::<Open>(), detect_open_reactor);
+        app.add_simple_reactor(any_entity_event::<Close>(), detect_close_reactor);
     }
 }
 
