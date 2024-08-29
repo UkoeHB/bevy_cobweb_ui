@@ -1,9 +1,6 @@
-use std::any::type_name;
-
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
-use smallvec::SmallVec;
 
 use crate::load_embedded_scene_file;
 use crate::prelude::*;
@@ -45,44 +42,13 @@ impl RadioButtonManager
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(TypeName)]
+pub struct RadioButton;
+#[derive(TypeName)]
 pub struct RadioButtonIndicator;
 #[derive(TypeName)]
 pub struct RadioButtonIndicatorDot;
 #[derive(TypeName)]
 pub struct RadioButtonContent;
-
-/// Marker component for the radio button theme.
-#[derive(Component, DefaultTheme, Clone, Debug)]
-pub struct RadioButton
-{
-    content_entity: Entity,
-    inner_entities: SmallVec<[(&'static str, Entity); 5]>,
-}
-
-impl UiContext for RadioButton
-{
-    fn get(&self, target: &str) -> Result<Entity, String>
-    {
-        match target {
-            RadioButtonContent::NAME => Ok(self.content_entity),
-            _ => {
-                let Some((_, entity)) = self.inner_entities.iter().find(|(name, _)| *name == target) else {
-                    return Err(format!("unknown UI context {target} for {}", type_name::<Self>()));
-                };
-                Ok(*entity)
-            }
-        }
-    }
-    fn contexts(&self) -> Vec<&'static str>
-    {
-        Vec::from_iter(
-            [RadioButtonContent::NAME]
-                .iter()
-                .map(|name| *name)
-                .chain(self.inner_entities.iter().map(|(name, _)| *name)),
-        )
-    }
-}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -235,7 +201,7 @@ impl RadioButtonBuilder
     /// use [`Self::build_with_themed_content`] instead.
     pub fn build<'a>(self, manager_entity: Entity, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
     {
-        self.build_with_themed_content(manager_entity, node, |_| SmallVec::default())
+        self.build_with_themed_content(manager_entity, node, |_| {})
     }
 
     /// Builds the button as a child of the builder entity, with custom themed content.
@@ -250,17 +216,15 @@ impl RadioButtonBuilder
         self,
         manager_entity: Entity,
         node: &'a mut UiBuilder<Entity>,
-        content_builder: impl FnOnce(&mut UiBuilder<Entity>) -> SmallVec<[(&'static str, Entity); 10]>,
+        content_builder: impl FnOnce(&mut UiBuilder<Entity>),
     ) -> UiBuilder<'a, Entity>
     {
         let scene = self.button_type.get_scene();
 
         let mut base_entity = Entity::PLACEHOLDER;
-        let mut content_entity = Entity::PLACEHOLDER;
-        let mut inner_entities = SmallVec::default();
 
-        node.load_with_theme::<RadioButton>(scene.e("base"), &mut base_entity, |base, path| {
-            let base_id = base.id();
+        node.load(scene.e("base"), |base, path| {
+            base_entity = base.id();
 
             // Setup behavior.
             base
@@ -268,13 +232,13 @@ impl RadioButtonBuilder
                 // TODO: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
                 .on_pressed(move |mut c: Commands, states: Query<&PseudoStates>| {
-                    if let Ok(states) = states.get(base_id) {
+                    if let Ok(states) = states.get(base_entity) {
                         if states.has(&PseudoState::Selected) {
                             return;
                         }
                     }
 
-                    c.react().entity_event(base_id, Select);
+                    c.react().entity_event(base_entity, Select);
                 })
                 // Save the newly-selected button and deselect the previously selected.
                 .on_select(move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {
@@ -282,75 +246,50 @@ impl RadioButtonBuilder
                     if let Some(prev) = manager.selected {
                         c.react().entity_event(prev, Deselect);
                     }
-                    manager.selected = Some(base_id);
+                    manager.selected = Some(base_entity);
                 });
 
             // Add a dot if requested. This dot will be before the content (to the right/bottom).
             if self.indicator == Indicator::Prime {
-                Self::add_indicator(base, &path, &mut inner_entities);
+                Self::add_indicator(base, &path);
             }
 
             // Add the content.
-            base.load_with_subtheme::<RadioButton, RadioButtonContent>(
-                path.e("content"),
-                &mut content_entity,
-                |content, _| {
-                    // Localize if necessary.
-                    if self.localized {
-                        content.insert(LocalizedText::default());
-                    }
+            base.load(path.e("content"), |content, _| {
+                // Localize if necessary.
+                if self.localized {
+                    content.insert(LocalizedText::default());
+                }
 
-                    // Add text if necessary.
-                    if let Some(text) = self.button_type.take_text() {
-                        // Note: The text needs to be updated on load otherwise it may be overwritten.
-                        content.update_on((), |id| {
-                            move |mut e: TextEditor| {
-                                e.write(id, |t| write!(t, "{}", text.as_str()));
-                            }
-                        });
-                    }
+                // Add text if necessary.
+                if let Some(text) = self.button_type.take_text() {
+                    // Note: The text needs to be updated on load otherwise it may be overwritten.
+                    content.update_on((), |id| {
+                        move |mut e: TextEditor| {
+                            e.write(id, |t| write!(t, "{}", text.as_str()));
+                        }
+                    });
+                }
 
-                    // Build contents.
-                    let content_entities = (content_builder)(content);
-                    inner_entities.extend(content_entities);
-                },
-            );
+                // Build contents.
+                (content_builder)(content);
+            });
 
             // Add a dot if requested. This dot will be after the content (to the right/bottom).
             if self.indicator == Indicator::Reversed {
-                Self::add_indicator(base, &path, &mut inner_entities);
+                Self::add_indicator(base, &path);
             }
-
-            base.insert(RadioButton { content_entity, inner_entities });
         });
 
         // Return UiBuilder for root of button where interactions will be detected.
         node.commands().ui_builder(base_entity)
     }
 
-    fn add_indicator(
-        node: &mut UiBuilder<Entity>,
-        path: &SceneRef,
-        inner_entities: &mut SmallVec<[(&'static str, Entity); 5]>,
-    )
+    fn add_indicator(node: &mut UiBuilder<Entity>, path: &SceneRef)
     {
-        let mut indicator_entity = Entity::PLACEHOLDER;
-        let mut indicator_dot_entity = Entity::PLACEHOLDER;
-
-        node.load_with_subtheme::<RadioButton, RadioButtonIndicator>(
-            path.e("indicator"),
-            &mut indicator_entity,
-            |outline, path| {
-                outline.load_with_subtheme::<RadioButton, RadioButtonIndicatorDot>(
-                    path.e("indicator_dot"),
-                    &mut indicator_dot_entity,
-                    |_, _| {},
-                );
-            },
-        );
-
-        inner_entities.push((RadioButtonIndicator::NAME, indicator_entity));
-        inner_entities.push((RadioButtonIndicatorDot::NAME, indicator_dot_entity));
+        node.load(path.e("indicator"), |outline, path| {
+            outline.load(path.e("indicator_dot"), |_, _| {});
+        });
     }
 }
 
@@ -363,7 +302,6 @@ impl Plugin for CobwebRadioButtonPlugin
     fn build(&self, app: &mut App)
     {
         load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button", "radio_button.caf.json");
-        app.add_plugins(ComponentThemePlugin::<RadioButton>::new());
     }
 }
 

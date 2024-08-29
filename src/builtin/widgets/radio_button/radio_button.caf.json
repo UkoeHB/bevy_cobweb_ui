@@ -27,6 +27,7 @@
 
         "*": {
             "base": {
+                "ControlRoot": ["RadioButton"],
                 "FlexStyle": {
                     "dims": {"!base_dims":{}},
                     "content": {
@@ -42,6 +43,7 @@
                 "!base":{},
 
                 "content": {
+                    "ControlLabel": ["RadioButtonContent"],
                     "FlexStyle": {
                         "dims": {"!content_dims":{}},
                         "content": {"!content_content":{}},
@@ -66,6 +68,7 @@
         "@indicator_internal_spacing": {"Px": 2.0},
         "!base": {
             "indicator": {
+                "ControlLabel": ["RadioButtonIndicator"],
                 "FlexStyle": {
                     "content": {"justify_main": "Center", "justify_cross": "Center"},
                     "flex": {"margin": "@indicator_outline_margin"}
@@ -76,6 +79,7 @@
                 "!indicator":{},
 
                 "indicator_dot": {
+                    "ControlLabel": ["RadioButtonIndicatorDot"],
                     "FlexStyle": {
                         "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"}
                     },

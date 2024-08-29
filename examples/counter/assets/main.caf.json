@@ -10,6 +10,7 @@
 
     "#c: Sets up a button with centered content, that animates its background in response to hovers/presses.":0,
     "button": {
+        "ControlRoot": ["ExampleButton"],
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
@@ -25,10 +26,10 @@
             }
         },
         "Interactive": [],
-        "PropagateControl": [],
 
         "#c: Sets up the button's text as a single line of text with margin to control the edges of the button.":0,
         "text": {
+            "ControlLabel": ["ExampleButtonText"],
             "FlexStyle": {
                 "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
             },
@@ -42,8 +43,7 @@
                 "settings": {
                     "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
                     "press": {"duration": 0.2, "easing": "OutExpo"}
-                },
-                "inherit_control": true
+                }
             }
         }
     }

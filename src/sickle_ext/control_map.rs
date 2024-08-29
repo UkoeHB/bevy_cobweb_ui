@@ -62,11 +62,6 @@ impl EditablePseudoTheme
         self.state == *state
     }
 
-    fn len(&self) -> usize
-    {
-        self.style.len()
-    }
-
     fn set_attribute(&mut self, attribute: CachedContextualAttribute)
     {
         // Merge attribute with existing list.
@@ -177,11 +172,6 @@ impl ControlMap
     fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_
     {
         self.entities.iter()
-    }
-
-    fn get_pseudo_theme(&self, states: &Option<SmallVec<[PseudoState; 3]>>) -> Option<&EditablePseudoTheme>
-    {
-        self.pseudo_themes.iter().find(|t| t.matches(states))
     }
 }
 

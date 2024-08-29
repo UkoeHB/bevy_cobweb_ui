@@ -6,8 +6,8 @@
 "#manifest": {
     "": "builtin.colors.css"
 },
+"#c: The CSS4 colors are a superset of the CSS1 colors, so we can just re-export the CSS1 colors.":0,
 "#import": {
-    "#c: The CSS4 colors are a superset of the CSS1 colors, so we can just re-export the CSS1 colors.":0,
     "builtin.colors.basic": ""
 },
 

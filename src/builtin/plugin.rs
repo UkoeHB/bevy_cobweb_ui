@@ -6,16 +6,16 @@ pub(crate) struct BuiltinPlugin;
 
 impl Plugin for BuiltinPlugin
 {
-    fn build(&self, app: &mut App)
+    fn build(&self, _app: &mut App)
     {
         #[cfg(feature = "assets")]
-        app.add_plugins(crate::builtin::assets::BuiltinAssetsPlugin);
+        _app.add_plugins(crate::builtin::assets::BuiltinAssetsPlugin);
 
         #[cfg(feature = "colors")]
-        app.add_plugins(crate::builtin::colors::BuiltinColorsPlugin);
+        _app.add_plugins(crate::builtin::colors::BuiltinColorsPlugin);
 
         #[cfg(feature = "widgets")]
-        app.add_plugins(crate::builtin::widgets::BuiltinWidgetsPlugin);
+        _app.add_plugins(crate::builtin::widgets::BuiltinWidgetsPlugin);
     }
 }
 

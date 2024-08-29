@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
 
+//use smol_str::SmolStr;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -12,8 +12,27 @@ use crate::prelude::*;
 ///
 /// Children of the root node can be accessed through their [`ControlLabels`](ControlLabel) using
 /// [`ControlBuilderExt::edit_child`].
+//todo: use SmolStr in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
 #[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ControlRoot(pub SmolStr);
+pub struct ControlRoot(pub String);
+
+impl ControlRoot
+{
+    /// Makes a control root from a static string.
+    pub fn new(label: &'static str) -> Self
+    {
+        //Self(SmolStr::new_static(label))
+        Self(String::from(label))
+    }
+}
+
+impl<T: Into<String>> From<T> for ControlRoot
+{
+    fn from(string: T) -> Self
+    {
+        Self(string.into())
+    }
+}
 
 impl ApplyLoadable for ControlRoot
 {
@@ -40,21 +59,25 @@ impl ApplyLoadable for ControlRoot
 ///
 /// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
 /// loadables.
+//todo: use SmolStr in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
-pub struct ControlLabel(pub SmolStr);
+pub struct ControlLabel(pub String);
 
 impl ControlLabel
 {
-    /// Makes a label.
-    pub fn new(label: impl Into<SmolStr>) -> Self
-    {
-        Self(label.into())
-    }
-
     /// Makes a label from a static string.
-    pub fn new_static(label: &'static str) -> Self
+    pub fn new(label: &'static str) -> Self
     {
-        Self(SmolStr::new_static(label))
+        //Self(SmolStr::new_static(label))
+        Self(String::from(label))
+    }
+}
+
+impl<T: Into<String>> From<T> for ControlLabel
+{
+    fn from(string: T) -> Self
+    {
+        Self(string.into())
     }
 }
 

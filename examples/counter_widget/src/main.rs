@@ -1,14 +1,11 @@
 //! Demonstrates building a counter with a custom widget using a cobweb asset file 'specification'.
 
-use std::any::type_name;
-
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::theme::{ComponentThemePlugin, DefaultTheme, UiContext};
 use bevy_cobweb_ui::sickle::ui_builder::*;
-use bevy_cobweb_ui::sickle::{DefaultTheme, SickleUiPlugin};
+use bevy_cobweb_ui::sickle::SickleUiPlugin;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -52,30 +49,10 @@ impl Counter
 
 //-------------------------------------------------------------------------------------------------------------------
 
+//#[derive(TypeName)]
+//struct CounterWidget;
 #[derive(TypeName)]
 struct CounterWidgetText;
-
-/// Marker type for the counter theme.
-#[derive(Component, DefaultTheme, Copy, Clone, Debug)]
-struct CounterWidget
-{
-    text_entity: Entity,
-}
-
-impl UiContext for CounterWidget
-{
-    fn get(&self, target: &str) -> Result<Entity, String>
-    {
-        match target {
-            CounterWidgetText::NAME => Ok(self.text_entity),
-            _ => Err(format!("unknown UI context {target} for {}", type_name::<Self>())),
-        }
-    }
-    fn contexts(&self) -> Vec<&'static str>
-    {
-        vec![CounterWidgetText::NAME]
-    }
-}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -134,29 +111,22 @@ impl CounterWidgetBuilder
             .unwrap_or_else(|| Self::default_file().e("counter_widget"));
 
         let mut core_entity = Entity::PLACEHOLDER;
-        let mut text_entity = Entity::PLACEHOLDER;
 
-        builder.load_with_theme::<CounterWidget>(button, &mut core_entity, |button, path| {
-            let button_id = button.id();
+        builder.load(button, |button, path| {
+            core_entity = button.id();
             button
                 .insert_reactive(Counter(0))
-                .on_released(Counter::increment(button_id));
+                .on_released(Counter::increment(core_entity));
 
-            button.load_with_subtheme::<CounterWidget, CounterWidgetText>(
-                path.e("text"),
-                &mut text_entity,
-                |text, _path| {
-                    text.update_on(
-                        (
-                            entity_event::<PressCanceled>(button_id),
-                            entity_mutation::<Counter>(button_id),
-                        ),
-                        |text_id| Counter::write(pre_text, post_text, button_id, text_id),
-                    );
-                },
-            );
-
-            button.insert(CounterWidget { text_entity });
+            button.load(path.e("text"), |text, _path| {
+                text.update_on(
+                    (
+                        entity_event::<PressCanceled>(core_entity),
+                        entity_mutation::<Counter>(core_entity),
+                    ),
+                    |text_id| Counter::write(pre_text, post_text, core_entity, text_id),
+                );
+            });
         });
 
         builder.commands().ui_builder(core_entity)
@@ -187,7 +157,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             .spec(file.e("counter_widget_responsive_text"))
             .pre_text("Text: ")
             .build(n)
-            .edit_child::<CounterWidget>(CounterWidgetText::NAME, |c, core, text| {
+            .edit_child(CounterWidgetText::NAME, |c, core, text| {
                 c.ui_builder(core).on_pressed(move |mut e: TextEditor| {
                     write_text!(e, text, "Pressed");
                 });
@@ -223,7 +193,6 @@ fn main()
         .add_plugins(SickleUiPlugin)
         .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
-        .add_plugins(ComponentThemePlugin::<CounterWidget>::new())
         .load("main.caf.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)

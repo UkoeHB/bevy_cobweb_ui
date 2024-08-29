@@ -45,9 +45,11 @@
         },
 
         "*": {
+            "ControlRoot": ["CounterWidget"],
             "!button":"",
 
             "text": {
+                "ControlLabel": ["CounterWidgetText"],
                 "!text":""
             }
         }
