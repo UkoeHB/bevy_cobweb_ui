@@ -6,8 +6,8 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper methods for registering themed loadables.
-pub trait ThemedRegistrationExt
+/// Helper methods for registering controlled loadables.
+pub trait ControlRegistrationExt
 {
     fn register_themed<T: GetTypeRegistration + ApplyLoadable + ThemedAttribute>(&mut self) -> &mut Self
     where
@@ -26,7 +26,7 @@ pub trait ThemedRegistrationExt
         <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration;
 }
 
-impl ThemedRegistrationExt for App
+impl ControlRegistrationExt for App
 {
     fn register_themed<T: GetTypeRegistration + ApplyLoadable + ThemedAttribute>(&mut self) -> &mut Self
     where

@@ -19,7 +19,8 @@ impl Plugin for SickleExtPlugin
             .register_type::<AnimationConfig>()
             .register_type::<AnimationLoop>()
             .add_plugins(SickleUiDefaultAssetsPlugin)
-            .add_plugins(LoadedThemesPlugin)
+            .add_plugins(ControlPlugin)
+            .add_plugins(ControlMapPlugin)
             .add_plugins(UiInteractionExtPlugin)
             .add_plugins(PseudoStatesExtPlugin);
     }

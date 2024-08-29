@@ -151,15 +151,6 @@ impl ApplyLoadable for Interactive
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Marker component for entities that control the dynamic styles of descendents for non-themed entities.
-///
-/// Must be inserted on a parent entity if any children use themed attributes with `inherit_control = true`.
-
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct PropagateControl;
-
-//-------------------------------------------------------------------------------------------------------------------
-
 pub(crate) struct UiInteractionExtPlugin;
 
 impl Plugin for UiInteractionExtPlugin
@@ -167,8 +158,6 @@ impl Plugin for UiInteractionExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_derived::<Interactive>()
-            .register_loadable::<PropagateControl>()
-            .register_type::<PropagateControl>()
             .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }

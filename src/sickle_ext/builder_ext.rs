@@ -1,8 +1,5 @@
-use std::any::type_name;
-
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
-use sickle_ui::theme::{DefaultTheme, UiContext};
 use sickle_ui::ui_builder::*;
 
 use crate::prelude::*;
@@ -25,61 +22,6 @@ pub trait NodeLoadingExt
         loadable_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>;
-    /// Spawns a new node registered to load a theme from `loadable_ref`.
-    ///
-    /// The parameter `entity` will be set with the new node's entity id. This is often inserted to widget
-    /// components for use in [`UiContexts`](UiContext).
-    ///
-    /// Inserts a [`NodeBundle::default()`] to the entity.
-    ///
-    /// Includes a `callback(node_builder, loadable_ref)` for interacting with the entity.
-    ///
-    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
-    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_theme<C: DefaultTheme>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>;
-    /// See [`Self::load_with_theme`].
-    ///
-    /// Proxies interactions on the `Pm` sub-entity to the main entity.
-    fn load_with_theme_and_placement<C: DefaultTheme, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>;
-    /// Spawns a new node registered to load a subtheme from `loadable_ref`.
-    ///
-    /// The parameter `entity` will be set with the new node's entity id. This is often inserted to widget
-    /// components for use in [`UiContexts`](UiContext).
-    ///
-    /// The subtheme will be tied to `Ctx`, and can be mapped to an entity in a theme instantiation using
-    /// [`UiContext`].
-    ///
-    /// Inserts a [`NodeBundle::default()`] to the entity.
-    ///
-    /// Includes a `callback(node_builder, loadable_ref)` for interacting with the entity.
-    ///
-    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
-    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>;
-    /// See [`Self::load_with_subtheme`].
-    ///
-    /// Proxies interactions on the `Pm` sub-entity to the `Ctx` sub-entity`.
-    fn load_with_subtheme_and_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>;
 }
 
 impl NodeLoadingExt for UiBuilder<'_, UiRoot>
@@ -92,65 +34,6 @@ impl NodeLoadingExt for UiBuilder<'_, UiRoot>
     {
         let mut node = self.spawn(NodeBundle::default());
         node.entity_commands().load(loadable_ref.clone());
-        (callback)(&mut node, loadable_ref);
-        node
-    }
-
-    fn load_with_theme<C: DefaultTheme>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut node = self.spawn(NodeBundle::default());
-        *entity = node.id();
-        node.entity_commands().load_theme::<C>(loadable_ref.clone());
-        (callback)(&mut node, loadable_ref);
-        node
-    }
-
-    fn load_with_theme_and_placement<C: DefaultTheme, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut node = self.spawn(NodeBundle::default());
-        *entity = node.id();
-        node.entity_commands()
-            .load_theme_with_placement::<C, Pm>(loadable_ref.clone());
-        (callback)(&mut node, loadable_ref);
-        node
-    }
-
-    fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut node = self.spawn(NodeBundle::default());
-        *entity = node.id();
-        node.entity_commands()
-            .load_subtheme::<C, Ctx>(loadable_ref.clone());
-        (callback)(&mut node, loadable_ref);
-        node
-    }
-
-    fn load_with_subtheme_and_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut node = self.spawn(NodeBundle::default());
-        *entity = node.id();
-        node.entity_commands()
-            .load_subtheme_with_placement::<C, Ctx, Pm>(loadable_ref.clone());
         (callback)(&mut node, loadable_ref);
         node
     }
@@ -170,179 +53,29 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
         let id = self.id();
         self.commands().ui_builder(id)
     }
-
-    fn load_with_theme<C: DefaultTheme>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut child = self.spawn(NodeBundle::default());
-        *entity = child.id();
-        child
-            .entity_commands()
-            .load_theme::<C>(loadable_ref.clone());
-        (callback)(&mut child, loadable_ref);
-        let id = self.id();
-        self.commands().ui_builder(id)
-    }
-
-    fn load_with_theme_and_placement<C: DefaultTheme, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut child = self.spawn(NodeBundle::default());
-        *entity = child.id();
-        child
-            .entity_commands()
-            .load_theme_with_placement::<C, Pm>(loadable_ref.clone());
-        (callback)(&mut child, loadable_ref);
-        let id = self.id();
-        self.commands().ui_builder(id)
-    }
-
-    fn load_with_subtheme<C: DefaultTheme, Ctx: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut child = self.spawn(NodeBundle::default());
-        *entity = child.id();
-        child
-            .entity_commands()
-            .load_subtheme::<C, Ctx>(loadable_ref.clone());
-        (callback)(&mut child, loadable_ref);
-        let id = self.id();
-        self.commands().ui_builder(id)
-    }
-
-    fn load_with_subtheme_and_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-        entity: &mut Entity,
-        callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
-    ) -> UiBuilder<Entity>
-    {
-        let mut child = self.spawn(NodeBundle::default());
-        *entity = child.id();
-        child
-            .entity_commands()
-            .load_subtheme_with_placement::<C, Ctx, Pm>(loadable_ref.clone());
-        (callback)(&mut child, loadable_ref);
-        let id = self.id();
-        self.commands().ui_builder(id)
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for dealing with loadable themes.
-pub trait LoadableThemeBuilderExt
+/// Helper trait for dealing with widget controls.
+pub trait ControlBuilderExt
 {
-    /// See [`ThemeLoadingEntityCommandsExt::set_theme`].
-    fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::set_theme_with_placement`].
-    fn set_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::set_subtheme`].
-    fn set_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::set_subtheme_with_placement`].
-    fn set_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(&mut self) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::prepare_theme`].
-    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::load_theme`].
-    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: SceneRef) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::load_theme_with_placement`].
-    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::load_subtheme`].
-    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self;
-    /// See [`ThemeLoadingEntityCommandsExt::load_subtheme_with_placement`].
-    fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-    ) -> &mut Self;
-    /// Provides access to the entity of a subtheme of a themed widget.
+    /// Provides access to a sub-entity of a widget.
     ///
-    /// The callback paramaters are: commands, core entity where `C` is found, child entity where `Ctx` is found.
+    /// Does nothing if the current entity doesn't have `ControlMap` (see [`ControlRoot`]), or if there is no
+    /// child entity with a [`ControlLabel`] equal to the requested `child`.
     ///
-    /// Type `C` should be a themed component on the current entity. The `child` field should be a subtheme
-    /// accessible via [`UiContext`] on `C`.
-    fn edit_child<C: Component + UiContext>(
+    /// The callback paramaters are: commands, current entity, child entity.
+    fn edit_child(
         &mut self,
         child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
     ) -> &mut Self;
 }
 
-impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
+impl ControlBuilderExt for UiBuilder<'_, Entity>
 {
-    fn set_theme<C: DefaultTheme>(&mut self) -> &mut Self
-    {
-        self.entity_commands().set_theme::<C>();
-        self
-    }
-
-    fn set_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self) -> &mut Self
-    {
-        self.entity_commands().set_theme_with_placement::<C, Pm>();
-        self
-    }
-
-    fn set_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self) -> &mut Self
-    {
-        self.entity_commands().set_subtheme::<C, Ctx>();
-        self
-    }
-
-    fn set_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(&mut self) -> &mut Self
-    {
-        self.entity_commands()
-            .set_subtheme_with_placement::<C, Ctx, Pm>();
-        self
-    }
-
-    fn prepare_theme<C: DefaultTheme>(&mut self) -> &mut Self
-    {
-        self.entity_commands().prepare_theme::<C>();
-        self
-    }
-
-    fn load_theme<C: DefaultTheme>(&mut self, loadable_ref: SceneRef) -> &mut Self
-    {
-        self.entity_commands().load_theme::<C>(loadable_ref.clone());
-        self
-    }
-
-    fn load_theme_with_placement<C: DefaultTheme, Pm: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self
-    {
-        self.entity_commands()
-            .load_theme_with_placement::<C, Pm>(loadable_ref.clone());
-        self
-    }
-
-    fn load_subtheme<C: DefaultTheme, Ctx: TypeName>(&mut self, loadable_ref: SceneRef) -> &mut Self
-    {
-        self.entity_commands()
-            .load_subtheme::<C, Ctx>(loadable_ref.clone());
-        self
-    }
-
-    fn load_subtheme_with_placement<C: DefaultTheme, Ctx: TypeName, Pm: TypeName>(
-        &mut self,
-        loadable_ref: SceneRef,
-    ) -> &mut Self
-    {
-        self.entity_commands()
-            .load_subtheme_with_placement::<C, Ctx, Pm>(loadable_ref.clone());
-        self
-    }
-
-    fn edit_child<C: Component + UiContext>(
+    fn edit_child(
         &mut self,
         child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
@@ -350,16 +83,15 @@ impl LoadableThemeBuilderExt for UiBuilder<'_, Entity>
     {
         let entity = self.id();
         self.commands().add(move |world: &mut World| {
-            let Some(themed_component) = world.get::<C>(entity) else {
-                tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
-                    entity is missing or does not have {}", child, type_name::<C>(), type_name::<C>());
+            let Some(control_map) = world.get::<ControlMap>(entity) else {
+                tracing::warn!("failed editing child {child} of entity {entity:?}, \
+                    entity is missing or does not have ControlMap (see ControlRoot)");
                 return;
             };
 
-            let Ok(child_entity) = themed_component.get(child) else {
-                tracing::warn!("failed editing child w/ subtheme {} on entity {entity:?} with themed component {}, \
-                    subtheme is not available in entity's UiContext",
-                    child, type_name::<C>());
+            let Some(child_entity) = control_map.get_entity(child) else {
+                tracing::warn!("failed editing child {child} of entity {entity:?}, \
+                    entity's ControlMap does not have an entry for {child} (see ControlLabel)");
                 return;
             };
 

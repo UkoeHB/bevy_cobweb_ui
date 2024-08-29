@@ -10,7 +10,7 @@ use crate::prelude::*;
 
 fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Enabled);
     c.entity(entity).remove_pseudo_state(PseudoState::Disabled);
 }
@@ -30,7 +30,7 @@ impl WorldReactor for DetectEnableReactor
 
 fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Disabled);
     c.entity(entity).remove_pseudo_state(PseudoState::Enabled);
 }
@@ -50,7 +50,7 @@ impl WorldReactor for DetectDisableReactor
 
 fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Selected);
 }
 
@@ -69,7 +69,7 @@ impl WorldReactor for DetectSelectReactor
 
 fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).remove_pseudo_state(PseudoState::Selected);
 }
 
@@ -88,7 +88,7 @@ impl WorldReactor for DetectDeselectReactor
 
 fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Checked);
 }
 
@@ -107,7 +107,7 @@ impl WorldReactor for DetectCheckReactor
 
 fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).remove_pseudo_state(PseudoState::Checked);
 }
 
@@ -126,7 +126,7 @@ impl WorldReactor for DetectUncheckReactor
 
 fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Open);
     c.entity(entity).remove_pseudo_state(PseudoState::Closed);
 }
@@ -146,7 +146,7 @@ impl WorldReactor for DetectOpenReactor
 
 fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
 {
-    let (entity, _) = event.read();
+    let entity = event.entity();
     c.entity(entity).add_pseudo_state(PseudoState::Closed);
     c.entity(entity).remove_pseudo_state(PseudoState::Open);
 }
