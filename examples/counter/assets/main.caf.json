@@ -21,8 +21,8 @@
                 "press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}}
             },
             "settings": {
-                "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                "press": {"duration": 0.2, "easing": "OutExpo"}
+                "pointer_enter": {"duration": 0.005, "easing": "OutExpo"},
+                "press": {"duration": 0.005, "easing": "InExpo"}
             }
         },
         "Interactive": [],
