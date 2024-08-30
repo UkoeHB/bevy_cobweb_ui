@@ -409,7 +409,7 @@ impl ImageMap
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for the image to be loaded.
-    pub fn get_or_insert(&mut self, path: impl AsRef<str>, asset_server: &AssetServer) -> Handle<Image>
+    pub fn get_or_load(&mut self, path: impl AsRef<str>, asset_server: &AssetServer) -> Handle<Image>
     {
         let path = path.as_ref();
 

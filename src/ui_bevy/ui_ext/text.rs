@@ -71,7 +71,7 @@ pub struct TextLine
     ///
     /// Defaults to `sickle_ui`'s built-in `FiraSans-Medium` font.
     #[reflect(default = "TextLine::default_font")]
-    pub font: Option<String>,
+    pub font: Option<FontRequest>,
     /// The desired font size.
     #[reflect(default = "TextLine::default_font_size")]
     pub size: f32,
@@ -94,7 +94,7 @@ impl TextLine
         Self { text: text.into(), ..default() }
     }
 
-    pub fn with_font(mut self, font: impl Into<String>) -> Self
+    pub fn with_font(mut self, font: impl Into<FontRequest>) -> Self
     {
         self.font = Some(font.into());
         self
@@ -105,9 +105,9 @@ impl TextLine
         TEXT_LINE_DEFAULT_TEXT.into()
     }
 
-    fn default_font() -> Option<String>
+    fn default_font() -> Option<FontRequest>
     {
-        Some("embedded://sickle_ui/fonts/FiraSans-Medium.ttf".into())
+        Some(FontRequest::normal("Fira Sans") + FontWeight::Medium)
     }
 
     fn default_font_size() -> f32

@@ -5,7 +5,7 @@ pub use std::fmt::Write;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
-use crate::prelude::{FontMap, LocalizedText, TextLocalizer};
+use crate::prelude::{FontMap, FontRequest, LocalizedText, TextLocalizer};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -123,7 +123,7 @@ impl<'w, 's> TextEditor<'w, 's>
     /// See [`Self::set_section_font`].
     ///
     /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
-    pub fn set_font(&mut self, entity: Entity, font: impl AsRef<str>) -> bool
+    pub fn set_font(&mut self, entity: Entity, font: impl Into<FontRequest>) -> bool
     {
         self.set_section_font(entity, 0, font)
     }
@@ -133,9 +133,9 @@ impl<'w, 's> TextEditor<'w, 's>
     /// If the entity has [`LocalizedText`] then the font will be automatically localized.
     ///
     /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
-    pub fn set_section_font(&mut self, entity: Entity, section: usize, font: impl AsRef<str>) -> bool
+    pub fn set_section_font(&mut self, entity: Entity, section: usize, font: impl Into<FontRequest>) -> bool
     {
-        let font = font.as_ref();
+        let font = font.into();
         let Ok((text, maybe_localized)) = self.text.get_mut(entity) else {
             tracing::warn!("failed setting font {font:?} on text section {section} of {entity:?}, entity \
                 not found");
@@ -146,7 +146,7 @@ impl<'w, 's> TextEditor<'w, 's>
                 doesn't exist");
             return false;
         };
-        let font = self.fonts.get(font);
+        let font = self.fonts.get(&font);
         if font == Handle::default() {
             tracing::warn!("failed setting font {font:?} on text section {section} of {entity:?}, font \
                 not found in FontMap");

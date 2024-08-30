@@ -39,15 +39,18 @@
     },
     "LoadLocalizedFonts": [[
         {
-            "font": "embedded://sickle_ui/fonts/FiraSans-Bold.ttf",
+            "family": "Fira Sans",
+            "attributes": [{"weight": "Bold"}],
             "fallbacks": [
                 {
                     "lang": "fr-FR",
-                    "font": "embedded://sickle_ui/fonts/FiraSans-Italic.ttf"
+                    "family": "Fira Sans",
+                    "attributes": [{"style": "Italic"}]
                 },
                 {
                     "lang": "de-DE",
-                    "font": "embedded://sickle_ui/fonts/FiraSans-BoldItalic.ttf"
+                    "family": "Fira Sans",
+                    "attributes": [{"style": "Italic", "weight": "Bold"}]
                 }
             ]
         }

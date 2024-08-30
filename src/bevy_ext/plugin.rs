@@ -10,7 +10,8 @@ impl Plugin for BevyExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(TextureAtlasExtPlugin);
+        app.add_plugins(FontExtPlugin)
+            .add_plugins(TextureAtlasExtPlugin);
     }
 }
 

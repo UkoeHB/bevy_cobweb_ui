@@ -4,25 +4,86 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_sickle_ui_default_fonts(mut fonts: ResMut<FontMap>, asset_server: Res<AssetServer>)
+fn load_sickle_ui_default_fonts(mut c: Commands)
 {
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-Bold.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-BoldItalic.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-Italic.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-Medium.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-MediumItalic.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSans-Regular.ttf", &asset_server);
-    fonts.insert("embedded://sickle_ui/fonts/FiraSansCondensed-Bold.ttf", &asset_server);
-    fonts.insert(
-        "embedded://sickle_ui/fonts/FiraSansCondensed-BoldItalic.ttf",
-        &asset_server,
-    );
-    fonts.insert("embedded://sickle_ui/fonts/FiraSansCondensed-Italic.ttf", &asset_server);
-    fonts.insert(
-        "embedded://sickle_ui/fonts/FiraSansCondensed-Regular.ttf",
-        &asset_server,
-    );
-    fonts.insert("embedded://sickle_ui/fonts/MaterialIcons-Regular.ttf", &asset_server);
+    c.add(RegisterFontFamilies(vec![
+        RegisterFontFamily{
+            family: "Fira Sans".into(),
+            fonts: vec![
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-Bold.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Normal,
+                    weight: FontWeight::Bold,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-BoldItalic.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Italic,
+                    weight: FontWeight::Bold,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-Italic.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Italic,
+                    weight: FontWeight::Normal,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-Medium.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Normal,
+                    weight: FontWeight::Medium,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-MediumItalic.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Italic,
+                    weight: FontWeight::Medium,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSans-Regular.ttf".into(),
+                    width: FontWidth::Normal,
+                    style: FontStyle::Normal,
+                    weight: FontWeight::Normal,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSansCondensed-Bold.ttf".into(),
+                    width: FontWidth::Condensed,
+                    style: FontStyle::Normal,
+                    weight: FontWeight::Bold,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSansCondensed-BoldItalic.ttf".into(),
+                    width: FontWidth::Condensed,
+                    style: FontStyle::Italic,
+                    weight: FontWeight::Bold,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSansCondensed-Italic.ttf".into(),
+                    width: FontWidth::Condensed,
+                    style: FontStyle::Italic,
+                    weight: FontWeight::Normal,
+                },
+                FontVariant{
+                    path: "embedded://sickle_ui/fonts/FiraSansCondensed-Regular.ttf".into(),
+                    width: FontWidth::Condensed,
+                    style: FontStyle::Normal,
+                    weight: FontWeight::Bold,
+                }
+            ]
+        },
+        RegisterFontFamily{
+            family: "Material Icons".into(),
+            fonts: vec![FontVariant{
+                path: "embedded://sickle_ui/fonts/MaterialIcons-Regular.ttf".into(),
+                width: FontWidth::Normal,
+                style: FontStyle::Normal,
+                weight: FontWeight::Normal,
+            }]
+        }
+    ]));
+    // Now actually load the registered font family.
+    c.add(LoadFonts(vec!["Fira Sans".into()]));
 }
 
 //-------------------------------------------------------------------------------------------------------------------

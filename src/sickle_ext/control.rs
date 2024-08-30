@@ -126,9 +126,7 @@ impl Plugin for ControlPlugin
     fn build(&self, app: &mut App)
     {
         app.register_derived::<ControlRoot>()
-            .register_derived::<ControlLabel>()
-            //todo: remove in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
-            .register_type_data::<SmolStr, ReflectDeserialize>();
+            .register_derived::<ControlLabel>();
     }
 }
 

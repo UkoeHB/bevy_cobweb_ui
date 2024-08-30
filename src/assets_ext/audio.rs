@@ -408,7 +408,7 @@ impl AudioMap
     ///
     /// Note that if this is called in state [`LoadState::Loading`], then [`LoadState::Done`] will wait
     /// for the audio to be loaded.
-    pub fn get_or_insert(&mut self, path: impl AsRef<str>, asset_server: &AssetServer) -> Handle<AudioSource>
+    pub fn get_or_load(&mut self, path: impl AsRef<str>, asset_server: &AssetServer) -> Handle<AudioSource>
     {
         let path = path.as_ref();
 

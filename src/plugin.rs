@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::SickleUiPlugin;
+use smol_str::SmolStr;
 
 use crate::prelude::*;
 
@@ -22,7 +23,10 @@ impl Plugin for CobwebUiPlugin
             panic!("failed building CobwebUiPlugin, sickle_ui::prelude::SickleUiPlugin is missing");
         }
 
-        app.add_plugins(crate::builtin::BuiltinPlugin)
+        app
+            //todo: remove in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
+            .register_type_data::<SmolStr, ReflectDeserialize>()
+            .add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)
             .add_plugins(LoadingPlugin)
