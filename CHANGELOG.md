@@ -6,6 +6,7 @@
 - Move built-in widgets and assets to `builtin` module.
 - Add built-in colors mimicking Bevy's color palettes (CSS1 'basic', CSS4 'css', Tailwind CSS 'tailwind').
 - Rework widget theming and interactivity to use simpler control scheme. Now you only need `ControlRoot` and `ControlLabel` loadables to set up multi-entity interactive and pseudo-state-sensitive structures.
+- Add font families API for accessing fonts.
 
 ## 0.3.0
 

@@ -561,7 +561,7 @@ impl FontMap
     /// The returned handle will *not* be localized. Use [`Self::get_localized`] or
     /// [`Self::get_or_load_localized`] instead.
     ///
-    /// Returns a default handle if the font was not successfully pre-inserted via [`Self::insert`].
+    /// Returns a default handle if the font was not successfully pre-inserted via [`Self::load`].
     pub fn get(&self, font: &FontRequest) -> Handle<Font>
     {
         // Get the best eligible font.

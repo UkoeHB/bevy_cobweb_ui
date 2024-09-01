@@ -53,7 +53,8 @@ impl ApplyLoadable for ControlRoot
 /// Component that indicates an entity is part of a widget.
 ///
 /// Use this if you want values on the entity to respond to interactions on other parts of the widget, or if
-/// you want different values to be applied depending on the widget's [`PseudoStates`](PseudoState).
+/// you want different values to be applied depending on the widget's
+/// [`PseudoStates`](crate::sickle::prelude::PseudoState).
 ///
 /// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
 /// loadables.

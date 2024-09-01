@@ -386,7 +386,8 @@ impl AudioMap
     /// If the given path has a localization fallback for the current [`LocalizationManifest::negotiated`]
     /// languages, then the handle for that fallback will be returned.
     ///
-    /// Returns a default handle if the audio was not pre-inserted via [`Self::insert`] or [`Self::insert_loaded`].
+    /// Returns a default handle if the audio was not pre-inserted via [`Self::insert`] or
+    /// [`Self::insert_localized`].
     pub fn get(&self, path: impl AsRef<str>) -> Handle<AudioSource>
     {
         let path = path.as_ref();

@@ -192,7 +192,7 @@ impl UpdateFontRequest for FontWidth
 /// Style of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
 ///
 /// Take precedence over [`FontWeight`] when negotiating a [`FontRequest`] against available fonts (see
-/// [`FontMap`]).
+/// [`FontMap`](crate::prelude::FontMap)).
 #[derive(Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum FontStyle
 {
@@ -562,7 +562,7 @@ impl UpdateFontRequest for FontAttributes
 
 /// A font request.
 ///
-/// Can be used with [`FontMap`] to get a handle to the closest matching font.
+/// Can be used with [`FontMap`](crate::prelude::FontMap) to get a handle to the closest matching font.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FontRequest
 {
