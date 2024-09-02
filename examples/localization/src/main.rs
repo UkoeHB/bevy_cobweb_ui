@@ -81,7 +81,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 l.edit("font_fallbacks", |l| {
                     l.insert(LocalizedText::default());
                     l.insert_derived(
-                        TextLine::from_text("font-fallbacks").with_font(FontRequest::bold("Fira Sans")),
+                        TextLine::from_text("font-fallbacks").with_font(FontRequest::new("Fira Sans").bold()),
                     );
                 });
 

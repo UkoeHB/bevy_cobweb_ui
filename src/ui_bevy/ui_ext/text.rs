@@ -107,7 +107,7 @@ impl TextLine
 
     fn default_font() -> Option<FontRequest>
     {
-        Some(FontRequest::normal("Fira Sans") + FontWeight::Medium)
+        Some(FontRequest::new("Fira Sans").medium())
     }
 
     fn default_font_size() -> f32
