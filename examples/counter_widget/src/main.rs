@@ -108,7 +108,7 @@ impl CounterWidgetBuilder
 
         let button = self
             .spec
-            .unwrap_or_else(|| Self::default_file().e("counter_widget"));
+            .unwrap_or_else(|| Self::default_file() + "counter_widget");
 
         let mut core_entity = Entity::PLACEHOLDER;
 
@@ -118,7 +118,7 @@ impl CounterWidgetBuilder
                 .insert_reactive(Counter(0))
                 .on_released(Counter::increment(core_entity));
 
-            button.load(path.e("text"), |text, _path| {
+            button.load(path + "text", |text, _path| {
                 text.update_on(
                     (
                         entity_event::<PressCanceled>(core_entity),
@@ -137,8 +137,8 @@ impl CounterWidgetBuilder
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = SceneFile::new("examples.counter_widget");
-    let scene = file.e("root");
+    let file = &SceneFile::new("examples.counter_widget");
+    let scene = file + "root";
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         let n = l.deref_mut();
@@ -148,13 +148,13 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
         // Widget with custom text structure.
         CounterWidgetBuilder::new()
-            .spec(file.e("counter_widget_small_text"))
+            .spec(file + "counter_widget_small_text")
             .pre_text("Small: ")
             .build(n);
 
         // Widget with animated text structure.
         CounterWidgetBuilder::new()
-            .spec(file.e("counter_widget_responsive_text"))
+            .spec(file + "counter_widget_responsive_text")
             .pre_text("Text: ")
             .build(n)
             .edit_child(CounterWidgetText::NAME, |c, core, text| {
@@ -165,7 +165,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
         // Widget with theme adjustments
         CounterWidgetBuilder::new()
-            .spec(file.e("counter_widget_flexible_button"))
+            .spec(file + "counter_widget_flexible_button")
             .pre_text("Themed: ")
             .build(n);
     });

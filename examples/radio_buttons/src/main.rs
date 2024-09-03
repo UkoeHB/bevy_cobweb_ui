@@ -15,8 +15,8 @@ use bevy_cobweb_ui::sickle::SickleUiPlugin;
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = SceneFile::new("examples.radio_buttons");
-    let scene = file.e("scene");
+    let file = &SceneFile::new("examples.radio_buttons");
+    let scene = file + "scene";
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
@@ -33,7 +33,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
             for (i, option) in OPTIONS.iter().enumerate() {
                 // Add radio button.
-                let entity = RadioButtonBuilder::custom_with_text(file.e("radio_button"), *option)
+                let entity = RadioButtonBuilder::custom_with_text(file + "radio_button", *option)
                     .with_indicator()
                     .build(manager_entity, n)
                     .on_select(move |mut e: TextEditor| {

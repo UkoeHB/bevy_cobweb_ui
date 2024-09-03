@@ -121,7 +121,7 @@ impl CounterWidgetBuilder
         // Override the button structure with a spec override.
         let button = self
             .custom
-            .unwrap_or_else(|| Self::widget_file().e("counter_widget"));
+            .unwrap_or_else(|| Self::widget_file() + "counter_widget");
 
         let mut core_entity = Entity::PLACEHOLDER;
 
@@ -139,7 +139,7 @@ impl CounterWidgetBuilder
 
             // Inner entities are loaded manually.
             button.load(
-                path.e("text"),
+                path + "text",
                 |text, _path| {
                     text.update_on(
                         entity_mutation::<Counter>(button_id),

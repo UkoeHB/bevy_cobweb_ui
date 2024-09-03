@@ -223,7 +223,7 @@ impl RadioButtonBuilder
 
         let mut base_entity = Entity::PLACEHOLDER;
 
-        node.load(scene.e("base"), |base, path| {
+        node.load(scene + "base", |base, path| {
             base_entity = base.id();
 
             // Setup behavior.
@@ -255,7 +255,7 @@ impl RadioButtonBuilder
             }
 
             // Add the content.
-            base.load(path.e("content"), |content, _| {
+            base.load(&path + "content", |content, _| {
                 // Localize if necessary.
                 if self.localized {
                     content.insert(LocalizedText::default());
@@ -287,8 +287,8 @@ impl RadioButtonBuilder
 
     fn add_indicator(node: &mut UiBuilder<Entity>, path: &SceneRef)
     {
-        node.load(path.e("indicator"), |outline, path| {
-            outline.load(path.e("indicator_dot"), |_, _| {});
+        node.load(path + "indicator", |outline, path| {
+            outline.load(path + "indicator_dot", |_, _| {});
         });
     }
 }

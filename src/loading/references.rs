@@ -1,3 +1,4 @@
+use std::ops::Add;
 use std::sync::Arc;
 
 use smallvec::SmallVec;
@@ -97,6 +98,24 @@ impl Default for SceneFile
     fn default() -> Self
     {
         Self::new("")
+    }
+}
+
+impl<T: AsRef<str>> Add<T> for SceneFile
+{
+    type Output = SceneRef;
+    fn add(self, rhs: T) -> Self::Output
+    {
+        self.extend(rhs)
+    }
+}
+
+impl<T: AsRef<str>> Add<T> for &SceneFile
+{
+    type Output = SceneRef;
+    fn add(self, rhs: T) -> Self::Output
+    {
+        self.extend(rhs)
     }
 }
 
@@ -264,6 +283,24 @@ impl SceneRef
     pub fn e(&self, extension: impl AsRef<str>) -> Self
     {
         self.extend(extension)
+    }
+}
+
+impl<T: AsRef<str>> Add<T> for SceneRef
+{
+    type Output = SceneRef;
+    fn add(self, rhs: T) -> Self::Output
+    {
+        self.extend(rhs)
+    }
+}
+
+impl<T: AsRef<str>> Add<T> for &SceneRef
+{
+    type Output = SceneRef;
+    fn add(self, rhs: T) -> Self::Output
+    {
+        self.extend(rhs)
     }
 }
 

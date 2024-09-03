@@ -48,13 +48,13 @@ For example:
 let file = SceneFile::new("example.caf.json");
 
 // Loads an individual root node into the spawned entity.
-commands.spawn_empty().load(file.e("root"));
+commands.spawn_empty().load(file + "root");
 
 // Loads an individual inner node into the spawned entity.
-commands.spawn_empty().load(file.e("root::a"));
+commands.spawn_empty().load(file + "root::a");
 
 // Spawns and loads an entire scene (entities: root, root::a, root::a::inner, root::b).
-commands.load_scene(file.e("root"), |_|{});
+commands.load_scene(file + "root", |_|{});
 ```
 
 Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities.
@@ -124,9 +124,9 @@ To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::p
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = SceneFile::new("path/to/file.caf.json");
+    let file = &SceneFile::new("path/to/file.caf.json");
 
-    c.load_scene(&mut s, file.e("game_menu_scene"), |loaded_scene: &mut LoadedScene<EntityCommands>| {
+    c.load_scene(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
         // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
         loaded_scene.insert(MyComponent);
@@ -141,7 +141,7 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
             // ...
 
             // Insert another scene as a child of this node.
-            loaded_scene.load_scene(file.e("footer_scene"), |loaded_scene| {
+            loaded_scene.load_scene(file + "footer_scene", |loaded_scene| {
                 // ...
             });
         });

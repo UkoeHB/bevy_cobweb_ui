@@ -297,7 +297,7 @@ fn add_menu_option<'a>(
     // Load content page for this section.
     let mut page_entity = Entity::PLACEHOLDER;
     l.edit_from_root(content_path, |l| {
-        l.load_scene(file.e(page_scene), |l| {
+        l.load_scene(file + page_scene, |l| {
             page_entity = l.id();
             l.insert_reactive(DisplayControl::Hide);
 
@@ -308,7 +308,7 @@ fn add_menu_option<'a>(
 
     // Add button.
     // - We toggle content visibility on select/deselect.
-    let button_entity = RadioButtonBuilder::custom_with_text(file.e("menu_option_button"), button_text)
+    let button_entity = RadioButtonBuilder::custom_with_text(file + "menu_option_button", button_text)
         .localized()
         .build(manager_entity, l.deref_mut())
         .on_select(move |mut c: Commands| {
@@ -330,15 +330,15 @@ fn add_menu_option<'a>(
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = SceneFile::new("main.caf.json");
-    let scene = file.e("menu_scene");
+    let file = &SceneFile::new("main.caf.json");
+    let scene = file + "menu_scene";
 
     c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
         l.edit("menu::options", |l| {
             RadioButtonManager::insert(l.deref_mut());
             add_menu_option(
                 l,
-                &file,
+                file,
                 "content",
                 "menu-option-home",
                 "home_page",
@@ -347,7 +347,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             );
             add_menu_option(
                 l,
-                &file,
+                file,
                 "content",
                 "menu-option-play",
                 "play_page",
@@ -356,7 +356,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             );
             add_menu_option(
                 l,
-                &file,
+                file,
                 "content",
                 "menu-option-settings",
                 "settings_page",
