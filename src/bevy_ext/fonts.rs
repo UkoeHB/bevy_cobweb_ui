@@ -61,14 +61,14 @@ impl UpdateFontRequest for FontFamily
 /// Adds font family methods to a type.
 pub trait FontFamilyExt
 {
-    fn family(self, family: impl Into<FontFamily>) -> Self;
+    fn family(self, family: impl Into<FontFamily>) -> FontRequest;
 }
 
-impl FontFamilyExt for FontRequest
+impl<T: Into<FontRequest>> FontFamilyExt for T
 {
-    fn family(self, family: impl Into<FontFamily>) -> Self
+    fn family(self, family: impl Into<FontFamily>) -> FontRequest
     {
-        self + family.into()
+        self.into().set(family.into())
     }
 }
 
@@ -205,62 +205,62 @@ impl UpdateFontRequest for FontWidth
 pub trait FontWidthExt
 {
     /// See [`FontWidth::UltraCondensed`].
-    fn ultra_condensed(self) -> Self;
+    fn ultra_condensed(self) -> FontRequest;
     /// See [`FontWidth::ExtraCondensed`].
-    fn extra_condensed(self) -> Self;
+    fn extra_condensed(self) -> FontRequest;
     /// See [`FontWidth::Condensed`].
-    fn condensed(self) -> Self;
+    fn condensed(self) -> FontRequest;
     /// See [`FontWidth::Normal`].
-    fn normal_width(self) -> Self;
+    fn normal_width(self) -> FontRequest;
     /// See [`FontWidth::SemiExpanded`].
-    fn semi_expanded(self) -> Self;
+    fn semi_expanded(self) -> FontRequest;
     /// See [`FontWidth::Expanded`].
-    fn expanded(self) -> Self;
+    fn expanded(self) -> FontRequest;
     /// See [`FontWidth::ExtraExpanded`].
-    fn extra_expanded(self) -> Self;
+    fn extra_expanded(self) -> FontRequest;
     /// See [`FontWidth::UltraExpanded`].
-    fn ultra_expanded(self) -> Self;
+    fn ultra_expanded(self) -> FontRequest;
     /// See [`FontWidth::Width`].
-    fn width(self, width: f32) -> Self;
+    fn width(self, width: f32) -> FontRequest;
 }
 
-impl FontWidthExt for FontRequest
+impl<T: Into<FontRequest>> FontWidthExt for T
 {
-    fn ultra_condensed(self) -> Self
+    fn ultra_condensed(self) -> FontRequest
     {
-        self + FontWidth::UltraCondensed
+        self.into() + FontWidth::UltraCondensed
     }
-    fn extra_condensed(self) -> Self
+    fn extra_condensed(self) -> FontRequest
     {
-        self + FontWidth::ExtraCondensed
+        self.into() + FontWidth::ExtraCondensed
     }
-    fn condensed(self) -> Self
+    fn condensed(self) -> FontRequest
     {
-        self + FontWidth::Condensed
+        self.into() + FontWidth::Condensed
     }
-    fn normal_width(self) -> Self
+    fn normal_width(self) -> FontRequest
     {
-        self + FontWidth::Normal
+        self.into() + FontWidth::Normal
     }
-    fn semi_expanded(self) -> Self
+    fn semi_expanded(self) -> FontRequest
     {
-        self + FontWidth::SemiExpanded
+        self.into() + FontWidth::SemiExpanded
     }
-    fn expanded(self) -> Self
+    fn expanded(self) -> FontRequest
     {
-        self + FontWidth::Expanded
+        self.into() + FontWidth::Expanded
     }
-    fn extra_expanded(self) -> Self
+    fn extra_expanded(self) -> FontRequest
     {
-        self + FontWidth::ExtraExpanded
+        self.into() + FontWidth::ExtraExpanded
     }
-    fn ultra_expanded(self) -> Self
+    fn ultra_expanded(self) -> FontRequest
     {
-        self + FontWidth::UltraExpanded
+        self.into() + FontWidth::UltraExpanded
     }
-    fn width(self, width: f32) -> Self
+    fn width(self, width: f32) -> FontRequest
     {
-        self + FontWidth::Width(FontWidth::Width(width).width())
+        self.into() + FontWidth::Width(FontWidth::Width(width).width())
     }
 }
 
@@ -445,32 +445,32 @@ impl UpdateFontRequest for FontStyle
 pub trait FontStyleExt
 {
     /// See [`FontStyle::Normal`].
-    fn normal_style(self) -> Self;
+    fn normal_style(self) -> FontRequest;
     /// See [`FontStyle::Italic`].
-    fn italic(self) -> Self;
+    fn italic(self) -> FontRequest;
     /// See [`FontStyle::Oblique`].
-    fn oblique(self) -> Self;
+    fn oblique(self) -> FontRequest;
     /// See [`FontStyle::Oblique`].
-    fn oblique_angle(self, angle: i16) -> Self;
+    fn oblique_angle(self, angle: i16) -> FontRequest;
 }
 
-impl FontStyleExt for FontRequest
+impl<T: Into<FontRequest>> FontStyleExt for T
 {
-    fn normal_style(self) -> Self
+    fn normal_style(self) -> FontRequest
     {
-        self + FontStyle::Normal
+        self.into() + FontStyle::Normal
     }
-    fn italic(self) -> Self
+    fn italic(self) -> FontRequest
     {
-        self + FontStyle::Italic
+        self.into() + FontStyle::Italic
     }
-    fn oblique(self) -> Self
+    fn oblique(self) -> FontRequest
     {
-        self + FontStyle::Oblique(None)
+        self.into() + FontStyle::Oblique(None)
     }
-    fn oblique_angle(self, angle: i16) -> Self
+    fn oblique_angle(self, angle: i16) -> FontRequest
     {
-        self + FontStyle::Oblique(Some(FontStyle::normalize_oblique(Some(angle))))
+        self.into() + FontStyle::Oblique(Some(FontStyle::normalize_oblique(Some(angle))))
     }
 }
 
@@ -650,116 +650,116 @@ impl UpdateFontRequest for FontWeight
 pub trait FontWeightExt
 {
     /// See [`FontWeight::Thin`].
-    fn thin(self) -> Self;
+    fn thin(self) -> FontRequest;
     /// See [`FontWeight::Hairline`].
-    fn hairline(self) -> Self;
+    fn hairline(self) -> FontRequest;
     /// See [`FontWeight::ExtraLight`].
-    fn extra_light(self) -> Self;
+    fn extra_light(self) -> FontRequest;
     /// See [`FontWeight::UltraLight`].
-    fn ultra_light(self) -> Self;
+    fn ultra_light(self) -> FontRequest;
     /// See [`FontWeight::Light`].
-    fn light(self) -> Self;
+    fn light(self) -> FontRequest;
     /// See [`FontWeight::Normal`].
-    fn normal_weight(self) -> Self;
+    fn normal_weight(self) -> FontRequest;
     /// See [`FontWeight::Regular`].
-    fn regular(self) -> Self;
+    fn regular(self) -> FontRequest;
     /// See [`FontWeight::Medium`].
-    fn medium(self) -> Self;
+    fn medium(self) -> FontRequest;
     /// See [`FontWeight::SemiBold`].
-    fn semi_bold(self) -> Self;
+    fn semi_bold(self) -> FontRequest;
     /// See [`FontWeight::DemiBold`].
-    fn demi_bold(self) -> Self;
+    fn demi_bold(self) -> FontRequest;
     /// See [`FontWeight::Bold`].
-    fn bold(self) -> Self;
+    fn bold(self) -> FontRequest;
     /// See [`FontWeight::ExtraBold`].
-    fn extra_bold(self) -> Self;
+    fn extra_bold(self) -> FontRequest;
     /// See [`FontWeight::UltraBold`].
-    fn ultra_bold(self) -> Self;
+    fn ultra_bold(self) -> FontRequest;
     /// See [`FontWeight::Black`].
-    fn black(self) -> Self;
+    fn black(self) -> FontRequest;
     /// See [`FontWeight::Heavy`].
-    fn heavy(self) -> Self;
+    fn heavy(self) -> FontRequest;
     /// See [`FontWeight::ExtraBlack`].
-    fn extra_black(self) -> Self;
+    fn extra_black(self) -> FontRequest;
     /// See [`FontWeight::UltraBlack`].
-    fn ultra_black(self) -> Self;
+    fn ultra_black(self) -> FontRequest;
     /// See [`FontWeight::Weight`].
-    fn weight(self, weight: u16) -> Self;
+    fn weight(self, weight: u16) -> FontRequest;
 }
 
-impl FontWeightExt for FontRequest
+impl<T: Into<FontRequest>> FontWeightExt for T
 {
-    fn thin(self) -> Self
+    fn thin(self) -> FontRequest
     {
-        self + FontWeight::Thin
+        self.into() + FontWeight::Thin
     }
-    fn hairline(self) -> Self
+    fn hairline(self) -> FontRequest
     {
-        self + FontWeight::Hairline
+        self.into() + FontWeight::Hairline
     }
-    fn extra_light(self) -> Self
+    fn extra_light(self) -> FontRequest
     {
-        self + FontWeight::ExtraLight
+        self.into() + FontWeight::ExtraLight
     }
-    fn ultra_light(self) -> Self
+    fn ultra_light(self) -> FontRequest
     {
-        self + FontWeight::UltraLight
+        self.into() + FontWeight::UltraLight
     }
-    fn light(self) -> Self
+    fn light(self) -> FontRequest
     {
-        self + FontWeight::Light
+        self.into() + FontWeight::Light
     }
-    fn normal_weight(self) -> Self
+    fn normal_weight(self) -> FontRequest
     {
-        self + FontWeight::Normal
+        self.into() + FontWeight::Normal
     }
-    fn regular(self) -> Self
+    fn regular(self) -> FontRequest
     {
-        self + FontWeight::Regular
+        self.into() + FontWeight::Regular
     }
-    fn medium(self) -> Self
+    fn medium(self) -> FontRequest
     {
-        self + FontWeight::Medium
+        self.into() + FontWeight::Medium
     }
-    fn semi_bold(self) -> Self
+    fn semi_bold(self) -> FontRequest
     {
-        self + FontWeight::SemiBold
+        self.into() + FontWeight::SemiBold
     }
-    fn demi_bold(self) -> Self
+    fn demi_bold(self) -> FontRequest
     {
-        self + FontWeight::DemiBold
+        self.into() + FontWeight::DemiBold
     }
-    fn bold(self) -> Self
+    fn bold(self) -> FontRequest
     {
-        self + FontWeight::Bold
+        self.into() + FontWeight::Bold
     }
-    fn extra_bold(self) -> Self
+    fn extra_bold(self) -> FontRequest
     {
-        self + FontWeight::ExtraBold
+        self.into() + FontWeight::ExtraBold
     }
-    fn ultra_bold(self) -> Self
+    fn ultra_bold(self) -> FontRequest
     {
-        self + FontWeight::UltraBold
+        self.into() + FontWeight::UltraBold
     }
-    fn black(self) -> Self
+    fn black(self) -> FontRequest
     {
-        self + FontWeight::Black
+        self.into() + FontWeight::Black
     }
-    fn heavy(self) -> Self
+    fn heavy(self) -> FontRequest
     {
-        self + FontWeight::Heavy
+        self.into() + FontWeight::Heavy
     }
-    fn extra_black(self) -> Self
+    fn extra_black(self) -> FontRequest
     {
-        self + FontWeight::ExtraBlack
+        self.into() + FontWeight::ExtraBlack
     }
-    fn ultra_black(self) -> Self
+    fn ultra_black(self) -> FontRequest
     {
-        self + FontWeight::UltraBlack
+        self.into() + FontWeight::UltraBlack
     }
-    fn weight(self, weight: u16) -> Self
+    fn weight(self, weight: u16) -> FontRequest
     {
-        self + FontWeight::Weight(FontWeight::Weight(weight).weight())
+        self.into() + FontWeight::Weight(FontWeight::Weight(weight).weight())
     }
 }
 
@@ -838,7 +838,7 @@ impl FontRequest
     }
 
     /// Sets a value in the request.
-    pub fn s(self, val: impl UpdateFontRequest) -> Self
+    pub fn set(self, val: impl UpdateFontRequest) -> Self
     {
         val.update(self)
     }
@@ -854,10 +854,19 @@ impl From<FontFamily> for FontRequest
 
 impl<U: UpdateFontRequest> Add<U> for FontRequest
 {
-    type Output = Self;
+    type Output = FontRequest;
     fn add(self, val: U) -> Self::Output
     {
-        self.s(val)
+        self.set(val)
+    }
+}
+
+impl<U: UpdateFontRequest> Add<U> for FontFamily
+{
+    type Output = FontRequest;
+    fn add(self, val: U) -> Self::Output
+    {
+        FontRequest::from(self).set(val)
     }
 }
 
