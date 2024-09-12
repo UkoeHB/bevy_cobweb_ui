@@ -9,6 +9,8 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts `sickle_ui` flux events to reactive entity events (see [`ReactCommand::entity_event`]).
+//todo: better to have these in PreUpdate - note that state transitions occur between PreUpdate and Update, so
+// any states set in reaction to these events will be applied 1 frame late
 fn flux_ui_events(
     mut c: Commands,
     fluxes: Query<(Entity, &FluxInteraction, Option<&PseudoStates>), Changed<FluxInteraction>>,
