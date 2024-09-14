@@ -17,10 +17,10 @@ impl Plugin for CobwebUiPlugin
     fn build(&self, app: &mut App)
     {
         if !app.is_plugin_added::<ReactPlugin>() {
-            panic!("failed building CobwebUiPlugin, bevy_cobweb::prelude::ReactPlugin is missing");
+            app.add_plugins(ReactPlugin);
         }
         if !app.is_plugin_added::<SickleUiPlugin>() {
-            panic!("failed building CobwebUiPlugin, sickle_ui::prelude::SickleUiPlugin is missing");
+            app.add_plugins(SickleUiPlugin);
         }
 
         app

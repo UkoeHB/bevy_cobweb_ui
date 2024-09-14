@@ -2,6 +2,7 @@
 
 ## WIP
 
+- Automatically add `SickleUiPlugin` and `ReactPlugin` if missing.
 
 ## 0.4.0
 

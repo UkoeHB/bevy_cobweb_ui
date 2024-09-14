@@ -8,7 +8,8 @@ use smallvec::SmallVec;
 
 use crate::prelude::*;
 
-// TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out
+// TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
+// fade in ancestor nodes while keeping a segment of the node tree the same opacity.
 
 //-------------------------------------------------------------------------------------------------------------------
 

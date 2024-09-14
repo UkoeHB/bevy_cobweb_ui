@@ -7,7 +7,6 @@ use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::builtin::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::prelude::*;
-use bevy_cobweb_ui::sickle::SickleUiPlugin;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -185,7 +184,7 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
         // Radio buttons: bevy_cobweb_ui built-in widget.
         let manager_entity = RadioButtonManager::insert(l.deref_mut());
         l.edit("options", |l| {
-            let button_loc = SceneRef::new(l.path().file.as_str(), "settings_radio_button");
+            let button_loc = l.path().file.e("settings_radio_button");
 
             // Option: enable vsync
             let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-on")
@@ -386,8 +385,6 @@ fn main()
             primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
             ..default()
         }))
-        .add_plugins(SickleUiPlugin)
-        .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .load("main.caf.json")
         .add_systems(PreStartup, setup)

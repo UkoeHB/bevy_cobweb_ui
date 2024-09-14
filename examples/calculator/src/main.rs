@@ -6,7 +6,6 @@ use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::prelude::*;
-use bevy_cobweb_ui::sickle::SickleUiPlugin;
 use calc::Context;
 use itertools::Itertools;
 use rust_decimal::prelude::{Decimal, FromPrimitive};
@@ -146,8 +145,6 @@ fn main()
             primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
             ..default()
         }))
-        .add_plugins(SickleUiPlugin)
-        .add_plugins(ReactPlugin)
         .add_plugins(CobwebUiPlugin)
         .add_systems(Startup, (setup, build_ui))
         .run();
