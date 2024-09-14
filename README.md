@@ -16,8 +16,6 @@ Provides a framework for building UI and managing assets in a Bevy app. Built on
 
 ## Getting Started
 
-This is an asset-oriented UI framework revolving around cobweb asset files (`.caf.json` files). You spawn CAF scenes in-code, and then you can edit those scenes to add code-side behavior like `on_pressed`/`on_hover`/etc. or to insert components, or to spawn child scenes within a scene.
-
 To get started, you need three things.
 1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
 2. Load a CAF file if you have one. Usually these are stored in your assets directory.
