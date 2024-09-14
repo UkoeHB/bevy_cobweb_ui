@@ -2,7 +2,7 @@
 name = "bevy_cobweb_ui"
 description = "UI tools and widgets built on bevy_cobweb and sickle_ui"
 authors = ["koe <ukoe@protonmail.com>"]
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 keywords = ["gamedev", "reactive", "ui"]
 license = "MIT OR Apache-2.0"

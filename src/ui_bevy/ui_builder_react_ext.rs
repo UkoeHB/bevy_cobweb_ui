@@ -9,7 +9,7 @@ use crate::prelude::*;
 /// Helper trait for registering reactors for node entities using [`UiBuilder`].
 pub trait UiBuilderReactExt
 {
-    /// Mirrors [`ReactEntityCommandsExt::add_reactor`].
+    /// Mirrors [`ReactEntityCommandsExt::add_world_reactor`].
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local);
 
     /// Mirrors [`UiReactEntityCommandsExt::insert_reactive`].
