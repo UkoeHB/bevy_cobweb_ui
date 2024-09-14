@@ -881,7 +881,7 @@ impl Plugin for FontLoadPlugin
             .register_command::<LoadFonts>()
             .register_command::<LoadLocalizedFonts>()
             .register_command::<RegisterFontFamilies>()
-            .add_simple_reactor(broadcast::<LanguagesNegotiated>(), handle_new_lang_list)
+            .add_reactor(broadcast::<LanguagesNegotiated>(), handle_new_lang_list)
             .add_systems(OnEnter(LoadState::Done), FontMap::check_unresolved_font_requests)
             .add_systems(PreUpdate, check_loaded_fonts.in_set(LoadProgressSet::Prepare));
     }

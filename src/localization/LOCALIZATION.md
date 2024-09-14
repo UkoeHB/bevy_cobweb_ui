@@ -99,7 +99,7 @@ menu-settings = Settings
 
 ### Localizing text
 
-Adding text localization is as simple as adding a [`LocalizedText`](bevy_cobweb_ui::prelude::LocalizedText) component to your enity, and writing a `fluent` key into the text on that entity.
+Adding text localization is as simple as adding a [`LocalizedText`](bevy_cobweb_ui::prelude::LocalizedText) component to your entity, and writing a `fluent` key into the text on that entity.
 
 For example (with a `fluent` resource that has a `hello-world = Hello, World!` entry):
 ```rust

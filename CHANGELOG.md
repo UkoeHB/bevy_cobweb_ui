@@ -8,6 +8,7 @@
 - Rework widget theming and interactivity to use simpler control scheme. Now you only need `ControlRoot` and `ControlLabel` loadables to set up multi-entity interactive and pseudo-state-sensitive structures.
 - Add font families API for accessing fonts.
 - Implement `Add` for `SceneFile` and `SceneRef`.
+- Add `PropagateOpacity` for controlling opacity of hierarchies. Added `hover_text` example to showcase it.
 
 ## 0.3.0
 

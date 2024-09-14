@@ -223,14 +223,14 @@ impl Plugin for PseudoStatesExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_simple_reactor(any_entity_event::<Enable>(), detect_enable_reactor);
-        app.add_simple_reactor(any_entity_event::<Disable>(), detect_disable_reactor);
-        app.add_simple_reactor(any_entity_event::<Select>(), detect_select_reactor);
-        app.add_simple_reactor(any_entity_event::<Deselect>(), detect_deselect_reactor);
-        app.add_simple_reactor(any_entity_event::<Check>(), detect_check_reactor);
-        app.add_simple_reactor(any_entity_event::<Uncheck>(), detect_uncheck_reactor);
-        app.add_simple_reactor(any_entity_event::<Open>(), detect_open_reactor);
-        app.add_simple_reactor(any_entity_event::<Close>(), detect_close_reactor);
+        app.add_reactor(any_entity_event::<Enable>(), detect_enable_reactor);
+        app.add_reactor(any_entity_event::<Disable>(), detect_disable_reactor);
+        app.add_reactor(any_entity_event::<Select>(), detect_select_reactor);
+        app.add_reactor(any_entity_event::<Deselect>(), detect_deselect_reactor);
+        app.add_reactor(any_entity_event::<Check>(), detect_check_reactor);
+        app.add_reactor(any_entity_event::<Uncheck>(), detect_uncheck_reactor);
+        app.add_reactor(any_entity_event::<Open>(), detect_open_reactor);
+        app.add_reactor(any_entity_event::<Close>(), detect_close_reactor);
     }
 }
 

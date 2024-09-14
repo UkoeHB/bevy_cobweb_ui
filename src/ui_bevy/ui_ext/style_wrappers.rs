@@ -883,12 +883,12 @@ impl Plugin for StyleWrappersPlugin
             .register_type::<AbsoluteStyle>()
             .register_type::<FlexStyle>()
             .register_type::<DisplayControl>()
-            .add_reactor_with(
+            .add_world_reactor_with(
                 DetectAbsoluteStyle,
                 (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
             )
-            .add_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
-            .add_reactor_with(
+            .add_world_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
+            .add_world_reactor_with(
                 DetectDisplayControl,
                 (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
             )

@@ -42,7 +42,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
 {
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
     {
-        self.entity_commands().add_reactor::<T>(data);
+        self.entity_commands().add_world_reactor::<T>(data);
     }
 
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self

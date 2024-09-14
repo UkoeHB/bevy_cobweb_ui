@@ -1,0 +1,90 @@
+{
+
+"scene": {
+    "FlexStyle": {
+        "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
+        "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
+    },
+
+    "rectangle": {
+        "FlexStyle": {
+            "dims": {"width": {"Px": 275.0}, "height": {"Px": 200.0}},
+            "content": {"justify_main": "Center", "justify_cross": "Center"}
+        },
+        "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.4, "alpha": 1.0}}],
+        "Animated<PropagateOpacity>": {
+            "values": {
+                "idle": 0.4,
+                "hover": 1.0
+            },
+            "settings": {
+                "pointer_enter": {"duration": 0.75, "easing": "Linear"},
+                "pointer_leave": {"duration": 0.75, "easing": "Linear"}
+            }
+        },
+        "Interactive": [],
+
+        "inner_rect": {
+            "FlexStyle": {
+                "dims": {"min_width": {"Px": 100.0}, "min_height": {"Px": 75.0}}
+            },
+            "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.65, "alpha": 1.0}}],
+            "Animated<PropagateOpacity>": {
+                "values": {
+                    "idle": 0.4,
+                    "hover": 1.0
+                },
+                "settings": {
+                    "pointer_enter": {"duration": 0.75, "easing": "Linear"},
+                    "pointer_leave": {"duration": 0.75, "easing": "Linear"}
+                }
+            },
+            "Interactive": [],
+
+            "text": {
+                "ControlRoot": ["Text"],
+                "FlexStyle": {
+                    "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
+                },
+                "Interactive": [],
+
+                "inner": {
+                    "ControlLabel": ["InnerText"],
+                    "TextLine": {"text": "Hover me!", "size": 50.0}
+                },
+
+                "help_text": {
+                    "ControlLabel": ["HelpText"],
+                    "#c: THE FORMATTING HERE IS JUST A TEMP HACK, IT APPEARS TO BE BROKEN!!":0,
+                    "AbsoluteStyle": {
+                        "dims": {
+                            "left": {"Px": 0.0}, "bottom": {"Px": 0.0}, "right": "Auto", "top": "Auto",
+                            "border": {"left": {"Percent": 100.0}, "bottom": {"Percent": 25.0}}
+                        },
+                        "content": {"justify_main": "Center", "justify_cross": "Center"}
+                    },
+                    "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
+                    "Animated<PropagateOpacity>": {
+                        "values": {
+                            "idle": 0.0,
+                            "hover": 1.0
+                        },
+                        "settings": {
+                            "pointer_enter": {"duration": 0.05, "easing": "OutExpo", "delay": 0.75},
+                            "pointer_leave": {"duration": 0.35, "easing": "Linear", "delay": 0.5}
+                        }
+                    },
+
+                    "text": {
+                        "FlexStyle": {
+                            "flex": {"margin": {"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 18.0}, "right": {"Px": 18.0}}}
+                        },
+                        "TextLine": {"text": "Nice!", "size": 20.0}
+                    }
+                }
+            }
+        }
+    }
+}
+
+}
