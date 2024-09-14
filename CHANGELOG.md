@@ -2,6 +2,9 @@
 
 ## WIP
 
+
+## 0.4.0
+
 - Add importing via manifest key to cobweb asset file syntax.
 - Move built-in widgets and assets to `builtin` module.
 - Add built-in colors mimicking Bevy's color palettes (CSS1 'basic', CSS4 'css', Tailwind CSS 'tailwind').
