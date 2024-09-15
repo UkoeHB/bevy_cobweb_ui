@@ -310,8 +310,18 @@ fn restore_opacity(
 ///
 /// The propagated value will stack with other opacity multipliers in the same hierarchy.
 ///
-/// It may be inefficient to hide many windows using this
-/// component. If perf becomes an issue, you may want to use [`Visibility::Hidden`] while hidden, and only insert
+/// ## Limitations
+///
+/// The current implementation applies the opacity modifier to all child node components separately. This means
+/// you won't get a *composited* fading effect. For example, if you have a window with an icon on it, and fade
+/// out that window, then the window's background color will bleed through the icon when the icon's alpha is
+/// reduced.
+///
+/// ## Performance
+///
+/// This is a convenient tool for fading in/fading out pop-ups like on-hover help text. However, it may not be
+/// efficient to *hide* those popups using inherited opacity, because it does require hierarchy traversal.
+/// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PropagateOpacity(pub f32);
