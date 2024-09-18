@@ -396,6 +396,8 @@ pub struct Dims
     pub aspect_ratio: Option<f32>,
     /// Region between a node's boundary and its padding.
     ///
+    /// All border sizes with [`Val::Percent`] are computed with respect to the *width* of the node.
+    ///
     /// See [`BorderColor`] for a typical use-case.
     ///
     /// Defaults to zero border.
@@ -495,6 +497,8 @@ pub struct ContentFlex
     #[reflect(default)]
     pub clipping: Clipping,
     /// Inserts space between the node's [`Dims::border`] and its contents.
+    ///
+    /// All padding sizes with [`Val::Percent`] are computed with respect to the *width* of the node.
     ///
     /// Defaults to zero padding.
     #[reflect(default)]
