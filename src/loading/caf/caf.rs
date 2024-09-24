@@ -8,8 +8,7 @@ pub enum CafSection
     Manifest(CafManifest),
     Imports(CafImports),
     Using(CafUsing),
-    Macros(CafMacros),
-    Constants(CafConstants),
+    Defs(CafDefs),
     Specs(CafSpecs),
     Scene(CafScene),
 }
@@ -22,8 +21,7 @@ impl CafSection
             Self::Manifest(section) => section.write_to(writer),
             Self::Imports(section) => section.write_to(writer),
             Self::Using(section) => section.write_to(writer),
-            Self::Macros(section) => section.write_to(writer),
-            Self::Constants(section) => section.write_to(writer),
+            Self::Defs(section) => section.write_to(writer),
             Self::Specs(section) => section.write_to(writer),
             Self::Scene(section) => section.write_to(writer),
         }
@@ -44,8 +42,8 @@ impl CafSection
                 let Self::Using(other) = other else { return false };
                 section.eq_ignore_whitespace(other)
             }
-            Self::Macros(section) => {
-                let Self::Macros(other) = other else { return false };
+            Self::Defs(section) => {
+                let Self::Defs(other) = other else { return false };
                 section.eq_ignore_whitespace(other)
             }
             Self::Constants(section) => {

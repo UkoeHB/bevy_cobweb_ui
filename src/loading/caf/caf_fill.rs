@@ -5,8 +5,15 @@ use smol_str::SmolStr;
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafFillSegment
 {
+    /// Spaces and newlines (\n characters).
+    ///
+    /// Carriage returns and tabs are not supported.
     Whitespace(SmolStr),
+    /// Commas treated as whitespace.
+    FloatingCommas(usize),
+    /// A comment can contain: `//`, `text` (optional: 1 terminal newline). We store the text here.
     LineComment(String),
+    /// A block comment contains: `/*`, `text` (optional: newlines anywhere), `*/`. We store the text here.
     BlockComment(String),
 }
 
@@ -16,7 +23,15 @@ impl CafFillSegment
     {
         match self {
             Self::Whitespace(space) => writer.write(space.as_str().as_bytes())?,
-            Self::LineComment(comment) => writer.write(comment.as_str().as_bytes())?,
+            Self::FloatingCommas(count) => {
+                for _ in 0..count {
+                    writer.write(','.as_bytes())?;
+                }
+            }
+            Self::LineComment(comment) =>
+            {
+                writer.write(comment.as_str().as_bytes())?
+            }
             Self::BlockComment(comment) => writer.write(comment.as_str().as_bytes())?,
         };
         Ok(())
@@ -61,66 +76,64 @@ impl CafFillSegment
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq)]
+/// Section of a CAF file containing filler charaters.
+///
+/// Includes whitespace (spaces and newlines), comments (line and block comments), and ignored characters (commas
+/// and semicolons).
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct CafFill
 {
-    pub segments: Vec<CafFillSegment>,
+    // TODO: replace with Cow of string slice
+    pub string: String
 }
 
 impl CafFill
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        for segment in self.segments.iter() {
-            segment.write_to(writer)?;
-        }
+        writer.write(&self.string)?;
         Ok(())
     }
 
-    pub fn newline() -> Self
+    /// Parse the current read source into a filler. The filler may be empty.
+    ///
+    /// Errors if an illegal character is encountered.
+    //pub fn parse() -> IResult<, (Self, )>
+    //{
+        // TODO
+        // Scan for:
+        // - Spaces
+        // - Newlines
+        // - Line comments
+        // - Block comments
+        // - Ignored characters: ,;
+        // - Banned characters: [^A-Za-z0-9_ \n;,\{\}\[\]\(\)<>\-+=$#@!%*?\\:\/."]
+    //}
+
+    pub fn new(string: impl Into<String>) -> Self
     {
-        Self { segments: vec![CafFillSegment::newline()] }
+        Self { string: string.into() }
     }
 
-    pub fn newlines(num: usize) -> Self
+    pub fn len(&self) -> usize
     {
-        Self { segments: vec![CafFillSegment::newlines(num)] }
+        self.string.len()
     }
 
-    pub fn space() -> Self
+    /// Number of space characters at the end of the filler if it ends in '\n   '.
+    ///
+    /// Used to calibrate scene tree depth of scene nodes.
+    pub fn ends_newline_then_num_spaces(&self) -> Option<usize>
     {
-        Self { segments: vec![CafFillSegment::space()] }
+        let trimmed = self.string.as_str.trim_end_matches(' ');
+        if !trimmed.ends_with('\n') { return None }
+        Some(self.len() - trimmed.len())
     }
 
-    pub fn spaces(num: usize) -> Self
-    {
-        Self { segments: vec![CafFillSegment::spaces(num)] }
-    }
-
-    pub fn comment(comment: impl AsRef<str>) -> Self
-    {
-        Self { segments: vec![CafFillSegment::comment(comment)] }
-    }
-
-    pub fn block_comment(comment: impl AsRef<str>) -> Self
-    {
-        Self { segments: vec![CafFillSegment::block_comment(comment)] }
-    }
-
+    /// Checks if the filler ends in a newline.
     pub fn ends_with_newline(&self) -> bool
     {
-        self.segments
-            .last()
-            .map(|s| s.ends_with_newline())
-            .unwrap_or(false)
-    }
-}
-
-impl Default for CafFill
-{
-    fn default() -> Self
-    {
-        Self { segments: Vec::default() }
+        self.string.as_str().ends_with('\n')
     }
 }
 
