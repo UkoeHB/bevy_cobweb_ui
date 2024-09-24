@@ -37,7 +37,7 @@ pub(crate) fn caf_parse_skip_space(raw: impl AsRef<str>, value: Caf)
 */
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) fn caf_parse_test(raw: impl AsRef<str>, value: Caf)
+pub(crate) fn caf_parse_test_result(raw: impl AsRef<str>, value: Caf) -> bool
 {
     let raw = raw.as_ref().as_bytes();
 
@@ -53,7 +53,21 @@ pub(crate) fn caf_parse_test(raw: impl AsRef<str>, value: Caf)
     value.write_to(&mut cursor).unwrap();
 
     // Compare to raw.
-    assert!(raw == &bytes[..]);
+    (raw == &bytes[..]
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn caf_parse_test(raw: impl AsRef<str>, value: Caf)
+{
+    assert!(caf_parse_test_result(raw, value));
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
+{
+    assert!(!caf_parse_test_result(raw, value));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
