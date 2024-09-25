@@ -1,6 +1,6 @@
 # Bevy Cobweb UI
 
-Provides a framework for building UI and managing assets in a Bevy app. Built on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), [sickle_ui](https://github.com/UmbraLuminosa/sickle_ui), and standard `bevy_ui`/`bevy_assets`/etc.
+A framework for building UI and managing assets in a `bevy` app. Built on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), [sickle_ui](https://github.com/UmbraLuminosa/sickle_ui), and `bevy_ui`/`bevy_assets`/etc.
 
 
 ## Features
@@ -16,7 +16,7 @@ Provides a framework for building UI and managing assets in a Bevy app. Built on
 
 ## Getting Started
 
-To get started, you need three things.
+To get started you need three things.
 1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
 2. Load a CAF file if you have one. Usually these are stored in your assets directory.
 3. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading CAF files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
