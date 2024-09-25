@@ -37,6 +37,15 @@ impl CafFillSegment
         Ok(())
     }
 
+    pub fn write_to_or_else(&self, writer: &mut impl std::io::Write, or: impl AsRef<str>) -> Result<(), std::io::Error>
+    {
+        if self.len() > 0 {
+            self.write_to(writer)?;
+        } else {
+            writer.write(or.as_ref().as_bytes())?;
+        }
+    }
+
     pub fn newline() -> Self
     {
         Self::Whitespace(SmolStr::from("\n"))
@@ -107,7 +116,7 @@ impl CafFill
         // - Line comments
         // - Block comments
         // - Ignored characters: ,;
-        // - Banned characters: [^A-Za-z0-9_ \n;,\{\}\[\]\(\)<>\-+=$#@!%*?\\:\/."]
+        // - Banned characters: [^A-Za-z0-9_ \n;,\{\}\[\]\(\)<>\-+=$#@!%*?\\:\/."']
     //}
 
     pub fn new(string: impl Into<String>) -> Self

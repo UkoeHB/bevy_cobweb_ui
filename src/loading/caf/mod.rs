@@ -1,21 +1,9 @@
 mod caf;
-mod caf_defs;
-mod caf_fill;
-mod caf_import;
-mod caf_manifest;
 mod caf_metadata;
-mod caf_scene;
-mod caf_specs;
-mod caf_using;
-mod parse_utils;
+mod data;
+mod sections;
 
 pub use caf::*;
-pub use caf_defs::*;
-pub use caf_fill::*;
-pub use caf_import::*;
-pub use caf_manifest::*;
 pub use caf_metadata::*;
-pub use caf_scene::*;
-pub use caf_specs::*;
-pub use caf_using::*;
-//pub(crate) use parse_utils::*;
+pub use data::*;
+pub use sections::*;

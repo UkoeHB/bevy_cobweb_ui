@@ -6,11 +6,11 @@ use crate::prelude::*;
 pub enum CafSection
 {
     Manifest(CafManifest),
-    Imports(CafImports),
+    Import(CafImport),
     Using(CafUsing),
     Defs(CafDefs),
-    Specs(CafSpecs),
-    Scene(CafScene),
+    Commands(CafCommands),
+    Scenes(CafScenes),
 }
 
 impl CafSection
@@ -19,45 +19,11 @@ impl CafSection
     {
         match self {
             Self::Manifest(section) => section.write_to(writer),
-            Self::Imports(section) => section.write_to(writer),
+            Self::Import(section) => section.write_to(writer),
             Self::Using(section) => section.write_to(writer),
             Self::Defs(section) => section.write_to(writer),
-            Self::Specs(section) => section.write_to(writer),
-            Self::Scene(section) => section.write_to(writer),
-        }
-    }
-
-    pub fn eq_ignore_whitespace(&self, other: &CafSection) -> bool
-    {
-        match self {
-            Self::Manifest(section) => {
-                let Self::Manifest(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Imports(section) => {
-                let Self::Imports(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Using(section) => {
-                let Self::Using(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Defs(section) => {
-                let Self::Defs(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Constants(section) => {
-                let Self::Constants(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Specs(section) => {
-                let Self::Specs(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
-            Self::Scene(section) => {
-                let Self::Scene(other) = other else { return false };
-                section.eq_ignore_whitespace(other)
-            }
+            Self::Commands(section) => section.write_to(writer),
+            Self::Scenes(section) => section.write_to(writer),
         }
     }
 }
@@ -92,18 +58,6 @@ impl Caf
         if !self.end_fill.ends_with_newline() {
             self.end_fill.segments.push(CafFillSegment::newline());
         }
-    }
-
-    pub fn eq_ignore_whitespace(&self, other: &Caf) -> bool
-    {
-        if self.sections.len() != other.sections.len() {
-            return false;
-        }
-        !self
-            .sections
-            .iter()
-            .zip(other.sections.iter())
-            .any(|(a, b)| !a.eq_ignore_whitespace(b))
     }
 }
 
