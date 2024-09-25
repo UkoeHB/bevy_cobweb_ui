@@ -48,6 +48,15 @@ builtin.widgets.radio_button as radio_button
 builtin.colors as colors
 "some/file.caf" as _
 
+/*
+# Using
+
+Pattern: ^(({{identifier}}::)({{identifier}})*)?{{type_identifier}}\s*[a][s]\s*{{type_identifier}}
+
+Behavior:
+- Any reference to the type alias in this file or files that import this file will use the specified type path's
+type registration to deserialize values associated with the alias.
+*/
 #using
 my_crate::text::TextLine as TextLine
 
@@ -150,7 +159,8 @@ Params:
     - Optional: add '= {{data}}' to assign a default value.
 - catch-all: uses '..{{catch_all_name}}'
     - Name: snake-case
-    - Captures all unassigned input items, including anything prefixed with '..'.
+    - Captures all unassigned input items, including anything prefixed with '..', and inserts them as entries
+    to a flatten group.
 - nested params: uses '{{parent_name}}{..nested params..}' pattern
     - Macro caller uses '{{parent_name}}{..set nested params..}' pattern 
 
@@ -163,7 +173,8 @@ Definition:
 - Use '?{{param_name}}' to assign optional parameter data to a position in the definition.
     - If the parameter is not set, then if the target is a map value then that map entry will be removed. Otherwise
     the parameter will be ignored.
-- Use '..' to assign captured data to an array or map (or scene node context for scene macros).
+- Use '..' to assign captured data to wherever a flatten group can be inserted.
+    - Array or map (or scene node context for scene macros).
 
 Data:
 - Allowed:
@@ -207,6 +218,10 @@ scene macros, scene nodes).
 - Unlike normal parameters, scene insertion parameters cannot be used to assign data directly. Instead they must have
 at least one nesting level, which may contain other scene insertion parameters and one catch-all parameter. Then the user
 who makes changes will essentially 'recreate' the node tree at the callsite to access specific nodes.
+    - When expanding scene inserters into another scene, allow ..* notation to infer which input parameter/sub-parameter
+    to use. Issue a warning if unable to find a parameter sequence in the inputs that matches the parameter sequence
+    in the invoked scene.
+    - Similarly in the scene definition, infer parameter sequence from node names when ..* notation is used.
 
 Behavior:
 - Multiple scene macros can be applied to the same scene node.
@@ -218,7 +233,7 @@ $boolean = true
 $none = none
 $aggregate = {x: $val}
 // @h means insert 'h' in this position. If 'h' is missing than an error will be emitted.
-hsla!(/* in-line comment */ h  s l , a{b{c}} /* over here */) = Hsla<A<B>,@a,C,D>{ H!() H()
+hsla!(/* in-line comment */ h  s l , a{b{c}} /* over here */) = Hsla<A<B>,@a,?f,C,D>{ H!() H()
     hue: @h saturation: @s lightness: ?l alpha: @a.b.c
     AaBb herewego!()
 }
@@ -226,17 +241,21 @@ ani!(d e) = { duration: @d easing: @e 100.0 $constant #FF000AAA}
 // ?t means insert 't' in this position and if 't' is missing then exclude the associated map key.
 uirect!(t b l r) = { top: ?t bottom: ?b left: ?l right: ?r }
 
-test!() = $constant
+test!() = $a::b::constant
 
-test!(a = none b = 52 c) = MyTuple(@a @b ?c $constant 100.0)
+test!() = a::b::test!()
+
+Test!() = a::b::Test!()
+
+test!(a = none b = 52 c = (true none auto)) = MyTuple(@a @b ?c $constant 100.0 (SomeTupleValue 200))
 
 // Only camel-case macros can be used as instructions (aka instruction macro) (only \\ brackets are allowed).
 Text!(t s) = TextLine{ text: ?t size: ?s }
 
-animate_entry!(states idle hover press on_over on_press) = {
+animate!(states idle hover press on_over{d e} on_press{d e}) = {
     states: @states
     values: {idle: @idle hover: ?hover press: ?press}
-    settings: {pointer_enter: ?on_over press: ?on_press}
+    settings: {pointer_enter: ani!(?on_over.d ?on_over.e) press: ani!(?on_press.d ?on_press.e)}
 }
 // Macro parameters can have nested parameter lists.
 Animate!(type idle{da B df} hover press on_over{d e} on_press{d e}) = Animated<@type>{
@@ -253,14 +272,14 @@ InteractiveRoot!(tag) = \
 
 \
 F!(w h dir jm jc dm{t b l r = (10)}) = Flex!(
-    width: ?w height: ?h direction: ?dir
-    justify_main: ?jm justify_cross: ?jc margin{top:?m.t bottom:?m.b left:?m.l right:?m.r}
+    width:?w height:?h direction:?dir
+    justify_main:?jm justify_cross:?jc margin{top:?m.t bottom:?m.b left:?m.l right:?m.r}
 )
 Nice!() = TheEnd
-+new_spec(
++basic_spec(
     param1 = 58
     flex{..}
-    // Single-quotes means it is inserted to a scene node.
+    // Single-quotes means it is inserted to a scene node. These parameters only support .. and nested single-quoted params.
     'inner'{.. 'innermost'{..}}
 ) = \
     FlexStyle{
@@ -269,20 +288,23 @@ Nice!() = TheEnd
     }
     BrColor(#0053AA)
     "inner"
-        ..'inner'
+        ..*  // Infer the parameter this refers to from this scene node's name.
         "innermost"
-            ..'inner'.'innermost'
+            ..*
 \
 +spec_override(
     param1
     flex{..}
     'inner'{.. 'innermost'{..}}
 ) = \
-    +new_spec(
+    +basic_spec(
         param1: ?param1
         flex{..flex}
-        'inner'{..'inner' 'innermost'{..'inner'.'innermost'}}
+        // We map inputs to this spec into the basic spec's inputs.
+        // Infer the parameters these '..*' refer to from the target parameter names.
+        'inner'{..* 'innermost'{..*}}
     )
+    +a::b::imported_spec()
     TextLine{ text: "testing multi \
         line text"
     }
@@ -367,19 +389,27 @@ The scene section must be the *last* section in a caf file.
                 { states: [Selected], values: {idle: Px(10.0)}, settings: {pointer_enter: ani!(0.3 InExpo)} }
             ]
 
-"concise" F!(100vw 100vh Row SpaceEvenly Center)
-    "button" F!(jm:Center jc:Center)
+"concise"
+    F!(100vw 100vh Row SpaceEvenly Center)
+
+    "button"
+        F!(jm:Center jc:Center)
         InteractiveRoot!("ExampleButton")
         Animate!(BgColor
-            hsla!(274.0 0.25 0.55 0.8) h:hsla!(274.0 0.25 0.55 0.8) p:hsla!(274.0 0.25 0.55 0.8)
+            hsla!(274 0.25 0.55 0.8) h:hsla!(274 0.25 0.55 0.8) p:hsla!(274 0.25 0.55 0.8)
             on_over{$some_dur OutExp} on_press{0.005 InExpo})
-        "txt" F!(m{10.0% 10.0% 18.0px 18.0px})
+
+        "txt"
+            F!(m{10% 10% 18px 18px})
             ControlLabel("ExampleButtonText")
             Text!(s: 50.0)
             Animate!(TextLineColor #000000 h:#112345 p:#F01111AA on_over{0.15 OutExpo} on_press{0.2 OutExpo})
             MultiAnimate!(DimsTop
-                animate_entry!([] 20.0px on_over{0.3 InExpo})
-                animate_entry!([Selected] 20.0px on_over{0.3 InExpo}))
+                animate!([] 20px on_over{0.3 InExpo})
+                animate!([Selected] 20px on_over{0.3 InExpo}))
+
             "inserted"+spec_in_tree(num: 42)
-            "another" F!(10px 11px)
+
+            "another"
+                F!(10px 11px)
                 Text!("Hello! \"{user}\"")

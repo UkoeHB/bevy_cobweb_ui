@@ -1,25 +1,21 @@
-use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct CafScene
-{
-    pub start_fill: CafFill,
-}
+#[derive(Debug, Clone, PartialEq, Deref)]
+pub struct CafInstruction(pub CafStruct);
 
-impl CafScene
+impl CafInstruction
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
+        self.0.write_to(writer)?;
         Ok(())
     }
-
-    pub fn eq_ignore_whitespace(&self, _other: &CafScene) -> bool
-    {
-        true
-    }
 }
+
+/*
+Parsing:
+
+*/
 
 //-------------------------------------------------------------------------------------------------------------------
