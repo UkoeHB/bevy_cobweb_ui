@@ -11,7 +11,7 @@
 #[derive(Debug, Clone, PartialEq, Deref)]
 pub struct CafNumberValue
 {
-    pub original: Arc<str>,
+    pub original: SmolStr,
     pub deserialized: serde_json::Number,
 }
 
@@ -19,14 +19,20 @@ impl CafNumberValue
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.original.write_to(writer)?;
+        writer.write(self.original.as_bytes())?;
         Ok(())
+    }
+
+    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
+    {
+        Ok(serde_json::Value::Number(self.deserialized.clone()))
     }
 }
 
 /*
 Parsing:
-- Use regex to identify number, then parse it using a JSON deserializer with serde_json::Number::from_str().
+- Use regex to identify number, then parse it using a JSON deserializer with serde_json::Number::from_str() and
+check result
 */
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -45,6 +51,11 @@ impl CafNumber
         self.fill.write_to(writer)?;
         self.number.write_to(writer)?;
         Ok(())
+    }
+
+    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
+    {
+        self.number.to_json()
     }
 }
 

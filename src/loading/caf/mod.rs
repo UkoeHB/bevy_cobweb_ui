@@ -1,9 +1,7 @@
 mod caf;
 mod caf_metadata;
-mod data;
-mod sections;
+pub mod defs;
+pub mod sections;
 
 pub use caf::*;
 pub use caf_metadata::*;
-pub use data::*;
-pub use sections::*;

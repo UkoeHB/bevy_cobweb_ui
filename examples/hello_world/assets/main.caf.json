@@ -1,4 +1,9 @@
 {
+"#commands": {
+    "Test": [2, 2.0, {"B": [[2]]}, {"a": 10}],
+    "GenericTest<GenericTest<u32, u32, (u32, u32)>, DeeperTest, (f32, f32)>": {"a": 10}
+},
+
 "scene": {
     "TextLine": {
         "size": 50.0,

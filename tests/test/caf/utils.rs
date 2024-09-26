@@ -53,7 +53,7 @@ pub(crate) fn caf_parse_test_result(raw: impl AsRef<str>, value: Caf) -> bool
     value.write_to(&mut cursor).unwrap();
 
     // Compare to raw.
-    (raw == &bytes[..]
+    raw == &bytes[..]
 }
 
 //-------------------------------------------------------------------------------------------------------------------
