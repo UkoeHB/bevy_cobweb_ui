@@ -4,16 +4,16 @@
 #[derive(Debug, Clone, PartialEq, Deref)]
 pub enum CafValue
 {
-    /// Includes instructions (which are 1:1 rust structs) and enums (which are struct-like in caf files).
-    Struct(CafStruct),
-    /// Special built-in enum variants like `none` and `#FFFFFF` for colors.
-    StructBuiltin(CafStructBuiltin),
+    EnumVariant(CafEnumVariant),
+    /// Special built-in types like `none` and `#FFFFFF` for colors.
+    Builtin(CafBuiltin),
     Array(CafArray),
     Tuple(CafTuple),
     Map(CafMap),
     FlattenGroup(CafFlattenGroup),
     Number(CafNumber),
     Bool(CafBool),
+    None(CafNone),
     String(CafString),
     Constant(CafConstant),
     DataMacro(CafDataMacroCall),
@@ -26,10 +26,10 @@ impl CafValue
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
         match *self {
-            Self::Struct(val) => {
+            Self::EnumVariant(val) => {
                 val.write_to(writer)?;
             }
-            Self::StructBuiltin(val) => {
+            Self::Builtin(val) => {
                 val.write_to(writer)?;
             }
             Self::Array(val) => {
@@ -50,6 +50,9 @@ impl CafValue
             Self::Bool(val) => {
                 val.write_to(writer)?;
             }
+            Self::None(val) => {
+                val.write_to(writer)?;
+            }
             Self::String(val) => {
                 val.write_to(writer)?;
             }
@@ -64,6 +67,51 @@ impl CafValue
             }
         }
         Ok(())
+    }
+
+    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
+    {
+        match *self {
+            Self::Enum(val) => {
+                val.to_json(writer)
+            }
+            Self::Builtin(val) => {
+                val.to_json(writer)
+            }
+            Self::Array(val) => {
+                val.to_json(writer)
+            }
+            Self::Tuple(val) => {
+                val.to_json(writer)
+            }
+            Self::Map(val) => {
+                val.to_json(writer)
+            }
+            Self::FlattenGroup(val) => {
+                Err(std::io::Error::other(format!("cannot convert flatten group {val:?} to JSON")))
+            }
+            Self::Number(val) => {
+                val.to_json(writer)
+            }
+            Self::Bool(val) => {
+                val.to_json(writer)
+            }
+            Self::None(val) => {
+                val.to_json(writer)
+            }
+            Self::String(val) => {
+                val.to_json(writer)
+            }
+            Self::Constant(val) => {
+                Err(std::io::Error::other(format!("cannot convert constant {val:?} to JSON")))
+            }
+            Self::DataMacro(val) => {
+                Err(std::io::Error::other(format!("cannot convert data macro {val:?} to JSON")))
+            }
+            Self::MacroParam(val) => {
+                Err(std::io::Error::other(format!("cannot convert macro param {val:?} to JSON")))
+            }
+        }
     }
 }
 

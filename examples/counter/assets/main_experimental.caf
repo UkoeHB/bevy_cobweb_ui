@@ -233,7 +233,7 @@ $boolean = true
 $none = none
 $aggregate = {x: $val}
 // @h means insert 'h' in this position. If 'h' is missing than an error will be emitted.
-hsla!(/* in-line comment */ h  s l , a{b{c}} /* over here */) = Hsla<A<B>,@a,?f,C,D>{ H!() H()
+hsla!(/* in-line comment */ h  s l , a{b{c}} /* over here */) = Hsla<A<B>,@a,?f,C,D bool>{ H!() H()
     hue: @h saturation: @s lightness: ?l alpha: @a.b.c
     AaBb herewego!()
 }
@@ -258,7 +258,7 @@ animate!(states idle hover press on_over{d e} on_press{d e}) = {
     settings: {pointer_enter: ani!(?on_over.d ?on_over.e) press: ani!(?on_press.d ?on_press.e)}
 }
 // Macro parameters can have nested parameter lists.
-Animate!(type idle{da B df} hover press on_over{d e} on_press{d e}) = Animated<@type>{
+Animate!(^type idle{da B df} hover press on_over{d e} on_press{d e}) = Animated<@type>{
     values: {idle: @idle hover: ?hover press: ?press}
     settings: {pointer_enter: ani!(?on_over.d ?on_over.e) press: ani!(?on_press.d ?on_press.e)}
 }
@@ -315,6 +315,7 @@ LoadImages[
     "a/b.png"
 ]
 AnotherCommand($stuff)
+GenericEnum<A B>::Var
 
 /*
 # Scenes
@@ -362,6 +363,7 @@ The scene section must be the *last* section in a caf file.
         }
         Interactive
         TestMacro!({ x:5 ""} [8 ?param])
+        TestEnum::Var(5 10)
 
         // Sets up the button's text as a single line of text with margin to control the edges of the button.
         "text"

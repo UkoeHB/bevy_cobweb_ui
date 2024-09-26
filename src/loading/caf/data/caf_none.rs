@@ -1,38 +1,31 @@
 
+
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Deref)]
-pub struct CafTypeIdentifier
+pub struct CafNone
 {
-    pub start_fill: CafFill,
-    pub name: Arc<str>,
-    pub generics: Option<CafGenerics>
+    pub fill: CafFill
 }
 
-impl CafTypeIdentifier
+impl CafNone
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        writer.write(self.as_bytes())?;
+        self.fill.write_to(writer)?;
+        writer.write("none".as_bytes())?;
         Ok(())
     }
-}
 
-impl Default for CafTypeIdentifier
-{
-    fn default() -> Self
+    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
-        Self{
-            start_fill: CafFill::new(' '),
-            name: Arc::from(""),
-            generics: None,
-        }
+        Ok(serde_json::Value::Null)
     }
 }
 
 /*
 Parsing:
-- identifier is camelcase
+- parse as string
 */
 
 //-------------------------------------------------------------------------------------------------------------------

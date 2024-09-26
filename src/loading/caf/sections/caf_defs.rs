@@ -35,8 +35,6 @@ impl CafDefEntry
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// Distinguish between instruction defs and data defs.
-
 /// Includes constants and macros. A constant is equivalent to a macro with no parameters.
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct CafDefs

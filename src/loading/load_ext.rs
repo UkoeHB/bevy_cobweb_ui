@@ -291,7 +291,6 @@ impl CobwebAssetRegistrationAppExt for App
     fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self
     {
         self.register_type::<T>()
-            .register_type::<Vec<T>>()
             .register_type::<Multi<T>>()
             .register_derived_loadable::<T>()
             .register_derived_loadable::<Multi<T>>()
