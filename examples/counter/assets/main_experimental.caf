@@ -258,7 +258,7 @@ animate!(states idle hover press on_over{d e} on_press{d e}) = {
     settings: {pointer_enter: ani!(?on_over.d ?on_over.e) press: ani!(?on_press.d ?on_press.e)}
 }
 // Macro parameters can have nested parameter lists.
-Animate!(^type idle{da B df} hover press on_over{d e} on_press{d e}) = Animated<@type>{
+Animate!(type idle{da B df} hover press on_over{d e} on_press{d e}) = Animated<@type>{
     values: {idle: @idle hover: ?hover press: ?press}
     settings: {pointer_enter: ani!(?on_over.d ?on_over.e) press: ani!(?on_press.d ?on_press.e)}
 }
@@ -301,7 +301,7 @@ Nice!() = TheEnd
         param1: ?param1
         flex{..flex}
         // We map inputs to this spec into the basic spec's inputs.
-        // Infer the parameters these '..*' refer to from the target parameter names.
+        // The parameters these '..*' refer to are inferred from the target parameter names.
         'inner'{..* 'innermost'{..*}}
     )
     +a::b::imported_spec()

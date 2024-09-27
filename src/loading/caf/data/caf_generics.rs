@@ -22,6 +22,11 @@ impl CafRustPrimitive
         writer.write(self.primitive.as_bytes())?;
         Ok(())
     }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.fill.recover(other.fill);
+    }
 }
 
 
@@ -105,6 +110,27 @@ impl CafGenericItem
         Ok(())
     }
 
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Struct{fill, generics, ..}, Self::Struct{fill: other_fill, generics: other_generics, ..}) => {
+                fill.recover(other_fill);
+                if let (Some(generics), Some(other_generics)) = (generics, other_generics) {
+                    generics.recover_fill(other_generics);
+                }
+            }
+            (Self::Tuple{fill, values, close_fill}, Self::Tuple{fill: other_fill, values: other_values, close_fill: other_close_fill}) => {
+                fill.recover(other_fill);
+                for (value, other_value) in values.iter_mut().zip(other_values.iter()) {
+                    value.recover_fill(other_value);
+                }
+                close_fill.recover(other_close_fill);
+            }
+            (Self::RustPrimitive(primitive), Self::RustPrimitive(primitive: other_primitive)) => {
+                primitive.recover_fill(other_primitive);
+            }
+        }
+    }
 }
 
 
@@ -148,6 +174,19 @@ impl CafGenericValue
             }
         }
         Ok(())
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Item(val), Self::Item(other_val)) => {
+                val.recover_fill(other_val);
+            }
+            (Self::MacroParam(val), Self::MacroParam(other_val)) => {
+                val.recover_fill(other_val);
+            }
+            _ => ()
+        }
     }
 
     //todo: resolve_macro
@@ -200,6 +239,16 @@ impl CafGenerics
         }
         writer.write('>'.as_bytes())?;
         Ok(())
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.open_fill.recover(&other.open_fill);
+        // TODO: search for equal pairing instead?
+        for (value, other_value) in self.values.iter_mut().zip(other.values.iter()) {
+            value.recover(other_value);
+        }
+        self.close_fill.recover(&other.close_fill);
     }
 }
 

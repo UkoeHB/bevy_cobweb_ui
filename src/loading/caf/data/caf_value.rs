@@ -113,6 +113,85 @@ impl CafValue
             }
         }
     }
+
+    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    {
+        match type_info {
+            TypeInfo::Struct(info) => {
+
+            }
+            TypeInfo::TupleStruct(info) => {
+
+            }
+            TypeInfo::Tuple(_) => {
+
+            }
+            TypeInfo::List(_) => {
+
+            }
+            TypeInfo::Array(_) => {
+
+            }
+            TypeInfo::Map(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Enum(info) => {
+
+            }
+            TypeInfo::Value(_) => {
+                
+            }
+        }
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Enum(val), Self::Enum(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Builtin(val), Self::Builtin(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Array(val), Self::Array(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Tuple(val), Self::Tuple(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Map(val), Self::Map(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::FlattenGroup(val), Self::FlattenGroup(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Number(val), Self::Number(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Bool(val), Self::Bool(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::None(val), Self::None(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::String(val), Self::String(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::Constant(val), Self::Constant(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::DataMacro(val), Self::DataMacro(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            (Self::MacroParam(val), Self::MacroParam(other_val)) => {
+                val.recover_fill(other_fill);
+            }
+            _ => ()
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -39,6 +39,25 @@ impl CafInstructionIdentifier
         Ok(string)
     }
 
+    pub fn from_short_path(short_path: &'static str) -> Result<Self, std::io::Error>
+    {
+        // TODO: properly parse the path to extract generics so recover_fill can repair them
+        Ok(Self{
+            start_fill: CafFill::default(),
+            name: SmolStr::new_static(short_path),
+            generics: None,
+        })
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.start_fill.recover(&mut other.start_fill);
+
+        if let (Some(generics), Some(other_generics)) = (&mut self.generics, &other.generics) {
+            generics.recover_fill(other_generics);
+        }
+    }
+
     //todo: resolve_constants
     //todo: resolve_macro
 }
@@ -134,6 +153,135 @@ impl CafInstruction
         }
     }
 
+    // Expect:
+    // - JSON: [[..vals..]]
+    // - Info: TupleStruct of single element, single element is an array or list
+    fn array_from_json(val: &serde_json::Value, info: &TupleStructInfo, registry: &TypeRegistry) -> Result<Option<Self>, String>
+    {
+        // Check if JSON is array of array.
+        let serde_json::Value::Array(arr) = val else { return Ok(None) };
+        if arr.len() != 1 {
+            return Ok(None);
+        }
+        if !matches!(arr[0], serde_json::Value::Array(_)) {
+            return Ok(None);
+        }
+
+        // Get type info of inner slice.
+        if info.field_len() != 1 {
+            return Ok(None);
+        }
+        let Some(registration) = type_registry.get(info.field_at(0).type_id()) else { unreachable!() };
+        if !matches(registration.type_info(), &TypeInfo::Array(_)) ||
+            !matches(registration.type_info(), &TypeInfo::List(_)) {
+            return Ok(None);
+        }
+
+        Ok(Some(Self::Array{
+            id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
+            array: CafArray::from_json(&arr[0], registration.type_info(), registry)?
+        }))
+    }
+
+    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    {
+        match type_info {
+            TypeInfo::Struct(info) => {
+                // Case 1: zero-sized type
+                if info.field_len() == 0 {
+                    if *val != serde_json::Value::Array(vec![]) {
+                        tracing::warn!("encountered non-empty JSON value {:?} when converting zero-size-type {:?}",
+                            val, type_info.type_path());
+                    }
+
+                    return Ok(Self::Unit{
+                        id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
+                    });
+                }
+
+                // Case 2: normal struct
+                Ok(Self::Map{
+                    id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
+                    map: CafMap::from_json(val, type_info, registry)?
+                })
+            }
+            TypeInfo::TupleStruct(info) => {
+                // Case 1: tuple of list/array
+                if let Some(result) = Self::array_from_json(val, info, type_registry)? {
+                    return result;
+                }
+
+                // Case 2: tuple of anything else
+                Ok(Self::Tuple{
+                    id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
+                    tuple: CafTuple::from_json(val, type_info, registry)?
+                })
+            }
+            TypeInfo::Tuple(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a tuple not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::List(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a list not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Array(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is an array not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Map(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Enum(info) => {
+                Ok(Self::Enum{
+                    id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
+                    variant: CafEnumVariant::from_json(val, type_info, registry)?
+                })
+            }
+            TypeInfo::Value(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a value not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+        }
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Unit{id}, Self::Unit{id: other}) => {
+                id.recover_fill(other);
+            }
+            (Self::Tuple{id, tuple}, Self::Tuple{id: other_id, tuple: other_tuple}) => {
+                id.recover_fill(other_id);
+                tuple.recover_fill(other_tuple);
+            }
+            (Self::Array{id, array}, Self::Array{id: other_id, array: other_array}) => {
+                id.recover_fill(other_id);
+                array.recover_fill(other_array);
+            }
+            (Self::Map{id, map}, Self::Map{id: other_id, map: other_map}) => {
+                id.recover_fill(other_id);
+                map.recover_fill(other_map);
+            }
+            (Self::Enum{id, variant}, Self::Enum{id: other_id, variant: other_variant}) => {
+                id.recover_fill(other_id);
+                variant.recover_fill(other_variant);
+            }
+            _ => ()
+        }
+    }
+
     pub fn id(&self) -> &CafInstructionIdentifier
     {
         match self {
@@ -149,6 +297,7 @@ impl CafInstruction
 /*
 Parsing:
 - no whitespace allowed between identifier and value
+- map-type instructions can only have field name map keys in the base layer
 */
 
 //-------------------------------------------------------------------------------------------------------------------

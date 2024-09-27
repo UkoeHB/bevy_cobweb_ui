@@ -1,6 +1,7 @@
 {
 "#commands": {
-    "Test": [2, 2.0, {"B": [[2]]}, {"a": 10}],
+    "BasicTest": [1],
+    "Test": [2, 2.0, {"B": [[2]]}, {"a": 10}, {"32": 32, "42": 32}],
     "GenericTest<GenericTest<u32, u32, (u32, u32)>, DeeperTest, (f32, f32)>": {"a": 10}
 },
 
