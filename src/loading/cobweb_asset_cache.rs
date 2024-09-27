@@ -249,9 +249,12 @@ impl ReflectedLoadable
             hint = serde_json::to_string(&temp).unwrap();
         }
         // We need to manually add this for some reason...
-        if matches!(*temp.get_represented_type_info().unwrap(), bevy::reflect::TypeInfo::TupleStruct(_)) {
-            hint.insert(0, '[');
-            hint.push(']');
+        // TODO: this is not always required .. ? was there a bevy bug fix?
+        if let Some(bevy::reflect::TypeInfo::TupleStruct(info)) = temp.get_represented_type_info() {
+            if info.field_len() == 1 {
+                hint.insert(0, '[');
+                hint.push(']');
+            }
         }
         hint
     }

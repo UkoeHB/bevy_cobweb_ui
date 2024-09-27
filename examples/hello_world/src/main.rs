@@ -37,9 +37,24 @@ enum InnerTest
     B(DeeperTest)
 }
 
-#[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct Test(u32, f32, InnerTest, GenericTest<u32, DeeperTest, (f32, f32)>);
+#[derive(Reflect, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+struct Test(u32, f32, InnerTest, GenericTest<u32, DeeperTest, (f32, f32)>, std::collections::HashMap<u32, u32>);
 
+impl Default for Test
+{
+    fn default() -> Self {
+        let mut map = std::collections::HashMap::default();
+        map.insert(0, 0);
+        Self(0, 0.0, InnerTest::A, GenericTest{a: 0, _p: std::marker::PhantomData}, map)
+    }
+}
+
+#[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+struct BasicTest(u32);
+
+impl bevy::ecs::world::Command for BasicTest { fn apply(self, _: &mut World) {
+    tracing::warn!("success");
+}}
 impl bevy::ecs::world::Command for Test { fn apply(self, _: &mut World) {
     tracing::warn!("success");
 }}
@@ -82,6 +97,7 @@ println!("{:?}", raw2);
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
+        .register_command::<BasicTest>()
         .register_command::<Test>()
         .register_command::<GenericTest<GenericTest<u32, u32, (u32, u32)>, DeeperTest, (f32, f32)>>()
         .load("main.caf.json")

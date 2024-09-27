@@ -61,7 +61,12 @@ impl CafString
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
+        self.write_to_with_space(writer, '')
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: impl AsRef<str>) -> Result<(), std::io::Error>
+    {
+        self.fill.write_to_or_else(writer, space)?;
         writer.write('"'.as_bytes())?;
         let num_segments = self.segments.len():
         for (idx, segment) in self.segments.iter().enumerate() {
@@ -82,6 +87,44 @@ impl CafString
             segment.write_to_json(&mut cursor)?;
         }
         Ok(serde_json::Value::String(string))
+    }
+
+    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    {
+        match type_info {
+            TypeInfo::Struct(info) => {
+
+            }
+            TypeInfo::TupleStruct(info) => {
+
+            }
+            TypeInfo::Tuple(_) => {
+
+            }
+            TypeInfo::List(_) => {
+
+            }
+            TypeInfo::Array(_) => {
+
+            }
+            TypeInfo::Map(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Enum(info) => {
+
+            }
+            TypeInfo::Value(_) => {
+                
+            }
+        }
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.fill.recover(&other.fill);
     }
 }
 

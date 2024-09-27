@@ -18,8 +18,12 @@ impl CafArray
     {
         self.start_fill.write_to(writer)?;
         writer.write('['.as_bytes())?;
-        for entry in self.entries.iter() {
-            entry.write_to(writer)?;
+        for (idx, entry) in self.entries.iter().enumerate() {
+            if idx == 0 {
+                entry.write_to(writer)?;
+            } else {
+                entry.write_to_with_space(writer, ' ')?;
+            }
         }
         self.end_fill.write_to(writer)?;
         writer.write(']'.as_bytes())?;
@@ -33,6 +37,48 @@ impl CafArray
             array.push(entry.to_json()?);
         }
         Ok(serde_json::Value::Array(array))
+    }
+
+    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    {
+        let serde_json::Value::Array(json_vec) = val else {
+            return Err(format!(
+                "failed converting {:?} from json {:?} into an array; expected json to be an array",
+                type_info.type_path(), val
+            ));
+        };
+
+        match type_info {
+            TypeInfo::List(info) => {
+                let Some(registration) = type_registry.get(info.item_type_id()) else { unreachable!() };
+                let mut entries = Vec::with_capacity(json_vec.len());
+                for json_value in json_vec.iter() {
+                    entries.push(CafValue::from_json(json_value, registration.type_info(), type_registry)?);
+                }
+                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+            }
+            TypeInfo::Array(info) => {
+                let Some(registration) = type_registry.get(info.item_type_id()) else { unreachable!() };
+                let mut entries = Vec::with_capacity(json_vec.len());
+                for json_value in json_vec.iter() {
+                    entries.push(CafValue::from_json(json_value, registration.type_info(), type_registry)?);
+                }
+                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+            }
+            _ => Err(format!(
+                "failed converting {:?} from json {:?} into an array; type is not a list/array",
+                val, type_info.type_path()
+            ))
+        }
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.start_fill.recover(&other.start_fill);
+        for (entry, other_entry) in self.entries.iter_mut().zip(other.entries.iter()) {
+            entry.recover_fill(other_entry);
+        }
+        self.end_fill.recover(&other.end_fill);
     }
 }
 

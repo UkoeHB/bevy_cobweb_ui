@@ -21,6 +21,11 @@ impl CafEnumVariantIdentifier
     {
         Ok(String::from(self.name.as_str()))
     }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.start_fill.recover(&other.start_fill);
+    }
 }
 
 /*
@@ -38,16 +43,16 @@ pub enum CafEnumVariant
     },
     Tuple{
         id: CafEnumVariantIdentifier,
-        tuple: CafValueTuple,
+        tuple: CafTuple,
     },
     /// Shorthand for and equivalent to a tuple of array.
     Array{
         id: CafEnumVariantIdentifier,
-        array: CafValueArray,
+        array: CafArray,
     },
     Map{
         id: CafEnumVariantIdentifier,
-        map: CafValueMap,
+        map: CafMap,
     }
 }
 
@@ -106,6 +111,70 @@ impl CafEnumVariant
                 map.insert(key, value);
                 Ok(serde_json::Object(map))
             }
+        }
+    }
+
+    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    {
+        // TODO: check for Option
+
+        let serde_json::Value::Object(json_map) = val else {
+            return Err(format!(
+                "failed converting {:?} from json {:?}; expected json to be a map",
+                type_info.type_path(), val
+            ));
+        };
+
+        match type_info {
+            TypeInfo::Struct(info) => {
+
+            }
+            TypeInfo::TupleStruct(info) => {
+
+            }
+            TypeInfo::Tuple(_) => {
+
+            }
+            TypeInfo::List(_) => {
+
+            }
+            TypeInfo::Array(_) => {
+
+            }
+            TypeInfo::Map(_) => {
+                Err(format!(
+                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
+                    val, type_info.type_path()
+                ))
+            }
+            TypeInfo::Enum(info) => {
+
+            }
+            TypeInfo::Value(_) => {
+                
+            }
+        }
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Unit{id}, Self::Unit{id: other_id}) => {
+                id.recover_fill(other_id);
+            }
+            (Self::Tuple{id, tuple}, Self::Tuple{id: other_id, tuple: other_tuple}) => {
+                id.recover_fill(other_id);
+                tuple.recover_fill(other_tuple);
+            }
+            (Self::Array{id, array}, Self::Array{id: other_id, array: other_array}) => {
+                id.recover_fill(other_id);
+                array.recover_fill(other_array);
+            }
+            (Self::Map{id, map}, Self::Map{id: other_id, map: other_map}) => {
+                id.recover_fill(other_id);
+                map.recover_fill(other_map);
+            }
+            _ => ()
         }
     }
 }
