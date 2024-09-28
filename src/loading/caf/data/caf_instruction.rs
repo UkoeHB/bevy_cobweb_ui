@@ -136,7 +136,7 @@ impl CafInstruction
             }
             Self::Tuple{tuple, ..} => {
                 // [..tuple items..]
-                tuple.to_json()
+                tuple.to_json_for_type()
             }
             Self::Array{array, ..} => {
                 // [[..array items..]]
@@ -202,7 +202,7 @@ impl CafInstruction
                 // Case 2: normal struct
                 Ok(Self::Map{
                     id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
-                    map: CafMap::from_json(val, type_info, registry)?
+                    map: CafMap::from_json_as_type(val, type_info, registry)?
                 })
             }
             TypeInfo::TupleStruct(info) => {
@@ -214,45 +214,20 @@ impl CafInstruction
                 // Case 2: tuple of anything else
                 Ok(Self::Tuple{
                     id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
-                    tuple: CafTuple::from_json(val, type_info, registry)?
+                    tuple: CafTuple::from_json_as_type(val, type_info, registry)?
                 })
-            }
-            TypeInfo::Tuple(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a tuple not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
-            TypeInfo::List(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a list not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
-            TypeInfo::Array(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is an array not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
-            TypeInfo::Map(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
-                    val, type_info.type_path()
-                ))
             }
             TypeInfo::Enum(info) => {
+                // Note: we assume no instruction is ever Option<T>, so there is no need to check here.
                 Ok(Self::Enum{
                     id: CafInstructionIdentifier::from_short_path(info.type_path_table().short_path()).map_err(|e| format!("{e:?}"))?,
-                    variant: CafEnumVariant::from_json(val, type_info, registry)?
+                    variant: CafEnumVariant::from_json(info, type_info, registry)?
                 })
             }
-            TypeInfo::Value(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a value not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
+            _ => Err(format!(
+                "failed converting {:?} from json {:?} as an instruction; type is not a struct/tuplestruct/enum",
+                val, type_info.type_path()
+            ))
         }
     }
 

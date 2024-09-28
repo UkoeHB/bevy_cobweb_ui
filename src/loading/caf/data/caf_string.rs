@@ -38,6 +38,17 @@ impl CafStringSegment
         writer.write(self.segment.as_bytes())?;
         Ok(())
     }
+
+    /// Note that `Self::write_to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of multi-line
+    /// string formatting. The string contents are preserved, but not their presentation in CAF.
+    pub fn from_json_string(json_str: &String) -> Self
+    {
+        Self{
+            leading_spaces: 0,
+            original: Vec::from_slice(json_str.as_bytes()),
+            segment: String::from(json_str.as_str())
+        }
+    }
 }
 
 /*
@@ -89,37 +100,11 @@ impl CafString
         Ok(serde_json::Value::String(string))
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    /// Note that `Self::to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of multi-line
+    /// string formatting. The string contents are preserved, but not their presentation in CAF.
+    pub fn from_json_string(json_str: &String) -> Self
     {
-        match type_info {
-            TypeInfo::Struct(info) => {
-
-            }
-            TypeInfo::TupleStruct(info) => {
-
-            }
-            TypeInfo::Tuple(_) => {
-
-            }
-            TypeInfo::List(_) => {
-
-            }
-            TypeInfo::Array(_) => {
-
-            }
-            TypeInfo::Map(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
-            TypeInfo::Enum(info) => {
-
-            }
-            TypeInfo::Value(_) => {
-                
-            }
-        }
+        Self{ fill: CafFill::default(), segments: SmallVec::from_elem(CafStringSegment::from_json_string(json_str), 1) }
     }
 
     pub fn recover_fill(&mut self, other: &Self)

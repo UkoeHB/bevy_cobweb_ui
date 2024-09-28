@@ -27,14 +27,18 @@ where
 }}
 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct DeeperTest(Vec<u32>);
+struct DeeperTest(u32);
 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 enum InnerTest
 {
     #[default]
     A,
-    B(DeeperTest)
+    B{
+        d: DeeperTest
+    },
+    C(u32),
+    D(Vec<u32>)
 }
 
 #[derive(Reflect, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
