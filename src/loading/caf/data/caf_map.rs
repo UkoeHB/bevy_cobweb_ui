@@ -66,7 +66,7 @@ impl CafMapKey
     pub fn from_json_key(key: impl AsRef<str>) -> Self
     {
         // Try to convert a number.
-        if let Ok(number) = CafNumber::from_json_string(key) {
+        if let Some(number) = CafNumber::try_from_json_string(key) {
             return Self::Numeric(number);
         }
         // Otherwise it must be a string.
@@ -241,7 +241,65 @@ impl CafMap
         Ok(serde_json::Value::Object(map))
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    fn from_json_impl_struct(
+        json_map: &serde_json::Map,
+        type_path: &'static str,
+        get_field_typeid: Fn(&str) -> Option<TypeId>,
+        registry: &TypeRegistry
+    ) -> Result<Self, String>
+    {
+        let mut entries = Vec::with_capacity(json_map.len());
+        // Note: we assume the "preserve_order" feature is enabled for serde_json.
+        for (json_key, json_value) in json_map.iter() {
+            let Some(field_typeid) = (get_field_typeid)(json_key.as_str()) else {
+                return Err(format!(
+                    "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
+                    type_path, val, json_key
+                ));
+            };
+
+            let Some(registration) = registry.get(field_typeid) else { unreachable!() };
+            entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
+                // Struct maps have field name keys.
+                CafMapKey::field_name(json_key),
+                json_value,
+                registration.type_info(),
+                registry
+            )?));
+        }
+        Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+    }
+
+    fn from_json_impl_map(
+        json_map: &serde_json::Map,
+        type_path: &'static str,
+        get_field_typeid: Fn(&str) -> Option<TypeId>,
+        registry: &TypeRegistry
+    ) -> Result<Self, String>
+    {
+        let mut entries = Vec::with_capacity(json_map.len());
+        // Note: we assume the "preserve_order" feature is enabled for serde_json.
+        for (json_key, json_value) in json_map.iter() {
+            let Some(field_typeid) = (get_field_typeid)(json_key.as_str()) else {
+                return Err(format!(
+                    "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
+                    type_path, val, json_key
+                ));
+            };
+
+            let Some(registration) = registry.get(field_typeid) else { unreachable!() };
+            entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
+                // Plain maps have value keys.
+                CafMapKey::from_json_key(json_key),
+                json_value,
+                registration.type_info(),
+                registry
+            )?));
+        }
+        Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+    }
+
+    pub fn from_json_as_type(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
     {
         let serde_json::Value::Object(json_map) = val else {
             return Err(format!(
@@ -252,54 +310,34 @@ impl CafMap
 
         match type_info {
             TypeInfo::Struct(info) => {
-                let mut entries = Vec::with_capacity(json_map.len());
-                // Note: we assume the "preserve_order" feature is enabled for serde_json.
-                for (json_key, json_value) in json_map.iter() {
-                    let Some(field) = info.field(json_key.as_str()) else {
-                        return Err(format!(
-                            "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
-                            type_info.type_path(), val, json_key
-                        ));
-                    };
-
-                    let Some(registration) = type_registry.get(field.type_id()) else { unreachable!() };
-                    entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
-                        // Struct maps have field name keys.
-                        CafMapKey::field_name(json_key),
-                        json_value,
-                        registration.type_info(),
-                        type_registry
-                    )?));
-                }
-                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+                Self::from_json_impl_struct(json_map, type_info.type_path(), |key| info.field(key).type_id(), registry)
             }
-            TypeInfo::Map(_) => {
-                let mut entries = Vec::with_capacity(json_map.len());
-                // Note: we assume the "preserve_order" feature is enabled for serde_json.
-                for (json_key, json_value) in json_map.iter() {
-                    let Some(field) = info.field(json_key.as_str()) else {
-                        return Err(format!(
-                            "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
-                            type_info.type_path(), val, json_key
-                        ));
-                    };
-
-                    let Some(registration) = type_registry.get(field.type_id()) else { unreachable!() };
-                    entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
-                        // Plain maps have value keys.
-                        CafMapKey::from_json_key(json_key),
-                        json_value,
-                        registration.type_info(),
-                        type_registry
-                    )?));
-                }
-                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+            TypeInfo::Map(info) => {
+                Self::from_json_impl_map(json_map, type_info.type_path(), |key| info.field(key).type_id(), registry)
             }
             _ => Err(format!(
                 "failed converting {:?} from json {:?} into a map; type is not a struct/map",
-                val, type_info.type_path()
+                type_info.type_path(), val
             ))
         }
+    }
+
+    pub fn from_json_as_enum(
+        val: &serde_json::Value,
+        type_path: &'static str,
+        variant_name: &str,
+        variant_info: &StructVariantInfo,
+        registry: &TypeRegistry
+    ) -> Result<Self, String>
+    {
+        let serde_json::Value::Object(json_map) = val else {
+            return Err(format!(
+                "failed converting {:?}::{:?} from json {:?}; expected json to be a map",
+                type_path, variant_name, val
+            ));
+        };
+
+        Self::from_json_impl_struct(json_map, type_path, |key| variant_info.field(key).type_id(), registry)
     }
 
     pub fn recover_fill(&mut self, other: &Self)

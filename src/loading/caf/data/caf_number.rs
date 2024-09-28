@@ -27,6 +27,12 @@ impl CafNumberValue
     {
         Ok(serde_json::Value::Number(self.deserialized.clone()))
     }
+
+    pub fn try_from_json_string(json_str: &String) -> Option<Self>
+    {
+        let deserialized = serde_json::Number::from_str(json_str).ok()?;
+        Some(Self{ original: SmolStr::from(json_str.as_str()), deserialized })
+    }
 }
 
 /*
@@ -94,6 +100,12 @@ impl CafNumber
                 
             }
         }
+    }
+
+    pub fn try_from_json_string(json_str: &String) -> Option<Self>
+    {
+        let number = CafNumberValue::try_from_json_string(json_str)?;
+        Some(Self{ fill: CafFill::default(), number })
     }
 
     pub fn recover_fill(&mut self, other: &Self)

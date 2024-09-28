@@ -67,7 +67,7 @@ impl CafArray
             }
             _ => Err(format!(
                 "failed converting {:?} from json {:?} into an array; type is not a list/array",
-                val, type_info.type_path()
+                type_info.type_path(), val
             ))
         }
     }
