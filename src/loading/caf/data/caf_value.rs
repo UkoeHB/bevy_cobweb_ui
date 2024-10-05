@@ -118,31 +118,46 @@ impl CafValue
     {
         match type_info {
             TypeInfo::Struct(info) => {
+                // Case: string-like when JSON is a string.
 
             }
             TypeInfo::TupleStruct(info) => {
+                // Case: string-like when JSON is a string.
 
             }
             TypeInfo::Tuple(_) => {
-
+                Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?))
             }
             TypeInfo::List(_) => {
-
+                Ok(Self::Array(CafArray::from_json(val, type_info, registry)?))
             }
             TypeInfo::Array(_) => {
-
+                Ok(Self::Array(CafArray::from_json(val, type_info, registry)?))
             }
             TypeInfo::Map(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
-                    val, type_info.type_path()
-                ))
+                Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?))
             }
             TypeInfo::Enum(info) => {
+                // Special case: built-in type.
 
+                // Special case: Option.
+                if let Some(result) = CafEnum::try_from_json_option(val, info, registry)? {
+                    return Ok(result);
+                }
+
+                // Normal enum.
             }
             TypeInfo::Value(_) => {
-                
+                match val {
+                    serde_json::Value::Bool(value) => Ok(Self::Bool(CafBool{ fill: CafFill::default(), value})),
+                    serde_json::Value::Number(value) => Ok(Self::Number(CafNumber::from_json_number(value)?)),
+                    serde_json::Value::String(value) => Ok(Self::String(CafString::from_json_string(value)?)),
+                    _ => Err(format!(
+                        "failed converting {:?} from json {:?} into a value; json is not a bool/number/string so \
+                        we don't know how to handle it",
+                        type_info.type_path(), val
+                    ))
+                }
             }
         }
     }

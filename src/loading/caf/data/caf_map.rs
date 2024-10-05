@@ -66,11 +66,11 @@ impl CafMapKey
     pub fn from_json_key(key: impl AsRef<str>) -> Self
     {
         // Try to convert a number.
-        if let Some(number) = CafNumber::try_from_json_string(key) {
+        if let Some(number) = CafNumber::try_from_json_string(key.as_ref()) {
             return Self::Numeric(number);
         }
         // Otherwise it must be a string.
-        Self::String(CafString::from_json_string(key))
+        Self::String(CafString::from_json_string(key.as_ref()))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -299,6 +299,7 @@ impl CafMap
         Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
     }
 
+    /// Includes structs and 'raw' maps like `HashMap`.
     pub fn from_json_as_type(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
     {
         let serde_json::Value::Object(json_map) = val else {
