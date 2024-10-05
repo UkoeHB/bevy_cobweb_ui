@@ -75,6 +75,7 @@ impl CafTuple
         Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
     }
 
+    /// Plain tuples and tuple-structs are wrapped in an array on the JSON side.
     pub fn from_json_as_type(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
     {
         let type_path = type_info.type_path();
@@ -131,6 +132,7 @@ impl CafTuple
         )
     }
 
+    /// Enum-tuples of multiple values are wrapped in an array on the JSON side.
     pub fn from_json_as_enum(
         val: &serde_json::Value,
         type_path: &'static str,

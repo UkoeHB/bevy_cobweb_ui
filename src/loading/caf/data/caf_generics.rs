@@ -10,9 +10,9 @@ pub struct CafRustPrimitive
 
 impl CafRustPrimitive
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
+        self.fill.write_to_or_else(writer, space)?;
         writer.write(self.primitive.as_bytes())?;
         Ok(())
     }
@@ -57,18 +57,18 @@ pub enum CafGenericItem
 
 impl CafGenericItem
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str) -> Result<(), std::io::Error>
     {
         match *self {
             Self::Struct{fill, id, generics} => {
-                fill.write_to(writer)?;
+                fill.write_to_or_else(writer, space)?;
                 writer.write(id.as_bytes())?;
                 if let Some(generics) = generics {
                     generics.write_to(writer)?;
                 }
             }
             Self::Tuple{fill, values, close_fill} => {
-                fill.write_to(writer)?;
+                fill.write_to_or_else(writer, space)?;
                 writer.write('('.as_bytes())?;
                 for value in values.iter() {
                     value.write_to(writer)?;
@@ -77,7 +77,7 @@ impl CafGenericItem
                 writer.write(')'.as_bytes())?;
             }
             Self::RustPrimitive(primitive) => {
-                primitive.write_to(writer)?;
+                primitive.write_to_with_space(writer, space)?;
             }
         }
         Ok(())
@@ -149,14 +149,14 @@ pub enum CafGenericValue
 
 impl CafGenericValue
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str) -> Result<(), std::io::Error>
     {
         match *self {
             Self::Item(val) => {
-                val.write_to(writer)?;
+                val.write_to_with_space(writer, space)?;
             }
             Self::MacroParam(val) => {
-                val.write_to(writer)?;
+                val.write_to_with_space(writer, space)?;
             }
         }
         Ok(())
@@ -218,8 +218,12 @@ impl CafGenerics
     {
         self.open_fill.write_to(writer)?;
         writer.write('<'.as_bytes())?;
-        for generic in self.values.iter() {
-            generic.write_to(writer)?;
+        for (idx, generic) in self.values.iter().enumerate() {
+            if idx == 0 {
+                generic.write_to_with_space(writer, "")?;
+            } else {
+                generic.write_to_with_space(writer, ", ")?;
+            }
         }
         self.close_fill.write_to(writer)?;
         writer.write('>'.as_bytes())?;

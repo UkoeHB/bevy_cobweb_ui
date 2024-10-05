@@ -28,7 +28,25 @@ impl CafNumberValue
         Ok(serde_json::Value::Number(self.deserialized.clone()))
     }
 
-    pub fn try_from_json_string(json_str: &String) -> Option<Self>
+    pub fn from_json_number(json_num: serde_json::Number) -> Self
+    {
+        let string = if let Some(value) = json_num.as_u64() {
+            let mut buffer = itoa::Buffer::new();
+            SmolStr:from(buffer.format(value))
+        } else if let Some(value) = json_num.as_f64() {
+            let mut buffer = ryu::Buffer::new();
+            SmolStr:from(buffer.format_finite(value))
+        } else if let Some(value) = json_num.as_i64() {
+            let mut buffer = itoa::Buffer::new();
+            SmolStr:from(buffer.format(value))
+        } else {
+            unreachable!();
+        };
+
+        Some(Self{ original: string, deserialized: json_num })
+    }
+
+    pub fn try_from_json_string(json_str: &str) -> Option<Self>
     {
         let deserialized = serde_json::Number::from_str(json_str).ok()?;
         Some(Self{ original: SmolStr::from(json_str.as_str()), deserialized })
@@ -69,40 +87,12 @@ impl CafNumber
         self.number.to_json()
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json_number(json_num: serde_json::Number) -> Self
     {
-        match type_info {
-            TypeInfo::Struct(info) => {
-
-            }
-            TypeInfo::TupleStruct(info) => {
-
-            }
-            TypeInfo::Tuple(_) => {
-
-            }
-            TypeInfo::List(_) => {
-
-            }
-            TypeInfo::Array(_) => {
-
-            }
-            TypeInfo::Map(_) => {
-                Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
-                    val, type_info.type_path()
-                ))
-            }
-            TypeInfo::Enum(info) => {
-
-            }
-            TypeInfo::Value(_) => {
-                
-            }
-        }
+        Self{ fill: CafFill::default(), number: CafNumberValue::from_json_number(json_num) }
     }
 
-    pub fn try_from_json_string(json_str: &String) -> Option<Self>
+    pub fn try_from_json_string(json_str: &str) -> Option<Self>
     {
         let number = CafNumberValue::try_from_json_string(json_str)?;
         Some(Self{ fill: CafFill::default(), number })

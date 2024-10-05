@@ -15,15 +15,15 @@ pub enum CafSection
 
 impl CafSection
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Manifest(section) => section.write_to(writer),
-            Self::Import(section) => section.write_to(writer),
-            Self::Using(section) => section.write_to(writer),
-            Self::Defs(section) => section.write_to(writer),
-            Self::Commands(section) => section.write_to(writer),
-            Self::Scenes(section) => section.write_to(writer),
+            Self::Manifest(section) => section.write_to(first_section, writer),
+            Self::Import(section) => section.write_to(first_section, writer),
+            Self::Using(section) => section.write_to(first_section, writer),
+            Self::Defs(section) => section.write_to(first_section, writer),
+            Self::Commands(section) => section.write_to(first_section, writer),
+            Self::Scenes(section) => section.write_to(first_section, writer),
         }
     }
 }
@@ -41,23 +41,18 @@ pub struct Caf
 
 impl Caf
 {
+    /// Will automatically insert a newline at the end if one is missing.
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        for section in &self.sections {
-            section.write_to(writer)?;
+        for (idx) in &self.sections.enumerate() {
+            section.write_to(idx == 0, writer)?;
         }
+        let ends_newline = self.end_fill.ends_with_newline();
         self.end_fill.write_to(writer)?;
-        Ok(())
-    }
-
-    /// Insert a newline to the end if there is none.
-    ///
-    /// This is useful cleanup when writing back to a file. Github, for example, likes a newline at the end.
-    pub fn end_with_newline(&mut self)
-    {
-        if !self.end_fill.ends_with_newline() {
-            self.end_fill.segments.push(CafFillSegment::newline());
+        if !ends_newline {
+            writer.write('\n'.as_bytes())?;
         }
+        Ok(())
     }
 }
 

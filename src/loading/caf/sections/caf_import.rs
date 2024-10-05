@@ -3,39 +3,6 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum CafImportFile
-{
-    ManifestKey(CafManifestKey),
-    File(CafFilePath)
-}
-
-impl CafImportFile
-{
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
-    {
-        match *self {
-            Self::ManifestKey(key) => {
-                key.write_to(writer)?;
-            }
-            Self::File(file) => {
-                file.write_to(writer)?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Default for CafImportFile
-{
-    fn default() -> Self
-    {
-        Self::File(CafFilePath::default())
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Clone, PartialEq)]
 pub enum CafImportAlias
 {
     None,
@@ -74,12 +41,12 @@ Parsing:
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// {file} as {alias}
+/// {manifest key} as {alias}
 #[derive(Debug, Clone, PartialEq)]
 pub struct CafImportEntry
 {
     pub entry_fill: CafFill,
-    pub file: CafImportFile,
+    pub key: CafManifestKey,
     pub as_fill: CafFill,
     pub alias_fill: CafFill,
     pub alias: CafImportAlias,
@@ -90,7 +57,7 @@ impl CafImportEntry
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
         self.entry_fill.write_to_or_else(writer, '\n')?;
-        self.file.write_to(writer)?;
+        self.key.write_to(writer)?;
         self.as_fill.write_to_or_else(writer, ' ')?;
         writer.write("as".as_bytes())?;
         self.alias_fill.write_to_or_else(writer, ' ')?;
@@ -99,10 +66,10 @@ impl CafImportEntry
     }
 
     // Makes a new entry with default spacing.
-    pub fn new(file: impl AsRef<str>, alias: impl AsRef<str>) -> Self
+    pub fn new(key: impl AsRef<str>, alias: impl AsRef<str>) -> Self
     {
         Self {
-            file: CafImportFile::File(Arc::from(file.as_ref())),
+            key: CafManifestKey(Arc::from(key.as_ref())),
             alias: CafImportAlias(Arc::from(alias.as_ref())),
             ..default()
         }
@@ -115,7 +82,7 @@ impl Default for CafImportEntry
     {
         Self {
             start_fill: CafFill::new('\n'),
-            file: Default::default(),
+            key: Default::default(),
             as_fill: CafFill::new(' '),
             alias_fill: CafFill::new(' '),
             alias: Default::default(),
@@ -126,7 +93,7 @@ impl Default for CafImportEntry
 /*
 Parsing:
 - Must start with newline.
-- Must be 'file as alias'.
+- Must be 'key as alias'.
 */
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -140,9 +107,10 @@ pub struct CafImport
 
 impl CafImport
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
+        let space = if first_section { "" } else { "\n\n" };
+        self.start_fill.write_to_or_else(writer, space)?;
         writer.write("#import".as_bytes)?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;

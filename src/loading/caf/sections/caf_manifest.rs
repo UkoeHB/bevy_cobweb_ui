@@ -137,9 +137,10 @@ pub struct CafManifest
 
 impl CafManifest
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
+        let space = if first_section { "" } else { "\n\n" };
+        self.start_fill.write_to_or_else(writer, space)?;
         writer.write("#manifest".as_bytes)?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
