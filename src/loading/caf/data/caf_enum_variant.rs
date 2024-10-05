@@ -134,7 +134,7 @@ impl CafEnumVariant
         }
 
         if *val == serde_json::Value::Null {
-            // If no `None` then maybe there's a custom Option type.
+            // If no `None` then maybe there's a custom Option type or nested options.
             if enum_info.variant("None").is_some() {
                 return Ok(Some(CafValue::None(CafNone{ fill: CafFill::default() })));
             }
