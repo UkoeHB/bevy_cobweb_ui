@@ -117,13 +117,11 @@ impl CafValue
     pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
     {
         match type_info {
-            TypeInfo::Struct(info) => {
-                // Case: string-like when JSON is a string.
-
+            TypeInfo::Struct(_) => {
+                Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?))
             }
-            TypeInfo::TupleStruct(info) => {
-                // Case: string-like when JSON is a string.
-
+            TypeInfo::TupleStruct(_) => {
+                Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?))
             }
             TypeInfo::Tuple(_) => {
                 Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?))
@@ -139,13 +137,18 @@ impl CafValue
             }
             TypeInfo::Enum(info) => {
                 // Special case: built-in type.
+                if let Some(result) = CafBuiltin::try_from_json(val, info)? {
+                    return Ok(Self::Builtin(result));
+                }
 
                 // Special case: Option.
-                if let Some(result) = CafEnum::try_from_json_option(val, info, registry)? {
+                if let Some(result) = CafEnumVariant::try_from_json_option(val, info, registry)? {
+                    // Result is a `CafValue`.
                     return Ok(result);
                 }
 
                 // Normal enum.
+                Ok(Self::EnumVariant(CafEnumVariant::from_json(val, info, registry)?))
             }
             TypeInfo::Value(_) => {
                 match val {
