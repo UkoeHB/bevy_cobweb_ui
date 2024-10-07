@@ -32,7 +32,7 @@ impl ApplyLoadable for UnitStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlainStruct
 {
-    boolean: bool,
+    pub boolean: bool,
 }
 
 impl ApplyLoadable for PlainStruct
@@ -65,15 +65,15 @@ impl ApplyLoadable for EnumStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AggregateStruct
 {
-    uint: u64,
-    float: f32,
-    boolean: bool,
-    string: String,
-    vec: Vec<PlainStruct>,
-    map: HashMap<u32, u32>,
-    s_struct: UnitStruct,
-    s_enum: EnumStruct,
-    s_plain: PlainStruct,
+    pub uint: u64,
+    pub float: f32,
+    pub boolean: bool,
+    pub string: String,
+    pub vec: Vec<PlainStruct>,
+    pub map: HashMap<u32, u32>,
+    pub s_struct: UnitStruct,
+    pub s_enum: EnumStruct,
+    pub s_plain: PlainStruct,
 }
 
 impl ApplyLoadable for AggregateStruct
