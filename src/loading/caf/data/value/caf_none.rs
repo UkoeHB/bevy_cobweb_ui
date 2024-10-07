@@ -12,7 +12,13 @@ impl CafNone
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.fill.write_to_or_else(writer, space)?;
         writer.write("none".as_bytes())?;
         Ok(())
     }

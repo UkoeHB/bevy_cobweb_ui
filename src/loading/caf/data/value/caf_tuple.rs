@@ -1,7 +1,6 @@
-use std::io::Cursor;
+use std::any::TypeId;
 
-use bevy::reflect::{TypeInfo, TypeRegistry};
-use smol_str::SmolStr;
+use bevy::reflect::{TupleVariantInfo, TypeInfo, TypeRegistry};
 
 use crate::prelude::*;
 
@@ -21,17 +20,23 @@ impl CafTuple
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
-        writer.write('('.as_bytes())?;
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.start_fill.write_to_or_else(writer, space)?;
+        writer.write("(".as_bytes())?;
         for (idx, entry) in self.entries.iter().enumerate() {
             if idx == 0 {
                 entry.write_to(writer)?;
             } else {
-                entry.write_to_with_space(writer, ' ')?;
+                entry.write_to_with_space(writer, " ")?;
             }
         }
         self.end_fill.write_to(writer)?;
-        writer.write(')'.as_bytes())?;
+        writer.write(")".as_bytes())?;
         Ok(())
     }
 
@@ -51,16 +56,16 @@ impl CafTuple
         if self.entries.len() == 1 {
             self.entries[0].to_json()
         } else {
-            self.to_json_for_struct()
+            self.to_json_for_type()
         }
     }
 
-    fn from_json_impl(
+    fn from_json_impl<'a>(
         num_values: usize,
-        mut json_values_iter: impl Iterator<&serde_json::Value>,
+        json_values_iter: impl Iterator<Item = &'a serde_json::Value>,
         type_path: &'static str,
         num_fields: usize,
-        mut field_iter: impl Iterator<TypeId>,
+        field_iter: impl Iterator<Item = TypeId>,
         registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
@@ -68,18 +73,14 @@ impl CafTuple
             return Err(format!(
                 "failed converting {:?} from json {:?} into a tuple; json does not match expected number \
                 of tuple fields",
-                type_path, val
+                type_path, json_values_iter.collect::<Vec<&serde_json::Value>>()
             ));
         }
 
         let mut entries = Vec::with_capacity(num_values);
-        for (info, json_value) in field_iter.zip(json_values_iter) {
-            let Some(registration) = type_registry.get(info.type_id()) else { unreachable!() };
-            entries.push(CafValue::from_json(
-                json_value,
-                registration.type_info(),
-                type_registry,
-            )?);
+        for (field_id, json_value) in field_iter.zip(json_values_iter) {
+            let Some(registration) = registry.get(field_id) else { unreachable!() };
+            entries.push(CafValue::from_json(json_value, registration.type_info(), registry)?);
         }
         Ok(Self {
             start_fill: CafFill::default(),

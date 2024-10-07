@@ -1,4 +1,4 @@
-use bevy::reflect::{TypeInfo, TypeRegistry};
+use bevy::reflect::TypeInfo;
 
 use crate::prelude::*;
 
@@ -15,8 +15,14 @@ impl CafBool
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
-        let string = match *self.value {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.fill.write_to_or_else(writer, space)?;
+        let string = match self.value {
             true => "true",
             false => "false",
         };
@@ -29,25 +35,21 @@ impl CafBool
         Ok(serde_json::Value::Bool(self.value))
     }
 
-    pub fn from_json(
-        val: &serde_json::Value,
-        type_info: &TypeInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
+    pub fn from_json_bool(value: bool, type_info: &TypeInfo) -> Result<Self, String>
     {
-        match type_info {
-            TypeInfo::Struct(info) => {}
-            TypeInfo::TupleStruct(info) => {}
-            TypeInfo::Tuple(_) => {}
-            TypeInfo::List(_) => {}
-            TypeInfo::Array(_) => {}
-            TypeInfo::Map(_) => Err(format!(
-                    "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
-                    val, type_info.type_path()
-                )),
-            TypeInfo::Enum(info) => {}
-            TypeInfo::Value(_) => {}
+        let TypeInfo::Value(info) = type_info else {
+            return Err(format!(
+                "failed converting {:?} from json bool {:?}; type is not a value",
+                type_info.type_path(), value
+            ));
+        };
+        if info.type_path_table().short_path() != "bool" {
+            return Err(format!(
+                "failed converting {:?} from json bool {:?}; type is not bool",
+                type_info.type_path(), value
+            ));
         }
+        Ok(Self { fill: CafFill::default(), value })
     }
 
     pub fn recover_fill(&mut self, other: &Self)

@@ -44,8 +44,8 @@ enum CharEscape
     Quote,
     /// An escaped reverse solidus `\`
     ReverseSolidus,
-    /// An escaped solidus `/`
-    Solidus,
+    // /// An escaped solidus `/`
+    // Solidus,
     /// An escaped backspace character (usually escaped as `\b`)
     Backspace,
     /// An escaped form feed character (usually escaped as `\f`)
@@ -84,7 +84,7 @@ impl CharEscape
         let s = match self {
             Self::Quote => b"\\\"",
             Self::ReverseSolidus => b"\\\\",
-            Self::Solidus => b"\\/",
+            // Self::Solidus => b"\\/",
             Self::Backspace => b"\\b",
             Self::FormFeed => b"\\f",
             Self::LineFeed => b"\\n",

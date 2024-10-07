@@ -18,17 +18,23 @@ impl CafArray
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
-        writer.write('['.as_bytes())?;
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.start_fill.write_to_or_else(writer, space)?;
+        writer.write("[".as_bytes())?;
         for (idx, entry) in self.entries.iter().enumerate() {
             if idx == 0 {
                 entry.write_to(writer)?;
             } else {
-                entry.write_to_with_space(writer, ' ')?;
+                entry.write_to_with_space(writer, " ")?;
             }
         }
         self.end_fill.write_to(writer)?;
-        writer.write(']'.as_bytes())?;
+        writer.write("]".as_bytes())?;
         Ok(())
     }
 
