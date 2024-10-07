@@ -1,13 +1,15 @@
-use bevy_cobweb_ui::prelude::*;
+use bevy::prelude::*;
 
-use super::helpers::*;
+use crate::caf::helpers::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[test]
-fn empty()
+pub fn prepare_test_app() -> App
 {
-    caf_parse_test("\n", Caf::default());
+    let mut app = App::new();
+    app.add_plugins(SerdeTypesPlugin);
+    app.update();
+    app
 }
 
 //-------------------------------------------------------------------------------------------------------------------
