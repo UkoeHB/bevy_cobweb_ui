@@ -59,6 +59,28 @@ impl CafSceneLayerEntry
         }
         Ok(())
     }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        match (self, other) {
+            (Self::Instruction(entry), Self::Instruction(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            (Self::InstructionMacroCall(entry), Self::InstructionMacroCall(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            (Self::Layer(entry), Self::Layer(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            (Self::SceneMacroCall(entry), Self::SceneMacroCall(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            (Self::SceneMacroParam(entry), Self::SceneMacroParam(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            _ => (),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -84,6 +106,15 @@ impl CafSceneLayer
             entry.write_to(writer)?;
         }
         Ok(())
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.name_fill.recover(&other.name_fill);
+        // name has no fill
+        for (entry, other) in self.entries.iter_mut().zip(other.entries.iter()) {
+            entry.recover_fill(other);
+        }
     }
 }
 

@@ -16,7 +16,16 @@ pub struct CafSceneMacroCall;
 
 impl CafSceneMacroCall
 {
-    pub fn write_to(&self, _writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(
+        &self,
+        _writer: &mut impl std::io::Write,
+        _space: &str,
+    ) -> Result<(), std::io::Error>
     {
         Ok(())
     }
@@ -31,7 +40,16 @@ pub struct CafSceneMacroDef;
 
 impl CafSceneMacroDef
 {
-    pub fn write_to(&self, _writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(
+        &self,
+        _writer: &mut impl std::io::Write,
+        _space: &str,
+    ) -> Result<(), std::io::Error>
     {
         Ok(())
     }
@@ -46,7 +64,16 @@ pub struct CafSceneMacroParam;
 
 impl CafSceneMacroParam
 {
-    pub fn write_to(&self, _writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(
+        &self,
+        _writer: &mut impl std::io::Write,
+        _space: &str,
+    ) -> Result<(), std::io::Error>
     {
         Ok(())
     }
@@ -61,7 +88,16 @@ pub struct CafSceneMacroParamDef;
 
 impl CafSceneMacroParamDef
 {
-    pub fn write_to(&self, _writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(
+        &self,
+        _writer: &mut impl std::io::Write,
+        _space: &str,
+    ) -> Result<(), std::io::Error>
     {
         Ok(())
     }

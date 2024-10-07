@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -44,13 +46,13 @@ impl CafNumberValue
             unreachable!();
         };
 
-        Some(Self { original: string, deserialized: json_num })
+        Self { original: string, deserialized: json_num }
     }
 
     pub fn try_from_json_string(json_str: &str) -> Option<Self>
     {
         let deserialized = serde_json::Number::from_str(json_str).ok()?;
-        Some(Self { original: SmolStr::from(json_str.as_str()), deserialized })
+        Some(Self { original: SmolStr::from(json_str), deserialized })
     }
 }
 

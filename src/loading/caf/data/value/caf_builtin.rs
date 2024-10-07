@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 use bevy::reflect::TypeInfo;
+use zerocopy::IntoBytes;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts a color field number to a pair of hex digits if there is no precision loss.
-fn to_hex_int(num: serde_json::Number) -> Option<u8>
+fn to_hex_int(num: &serde_json::Number) -> Option<u8>
 {
     let Some(num) = num.as_f64() else { return None };
     let converted = (num * 256.0f64 - 1.0) as u8;
@@ -21,7 +22,12 @@ fn to_hex_int(num: serde_json::Number) -> Option<u8>
 fn write_hex_digit(digit: u8, writer: &mut impl std::io::Write)
 {
     writer
-        .write(char::from_digit(digit, 16).to_ascii_uppercase().as_bytes())
+        .write(
+            char::from_digit(digit as u32, 16)
+                .unwrap()
+                .to_ascii_uppercase()
+                .as_bytes(),
+        )
         .expect("writing char should succeed");
 }
 
@@ -50,14 +56,20 @@ impl CafHexColor
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
-        writer.write('#'.as_bytes()).unwrap();
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.fill.write_to_or_else(writer, space)?;
+        writer.write("#".as_bytes()).unwrap();
         if self.color.alpha != 1.0 {
-            write_num_as_hex(self.color.alpha, &mut writer);
+            write_num_as_hex((self.color.alpha - 1. / 256.) as u8, writer);
         }
-        write_num_as_hex(self.color.red, &mut writer);
-        write_num_as_hex(self.color.green, &mut writer);
-        write_num_as_hex(self.color.blue, &mut writer);
+        write_num_as_hex((self.color.red - 1. / 256.) as u8, writer);
+        write_num_as_hex((self.color.green - 1. / 256.) as u8, writer);
+        write_num_as_hex((self.color.blue - 1. / 256.) as u8, writer);
         Ok(())
     }
 
@@ -68,19 +80,27 @@ impl CafHexColor
         let mut value = serde_json::Map::<String, serde_json::Value>::default();
         value.insert(
             "red".into(),
-            serde_json::Value::Number(serde_json::Number::from(self.color.red)),
+            serde_json::Value::Number(
+                serde_json::Number::from_f64(self.color.red as f64).expect("color should be finite"),
+            ),
         );
         value.insert(
             "green".into(),
-            serde_json::Value::Number(serde_json::Number::from(self.color.green)),
+            serde_json::Value::Number(
+                serde_json::Number::from_f64(self.color.green as f64).expect("color should be finite"),
+            ),
         );
         value.insert(
             "blue".into(),
-            serde_json::Value::Number(serde_json::Number::from(self.color.blue)),
+            serde_json::Value::Number(
+                serde_json::Number::from_f64(self.color.blue as f64).expect("color should be finite"),
+            ),
         );
         value.insert(
             "alpha".into(),
-            serde_json::Value::Number(serde_json::Number::from(self.color.alpha)),
+            serde_json::Value::Number(
+                serde_json::Number::from_f64(self.color.alpha as f64).expect("color should be finite"),
+            ),
         );
         map.insert(key, serde_json::Value::Object(value));
         Ok(serde_json::Value::Object(map))
@@ -91,20 +111,20 @@ impl CafHexColor
     /// A hex color is only recorded if all the fields convert to hex digits without precision loss.
     pub fn try_from_json(json_map: &serde_json::Map<String, serde_json::Value>) -> Result<Option<Self>, String>
     {
-        let get = |field: &str, default: f32| -> Result<Option<u8>, String> {
-            let Some(json_field) = json_map.get(field) else { return Ok(serde_json::Number::from(default)) };
+        let get = |field: &str, default: u8| -> Result<Option<u8>, String> {
+            let Some(json_field) = json_map.get(field) else { return Ok(Some(default)) };
             let serde_json::Value::Number(number) = json_field else {
                 return Err(format!(
                     "failed extracting Color::Rgba from json {:?}; field {:?} is {:?}, not a json number",
                     json_map, field, json_field
                 ));
             };
-            Ok(to_hex_int(number))
+            Ok(to_hex_int(&number))
         };
-        let Some(red) = (get)("red", 0.)? else { return Ok(None) };
-        let Some(green) = (get)("green", 0.)? else { return Ok(None) };
-        let Some(blue) = (get)("blue", 0.)? else { return Ok(None) };
-        let Some(alpha) = (get)("alpha", 1.)? else { return Ok(None) };
+        let Some(red) = (get)("red", 0)? else { return Ok(None) };
+        let Some(green) = (get)("green", 0)? else { return Ok(None) };
+        let Some(blue) = (get)("blue", 0)? else { return Ok(None) };
+        let Some(alpha) = (get)("alpha", 1)? else { return Ok(None) };
 
         Ok(Some(Self {
             fill: CafFill::default(),
@@ -115,6 +135,11 @@ impl CafHexColor
                 alpha: (alpha as f32 + 1.0) / 256.,
             },
         }))
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.fill.recover(&other.fill);
     }
 }
 
@@ -142,12 +167,18 @@ impl CafBuiltin
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
         match self {
             Self::Color(color) => {
-                color.write_to(writer)?;
+                color.write_to_with_space(writer, space)?;
             }
             Self::Val { fill, number, val } => {
-                fill.write_to(writer)?;
+                fill.write_to_or_else(writer, space)?;
                 if let Some(number) = number {
                     number.write_to(writer)?;
                 }
@@ -188,11 +219,13 @@ impl CafBuiltin
                 {
                     let mut map = serde_json::Map::<String, serde_json::Value>::default();
                     let key = name.into();
-                    let value = serde_json::Number::from(val);
+                    let value = serde_json::Value::Number(
+                        serde_json::Number::from_f64(val as f64).unwrap_or(serde_json::Number::from(0)),
+                    );
                     map.insert(key, value);
                     serde_json::Value::Object(map)
                 }
-                match val {
+                match *val {
                     Val::Auto => Ok(serde_json::Value::String("Auto".into())),
                     Val::Px(val) => Ok(make_val("Px", val)),
                     Val::Percent(val) => Ok(make_val("Percent", val)),
@@ -225,7 +258,7 @@ impl CafBuiltin
                     val, info
                 ));
             };
-            return CafHexColor::try_from_json(json_map).map_ok(|r| r.map(|c| Self::Color(c)));
+            return CafHexColor::try_from_json(json_map).map(|r| r.map(|c| Self::Color(c)));
         }
 
         // Val
@@ -256,11 +289,11 @@ impl CafBuiltin
             _ => return Ok(None),
         };
 
-        Self::Val {
+        Ok(Some(Self::Val {
             fill: CafFill::default(),
-            number: Some(CafNumberValue::from_json(json_num.clone())),
+            number: Some(CafNumberValue::from_json_number(json_num.clone())),
             val,
-        }
+        }))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -270,7 +303,7 @@ impl CafBuiltin
                 color.recover_fill(other_color);
             }
             (Self::Val { fill, .. }, Self::Val { fill: other_fill, .. }) => {
-                fill.recover(&other.fill);
+                fill.recover(&other_fill);
             }
             _ => (),
         }

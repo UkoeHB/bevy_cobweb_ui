@@ -13,7 +13,7 @@ impl CafFlattenGroupValueEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::Value(value) => {
                 value.write_to(writer)?;
             }
@@ -51,7 +51,7 @@ impl CafFlattenGroupVariant
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::Values(values) => {
                 for value in values.iter() {
                     value.write_to(writer)?;
@@ -100,11 +100,17 @@ impl CafFlattenGroup
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
-        writer.write('\\'.as_bytes())?;
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.start_fill.write_to_or_else(writer, space)?;
+        writer.write("\\".as_bytes())?;
         self.variant.write_to(writer)?;
         self.end_fill.write_to(writer)?;
-        writer.write('\\'.as_bytes())?;
+        writer.write("\\".as_bytes())?;
         Ok(())
     }
 

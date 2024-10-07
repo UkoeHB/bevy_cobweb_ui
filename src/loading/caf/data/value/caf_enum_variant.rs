@@ -16,7 +16,13 @@ impl CafEnumVariantIdentifier
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.fill.write_to(writer)?;
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        self.fill.write_to_or_else(writer, space)?;
         writer.write(self.name.as_bytes())?;
         Ok(())
     }
@@ -73,20 +79,26 @@ impl CafEnumVariant
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
+    {
+        match self {
             Self::Unit { id } => {
-                id.write_to(writer)?;
+                id.write_to_with_space(writer, space)?;
             }
             Self::Tuple { id, tuple } => {
-                id.write_to(writer)?;
+                id.write_to_with_space(writer, space)?;
                 tuple.write_to(writer)?;
             }
             Self::Array { id, array } => {
-                id.write_to(writer)?;
+                id.write_to_with_space(writer, space)?;
                 array.write_to(writer)?;
             }
             Self::Map { id, map } => {
-                id.write_to(writer)?;
+                id.write_to_with_space(writer, space)?;
                 map.write_to(writer)?;
             }
         }
@@ -95,7 +107,7 @@ impl CafEnumVariant
 
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
-        match *self {
+        match self {
             Self::Unit { id } => {
                 // "..id.."
                 Ok(serde_json::Value::String(id.to_json_string()?))
@@ -187,7 +199,7 @@ impl CafEnumVariant
 
                 Ok(Self::Unit { id: CafEnumVariantIdentifier::from_json_string(json_str)? })
             }
-            serde_json::Value::Map(json_map) => {
+            serde_json::Value::Object(json_map) => {
                 if json_map.len() != 1 {
                     return Err(format!(
                         "failed converting {:?} enum variant from json {:?}; json map doesn't contain exactly 1 \

@@ -1,7 +1,6 @@
 use std::io::Cursor;
 
-use bevy::reflect::{TypeInfo, TypeRegistry};
-use smol_str::SmolStr;
+use smallvec::SmallVec;
 
 use crate::prelude::*;
 
@@ -31,18 +30,17 @@ impl CafStringSegment
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
         for _ in 0..self.leading_spaces {
-            writer.write(' '.as_bytes())?;
+            writer.write(" ".as_bytes())?;
         }
         // Here we write raw bytes.
         writer.write(&self.original)?;
         Ok(())
     }
 
-    pub fn write_to_json(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to_json(&self, buff: &mut String)
     {
         // Here we write as a deserialized string.
-        writer.write(self.segment.as_bytes())?;
-        Ok(())
+        buff.push_str(self.segment.as_str());
     }
 
     /// Note that `Self::write_to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of
@@ -53,11 +51,7 @@ impl CafStringSegment
         let mut cursor = Cursor::new(&mut original);
         format_escaped_str_contents(&mut cursor, json_str).map_err(|e| format!("{e:?}"))?;
 
-        Ok(Self {
-            leading_spaces: 0,
-            original,
-            segment: String::from(json_str.as_str()),
-        })
+        Ok(Self { leading_spaces: 0, original, segment: String::from(json_str) })
     }
 }
 
@@ -92,7 +86,7 @@ impl CafString
     ) -> Result<(), std::io::Error>
     {
         self.fill.write_to_or_else(writer, space)?;
-        writer.write('"'.as_bytes())?;
+        writer.write("\"".as_bytes())?;
         let num_segments = self.segments.len();
         for (idx, segment) in self.segments.iter().enumerate() {
             segment.write_to(writer)?;
@@ -100,23 +94,22 @@ impl CafString
                 writer.write("\\\n".as_bytes())?;
             }
         }
-        writer.write('"'.as_bytes())?;
+        writer.write("\"".as_bytes())?;
         Ok(())
     }
 
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
-        let mut string = String::default();
-        let mut cursor = Cursor::new(&mut string);
+        let mut buff = String::default();
         for segment in self.segments.iter() {
-            segment.write_to_json(&mut cursor)?;
+            segment.write_to_json(&mut buff);
         }
-        Ok(serde_json::Value::String(string))
+        Ok(serde_json::Value::String(buff))
     }
 
     /// Note that `Self::to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of multi-line
     /// string formatting. The string contents are preserved, but not their presentation in CAF.
-    pub fn from_json_string(json_str: &String) -> Result<Self, String>
+    pub fn from_json_string(json_str: &str) -> Result<Self, String>
     {
         Ok(Self {
             fill: CafFill::default(),
