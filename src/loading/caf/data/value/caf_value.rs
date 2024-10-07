@@ -1,7 +1,13 @@
+use std::io::Cursor;
+
+use bevy::reflect::{TypeInfo, TypeRegistry};
+use smol_str::SmolStr;
+
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafValue
 {
     EnumVariant(CafEnumVariant),
@@ -72,69 +78,43 @@ impl CafValue
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
         match *self {
-            Self::Enum(val) => {
-                val.to_json(writer)
-            }
-            Self::Builtin(val) => {
-                val.to_json(writer)
-            }
-            Self::Array(val) => {
-                val.to_json(writer)
-            }
-            Self::Tuple(val) => {
-                val.to_json(writer)
-            }
-            Self::Map(val) => {
-                val.to_json(writer)
-            }
-            Self::FlattenGroup(val) => {
-                Err(std::io::Error::other(format!("cannot convert flatten group {val:?} to JSON")))
-            }
-            Self::Number(val) => {
-                val.to_json(writer)
-            }
-            Self::Bool(val) => {
-                val.to_json(writer)
-            }
-            Self::None(val) => {
-                val.to_json(writer)
-            }
-            Self::String(val) => {
-                val.to_json(writer)
-            }
-            Self::Constant(val) => {
-                Err(std::io::Error::other(format!("cannot convert constant {val:?} to JSON")))
-            }
-            Self::DataMacro(val) => {
-                Err(std::io::Error::other(format!("cannot convert data macro {val:?} to JSON")))
-            }
-            Self::MacroParam(val) => {
-                Err(std::io::Error::other(format!("cannot convert macro param {val:?} to JSON")))
-            }
+            Self::Enum(val) => val.to_json(writer),
+            Self::Builtin(val) => val.to_json(writer),
+            Self::Array(val) => val.to_json(writer),
+            Self::Tuple(val) => val.to_json(writer),
+            Self::Map(val) => val.to_json(writer),
+            Self::FlattenGroup(val) => Err(std::io::Error::other(
+                format!("cannot convert flatten group {val:?} to JSON"),
+            )),
+            Self::Number(val) => val.to_json(writer),
+            Self::Bool(val) => val.to_json(writer),
+            Self::None(val) => val.to_json(writer),
+            Self::String(val) => val.to_json(writer),
+            Self::Constant(val) => Err(std::io::Error::other(
+                format!("cannot convert constant {val:?} to JSON"),
+            )),
+            Self::DataMacro(val) => Err(std::io::Error::other(
+                format!("cannot convert data macro {val:?} to JSON"),
+            )),
+            Self::MacroParam(val) => Err(std::io::Error::other(
+                format!("cannot convert macro param {val:?} to JSON"),
+            )),
         }
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json(
+        val: &serde_json::Value,
+        type_info: &TypeInfo,
+        registry: &TypeRegistry,
+    ) -> Result<Self, String>
     {
         match type_info {
-            TypeInfo::Struct(_) => {
-                Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?))
-            }
-            TypeInfo::TupleStruct(_) => {
-                Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?))
-            }
-            TypeInfo::Tuple(_) => {
-                Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?))
-            }
-            TypeInfo::List(_) => {
-                Ok(Self::Array(CafArray::from_json(val, type_info, registry)?))
-            }
-            TypeInfo::Array(_) => {
-                Ok(Self::Array(CafArray::from_json(val, type_info, registry)?))
-            }
-            TypeInfo::Map(_) => {
-                Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?))
-            }
+            TypeInfo::Struct(_) => Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?)),
+            TypeInfo::TupleStruct(_) => Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?)),
+            TypeInfo::Tuple(_) => Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?)),
+            TypeInfo::List(_) => Ok(Self::Array(CafArray::from_json(val, type_info, registry)?)),
+            TypeInfo::Array(_) => Ok(Self::Array(CafArray::from_json(val, type_info, registry)?)),
+            TypeInfo::Map(_) => Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?)),
             TypeInfo::Enum(info) => {
                 // Special case: built-in type.
                 if let Some(result) = CafBuiltin::try_from_json(val, info)? {
@@ -150,18 +130,16 @@ impl CafValue
                 // Normal enum.
                 Ok(Self::EnumVariant(CafEnumVariant::from_json(val, info, registry)?))
             }
-            TypeInfo::Value(_) => {
-                match val {
-                    serde_json::Value::Bool(value) => Ok(Self::Bool(CafBool{ fill: CafFill::default(), value})),
-                    serde_json::Value::Number(value) => Ok(Self::Number(CafNumber::from_json_number(value)?)),
-                    serde_json::Value::String(value) => Ok(Self::String(CafString::from_json_string(value)?)),
-                    _ => Err(format!(
+            TypeInfo::Value(_) => match val {
+                serde_json::Value::Bool(value) => Ok(Self::Bool(CafBool { fill: CafFill::default(), value })),
+                serde_json::Value::Number(value) => Ok(Self::Number(CafNumber::from_json_number(value)?)),
+                serde_json::Value::String(value) => Ok(Self::String(CafString::from_json_string(value)?)),
+                _ => Err(format!(
                         "failed converting {:?} from json {:?} into a value; json is not a bool/number/string so \
                         we don't know how to handle it",
                         type_info.type_path(), val
-                    ))
-                }
-            }
+                    )),
+            },
         }
     }
 
@@ -207,7 +185,7 @@ impl CafValue
             (Self::MacroParam(val), Self::MacroParam(other_val)) => {
                 val.recover_fill(other_fill);
             }
-            _ => ()
+            _ => (),
         }
     }
 }

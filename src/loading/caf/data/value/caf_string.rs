@@ -1,7 +1,13 @@
+use std::io::Cursor;
+
+use bevy::reflect::{TypeInfo, TypeRegistry};
+use smol_str::SmolStr;
+
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafStringSegment
 {
     /// Spaces at the start of a segment for multiline text.
@@ -39,18 +45,18 @@ impl CafStringSegment
         Ok(())
     }
 
-    /// Note that `Self::write_to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of multi-line
-    /// string formatting. The string contents are preserved, but not their presentation in CAF.
+    /// Note that `Self::write_to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of
+    /// multi-line string formatting. The string contents are preserved, but not their presentation in CAF.
     pub fn from_json_string(json_str: &str) -> Result<Self, String>
     {
         let mut original = Vec::with_capacity(json_str.len());
         let mut cursor = Cursor::new(&mut original);
         format_escaped_str_contents(&mut cursor, json_str).map_err(|e| format!("{e:?}"))?;
 
-        Ok(Self{
+        Ok(Self {
             leading_spaces: 0,
             original,
-            segment: String::from(json_str.as_str())
+            segment: String::from(json_str.as_str()),
         })
     }
 }
@@ -65,25 +71,29 @@ Parsing:
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafString
 {
     pub fill: CafFill,
-    pub segments: SmallVec<[CafStringSegment; 1]>
+    pub segments: SmallVec<[CafStringSegment; 1]>,
 }
 
 impl CafString
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.write_to_with_space(writer, '')
+        self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: impl AsRef<str>) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(
+        &self,
+        writer: &mut impl std::io::Write,
+        space: impl AsRef<str>,
+    ) -> Result<(), std::io::Error>
     {
         self.fill.write_to_or_else(writer, space)?;
         writer.write('"'.as_bytes())?;
-        let num_segments = self.segments.len():
+        let num_segments = self.segments.len();
         for (idx, segment) in self.segments.iter().enumerate() {
             segment.write_to(writer)?;
             if num_segments > 1 && idx + 1 < num_segments {
@@ -108,7 +118,10 @@ impl CafString
     /// string formatting. The string contents are preserved, but not their presentation in CAF.
     pub fn from_json_string(json_str: &String) -> Result<Self, String>
     {
-        Ok(Self{ fill: CafFill::default(), segments: SmallVec::from_elem(CafStringSegment::from_json_string(json_str)?, 1) })
+        Ok(Self {
+            fill: CafFill::default(),
+            segments: SmallVec::from_elem(CafStringSegment::from_json_string(json_str)?, 1),
+        })
     }
 
     // TODO: recover leading spaces for multi-line text? what if the lines change?

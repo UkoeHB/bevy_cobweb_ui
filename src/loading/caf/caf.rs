@@ -44,13 +44,13 @@ impl Caf
     /// Will automatically insert a newline at the end if one is missing.
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        for (idx) in &self.sections.enumerate() {
+        for (idx, section) in self.sections.iter().enumerate() {
             section.write_to(idx == 0, writer)?;
         }
         let ends_newline = self.end_fill.ends_with_newline();
         self.end_fill.write_to(writer)?;
         if !ends_newline {
-            writer.write('\n'.as_bytes())?;
+            writer.write("\n".as_bytes())?;
         }
         Ok(())
     }

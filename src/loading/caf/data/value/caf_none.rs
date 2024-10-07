@@ -1,11 +1,11 @@
-
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafNone
 {
-    pub fill: CafFill
+    pub fill: CafFill,
 }
 
 impl CafNone
@@ -25,7 +25,7 @@ impl CafNone
     /// From `serde_json::Value::Null`.
     pub fn from_json_null() -> Result<Self, String>
     {
-        Ok(Self{ fill: CafFill::default() })
+        Ok(Self { fill: CafFill::default() })
     }
 
     pub fn recover_fill(&mut self, other: &Self)

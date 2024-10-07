@@ -1,15 +1,17 @@
+use bevy::reflect::{TypeInfo, TypeRegistry};
 
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafArray
 {
     /// Fill before opening `[`.
     pub start_fill: CafFill,
     pub entries: Vec<CafValue>,
     /// Fill before ending `]`.
-    pub end_fill: CafFill
+    pub end_fill: CafFill,
 }
 
 impl CafArray
@@ -39,7 +41,11 @@ impl CafArray
         Ok(serde_json::Value::Array(array))
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json(
+        val: &serde_json::Value,
+        type_info: &TypeInfo,
+        registry: &TypeRegistry,
+    ) -> Result<Self, String>
     {
         let serde_json::Value::Array(json_vec) = val else {
             return Err(format!(
@@ -50,25 +56,33 @@ impl CafArray
 
         match type_info {
             TypeInfo::List(info) => {
-                let Some(registration) = type_registry.get(info.item_type_id()) else { unreachable!() };
+                let Some(registration) = registry.get(info.item_type_id()) else { unreachable!() };
                 let mut entries = Vec::with_capacity(json_vec.len());
                 for json_value in json_vec.iter() {
-                    entries.push(CafValue::from_json(json_value, registration.type_info(), type_registry)?);
+                    entries.push(CafValue::from_json(json_value, registration.type_info(), registry)?);
                 }
-                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+                Ok(Self {
+                    start_fill: CafFill::default(),
+                    entries,
+                    end_fill: CafFill::default(),
+                })
             }
             TypeInfo::Array(info) => {
-                let Some(registration) = type_registry.get(info.item_type_id()) else { unreachable!() };
+                let Some(registration) = registry.get(info.item_type_id()) else { unreachable!() };
                 let mut entries = Vec::with_capacity(json_vec.len());
                 for json_value in json_vec.iter() {
-                    entries.push(CafValue::from_json(json_value, registration.type_info(), type_registry)?);
+                    entries.push(CafValue::from_json(json_value, registration.type_info(), registry)?);
                 }
-                Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+                Ok(Self {
+                    start_fill: CafFill::default(),
+                    entries,
+                    end_fill: CafFill::default(),
+                })
             }
             _ => Err(format!(
                 "failed converting {:?} from json {:?} into an array; type is not a list/array",
                 type_info.type_path(), val
-            ))
+            )),
         }
     }
 

@@ -1,12 +1,14 @@
+use bevy::reflect::{TypeInfo, TypeRegistry};
 
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafBool
 {
     pub fill: CafFill,
-    pub value: bool
+    pub value: bool,
 }
 
 impl CafBool
@@ -27,36 +29,24 @@ impl CafBool
         Ok(serde_json::Value::Bool(self.value))
     }
 
-    pub fn from_json(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json(
+        val: &serde_json::Value,
+        type_info: &TypeInfo,
+        registry: &TypeRegistry,
+    ) -> Result<Self, String>
     {
         match type_info {
-            TypeInfo::Struct(info) => {
-
-            }
-            TypeInfo::TupleStruct(info) => {
-
-            }
-            TypeInfo::Tuple(_) => {
-
-            }
-            TypeInfo::List(_) => {
-
-            }
-            TypeInfo::Array(_) => {
-
-            }
-            TypeInfo::Map(_) => {
-                Err(format!(
+            TypeInfo::Struct(info) => {}
+            TypeInfo::TupleStruct(info) => {}
+            TypeInfo::Tuple(_) => {}
+            TypeInfo::List(_) => {}
+            TypeInfo::Array(_) => {}
+            TypeInfo::Map(_) => Err(format!(
                     "failed converting {:?} from json {:?} as an instruction; type is a map not a struct/enum",
                     val, type_info.type_path()
-                ))
-            }
-            TypeInfo::Enum(info) => {
-
-            }
-            TypeInfo::Value(_) => {
-                
-            }
+                )),
+            TypeInfo::Enum(info) => {}
+            TypeInfo::Value(_) => {}
         }
     }
 

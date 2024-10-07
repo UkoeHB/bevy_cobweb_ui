@@ -1,30 +1,41 @@
+use std::any::TypeId;
+use std::io::Cursor;
 
+use bevy::reflect::{StructVariantInfo, TypeInfo, TypeRegistry};
+use smol_str::SmolStr;
+
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Currently only strings and ints/floats are supported as map keys, since we are tied to JSON limitations.
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafMapKey
 {
-    FieldName{
+    FieldName
+    {
         fill: CafFill,
         name: SmolStr,
     },
     String(CafString),
-    Numeric(CafNumber)
+    Numeric(CafNumber),
 }
 
 impl CafMapKey
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.write_to_with_space(writer, '')
+        self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: impl AsRef<str>) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(
+        &self,
+        writer: &mut impl std::io::Write,
+        space: impl AsRef<str>,
+    ) -> Result<(), std::io::Error>
     {
         match self {
-            Self::FieldName{fill, name} => {
+            Self::FieldName { fill, name } => {
                 fill.write_to_or_else(writer, space)?;
                 writer.write(name.as_bytes())?;
             }
@@ -41,9 +52,7 @@ impl CafMapKey
     pub fn to_json_map_key(&self) -> Result<String, std::io::Error>
     {
         match self {
-            Self::FieldName{name, ..} => {
-                Ok(String::from(name.as_str()))
-            }
+            Self::FieldName { name, .. } => Ok(String::from(name.as_str())),
             Self::String(string) => {
                 let serde_json::Value::String(string) = string.to_json()? else { unreachable!() };
                 Ok(string)
@@ -60,7 +69,7 @@ impl CafMapKey
 
     pub fn field_name(name: impl AsRef<str>) -> Self
     {
-        Self::FieldName{ fill: CafFill::default(), name: SmolStr::from(name.as_ref()) }
+        Self::FieldName { fill: CafFill::default(), name: SmolStr::from(name.as_ref()) }
     }
 
     pub fn from_json_key(key: impl AsRef<str>) -> Self
@@ -76,7 +85,7 @@ impl CafMapKey
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::FieldName{fill, ..}, Self::FieldName{fill: other_fill, ..}) => {
+            (Self::FieldName { fill, .. }, Self::FieldName { fill: other_fill, .. }) => {
                 fill.recover(other_fill);
             }
             (Self::String(string), Self::String(other_string)) => {
@@ -85,18 +94,18 @@ impl CafMapKey
             (Self::Numeric(number), Self::Numeric(other_number)) => {
                 number.recover_fill(other_number);
             }
-            _ => ()
+            _ => (),
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafMapKeyValue
 {
     key: CafMapKey,
-    semicolon_fill: CafFill,  //todo: does allowing fill between key and semicolon create parsing ambiguities?
+    semicolon_fill: CafFill, //todo: does allowing fill between key and semicolon create parsing ambiguities?
     value: CafValue,
 }
 
@@ -104,10 +113,14 @@ impl CafMapKeyValue
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.write_to_with_space(writer, '')
+        self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: impl AsRef<str>) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(
+        &self,
+        writer: &mut impl std::io::Write,
+        space: impl AsRef<str>,
+    ) -> Result<(), std::io::Error>
     {
         self.key.write_to_with_space(writer, space)?;
         self.semicolon_fill.write_to(writer)?;
@@ -116,7 +129,7 @@ impl CafMapKeyValue
         Ok(())
     }
 
-    pub fn add_to_json(&self, map: &mut serde_json::Map) -> Result<(), std::io::Error>
+    pub fn add_to_json(&self, map: &mut serde_json::Map<String, serde_json::Value>) -> Result<(), std::io::Error>
     {
         map.insert(self.key.to_json_map_key()?, self.value.to_json()?);
         Ok(())
@@ -126,10 +139,14 @@ impl CafMapKeyValue
         key: CafMapKey,
         val: &serde_json::Value,
         type_info: &TypeInfo,
-        registry: &TypeRegistry
+        registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
-        Ok(Self{ key, semicolon_fill: CafFill::default(), value: CafValue::from_json(val, type_info, registry)? })
+        Ok(Self {
+            key,
+            semicolon_fill: CafFill::default(),
+            value: CafValue::from_json(val, type_info, registry)?,
+        })
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -142,22 +159,26 @@ impl CafMapKeyValue
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafMapEntry
 {
     KeyValue(CafMapKeyValue),
     /// Only catch-all params are allowed.
-    MacroParam(CafMacroParam)
+    MacroParam(CafMacroParam),
 }
 
 impl CafMapEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.write_to_with_space(writer, '')
+        self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: impl AsRef<str>) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(
+        &self,
+        writer: &mut impl std::io::Write,
+        space: impl AsRef<str>,
+    ) -> Result<(), std::io::Error>
     {
         match self {
             Self::KeyValue(keyvalue) => {
@@ -170,7 +191,7 @@ impl CafMapEntry
         Ok(())
     }
 
-    pub fn add_to_json(&self, map: &mut serde_json::Map) -> Result<(), std::io::Error>
+    pub fn add_to_json(&self, map: &mut serde_json::Map<String, serde_json::Value>) -> Result<(), std::io::Error>
     {
         match self {
             Self::KeyValue(keyvalue) => {
@@ -194,7 +215,7 @@ impl CafMapEntry
             (Self::MacroParam(param), Self::MacroParam(other_param)) => {
                 param.recover_fill(other_param);
             }
-            _ => ()
+            _ => (),
         }
     }
 }
@@ -204,14 +225,14 @@ impl CafMapEntry
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafMap
 {
     /// Fill before opening `{`.
     pub start_fill: CafFill,
     pub entries: Vec<CafMapEntry>,
     /// Fill before ending `}`.
-    pub end_fill: CafFill
+    pub end_fill: CafFill,
 }
 
 impl CafMap
@@ -242,10 +263,10 @@ impl CafMap
     }
 
     fn from_json_impl_struct(
-        json_map: &serde_json::Map,
+        json_map: &serde_json::Map<String, serde_json::Value>,
         type_path: &'static str,
-        get_field_typeid: Fn(&str) -> Option<TypeId>,
-        registry: &TypeRegistry
+        get_field_typeid: impl Fn(&str) -> Option<TypeId>,
+        registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
         let mut entries = Vec::with_capacity(json_map.len());
@@ -254,7 +275,7 @@ impl CafMap
             let Some(field_typeid) = (get_field_typeid)(json_key.as_str()) else {
                 return Err(format!(
                     "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
-                    type_path, val, json_key
+                    type_path, json_map, json_key
                 ));
             };
 
@@ -264,17 +285,21 @@ impl CafMap
                 CafMapKey::field_name(json_key),
                 json_value,
                 registration.type_info(),
-                registry
+                registry,
             )?));
         }
-        Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+        Ok(Self {
+            start_fill: CafFill::default(),
+            entries,
+            end_fill: CafFill::default(),
+        })
     }
 
     fn from_json_impl_map(
-        json_map: &serde_json::Map,
+        json_map: &serde_json::Map<String, serde_json::Value>,
         type_path: &'static str,
-        get_field_typeid: Fn(&str) -> Option<TypeId>,
-        registry: &TypeRegistry
+        get_field_typeid: impl Fn(&str) -> Option<TypeId>,
+        registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
         let mut entries = Vec::with_capacity(json_map.len());
@@ -283,7 +308,7 @@ impl CafMap
             let Some(field_typeid) = (get_field_typeid)(json_key.as_str()) else {
                 return Err(format!(
                     "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
-                    type_path, val, json_key
+                    type_path, json_map, json_key
                 ));
             };
 
@@ -293,14 +318,22 @@ impl CafMap
                 CafMapKey::from_json_key(json_key),
                 json_value,
                 registration.type_info(),
-                registry
+                registry,
             )?));
         }
-        Ok(Self{ start_fill: CafFill::default(), entries, end_fill: CafFill::default() })
+        Ok(Self {
+            start_fill: CafFill::default(),
+            entries,
+            end_fill: CafFill::default(),
+        })
     }
 
     /// Includes structs and 'raw' maps like `HashMap`.
-    pub fn from_json_as_type(val: &serde_json::Value, type_info: &TypeInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json_as_type(
+        val: &serde_json::Value,
+        type_info: &TypeInfo,
+        registry: &TypeRegistry,
+    ) -> Result<Self, String>
     {
         let serde_json::Value::Object(json_map) = val else {
             return Err(format!(
@@ -310,16 +343,22 @@ impl CafMap
         };
 
         match type_info {
-            TypeInfo::Struct(info) => {
-                Self::from_json_impl_struct(json_map, type_info.type_path(), |key| info.field(key).type_id(), registry)
-            }
-            TypeInfo::Map(info) => {
-                Self::from_json_impl_map(json_map, type_info.type_path(), |key| info.field(key).type_id(), registry)
-            }
+            TypeInfo::Struct(info) => Self::from_json_impl_struct(
+                json_map,
+                type_info.type_path(),
+                |key| info.field(key).type_id(),
+                registry,
+            ),
+            TypeInfo::Map(info) => Self::from_json_impl_map(
+                json_map,
+                type_info.type_path(),
+                |key| info.field(key).type_id(),
+                registry,
+            ),
             _ => Err(format!(
                 "failed converting {:?} from json {:?} into a map; type is not a struct/map",
                 type_info.type_path(), val
-            ))
+            )),
         }
     }
 
@@ -328,7 +367,7 @@ impl CafMap
         type_path: &'static str,
         variant_name: &str,
         variant_info: &StructVariantInfo,
-        registry: &TypeRegistry
+        registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
         let serde_json::Value::Object(json_map) = val else {

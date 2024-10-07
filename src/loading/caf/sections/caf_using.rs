@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use bevy::prelude::{default, Deref};
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -29,13 +33,13 @@ Parsing: no parsing? how to evaluate this?
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Deref)]
-pub struct CafUsingIdentifier(pub CafTypeIdentifier);
+pub struct CafUsingIdentifier(pub CafInstructionIdentifier);
 
 impl CafUsingIdentifier
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        writer.write(self.as_bytes())?;
+        self.0.write_to(writer)?;
         Ok(())
     }
 }
@@ -70,20 +74,20 @@ impl CafUsingEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.entry_fill.write_to_or_else(writer, '\n')?;
-        self.file.write_to(writer)?;
-        self.as_fill.write_to_or_else(writer, ' ')?;
+        self.entry_fill.write_to_or_else(writer, "\n")?;
+        self.type_path.write_to(writer)?;
+        self.as_fill.write_to_or_else(writer, " ")?;
         writer.write("as".as_bytes())?;
-        self.identifier_fill.write_to_or_else(writer, ' ')?;
+        self.identifier_fill.write_to_or_else(writer, " ")?;
         self.identifier.write_to(writer)?;
         Ok(())
     }
 
     // Makes a new entry with default spacing.
-    pub fn new(file: impl AsRef<str>, identifier: CafTypeIdentifier) -> Self
+    pub fn new(file: impl AsRef<str>, identifier: CafInstructionIdentifier) -> Self
     {
         Self {
-            file: CafUsingFile::File(Arc::from(file.as_ref())),
+            type_path: CafUsingTypePath(Arc::from(file.as_ref())),
             identifier: CafUsingIdentifier(identifier),
             ..default()
         }
@@ -95,11 +99,11 @@ impl Default for CafUsingEntry
     fn default() -> Self
     {
         Self {
-            start_fill: CafFill::new('\n'),
-            file: Default::default(),
-            as_fill: CafFill::new(' '),
-            alias_fill: CafFill::new(' '),
-            alias: Default::default(),
+            entry_fill: CafFill::new("\n"),
+            type_path: Default::default(),
+            as_fill: CafFill::new(" "),
+            identifier_fill: CafFill::new(" "),
+            identifier: Default::default(),
         }
     }
 }
@@ -126,7 +130,7 @@ impl CafUsing
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#using".as_bytes)?;
+        writer.write("#using".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }

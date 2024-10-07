@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use smol_str::SmolStr;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -6,16 +10,16 @@ use crate::prelude::*;
 pub enum CafImportAlias
 {
     None,
-    Alias(SmolStr)
+    Alias(SmolStr),
 }
 
 impl CafImportAlias
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::None => {
-                writer.write('_'.as_bytes())?;
+                writer.write("_".as_bytes())?;
             }
             Self::Alias(alias) => {
                 writer.write(alias.as_bytes())?;
@@ -56,11 +60,11 @@ impl CafImportEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.entry_fill.write_to_or_else(writer, '\n')?;
+        self.entry_fill.write_to_or_else(writer, "\n")?;
         self.key.write_to(writer)?;
-        self.as_fill.write_to_or_else(writer, ' ')?;
+        self.as_fill.write_to_or_else(writer, " ")?;
         writer.write("as".as_bytes())?;
-        self.alias_fill.write_to_or_else(writer, ' ')?;
+        self.alias_fill.write_to_or_else(writer, " ")?;
         self.alias.write_to(writer)?;
         Ok(())
     }
@@ -70,8 +74,8 @@ impl CafImportEntry
     {
         Self {
             key: CafManifestKey(Arc::from(key.as_ref())),
-            alias: CafImportAlias(Arc::from(alias.as_ref())),
-            ..default()
+            alias: CafImportAlias::Alias(SmolStr::from(alias.as_ref())),
+            ..Default::default()
         }
     }
 }
@@ -81,10 +85,10 @@ impl Default for CafImportEntry
     fn default() -> Self
     {
         Self {
-            start_fill: CafFill::new('\n'),
+            entry_fill: CafFill::new("\n"),
             key: Default::default(),
-            as_fill: CafFill::new(' '),
-            alias_fill: CafFill::new(' '),
+            as_fill: CafFill::new(" "),
+            alias_fill: CafFill::new(" "),
             alias: Default::default(),
         }
     }
@@ -111,19 +115,11 @@ impl CafImport
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#import".as_bytes)?;
+        writer.write("#import".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }
         Ok(())
-    }
-}
-
-impl Default for CafImport
-{
-    fn default() -> Self
-    {
-        Self { start_fill: CafFill::default(), entries: Vec::default() }
     }
 }
 

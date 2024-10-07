@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::prelude::default;
+use bevy::prelude::{default, Deref};
 
 use crate::prelude::*;
 
@@ -9,16 +9,16 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafManifestFile
 {
-    Self,
-    File(CafFilePath)
+    SelfRef,
+    File(CafFilePath),
 }
 
 impl CafManifestFile
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
-            Self::Self => {
+        match self {
+            Self::SelfRef => {
                 writer.write("self".as_bytes())?;
             }
             Self::File(file) => {
@@ -86,11 +86,11 @@ impl CafManifestEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.entry_fill.write_to_or_else(writer, '\n')?;
+        self.entry_fill.write_to_or_else(writer, "\n")?;
         self.file.write_to(writer)?;
-        self.as_fill.write_to_or_else(writer, ' ')?;
+        self.as_fill.write_to_or_else(writer, " ")?;
         writer.write("as".as_bytes())?;
-        self.key_fill.write_to_or_else(writer, ' ')?;
+        self.key_fill.write_to_or_else(writer, " ")?;
         self.key.write_to(writer)?;
         Ok(())
     }
@@ -99,8 +99,8 @@ impl CafManifestEntry
     pub fn new(file: impl AsRef<str>, key: impl AsRef<str>) -> Self
     {
         Self {
-            file: CafManifestFile::File(Arc::from(file.as_ref())),
-            key: Arc::from(key.as_ref()),
+            file: CafManifestFile::File(CafFilePath(Arc::from(file.as_ref()))),
+            key: CafManifestKey(Arc::from(key.as_ref())),
             ..default()
         }
     }
@@ -111,11 +111,11 @@ impl Default for CafManifestEntry
     fn default() -> Self
     {
         Self {
-            start_fill: CafFill::new('\n'),
+            entry_fill: CafFill::new("\n"),
             file: Default::default(),
-            pre_as_fill: CafFill::new(' '),
-            post_as_fill: CafFill::new(' '),
-            key: Arc::from(""),
+            as_fill: CafFill::new(" "),
+            key_fill: CafFill::new(" "),
+            key: CafManifestKey(Arc::from("")),
         }
     }
 }
@@ -141,7 +141,7 @@ impl CafManifest
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#manifest".as_bytes)?;
+        writer.write("#manifest".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }
