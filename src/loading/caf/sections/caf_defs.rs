@@ -8,14 +8,14 @@ pub enum CafDefEntry
     Constant(CafConstantDef),
     DataMacro(CafDataMacroDef),
     InstructionMacro(CafInstructionMacroDef),
-    SceneMacro(SceneMacroDef),
+    SceneMacro(CafSceneMacroDef),
 }
 
 impl CafDefEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::Constant(entry) => {
                 entry.write_to(writer)?;
             }
@@ -50,8 +50,9 @@ impl CafDefs
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
         for def in self.defs.iter() {
-            defs.write_to(writer)?;
+            def.write_to(writer)?;
         }
+        Ok(())
     }
 
     pub fn eq_ignore_whitespace(&self, _other: &CafDefs) -> bool

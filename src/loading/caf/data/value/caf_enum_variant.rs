@@ -1,7 +1,11 @@
+use bevy::reflect::{EnumInfo, TypeInfo, TypeRegistry, VariantInfo};
+use smol_str::SmolStr;
+
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafEnumVariantIdentifier
 {
     pub fill: CafFill,
@@ -24,7 +28,10 @@ impl CafEnumVariantIdentifier
 
     pub fn from_json_string(json_str: &String) -> Result<Self, String>
     {
-        Ok(Self{ fill: CafFill::default(), name: SmolStr::from(json_str.as_str()) })
+        Ok(Self {
+            fill: CafFill::default(),
+            name: SmolStr::from(json_str.as_str()),
+        })
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -40,25 +47,26 @@ Parsing:
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafEnumVariant
 {
-    Unit{
+    Unit
+    {
         id: CafEnumVariantIdentifier
     },
-    Tuple{
-        id: CafEnumVariantIdentifier,
-        tuple: CafTuple,
+    Tuple
+    {
+        id: CafEnumVariantIdentifier, tuple: CafTuple
     },
     /// Shorthand for and equivalent to a tuple of array.
-    Array{
-        id: CafEnumVariantIdentifier,
-        array: CafArray,
+    Array
+    {
+        id: CafEnumVariantIdentifier, array: CafArray
     },
-    Map{
-        id: CafEnumVariantIdentifier,
-        map: CafMap,
-    }
+    Map
+    {
+        id: CafEnumVariantIdentifier, map: CafMap
+    },
 }
 
 impl CafEnumVariant
@@ -66,18 +74,18 @@ impl CafEnumVariant
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
         match *self {
-            Self::Unit{id} => {
+            Self::Unit { id } => {
                 id.write_to(writer)?;
             }
-            Self::Tuple{id, tuple} => {
+            Self::Tuple { id, tuple } => {
                 id.write_to(writer)?;
                 tuple.write_to(writer)?;
             }
-            Self::Array{id, array} => {
+            Self::Array { id, array } => {
                 id.write_to(writer)?;
                 array.write_to(writer)?;
             }
-            Self::Map{id, map} => {
+            Self::Map { id, map } => {
                 id.write_to(writer)?;
                 map.write_to(writer)?;
             }
@@ -88,20 +96,20 @@ impl CafEnumVariant
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
         match *self {
-            Self::Unit{id} => {
+            Self::Unit { id } => {
                 // "..id.."
                 Ok(serde_json::Value::String(id.to_json_string()?))
             }
-            Self::Tuple{id, tuple} => {
+            Self::Tuple { id, tuple } => {
                 // {"..id..": [..tuple items..]}
                 // If there is one tuple-enum item then there will be no wrapping array.
                 let key = id.to_json_string()?;
                 let value = tuple.to_json_for_enum()?;
                 let mut map = serde_json::Map::default();
                 map.insert(key, value);
-                Ok(serde_json::Object(map))
+                Ok(serde_json::Value::Object(map))
             }
-            Self::Array{id, array} => {
+            Self::Array { id, array } => {
                 // {"..id..": [..array items..]}
                 // Note that unlike tuples, enum-tuples of single items don't need a wrapping array in JSON.
                 // So we just paste the CafArray in directly.
@@ -109,15 +117,15 @@ impl CafEnumVariant
                 let value = array.to_json()?;
                 let mut map = serde_json::Map::default();
                 map.insert(key, value);
-                Ok(serde_json::Object(map))
+                Ok(serde_json::Value::Object(map))
             }
-            Self::Map{id, map} => {
+            Self::Map { id, map } => {
                 // {"..id..": {..map items..}}
                 let key = id.to_json_string()?;
                 let value = map.to_json()?;
                 let mut map = serde_json::Map::default();
                 map.insert(key, value);
-                Ok(serde_json::Object(map))
+                Ok(serde_json::Value::Object(map))
             }
         }
     }
@@ -126,17 +134,17 @@ impl CafEnumVariant
     pub fn try_from_json_option(
         val: &serde_json::Value,
         enum_info: &EnumInfo,
-        registry: &TypeRegistry
+        registry: &TypeRegistry,
     ) -> Result<Option<CafValue>, String>
     {
-        if type_info.type_path_table().ident() != Some("Option") {
+        if enum_info.type_path_table().ident() != Some("Option") {
             return Ok(None);
         }
 
         if *val == serde_json::Value::Null {
             // If no `None` then maybe there's a custom Option type or nested options.
             if enum_info.variant("None").is_some() {
-                return Ok(Some(CafValue::None(CafNone{ fill: CafFill::default() })));
+                return Ok(Some(CafValue::None(CafNone { fill: CafFill::default() })));
             }
         }
 
@@ -156,7 +164,11 @@ impl CafEnumVariant
     }
 
     /// Note: [`Self::try_from_json_option`] should be called first to filter out `Option` enums.
-    pub fn from_json(val: &serde_json::Value, enum_info: &EnumInfo, registry: &TypeRegistry) -> Result<Self, String>
+    pub fn from_json(
+        val: &serde_json::Value,
+        enum_info: &EnumInfo,
+        registry: &TypeRegistry,
+    ) -> Result<Self, String>
     {
         match val {
             serde_json::Value::String(json_str) => {
@@ -173,9 +185,7 @@ impl CafEnumVariant
                     ));
                 };
 
-                Ok(Self::Unit{
-                    id: CafEnumVariantIdentifier::from_json_string(json_str)?
-                })
+                Ok(Self::Unit { id: CafEnumVariantIdentifier::from_json_string(json_str)? })
             }
             serde_json::Value::Map(json_map) => {
                 if json_map.len() != 1 {
@@ -188,7 +198,7 @@ impl CafEnumVariant
                 let Some(variant_info) = enum_info.variant(enum_variant_str.as_str()) else {
                     return Err(format!(
                         "failed converting {:?} from json enum variant {:?}; enum variant is unknown",
-                        enum_info.type_path(), json_str
+                        enum_info.type_path(), enum_variant_str
                     ));
                 };
                 let variant_id = CafEnumVariantIdentifier::from_json_string(enum_variant_str)?;
@@ -203,47 +213,30 @@ impl CafEnumVariant
                             let field_info = registration.type_info();
 
                             match field_info {
-                                TypeInfo::Array(_) |
-                                TypeInfo::List(_) => {
-                                    return Ok(Self::Array{
+                                TypeInfo::Array(_) | TypeInfo::List(_) => {
+                                    return Ok(Self::Array {
                                         id: variant_id,
-                                        array: CafArray::from_json(
-                                            variant_val,
-                                            field_info,
-                                            registry,
-                                        )?
+                                        array: CafArray::from_json(variant_val, field_info, registry)?,
                                     });
                                 }
                                 _ => {
-                                    return Ok(Self::Tuple{
+                                    return Ok(Self::Tuple {
                                         id: variant_id,
                                         tuple: CafTuple::from_json_as_enum_single(
                                             variant_val,
                                             enum_info.type_path(),
                                             field_info,
                                             registry,
-                                        )?
+                                        )?,
                                     });
                                 }
                             }
                         }
 
                         // Tuple of 0 or multiple items (json has array wrapper).
-                        Ok(Self::Tuple{
+                        Ok(Self::Tuple {
                             id: variant_id,
                             tuple: CafTuple::from_json_as_enum(
-                                variant_val,
-                                enum_info.type_path(),
-                                enum_variant_str.as_str(),
-                                info,
-                                registry,
-                            )?
-                        })
-                    }
-                    VariantInfo::Struct(info) => {
-                        Ok(Self::Map{
-                            id: variant_id,
-                            map: CafMap::from_json_as_enum(
                                 variant_val,
                                 enum_info.type_path(),
                                 enum_variant_str.as_str(),
@@ -252,6 +245,16 @@ impl CafEnumVariant
                             )?,
                         })
                     }
+                    VariantInfo::Struct(info) => Ok(Self::Map {
+                        id: variant_id,
+                        map: CafMap::from_json_as_enum(
+                            variant_val,
+                            enum_info.type_path(),
+                            enum_variant_str.as_str(),
+                            info,
+                            registry,
+                        )?,
+                    }),
                     VariantInfo::Unit(_) => {
                         return Err(format!(
                             "failed converting {:?} from json enum variant {:?}; json value {:?} is provided but variant \
@@ -264,29 +267,29 @@ impl CafEnumVariant
             _ => Err(format!(
                 "failed converting {:?} from json {:?}; json is not a string or map",
                 enum_info.type_path(), val
-            ))
+            )),
         }
     }
 
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::Unit{id}, Self::Unit{id: other_id}) => {
+            (Self::Unit { id }, Self::Unit { id: other_id }) => {
                 id.recover_fill(other_id);
             }
-            (Self::Tuple{id, tuple}, Self::Tuple{id: other_id, tuple: other_tuple}) => {
+            (Self::Tuple { id, tuple }, Self::Tuple { id: other_id, tuple: other_tuple }) => {
                 id.recover_fill(other_id);
                 tuple.recover_fill(other_tuple);
             }
-            (Self::Array{id, array}, Self::Array{id: other_id, array: other_array}) => {
+            (Self::Array { id, array }, Self::Array { id: other_id, array: other_array }) => {
                 id.recover_fill(other_id);
                 array.recover_fill(other_array);
             }
-            (Self::Map{id, map}, Self::Map{id: other_id, map: other_map}) => {
+            (Self::Map { id, map }, Self::Map { id: other_id, map: other_map }) => {
                 id.recover_fill(other_id);
                 map.recover_fill(other_map);
             }
-            _ => ()
+            _ => (),
         }
     }
 }

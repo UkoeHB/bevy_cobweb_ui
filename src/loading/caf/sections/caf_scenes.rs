@@ -1,17 +1,20 @@
+use bevy::prelude::Deref;
+use smol_str::SmolStr;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deref)]
 pub struct CafSceneNodeName(pub SmolStr);
 
 impl CafSceneNodeName
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        writer.write('\"'.as_bytes())?;
+        writer.write("\"".as_bytes())?;
         writer.write(self.as_bytes())?;
-        writer.write('\"'.as_bytes())?;
+        writer.write("\"".as_bytes())?;
         Ok(())
     }
 }
@@ -26,7 +29,7 @@ impl CafSceneNodeName
 pub enum CafSceneLayerEntry
 {
     Instruction(CafInstruction),
-    InstructionMacro(CafInstructionMacro),
+    InstructionMacroCall(CafInstructionMacroCall),
     SceneMacroCall(CafSceneMacroCall),
     /// This is the `..'node_name'` and `..*` syntax.
     SceneMacroParam(CafSceneMacroParam),
@@ -37,11 +40,11 @@ impl CafSceneLayerEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::Instruction(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::InstructionMacro(entry) => {
+            Self::InstructionMacroCall(entry) => {
                 entry.write_to(writer)?;
             }
             Self::Layer(entry) => {
@@ -68,14 +71,14 @@ pub struct CafSceneLayer
     /// Whatespace between the name and most recent newline is used to control scene layer depth.
     pub name_fill: CafFill,
     pub name: CafSceneNodeName,
-    pub entries: Vec<CafSceneLayerEntry>
+    pub entries: Vec<CafSceneLayerEntry>,
 }
 
 impl CafSceneLayer
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        self.name_fill.write_to_or_else(writer, '\n')?;
+        self.name_fill.write_to_or_else(writer, "\n")?;
         self.name.write_to(writer)?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
@@ -104,7 +107,7 @@ impl CafScenes
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#scenes".as_bytes)?;
+        writer.write("#scenes".as_bytes())?;
         for scene in self.scenes.iter() {
             scene.write_to(writer)?;
         }

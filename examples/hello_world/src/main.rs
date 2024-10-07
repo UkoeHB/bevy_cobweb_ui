@@ -8,23 +8,25 @@ use bevy::window::WindowTheme;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle::ui_builder::*;
 
-
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 struct GenericTest<A, B, C>
 {
     a: u32,
     #[reflect(ignore)]
-    _p: std::marker::PhantomData<(A, B, C)>
+    _p: std::marker::PhantomData<(A, B, C)>,
 }
 
 impl<A, B, C> bevy::ecs::world::Command for GenericTest<A, B, C>
 where
     A: Send + Sync + 'static,
     B: Send + Sync + 'static,
-    C: Send + Sync + 'static
-{ fn apply(self, _: &mut World) {
-    tracing::warn!("generic success");
-}}
+    C: Send + Sync + 'static,
+{
+    fn apply(self, _: &mut World)
+    {
+        tracing::warn!("generic success");
+    }
+}
 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 struct DeeperTest(u32);
@@ -34,34 +36,56 @@ enum InnerTest
 {
     #[default]
     A,
-    B{
-        d: DeeperTest
+    B
+    {
+        d: DeeperTest,
     },
     C(u32),
-    D(Vec<u32>)
+    D(Vec<u32>),
 }
 
 #[derive(Reflect, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct Test(u32, f32, InnerTest, GenericTest<u32, DeeperTest, (f32, f32)>, std::collections::HashMap<u32, u32>);
+struct Test(
+    u32,
+    f32,
+    InnerTest,
+    GenericTest<u32, DeeperTest, (f32, f32)>,
+    std::collections::HashMap<u32, u32>,
+);
 
 impl Default for Test
 {
-    fn default() -> Self {
+    fn default() -> Self
+    {
         let mut map = std::collections::HashMap::default();
         map.insert(0, 0);
-        Self(0, 0.0, InnerTest::A, GenericTest{a: 0, _p: std::marker::PhantomData}, map)
+        Self(
+            0,
+            0.0,
+            InnerTest::A,
+            GenericTest { a: 0, _p: std::marker::PhantomData },
+            map,
+        )
     }
 }
 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 struct BasicTest(u32);
 
-impl bevy::ecs::world::Command for BasicTest { fn apply(self, _: &mut World) {
-    tracing::warn!("success");
-}}
-impl bevy::ecs::world::Command for Test { fn apply(self, _: &mut World) {
-    tracing::warn!("success");
-}}
+impl bevy::ecs::world::Command for BasicTest
+{
+    fn apply(self, _: &mut World)
+    {
+        tracing::warn!("success");
+    }
+}
+impl bevy::ecs::world::Command for Test
+{
+    fn apply(self, _: &mut World)
+    {
+        tracing::warn!("success");
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -85,15 +109,14 @@ fn setup(mut commands: Commands)
 
 fn main()
 {
-let raw = b"h \n";
-let string = String::from_utf8_lossy(raw);
-let raw2 = string.as_bytes();
-println!("{:?}", raw);
-println!("xx\n");
-println!("{:?}", string);
-println!("xx\n");
-println!("{:?}", raw2);
-
+    let raw = b"h \n";
+    let string = String::from_utf8_lossy(raw);
+    let raw2 = string.as_bytes();
+    println!("{:?}", raw);
+    println!("xx\n");
+    println!("{:?}", string);
+    println!("xx\n");
+    println!("{:?}", raw2);
 
     App::new()
         .add_plugins(bevy::DefaultPlugins.set(WindowPlugin {

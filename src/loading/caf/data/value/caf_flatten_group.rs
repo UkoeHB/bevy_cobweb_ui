@@ -1,11 +1,12 @@
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafFlattenGroupValueEntry
 {
     Value(CafValue),
-    KeyValue(CafMapKeyValue)
+    KeyValue(CafMapKeyValue),
 }
 
 impl CafFlattenGroupValueEntry
@@ -17,7 +18,7 @@ impl CafFlattenGroupValueEntry
                 value.write_to(writer)?;
             }
             Self::KeyValue(key_value) => {
-                key_value.write_to(key_value)?;
+                key_value.write_to(writer)?;
             }
         }
         Ok(())
@@ -32,18 +33,18 @@ impl CafFlattenGroupValueEntry
             (Self::KeyValue(key_value), Self::KeyValue(other_key_value)) => {
                 key_value.recover_fill(other_key_value);
             }
-            _ => ()
+            _ => (),
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CafFlattenGroupVariant
 {
     Values(Vec<CafFlattenGroupValueEntry>),
-    SceneContext(Vec<CafSceneLayerEntry>)
+    SceneContext(Vec<CafSceneLayerEntry>),
 }
 
 impl CafFlattenGroupVariant
@@ -78,21 +79,21 @@ impl CafFlattenGroupVariant
                     entry.recover_fill(other_entry);
                 }
             }
-            _ => ()
+            _ => (),
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CafFlattenGroup
 {
     /// Fill before opening `\`.
     pub start_fill: CafFill,
     pub variant: CafFlattenGroupVariant,
     /// Fill before ending `\`.
-    pub end_fill: CafFill
+    pub end_fill: CafFill,
 }
 
 impl CafFlattenGroup
@@ -110,7 +111,7 @@ impl CafFlattenGroup
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.start_fill.recover(&other.start_fill);
-        self.variant.recover_fill();
+        self.variant.recover_fill(&other.variant);
         self.end_fill.recover(&other.end_fill);
     }
 }

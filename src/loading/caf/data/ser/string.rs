@@ -38,7 +38,8 @@ static ESCAPE: [u8; 256] = [
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents a character escape code in a type-safe manner.
-enum CharEscape {
+enum CharEscape
+{
     /// An escaped quote `"`
     Quote,
     /// An escaped reverse solidus `\`
@@ -60,9 +61,11 @@ enum CharEscape {
     AsciiControl(u8),
 }
 
-impl CharEscape {
+impl CharEscape
+{
     #[inline]
-    fn from_escape_table(escape: u8, byte: u8) -> CharEscape {
+    fn from_escape_table(escape: u8, byte: u8) -> CharEscape
+    {
         match escape {
             BB => CharEscape::Backspace,
             TT => CharEscape::Tab,
@@ -76,17 +79,18 @@ impl CharEscape {
         }
     }
 
-    fn write_to(self writer: &mut impl std::io::Write + ?Sized) -> std::io::Result<()> {
+    fn write_to(self, writer: &mut impl std::io::Write) -> std::io::Result<()>
+    {
         let s = match self {
-            Quote => b"\\\"",
-            ReverseSolidus => b"\\\\",
-            Solidus => b"\\/",
-            Backspace => b"\\b",
-            FormFeed => b"\\f",
-            LineFeed => b"\\n",
-            CarriageReturn => b"\\r",
-            Tab => b"\\t",
-            AsciiControl(byte) => {
+            Self::Quote => b"\\\"",
+            Self::ReverseSolidus => b"\\\\",
+            Self::Solidus => b"\\/",
+            Self::Backspace => b"\\b",
+            Self::FormFeed => b"\\f",
+            Self::LineFeed => b"\\n",
+            Self::CarriageReturn => b"\\r",
+            Self::Tab => b"\\t",
+            Self::AsciiControl(byte) => {
                 static HEX_DIGITS: [u8; 16] = *b"0123456789abcdef";
                 let bytes = &[
                     b'\\',
@@ -107,10 +111,7 @@ impl CharEscape {
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts a string containing special characters into a JSON-serialized string with escape sequences.
-pub(crate) fn format_escaped_str_contents(
-    writer: &mut impl std::io::Write + ?Sized,
-    value: &str,
-) -> std::io::Result<()>
+pub(crate) fn format_escaped_str_contents(writer: &mut impl std::io::Write, value: &str) -> std::io::Result<()>
 {
     let bytes = value.as_bytes();
 
@@ -136,7 +137,7 @@ pub(crate) fn format_escaped_str_contents(
         return Ok(());
     }
 
-    writer.write_all(&value[start..i].as_bytes())
+    writer.write_all(&value[start..].as_bytes())
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -7,19 +7,19 @@ use crate::prelude::*;
 pub enum CafCommandEntry
 {
     Instruction(CafInstruction),
-    InstructionMacro(CafInstructionMacro),
+    InstructionMacroCall(CafInstructionMacroCall),
 }
 
 impl CafCommandEntry
 {
     pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
     {
-        match *self {
+        match self {
             Self::Instruction(instruction) => {
                 instruction.write_to(writer)?;
             }
-            Self::InstructionMacro(instruction) => {
-                instruction.write_to(writer)?;
+            Self::InstructionMacroCall(call) => {
+                call.write_to(writer)?;
             }
         }
         Ok(())
@@ -46,7 +46,7 @@ impl CafCommands
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#commands".as_bytes)?;
+        writer.write("#commands".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }
