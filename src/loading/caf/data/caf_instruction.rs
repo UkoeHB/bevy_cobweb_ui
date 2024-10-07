@@ -178,7 +178,7 @@ impl CafInstruction
         }
         let Some(registration) = registry.get(info.field_at(0).unwrap().type_id()) else { unreachable!() };
         if !matches!(registration.type_info(), &TypeInfo::Array(_))
-            || !matches!(registration.type_info(), &TypeInfo::List(_))
+            && !matches!(registration.type_info(), &TypeInfo::List(_))
         {
             return Ok(None);
         }
