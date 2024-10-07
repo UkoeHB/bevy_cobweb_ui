@@ -132,8 +132,8 @@ impl CafInstruction
     {
         match self {
             Self::Unit { .. } => {
-                // []
-                Ok(serde_json::Value::Array(vec![]))
+                // {}
+                Ok(serde_json::Value::Object(serde_json::Map::default()))
             }
             Self::Tuple { tuple, .. } => {
                 // [..tuple items..]
@@ -200,7 +200,10 @@ impl CafInstruction
             TypeInfo::Struct(info) => {
                 // Case 1: zero-sized type
                 if info.field_len() == 0 {
-                    if *val != serde_json::Value::Array(vec![]) {
+                    if *val != serde_json::Value::Null
+                        && *val != serde_json::Value::Array(vec![])
+                        && *val != serde_json::Value::Object(serde_json::Map::default())
+                    {
                         tracing::warn!("encountered non-empty JSON value {:?} when converting zero-size-type {:?}",
                             val, type_info.type_path());
                     }

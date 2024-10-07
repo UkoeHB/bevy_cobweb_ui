@@ -326,6 +326,18 @@ impl CafMap
         registry: &TypeRegistry,
     ) -> Result<Self, String>
     {
+        // Handle the case of a unit struct serialized as null in JSON.
+        // - We store unit structs as empty maps inside CAF instructions, but JSON serializes them as null.
+        // - Due to a bug in bevy reflection, when going CAF -> JSON -> Reflect, unit structs need to be arrays or
+        //   maps.
+        //   - See https://github.com/bevyengine/bevy/issues/15712.
+        let null_backup = serde_json::Value::Object(serde_json::Map::default());
+        let val = if matches!(val, serde_json::Value::Null) {
+            &null_backup
+        } else {
+            val
+        };
+
         let serde_json::Value::Object(json_map) = val else {
             return Err(format!(
                 "failed converting {:?} from json {:?}; expected json to be a map",

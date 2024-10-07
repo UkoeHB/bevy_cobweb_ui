@@ -70,7 +70,7 @@ impl Default for Test
 }
 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-struct BasicTest(u32);
+struct BasicTest;
 
 impl bevy::ecs::world::Command for BasicTest
 {
