@@ -7,7 +7,6 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Currently only strings and ints/floats are supported as map keys, since we are tied to JSON limitations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafMapKey
 {
@@ -16,8 +15,7 @@ pub enum CafMapKey
         fill: CafFill,
         name: SmolStr,
     },
-    String(CafString),
-    Numeric(CafNumber),
+    Value(CafValue),
 }
 
 impl CafMapKey
@@ -48,6 +46,8 @@ impl CafMapKey
         Ok(())
     }
 
+    /// Currently only strings and ints/floats are supported as map keys, since we are tied to JSON limitations.
+    //todo
     pub fn to_json_map_key(&self) -> Result<String, std::io::Error>
     {
         match self {
@@ -61,11 +61,6 @@ impl CafMapKey
                 Ok(string)
             }
         }
-    }
-
-    pub fn field_name(name: impl AsRef<str>) -> Self
-    {
-        Self::FieldName { fill: CafFill::default(), name: SmolStr::from(name.as_ref()) }
     }
 
     pub fn from_json_key(key: impl AsRef<str>) -> Result<Self, String>
@@ -92,6 +87,16 @@ impl CafMapKey
             }
             _ => (),
         }
+    }
+
+    pub fn field_name(name: impl AsRef<str>) -> Self
+    {
+        Self::FieldName { fill: CafFill::default(), name: SmolStr::from(name.as_ref()) }
+    }
+
+    pub fn value(value: CafValue) -> Self
+    {
+        Self::Value(value)
     }
 }
 
@@ -150,6 +155,16 @@ impl CafMapKeyValue
         self.key.recover_fill(&other.key);
         self.semicolon_fill.recover(&other.semicolon_fill);
         self.value.recover_fill(&other.value);
+    }
+
+    pub fn struct_field(key: &str, value: CafValue) -> Self
+    {
+        Self{ key: CafMapKey::field_name(key), semicolon_fill: CafFill::default(), value }
+    }
+
+    pub fn map_entry(key: CafValue, value: CafValue) -> Self
+    {
+        Self{ key: CafMapKey::value(key), semicolon_fill: CafFill::default(), value }
     }
 }
 
@@ -210,6 +225,16 @@ impl CafMapEntry
             }
             _ => (),
         }
+    }
+
+    pub fn struct_field(key: &str, value: CafValue) -> Self
+    {
+        Self::KeyValue(CafMapKeyValue::struct_field(key, value))
+    }
+
+    pub fn map_entry(key: CafValue, value: CafValue) -> Self
+    {
+        Self::KeyValue(CafMapKeyValue::map_entry(key, value))
     }
 }
 

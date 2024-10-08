@@ -58,6 +58,14 @@ impl CafBool
     }
 }
 
+impl From<bool> for CafBool
+{
+    fn from(value: bool) -> Self
+    {
+        Self{ fill: CafFill::default(), value }
+    }
+}
+
 /*
 Parsing:
 - parse as string

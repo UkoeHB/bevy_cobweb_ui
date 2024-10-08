@@ -294,3 +294,320 @@ Parsing:
 */
 
 //-------------------------------------------------------------------------------------------------------------------
+
+pub struct CafInstructionSerializer;
+
+impl serde::Serializer for CafInstructionSerializer {
+    type Ok = CafInstruction;
+    type Error = CafError;
+
+    type SerializeSeq = Impossible<String, Self::Error>;
+    type SerializeTuple = Impossible<String, Self::Error>;
+    type SerializeTupleStruct = SerializeTupleStruct;
+    type SerializeTupleVariant = SerializeTupleVariant;
+    type SerializeMap = Impossible<String, Self::Error>;
+    type SerializeStruct = SerializeStruct;
+    type SerializeStructVariant = SerializeStructVariant;
+
+    #[inline]
+    fn serialize_bool(self, value: bool) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_i8(self, value: i8) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_i16(self, value: i16) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_i32(self, value: i32) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_i64(self, value: i64) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_i128(self, value: i128) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_u8(self, value: u8) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_u16(self, value: u16) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_u32(self, value: u32) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_u64(self, value: u64) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_u128(self, value: u128) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_f32(self, float: f32) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_f64(self, float: f64) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_char(self, value: char) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_str(self, value: &str) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_bytes(self, value: &[u8]) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_unit(self) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_unit_struct(self, name: &'static str) -> Result<CafInstruction> {
+        Ok(CafInstruction::Unit{ id: name.into() })
+    }
+
+    #[inline]
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+    ) -> Result<CafInstruction> {
+        Ok(CafInstruction::Enum{ id: name.into(), CafEnumVariant::unit(variant) })
+    }
+
+    #[inline]
+    fn serialize_newtype_struct<T>(self, name: &'static str, value: &T) -> Result<CafInstruction>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Serialize the value first so we know what to do with it.
+        let value_ser = value.serialize(self)?;
+
+        if let CafValue::Array(array) = value_ser {
+            Ok(CafInstruction::Array{ id: name.into(), array })
+        } else {
+            Ok(CafInstruction::Tuple{ id: name.into(), tuple: CafTuple::single(value_ser) })
+        }
+    }
+
+    fn serialize_newtype_variant<T>(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> Result<CafInstruction>
+    where
+        T: ?Sized + Serialize,
+    {
+        // Serialize the value first so we know what to do with it.
+        let value_ser = value.serialize(self)?;
+
+        if let CafValue::Array(arr) = value_ser {
+            Ok(CafInstruction::Enum{ id: name.into(), variant: CafEnumVariant::array(variant, arr) })
+        } else {
+            Ok(CafInstruction::Enum{ id: name.into(), variant: CafEnumVariant::newtype(variant, value_ser) })
+        }
+    }
+
+    #[inline]
+    fn serialize_none(self) -> Result<CafInstruction> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    #[inline]
+    fn serialize_some<T>(self, value: &T) -> Result<CafInstruction>
+    where
+        T: ?Sized + Serialize,
+    {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleStruct> {
+        Ok(SerializeTupleStruct {
+            name,
+            vec: Vec::with_capacity(len),
+        })
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeTupleVariant> {
+        Ok(SerializeTupleVariant {
+            name,
+            variant,
+            vec: Vec::with_capacity(len),
+        })
+    }
+
+    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
+        Err(CafError::NotAnInstruction)
+    }
+
+    fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
+        Ok(SerializeStruct {
+            name,
+            vec: Vec::with_capacity(len),
+        })
+    }
+
+    fn serialize_struct_variant(
+        self,
+        name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStructVariant> {
+        Ok(SerializeStructVariant {
+            name,
+            variant,
+            vec: Vec::with_capacity(len),
+        })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub struct SerializeTupleStruct {
+    name: &'static str,
+    vec: Vec<CafValue>,
+}
+
+impl serde::ser::SerializeTupleStruct for SerializeTupleStruct {
+    type Ok = CafInstruction;
+    type Error = CafError;
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.vec.push(value.serialize(CafValueSerializer)?);
+        Ok(())
+    }
+
+    fn end(self) -> Result<CafInstruction> {
+        Ok(CafInstruction::Tuple{ id: self.name.into(), tuple: CafTuple::from(self.vec) })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub struct SerializeTupleVariant {
+    name: &'static str,
+    variant: &'static str,
+    vec: Vec<CafValue>,
+}
+
+impl serde::ser::SerializeTupleVariant for SerializeTupleVariant {
+    type Ok = CafInstruction;
+    type Error = CafError;
+
+    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.vec.push(value.serialize(CafValueSerializer)?);
+        Ok(())
+    }
+
+    fn end(self) -> Result<CafInstruction> {
+        Ok(CafInstruction::Enum{ id: self.name.into(), variant: CafEnumVariant::tuple(self.variant, CafTuple::from(self.vec)) })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub struct SerializeStruct {
+    name: &'static str,
+    vec: Vec<CafMapEntry>,
+}
+
+impl serde::ser::SerializeStruct for SerializeStruct {
+    type Ok = CafInstruction;
+    type Error = CafError;
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.vec.push(CafMapEntry::struct_field(key, value.serialize(CafValueSerializer)?));
+        Ok(())
+    }
+
+    fn end(self) -> Result<CafInstruction> {
+        Ok(CafInstruction::Map{ id: self.name.into(), map: CafMap::from(self.vec) })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub struct SerializeStructVariant {
+    name: &'static str,
+    variant: &'static str,
+    vec: Vec<CafMapEntry>,
+}
+
+impl serde::ser::SerializeStructVariant for SerializeStructVariant {
+    type Ok = CafInstruction;
+    type Error = CafError;
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        self.vec.push(CafMapEntry::struct_field(key, value.serialize(CafValueSerializer)?));
+        Ok(())
+    }
+
+    fn end(self) -> Result<CafInstruction> {
+        Ok(CafInstruction::Enum{ id: self.name.into(), variant: CafEnumVariant::map(self.variant, CafMap::from(self.vec)) })
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------

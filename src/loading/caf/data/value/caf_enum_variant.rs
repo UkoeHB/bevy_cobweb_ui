@@ -32,17 +32,20 @@ impl CafEnumVariantIdentifier
         Ok(String::from(self.name.as_str()))
     }
 
-    pub fn from_json_string(json_str: &String) -> Result<Self, String>
-    {
-        Ok(Self {
-            fill: CafFill::default(),
-            name: SmolStr::from(json_str.as_str()),
-        })
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
+    }
+}
+
+impl From<&str> for CafEnumVariantIdentifier
+{
+    fn from(string: &str) -> Self
+    {
+        Self {
+            fill: CafFill::default(),
+            name: SmolStr::from(string),
+        }
     }
 }
 
@@ -197,7 +200,7 @@ impl CafEnumVariant
                     ));
                 };
 
-                Ok(Self::Unit { id: CafEnumVariantIdentifier::from_json_string(json_str)? })
+                Ok(Self::Unit { id: CafEnumVariantIdentifier::from(json_str.as_str()) })
             }
             serde_json::Value::Object(json_map) => {
                 if json_map.len() != 1 {
@@ -213,7 +216,7 @@ impl CafEnumVariant
                         enum_info.type_path(), enum_variant_str
                     ));
                 };
-                let variant_id = CafEnumVariantIdentifier::from_json_string(enum_variant_str)?;
+                let variant_id = CafEnumVariantIdentifier::from(enum_variant_str.as_str());
 
                 match variant_info {
                     VariantInfo::Tuple(info) => {
@@ -303,6 +306,31 @@ impl CafEnumVariant
             }
             _ => (),
         }
+    }
+
+    pub fn unit(variant: &str) -> Self
+    {
+        Self::Unit{ id: variant.into() }
+    }
+
+    pub fn array(variant: &str, array: CafArray) -> Self
+    {
+        Self::Array{ id: variant.into(), array }
+    }
+
+    pub fn newtype(variant: &str, value: CafValue) -> Self
+    {
+        Self::Tuple{ id: variant.into(), tuple: CafTuple::single(value) }
+    }
+
+    pub fn tuple(variant: &str, tuple: CafTuple) -> Self
+    {
+        Self::Tuple{ id: variant.into(), tuple }
+    }
+
+    pub fn map(variant: &str, map: CafMap) -> Self
+    {
+        Self::Map{ id: variant.into(), map }
     }
 }
 
