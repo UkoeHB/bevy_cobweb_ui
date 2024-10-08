@@ -95,10 +95,10 @@ impl CharEscape
                 let bytes = &[
                     b'\\',
                     b'u',
-                    b'0',
-                    b'0',
+                    b'{',
                     HEX_DIGITS[(byte >> 4) as usize],
                     HEX_DIGITS[(byte & 0xF) as usize],
+                    b'}',
                 ];
                 return writer.write_all(bytes);
             }

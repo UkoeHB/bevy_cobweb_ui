@@ -6,6 +6,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Currently only supports ASCII (2-hex-digit) control characters.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CafStringSegment
 {
