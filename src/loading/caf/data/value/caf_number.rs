@@ -31,6 +31,7 @@ impl CafNumberValue
         Ok(serde_json::Value::Number(self.deserialized.clone()))
     }
 
+    // TODO: replace with custom representation
     pub fn from_json_number(json_num: serde_json::Number) -> Self
     {
         let string = if let Some(value) = json_num.as_u64() {
@@ -53,6 +54,104 @@ impl CafNumberValue
     {
         let deserialized = serde_json::Number::from_str(json_str).ok()?;
         Some(Self { original: SmolStr::from(json_str), deserialized })
+    }
+}
+
+impl From<i8> for CafNumberValue
+{
+    fn from(number: i8) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<i16> for CafNumberValue
+{
+    fn from(number: i16) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<i32> for CafNumberValue
+{
+    fn from(number: i32) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<i64> for CafNumberValue
+{
+    fn from(number: i64) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<i128> for CafNumberValue
+{
+    fn from(number: i128) -> Self
+    {
+        let number = i64::try_from(number).expect("i128 not yet fully supported");
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<u8> for CafNumberValue
+{
+    fn from(number: u8) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<u16> for CafNumberValue
+{
+    fn from(number: u16) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<u32> for CafNumberValue
+{
+    fn from(number: u32) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<u64> for CafNumberValue
+{
+    fn from(number: u64) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<u128> for CafNumberValue
+{
+    fn from(number: u128) -> Self
+    {
+        let number = u64::try_from(number).expect("u128 not yet fully supported");
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<f32> for CafNumberValue
+{
+    fn from(number: f32) -> Self
+    {
+        Self::from_json_number(number.into())
+    }
+}
+
+impl From<f64> for CafNumberValue
+{
+    fn from(number: f64) -> Self
+    {
+        Self::from_json_number(number.into())
     }
 }
 
@@ -105,12 +204,108 @@ impl CafNumber
     pub fn try_from_json_string(json_str: &str) -> Option<Self>
     {
         let number = CafNumberValue::try_from_json_string(json_str)?;
-        Some(Self { fill: CafFill::default(), number })
+        Some(Self { fill: CafFill::default(), number: number.into() })
     }
 
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
+    }
+}
+
+impl From<i8> for CafNumber
+{
+    fn from(number: i8) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<i16> for CafNumber
+{
+    fn from(number: i16) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<i32> for CafNumber
+{
+    fn from(number: i32) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<i64> for CafNumber
+{
+    fn from(number: i64) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<i128> for CafNumber
+{
+    fn from(number: i128) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<u8> for CafNumber
+{
+    fn from(number: u8) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<u16> for CafNumber
+{
+    fn from(number: u16) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<u32> for CafNumber
+{
+    fn from(number: u32) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<u64> for CafNumber
+{
+    fn from(number: u64) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<u128> for CafNumber
+{
+    fn from(number: u128) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<f32> for CafNumber
+{
+    fn from(number: f32) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
+    }
+}
+
+impl From<f64> for CafNumber
+{
+    fn from(number: f64) -> Self
+    {
+        Self{ fill: CafFill::default(), number: number.into() }
     }
 }
 

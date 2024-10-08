@@ -180,6 +180,11 @@ impl CafTuple
         }
         self.end_fill.recover(&other.end_fill);
     }
+
+    pub fn single(variant: &str, value: CafValue) -> Self
+    {
+        Self{ start_fill: CafFill::default(), entries: vec![value], end_fill: CafFill::default() }
+    }
 }
 
 /*
