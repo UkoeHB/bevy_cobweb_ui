@@ -36,7 +36,7 @@ fn write_hex_digit(digit: u8, writer: &mut impl std::io::Write)
 fn write_num_as_hex(num: u8, writer: &mut impl std::io::Write)
 {
     let upper = num >> 4;
-    let lower = num & 15u8;
+    let lower = num & 0xF;
     write_hex_digit(upper, writer);
     write_hex_digit(lower, writer);
 }
