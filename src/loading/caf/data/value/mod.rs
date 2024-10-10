@@ -20,4 +20,4 @@ pub use caf_none::*;
 pub use caf_number::*;
 pub use caf_string::*;
 pub use caf_tuple::*;
-pub use caf_value::{CafValue, CafValueSerializer};
+pub use caf_value::*;
