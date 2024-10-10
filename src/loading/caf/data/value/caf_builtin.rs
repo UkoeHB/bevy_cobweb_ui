@@ -7,14 +7,22 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts a color field number to a pair of hex digits if there is no precision loss.
-fn to_hex_int(num: &serde_json::Number) -> Option<u8>
+fn to_hex_int(num: f64) -> Option<u8>
 {
-    let Some(num) = num.as_f64() else { return None };
     let converted = (num * 256.0f64 - 1.0) as u8;
-    if num != (converted as f64 + 1.0) / (256.0f64) {
+    if num as f32 != ((converted as f64 + 1.0) / (256.0f64)) as f32 {
         return None;
     }
     Some(converted)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Converts a color field number to a pair of hex digits if there is no precision loss.
+fn json_to_hex_int(num: &serde_json::Number) -> Option<u8>
+{
+    let Some(num) = num.as_f64() else { return None };
+    to_hex_int(num)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -119,7 +127,7 @@ impl CafHexColor
                     json_map, field, json_field
                 ));
             };
-            Ok(to_hex_int(&number))
+            Ok(json_to_hex_int(&number))
         };
         let Some(red) = (get)("red", 0)? else { return Ok(None) };
         let Some(green) = (get)("green", 0)? else { return Ok(None) };
@@ -140,6 +148,23 @@ impl CafHexColor
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
+    }
+}
+
+impl TryFrom<Srgba> for CafHexColor
+{
+    type Error = ();
+
+    fn try_from(value: Srgba) -> Result<Self, ()>
+    {
+        if to_hex_int(value.red as f64).is_none()
+            || to_hex_int(value.green as f64).is_none()
+            || to_hex_int(value.blue as f64).is_none()
+            || to_hex_int(value.alpha as f64).is_none()
+        {
+            return Err(());
+        }
+        Ok(Self { fill: CafFill::default(), color: value })
     }
 }
 
@@ -294,6 +319,78 @@ impl CafBuiltin
             number: Some(CafNumberValue::from_json_number(json_num.clone())),
             val,
         }))
+    }
+
+    pub fn try_from_unit_variant(typename: &str, variant: &str) -> CafResult<Option<Self>>
+    {
+        if typename == "Val" && variant == "Auto" {
+            return Ok(Some(Self::Val {
+                fill: CafFill::default(),
+                number: None,
+                val: Val::Auto,
+            }));
+        }
+
+        Ok(None)
+    }
+
+    /// The value should not contain any macros/constants.
+    pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CafValue) -> CafResult<Option<Self>>
+    {
+        if typename == "Color" && variant == "Srgba" {
+            let CafValue::EnumVariant(CafEnumVariant::Map { id, map }) = value else { return Ok(None) };
+            if id.name != "Srgba" {
+                return Ok(None);
+            }
+            let mut color = Srgba::default();
+            for entry in map.entries.iter() {
+                let CafMapEntry::KeyValue(keyval) = entry else { return Err(CafError::MalformedBuiltin) };
+                let CafMapKey::FieldName { fill: _, name } = &keyval.key else {
+                    return Err(CafError::MalformedBuiltin);
+                };
+                let CafValue::Number(num) = &keyval.value else { return Ok(None) };
+                let Some(float) = num.number.deserialized.as_f64() else { return Ok(None) };
+                let value = float as f32;
+
+                if name == "red" {
+                    color.red = value;
+                } else if name == "green" {
+                    color.green = value;
+                } else if name == "blue" {
+                    color.blue = value;
+                } else if name == "alpha" {
+                    color.alpha = value;
+                } else {
+                    return Ok(None);
+                }
+            }
+
+            return Ok(CafHexColor::try_from(color).map(|c| Self::Color(c)).ok());
+        }
+
+        if typename == "Val" {
+            let CafValue::Number(num) = value else { return Ok(None) };
+            let Some(float) = num.number.deserialized.as_f64() else { return Ok(None) };
+            let extracted = float as f32;
+
+            let val = match variant {
+                "Px" => Val::Px(extracted),
+                "Percent" => Val::Percent(extracted),
+                "Vw" => Val::Vw(extracted),
+                "Vh" => Val::Vh(extracted),
+                "VMin" => Val::VMin(extracted),
+                "VMax" => Val::VMax(extracted),
+                _ => return Err(CafError::MalformedBuiltin),
+            };
+
+            return Ok(Some(Self::Val {
+                fill: CafFill::default(),
+                number: Some(num.number.clone()),
+                val,
+            }));
+        }
+
+        Ok(None)
     }
 
     pub fn recover_fill(&mut self, other: &Self)

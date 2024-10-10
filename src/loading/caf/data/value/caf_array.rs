@@ -102,6 +102,18 @@ impl CafArray
     }
 }
 
+impl From<Vec<CafValue>> for CafArray
+{
+    fn from(entries: Vec<CafValue>) -> Self
+    {
+        Self {
+            start_fill: CafFill::default(),
+            entries,
+            end_fill: CafFill::default(),
+        }
+    }
+}
+
 /*
 Parsing:
 */

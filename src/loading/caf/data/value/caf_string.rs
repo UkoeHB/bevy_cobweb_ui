@@ -56,6 +56,41 @@ impl CafStringSegment
     }
 }
 
+impl TryFrom<&str> for CafStringSegment
+{
+    type Error = CafError;
+
+    fn try_from(string: &str) -> CafResult<Self>
+    {
+        Ok(Self::try_from(String::from(string))?)
+    }
+}
+
+impl TryFrom<char> for CafStringSegment
+{
+    type Error = CafError;
+
+    fn try_from(character: char) -> CafResult<Self>
+    {
+        Ok(Self::try_from(String::from(character))?)
+    }
+}
+
+impl TryFrom<String> for CafStringSegment
+{
+    type Error = CafError;
+
+    fn try_from(segment: String) -> CafResult<Self>
+    {
+        let mut original = Vec::with_capacity(segment.len());
+        let mut cursor = Cursor::new(&mut original);
+        format_escaped_str_contents(&mut cursor, segment.as_str())
+            .map_err(|e| CafError::Message(format!("{e:?}")))?;
+
+        Ok(Self { leading_spaces: 0, original, segment })
+    }
+}
+
 /*
 Parsing:
 - copy serde_json string deserialization logic to read string segments
@@ -122,6 +157,45 @@ impl CafString
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
+    }
+}
+
+impl TryFrom<char> for CafString
+{
+    type Error = CafError;
+
+    fn try_from(character: char) -> CafResult<Self>
+    {
+        Ok(Self {
+            fill: CafFill::default(),
+            segments: SmallVec::from_elem(CafStringSegment::try_from(character)?, 1),
+        })
+    }
+}
+
+impl TryFrom<&str> for CafString
+{
+    type Error = CafError;
+
+    fn try_from(string: &str) -> CafResult<Self>
+    {
+        Ok(Self {
+            fill: CafFill::default(),
+            segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+        })
+    }
+}
+
+impl TryFrom<String> for CafString
+{
+    type Error = CafError;
+
+    fn try_from(string: String) -> CafResult<Self>
+    {
+        Ok(Self {
+            fill: CafFill::default(),
+            segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+        })
     }
 }
 

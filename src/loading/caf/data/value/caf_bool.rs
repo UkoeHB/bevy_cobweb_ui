@@ -62,7 +62,7 @@ impl From<bool> for CafBool
 {
     fn from(value: bool) -> Self
     {
-        Self{ fill: CafFill::default(), value }
+        Self { fill: CafFill::default(), value }
     }
 }
 

@@ -181,9 +181,25 @@ impl CafTuple
         self.end_fill.recover(&other.end_fill);
     }
 
-    pub fn single(variant: &str, value: CafValue) -> Self
+    pub fn single(value: CafValue) -> Self
     {
-        Self{ start_fill: CafFill::default(), entries: vec![value], end_fill: CafFill::default() }
+        Self {
+            start_fill: CafFill::default(),
+            entries: vec![value],
+            end_fill: CafFill::default(),
+        }
+    }
+}
+
+impl From<Vec<CafValue>> for CafTuple
+{
+    fn from(entries: Vec<CafValue>) -> Self
+    {
+        Self {
+            start_fill: CafFill::default(),
+            entries,
+            end_fill: CafFill::default(),
+        }
     }
 }
 

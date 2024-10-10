@@ -143,7 +143,7 @@ impl From<f32> for CafNumberValue
 {
     fn from(number: f32) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::from_json_number(serde_json::Number::from_f64(number as f64).unwrap())
     }
 }
 
@@ -151,7 +151,7 @@ impl From<f64> for CafNumberValue
 {
     fn from(number: f64) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::from_json_number(serde_json::Number::from_f64(number as f64).unwrap())
     }
 }
 
@@ -217,7 +217,7 @@ impl From<i8> for CafNumber
 {
     fn from(number: i8) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -225,7 +225,7 @@ impl From<i16> for CafNumber
 {
     fn from(number: i16) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -233,7 +233,7 @@ impl From<i32> for CafNumber
 {
     fn from(number: i32) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -241,7 +241,7 @@ impl From<i64> for CafNumber
 {
     fn from(number: i64) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -249,7 +249,7 @@ impl From<i128> for CafNumber
 {
     fn from(number: i128) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -257,7 +257,7 @@ impl From<u8> for CafNumber
 {
     fn from(number: u8) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -265,7 +265,7 @@ impl From<u16> for CafNumber
 {
     fn from(number: u16) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -273,7 +273,7 @@ impl From<u32> for CafNumber
 {
     fn from(number: u32) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -281,7 +281,7 @@ impl From<u64> for CafNumber
 {
     fn from(number: u64) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -289,7 +289,7 @@ impl From<u128> for CafNumber
 {
     fn from(number: u128) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -297,7 +297,7 @@ impl From<f32> for CafNumber
 {
     fn from(number: f32) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 
@@ -305,7 +305,7 @@ impl From<f64> for CafNumber
 {
     fn from(number: f64) -> Self
     {
-        Self{ fill: CafFill::default(), number: number.into() }
+        Self { fill: CafFill::default(), number: number.into() }
     }
 }
 

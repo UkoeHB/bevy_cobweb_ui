@@ -111,7 +111,8 @@ impl CharEscape
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts a string containing special characters into a JSON-serialized string with escape sequences.
-// TODO: rework this so ASCII-escaped are escaped properly, as well as unicode-escaped; see char::escape_debug/escape_unicode
+// TODO: rework this so ASCII-escaped are escaped properly, as well as unicode-escaped; see
+// char::escape_debug/escape_unicode
 pub(crate) fn format_escaped_str_contents(writer: &mut impl std::io::Write, value: &str) -> std::io::Result<()>
 {
     let bytes = value.as_bytes();
