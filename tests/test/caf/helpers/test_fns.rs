@@ -82,10 +82,10 @@ pub fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
 /// Only works for instructions without reflect-defaulted fields.
 pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, json_raw: &str, instruction: T)
 {
-    // Caf raw to Caf value
+    // Caf raw to Caf instruction
     // TODO
 
-    // Caf value to json value
+    // Caf instruction to reflect
     // TODO
 
     // Json raw to json value
@@ -97,7 +97,7 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
     let reflected = deserializer.deserialize(json_val.clone()).unwrap();
 
-    // Reflect to instruction
+    // Reflect to rust value
     let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
     assert_eq!(instruction, extracted);
 
@@ -107,12 +107,15 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     //let json_val_deser = serde_json::to_value(&instruction).unwrap();
     //assert_eq!(json_val, json_val_deser);
 
+    // Rust value to caf instruction
+    let instruction_from_raw = CafInstruction::extract(&instruction, &type_registry).unwrap();
+
     // Json value to caf instruction
     let instruction_from_json =
         CafInstruction::from_json(&json_val, registration.type_info(), &type_registry).unwrap();
-    // TODO: assert_eq!(instruction_from_raw, instruction_from_json);
+    assert_eq!(instruction_from_raw, instruction_from_json);
 
-    // Caf value to json value
+    // Caf instruction to json value
     // TODO: remove once raw -> Caf -> json can be done above
     let json_val_from_caf = instruction_from_json.to_json().unwrap();
     assert_eq!(json_val, json_val_from_caf);

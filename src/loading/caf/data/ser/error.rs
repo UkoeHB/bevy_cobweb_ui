@@ -39,6 +39,8 @@ pub enum CafError
     /// Some I/O error occurred while serializing or deserializing.
     Io(std::io::Error),
 
+    /// An instruction was not registered with bevy type reflection and failed to serialize.
+    InstructionNotRegistered,
     /// Only structs and enums can be serialized as instructions.
     NotAnInstruction,
     /// A built-in type failed to serialize to [`CafBuiltin`].
@@ -53,7 +55,9 @@ impl CafError
         match *self {
             Self::Message(_) => ErrorCategory::Data,
             Self::Io(_) => ErrorCategory::Io,
-            Self::NotAnInstruction | Self::MalformedBuiltin => ErrorCategory::Syntax,
+            Self::InstructionNotRegistered | Self::NotAnInstruction | Self::MalformedBuiltin => {
+                ErrorCategory::Syntax
+            }
         }
     }
 
@@ -119,6 +123,9 @@ impl Display for CafError
         match self {
             Self::Message(msg) => f.write_str(msg),
             Self::Io(err) => Display::fmt(err, f),
+            Self::InstructionNotRegistered => {
+                f.write_str("tried serializing a type that wasn't registered with bevy's type registry")
+            }
             Self::NotAnInstruction => {
                 f.write_str("tried serializing a type as CafInstruction that isn't a struct/enum")
             }
