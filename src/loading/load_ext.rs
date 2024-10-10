@@ -264,7 +264,6 @@ impl CobwebAssetRegistrationAppExt for App
     fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self
     {
         self.register_type::<T>()
-            .register_type::<Vec<T>>()
             .register_type::<Multi<T>>()
             .register_command_loadable::<T>()
             .register_command_loadable::<Multi<T>>()

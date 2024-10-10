@@ -37,6 +37,17 @@ impl RadioButtonManager
         node.insert(Self::default());
         node.id()
     }
+
+    /// Deselects the previous entity and saves the next selected.
+    ///
+    /// Does not *select* the next entity, which is assumed to already be selected.
+    pub fn swap_selected(&mut self, c: &mut Commands, next: Entity)
+    {
+        if let Some(prev) = self.selected {
+            c.react().entity_event(prev, Deselect);
+        }
+        self.selected = Some(next);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -243,13 +254,10 @@ impl RadioButtonBuilder
                 // Save the newly-selected button and deselect the previously selected.
                 .on_select(move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {
                     let Ok(mut manager) = managers.get_mut(manager_entity) else { return };
-                    if let Some(prev) = manager.selected {
-                        c.react().entity_event(prev, Deselect);
-                    }
-                    manager.selected = Some(base_entity);
+                    manager.swap_selected(&mut c, base_entity);
                 });
 
-            // Add a dot if requested. This dot will be before the content (to the right/bottom).
+            // Add a dot if requested. This dot will be before the content (to the left/top).
             if self.indicator == Indicator::Prime {
                 Self::add_indicator(base, &path);
             }
