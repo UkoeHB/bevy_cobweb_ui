@@ -11,6 +11,7 @@ use crate::prelude::*;
 /// We need to keep the original so it can be reserialized in the correct format.
 ///
 /// We store a JSON value for convenience instead of implementing our own deserialization routine.
+//todo: include nan and +/-inf
 #[derive(Debug, Clone, PartialEq)]
 pub struct CafNumberValue
 {

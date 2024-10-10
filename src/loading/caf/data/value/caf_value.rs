@@ -192,6 +192,11 @@ impl CafValue
             _ => (),
         }
     }
+
+    pub fn extract<T: ?Sized + Serialize>(value: &T) -> CafResult<Self>
+    {
+        value.serialize(CafValueSerializer)
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -446,7 +451,7 @@ impl serde::ser::SerializeSeq for SerializeSeq
     where
         T: ?Sized + Serialize,
     {
-        self.vec.push(value.serialize(CafValueSerializer)?);
+        self.vec.push(CafValue::extract(value)?);
         Ok(())
     }
 
@@ -472,7 +477,7 @@ impl serde::ser::SerializeTuple for SerializeTuple
     where
         T: ?Sized + Serialize,
     {
-        self.vec.push(value.serialize(CafValueSerializer)?);
+        self.vec.push(CafValue::extract(value)?);
         Ok(())
     }
 
@@ -517,16 +522,20 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant
     where
         T: ?Sized + Serialize,
     {
-        self.vec.push(value.serialize(CafValueSerializer)?);
+        self.vec.push(CafValue::extract(value)?);
         Ok(())
     }
 
     fn end(self) -> CafResult<CafValue>
     {
-        Ok(CafValue::EnumVariant(CafEnumVariant::tuple(
-            self.variant,
-            CafTuple::from(self.vec),
-        )))
+        if self.vec.len() > 0 {
+            Ok(CafValue::EnumVariant(CafEnumVariant::tuple(
+                self.variant,
+                CafTuple::from(self.vec),
+            )))
+        } else {
+            Ok(CafValue::EnumVariant(CafEnumVariant::unit(self.variant)))
+        }
     }
 }
 
@@ -547,7 +556,7 @@ impl serde::ser::SerializeMap for SerializeMap
     where
         T: ?Sized + Serialize,
     {
-        self.next_key = Some(key.serialize(CafValueSerializer)?);
+        self.next_key = Some(CafValue::extract(key)?);
         Ok(())
     }
 
@@ -560,7 +569,7 @@ impl serde::ser::SerializeMap for SerializeMap
         // expected failure.
         let key = key.expect("serialize_value called before serialize_key");
         self.vec
-            .push(CafMapEntry::map_entry(key, value.serialize(CafValueSerializer)?));
+            .push(CafMapEntry::map_entry(key, CafValue::extract(value)?));
         Ok(())
     }
 
@@ -587,7 +596,7 @@ impl serde::ser::SerializeStruct for SerializeStruct
         T: ?Sized + Serialize,
     {
         self.vec
-            .push(CafMapEntry::struct_field(key, value.serialize(CafValueSerializer)?));
+            .push(CafMapEntry::struct_field(key, CafValue::extract(value)?));
         Ok(())
     }
 
@@ -615,16 +624,20 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant
         T: ?Sized + Serialize,
     {
         self.vec
-            .push(CafMapEntry::struct_field(key, value.serialize(CafValueSerializer)?));
+            .push(CafMapEntry::struct_field(key, CafValue::extract(value)?));
         Ok(())
     }
 
     fn end(self) -> CafResult<CafValue>
     {
-        Ok(CafValue::EnumVariant(CafEnumVariant::map(
-            self.variant,
-            CafMap::from(self.vec),
-        )))
+        if self.vec.len() > 0 {
+            Ok(CafValue::EnumVariant(CafEnumVariant::map(
+                self.variant,
+                CafMap::from(self.vec),
+            )))
+        } else {
+            Ok(CafValue::EnumVariant(CafEnumVariant::unit(self.variant)))
+        }
     }
 }
 
