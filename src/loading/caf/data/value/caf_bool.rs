@@ -1,5 +1,3 @@
-use bevy::reflect::TypeInfo;
-
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -33,23 +31,6 @@ impl CafBool
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
         Ok(serde_json::Value::Bool(self.value))
-    }
-
-    pub fn from_json_bool(value: bool, type_info: &TypeInfo) -> Result<Self, String>
-    {
-        let TypeInfo::Value(info) = type_info else {
-            return Err(format!(
-                "failed converting {:?} from json bool {:?}; type is not a value",
-                type_info.type_path(), value
-            ));
-        };
-        if info.type_path_table().short_path() != "bool" {
-            return Err(format!(
-                "failed converting {:?} from json bool {:?}; type is not bool",
-                type_info.type_path(), value
-            ));
-        }
-        Ok(Self { fill: CafFill::default(), value })
     }
 
     pub fn recover_fill(&mut self, other: &Self)

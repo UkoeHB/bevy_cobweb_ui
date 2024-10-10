@@ -43,17 +43,6 @@ impl CafStringSegment
         // Here we write as a deserialized string.
         buff.push_str(self.segment.as_str());
     }
-
-    /// Note that `Self::write_to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of
-    /// multi-line string formatting. The string contents are preserved, but not their presentation in CAF.
-    pub fn from_json_string(json_str: &str) -> Result<Self, String>
-    {
-        let mut original = Vec::with_capacity(json_str.len());
-        let mut cursor = Cursor::new(&mut original);
-        format_escaped_str_contents(&mut cursor, json_str).map_err(|e| format!("{e:?}"))?;
-
-        Ok(Self { leading_spaces: 0, original, segment: String::from(json_str) })
-    }
 }
 
 impl TryFrom<&str> for CafStringSegment
@@ -80,6 +69,8 @@ impl TryFrom<String> for CafStringSegment
 {
     type Error = CafError;
 
+    /// Note that `Self::write_to` -> `Self::try_from` is lossy because String has no awareness of
+    /// multi-line string formatting. The string contents are preserved, but not their presentation in CAF.
     fn try_from(segment: String) -> CafResult<Self>
     {
         let mut original = Vec::with_capacity(segment.len());
@@ -141,16 +132,6 @@ impl CafString
             segment.write_to_json(&mut buff);
         }
         Ok(serde_json::Value::String(buff))
-    }
-
-    /// Note that `Self::to_json` -> `Self::from_json_string` is lossy because JSON has no awareness of multi-line
-    /// string formatting. The string contents are preserved, but not their presentation in CAF.
-    pub fn from_json_string(json_str: &str) -> Result<Self, String>
-    {
-        Ok(Self {
-            fill: CafFill::default(),
-            segments: SmallVec::from_elem(CafStringSegment::from_json_string(json_str)?, 1),
-        })
     }
 
     // TODO: recover leading spaces for multi-line text? what if the lines change?

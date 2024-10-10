@@ -1,6 +1,3 @@
-use std::any::TypeId;
-
-use bevy::reflect::{StructVariantInfo, TypeInfo, TypeRegistry};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -60,18 +57,6 @@ impl CafMapKey
         }
     }
 
-    pub fn from_json_key(key: impl AsRef<str>) -> Result<Self, String>
-    {
-        // Try to convert a number.
-        if let Some(number) = CafNumber::try_from_json_string(key.as_ref()) {
-            return Ok(Self::Value(CafValue::Number(number)));
-        }
-        // Otherwise it must be a string.
-        Ok(Self::Value(CafValue::String(CafString::from_json_string(
-            key.as_ref(),
-        )?)))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
@@ -127,20 +112,6 @@ impl CafMapKeyValue
     {
         map.insert(self.key.to_json_map_key()?, self.value.to_json()?);
         Ok(())
-    }
-
-    pub fn from_json(
-        key: CafMapKey,
-        val: &serde_json::Value,
-        type_info: &TypeInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        Ok(Self {
-            key,
-            semicolon_fill: CafFill::default(),
-            value: CafValue::from_json(val, type_info, registry)?,
-        })
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -285,128 +256,6 @@ impl CafMap
             entry.add_to_json(&mut map)?;
         }
         Ok(serde_json::Value::Object(map))
-    }
-
-    fn from_json_impl_struct(
-        json_map: &serde_json::Map<String, serde_json::Value>,
-        type_path: &'static str,
-        get_field_typeid: impl Fn(&str) -> Option<TypeId>,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        let mut entries = Vec::with_capacity(json_map.len());
-        // Note: we assume the "preserve_order" feature is enabled for serde_json.
-        for (json_key, json_value) in json_map.iter() {
-            let Some(field_typeid) = (get_field_typeid)(json_key.as_str()) else {
-                return Err(format!(
-                    "failed converting {:?} from json {:?} into a map; json contains unexpected field name {:?}",
-                    type_path, json_map, json_key
-                ));
-            };
-
-            let Some(registration) = registry.get(field_typeid) else { unreachable!() };
-            entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
-                // Struct maps have field name keys.
-                CafMapKey::field_name(json_key),
-                json_value,
-                registration.type_info(),
-                registry,
-            )?));
-        }
-        Ok(Self {
-            start_fill: CafFill::default(),
-            entries,
-            end_fill: CafFill::default(),
-        })
-    }
-
-    fn from_json_impl_map(
-        json_map: &serde_json::Map<String, serde_json::Value>,
-        field_typeid: TypeId,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        let mut entries = Vec::with_capacity(json_map.len());
-        // Note: we assume the "preserve_order" feature is enabled for serde_json.
-        for (json_key, json_value) in json_map.iter() {
-            let Some(registration) = registry.get(field_typeid) else { unreachable!() };
-            entries.push(CafMapEntry::KeyValue(CafMapKeyValue::from_json(
-                // Plain maps have value keys.
-                CafMapKey::from_json_key(json_key)?,
-                json_value,
-                registration.type_info(),
-                registry,
-            )?));
-        }
-        Ok(Self {
-            start_fill: CafFill::default(),
-            entries,
-            end_fill: CafFill::default(),
-        })
-    }
-
-    /// Includes structs and 'raw' maps like `HashMap`.
-    pub fn from_json_as_type(
-        val: &serde_json::Value,
-        type_info: &TypeInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        // Handle the case of a unit struct serialized as null in JSON.
-        // - We store unit structs as empty maps inside CAF instructions, but JSON serializes them as null.
-        // - Due to a bug in bevy reflection, when going CAF -> JSON -> Reflect, unit structs need to be arrays or
-        //   maps.
-        //   - See https://github.com/bevyengine/bevy/issues/15712.
-        let null_backup = serde_json::Value::Object(serde_json::Map::default());
-        let val = if matches!(val, serde_json::Value::Null) {
-            &null_backup
-        } else {
-            val
-        };
-
-        let serde_json::Value::Object(json_map) = val else {
-            return Err(format!(
-                "failed converting {:?} from json {:?}; expected json to be a map",
-                type_info.type_path(), val
-            ));
-        };
-
-        match type_info {
-            TypeInfo::Struct(info) => Self::from_json_impl_struct(
-                json_map,
-                type_info.type_path(),
-                |key| info.field(key).map(|f| f.type_id()),
-                registry,
-            ),
-            TypeInfo::Map(info) => Self::from_json_impl_map(json_map, info.value_type_id(), registry),
-            _ => Err(format!(
-                "failed converting {:?} from json {:?} into a map; type is not a struct/map",
-                type_info.type_path(), val
-            )),
-        }
-    }
-
-    pub fn from_json_as_enum(
-        val: &serde_json::Value,
-        type_path: &'static str,
-        variant_name: &str,
-        variant_info: &StructVariantInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        let serde_json::Value::Object(json_map) = val else {
-            return Err(format!(
-                "failed converting {:?}::{:?} from json {:?}; expected json to be a map",
-                type_path, variant_name, val
-            ));
-        };
-
-        Self::from_json_impl_struct(
-            json_map,
-            type_path,
-            |key| variant_info.field(key).map(|f| f.type_id()),
-            registry,
-        )
     }
 
     pub fn recover_fill(&mut self, other: &Self)

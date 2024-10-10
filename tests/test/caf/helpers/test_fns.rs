@@ -110,20 +110,15 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     // Rust value to caf instruction
     let instruction_from_raw = CafInstruction::extract(&instruction, &type_registry).unwrap();
 
-    // Json value to caf instruction
-    let instruction_from_json =
-        CafInstruction::from_json(&json_val, registration.type_info(), &type_registry).unwrap();
-    assert_eq!(instruction_from_raw, instruction_from_json);
-
     // Caf instruction to json value
     // TODO: remove once raw -> Caf -> json can be done above
-    let json_val_from_caf = instruction_from_json.to_json().unwrap();
+    let json_val_from_caf = instruction_from_raw.to_json().unwrap();
     assert_eq!(json_val, json_val_from_caf);
 
     // Caf instruction to caf raw
     let mut buff = Vec::<u8>::default();
     let mut cursor = Cursor::new(&mut buff);
-    instruction_from_json.write_to(&mut cursor).unwrap();
+    instruction_from_raw.write_to(&mut cursor).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
 }

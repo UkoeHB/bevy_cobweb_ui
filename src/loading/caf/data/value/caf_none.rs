@@ -28,12 +28,6 @@ impl CafNone
         Ok(serde_json::Value::Null)
     }
 
-    /// From `serde_json::Value::Null`.
-    pub fn from_json_null() -> Result<Self, String>
-    {
-        Ok(Self { fill: CafFill::default() })
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);

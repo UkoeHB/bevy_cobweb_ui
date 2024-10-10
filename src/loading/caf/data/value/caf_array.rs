@@ -1,5 +1,3 @@
-use bevy::reflect::{TypeInfo, TypeRegistry};
-
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -45,51 +43,6 @@ impl CafArray
             array.push(entry.to_json()?);
         }
         Ok(serde_json::Value::Array(array))
-    }
-
-    pub fn from_json(
-        val: &serde_json::Value,
-        type_info: &TypeInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        let serde_json::Value::Array(json_vec) = val else {
-            return Err(format!(
-                "failed converting {:?} from json {:?} into an array; expected json to be an array",
-                type_info.type_path(), val
-            ));
-        };
-
-        match type_info {
-            TypeInfo::List(info) => {
-                let Some(registration) = registry.get(info.item_type_id()) else { unreachable!() };
-                let mut entries = Vec::with_capacity(json_vec.len());
-                for json_value in json_vec.iter() {
-                    entries.push(CafValue::from_json(json_value, registration.type_info(), registry)?);
-                }
-                Ok(Self {
-                    start_fill: CafFill::default(),
-                    entries,
-                    end_fill: CafFill::default(),
-                })
-            }
-            TypeInfo::Array(info) => {
-                let Some(registration) = registry.get(info.item_type_id()) else { unreachable!() };
-                let mut entries = Vec::with_capacity(json_vec.len());
-                for json_value in json_vec.iter() {
-                    entries.push(CafValue::from_json(json_value, registration.type_info(), registry)?);
-                }
-                Ok(Self {
-                    start_fill: CafFill::default(),
-                    entries,
-                    end_fill: CafFill::default(),
-                })
-            }
-            _ => Err(format!(
-                "failed converting {:?} from json {:?} into an array; type is not a list/array",
-                type_info.type_path(), val
-            )),
-        }
     }
 
     pub fn recover_fill(&mut self, other: &Self)
