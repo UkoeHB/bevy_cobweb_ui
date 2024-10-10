@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -49,12 +47,6 @@ impl CafNumberValue
         };
 
         Self { original: string, deserialized: json_num }
-    }
-
-    pub fn try_from_json_string(json_str: &str) -> Option<Self>
-    {
-        let deserialized = serde_json::Number::from_str(json_str).ok()?;
-        Some(Self { original: SmolStr::from(json_str), deserialized })
     }
 }
 
@@ -192,20 +184,6 @@ impl CafNumber
     pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
     {
         self.number.to_json()
-    }
-
-    pub fn from_json_number(json_num: serde_json::Number) -> Self
-    {
-        Self {
-            fill: CafFill::default(),
-            number: CafNumberValue::from_json_number(json_num),
-        }
-    }
-
-    pub fn try_from_json_string(json_str: &str) -> Option<Self>
-    {
-        let number = CafNumberValue::try_from_json_string(json_str)?;
-        Some(Self { fill: CafFill::default(), number: number.into() })
     }
 
     pub fn recover_fill(&mut self, other: &Self)

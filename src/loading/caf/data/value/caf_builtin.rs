@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::reflect::TypeInfo;
 use zerocopy::IntoBytes;
 
 use crate::prelude::*;
@@ -14,15 +13,6 @@ fn to_hex_int(num: f64) -> Option<u8>
         return None;
     }
     Some(converted)
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Converts a color field number to a pair of hex digits if there is no precision loss.
-fn json_to_hex_int(num: &serde_json::Number) -> Option<u8>
-{
-    let Some(num) = num.as_f64() else { return None };
-    to_hex_int(num)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -114,37 +104,6 @@ impl CafHexColor
         Ok(serde_json::Value::Object(map))
     }
 
-    /// The `json_map` should contain the fields of the [`Srgba`] color.
-    ///
-    /// A hex color is only recorded if all the fields convert to hex digits without precision loss.
-    pub fn try_from_json(json_map: &serde_json::Map<String, serde_json::Value>) -> Result<Option<Self>, String>
-    {
-        let get = |field: &str, default: u8| -> Result<Option<u8>, String> {
-            let Some(json_field) = json_map.get(field) else { return Ok(Some(default)) };
-            let serde_json::Value::Number(number) = json_field else {
-                return Err(format!(
-                    "failed extracting Color::Rgba from json {:?}; field {:?} is {:?}, not a json number",
-                    json_map, field, json_field
-                ));
-            };
-            Ok(json_to_hex_int(&number))
-        };
-        let Some(red) = (get)("red", 0)? else { return Ok(None) };
-        let Some(green) = (get)("green", 0)? else { return Ok(None) };
-        let Some(blue) = (get)("blue", 0)? else { return Ok(None) };
-        let Some(alpha) = (get)("alpha", 1)? else { return Ok(None) };
-
-        Ok(Some(Self {
-            fill: CafFill::default(),
-            color: Srgba {
-                red: (red as f32 + 1.0) / 256.,
-                green: (green as f32 + 1.0) / 256.,
-                blue: (blue as f32 + 1.0) / 256.,
-                alpha: (alpha as f32 + 1.0) / 256.,
-            },
-        }))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
@@ -155,6 +114,7 @@ impl TryFrom<Srgba> for CafHexColor
 {
     type Error = ();
 
+    /// Only succeeds if all fields can be converted to hex without precision loss.
     fn try_from(value: Srgba) -> Result<Self, ()>
     {
         if to_hex_int(value.red as f64).is_none()
@@ -261,64 +221,6 @@ impl CafBuiltin
                 }
             }
         }
-    }
-
-    pub fn try_from_json(val: &serde_json::Value, type_info: &TypeInfo) -> Result<Option<Self>, String>
-    {
-        // JSON should be a map of an enum (either Color::Srgba(..fields..) or Val::X(..num..))
-        let serde_json::Value::Object(json_map) = val else { return Ok(None) };
-        let TypeInfo::Enum(info) = type_info else { return Ok(None) };
-
-        if json_map.len() != 1 {
-            return Ok(None);
-        }
-        let (variant, value) = json_map.iter().next().unwrap();
-        let (enum_type, variant) = (info.type_path_table().short_path(), variant.as_str());
-
-        // Color
-        if ("Color", "Srgba") == (enum_type, variant) {
-            let serde_json::Value::Object(json_map) = value else {
-                return Err(format!(
-                    "failed extracting Color::Rgba from json {:?} for {:?}; inner value is not a map",
-                    val, info
-                ));
-            };
-            return CafHexColor::try_from_json(json_map).map(|r| r.map(|c| Self::Color(c)));
-        }
-
-        // Val
-        if enum_type != "Val" {
-            return Ok(None);
-        }
-
-        let serde_json::Value::Number(json_num) = value else {
-            return Err(format!(
-                "failed extracting Val::{} from json {:?} for {:?}; inner value is not a number",
-                variant, val, info
-            ));
-        };
-
-        let extracted = json_num
-            .as_f64()
-            .or_else(|| json_num.as_u64().map(|n| n as f64))
-            .or_else(|| json_num.as_i64().map(|n| n as f64))
-            .unwrap() as f32;
-
-        let val = match enum_type {
-            "Px" => Val::Px(extracted),
-            "Percent" => Val::Percent(extracted),
-            "Vw" => Val::Vw(extracted),
-            "Vh" => Val::Vh(extracted),
-            "VMin" => Val::VMin(extracted),
-            "VMax" => Val::VMax(extracted),
-            _ => return Ok(None),
-        };
-
-        Ok(Some(Self::Val {
-            fill: CafFill::default(),
-            number: Some(CafNumberValue::from_json_number(json_num.clone())),
-            val,
-        }))
     }
 
     pub fn try_from_unit_variant(typename: &str, variant: &str) -> CafResult<Option<Self>>

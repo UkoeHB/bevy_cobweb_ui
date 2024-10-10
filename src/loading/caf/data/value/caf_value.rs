@@ -1,4 +1,3 @@
-use bevy::reflect::{TypeInfo, TypeRegistry};
 use serde::Serialize;
 
 use crate::prelude::*;
@@ -103,47 +102,6 @@ impl CafValue
             Self::MacroParam(val) => Err(std::io::Error::other(
                 format!("cannot convert macro param {val:?} to JSON"),
             )),
-        }
-    }
-
-    pub fn from_json(
-        val: &serde_json::Value,
-        type_info: &TypeInfo,
-        registry: &TypeRegistry,
-    ) -> Result<Self, String>
-    {
-        match type_info {
-            TypeInfo::Struct(_) => Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?)),
-            TypeInfo::TupleStruct(_) => Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?)),
-            TypeInfo::Tuple(_) => Ok(Self::Tuple(CafTuple::from_json_as_type(val, type_info, registry)?)),
-            TypeInfo::List(_) => Ok(Self::Array(CafArray::from_json(val, type_info, registry)?)),
-            TypeInfo::Array(_) => Ok(Self::Array(CafArray::from_json(val, type_info, registry)?)),
-            TypeInfo::Map(_) => Ok(Self::Map(CafMap::from_json_as_type(val, type_info, registry)?)),
-            TypeInfo::Enum(info) => {
-                // Special case: built-in type.
-                if let Some(result) = CafBuiltin::try_from_json(val, type_info)? {
-                    return Ok(Self::Builtin(result));
-                }
-
-                // Special case: Option.
-                if let Some(result) = CafEnumVariant::try_from_json_option(val, info, registry)? {
-                    // Result is a `CafValue`.
-                    return Ok(result);
-                }
-
-                // Normal enum.
-                Ok(Self::EnumVariant(CafEnumVariant::from_json(val, info, registry)?))
-            }
-            TypeInfo::Value(_) => match val {
-                serde_json::Value::Bool(value) => Ok(Self::Bool(CafBool::from_json_bool(*value, type_info)?)),
-                serde_json::Value::Number(value) => Ok(Self::Number(CafNumber::from_json_number(value.clone()))),
-                serde_json::Value::String(value) => Ok(Self::String(CafString::from_json_string(value)?)),
-                _ => Err(format!(
-                        "failed converting {:?} from json {:?} into a value; json is not a bool/number/string so \
-                        we don't know how to handle it",
-                        type_info.type_path(), val
-                    )),
-            },
         }
     }
 
