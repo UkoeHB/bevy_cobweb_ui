@@ -42,10 +42,7 @@ impl From<&str> for CafEnumVariantIdentifier
 {
     fn from(string: &str) -> Self
     {
-        Self {
-            fill: CafFill::default(),
-            name: SmolStr::from(string),
-        }
+        Self { fill: CafFill::default(), name: SmolStr::from(string) }
     }
 }
 
@@ -310,27 +307,27 @@ impl CafEnumVariant
 
     pub fn unit(variant: &str) -> Self
     {
-        Self::Unit{ id: variant.into() }
+        Self::Unit { id: variant.into() }
     }
 
     pub fn array(variant: &str, array: CafArray) -> Self
     {
-        Self::Array{ id: variant.into(), array }
+        Self::Array { id: variant.into(), array }
     }
 
     pub fn newtype(variant: &str, value: CafValue) -> Self
     {
-        Self::Tuple{ id: variant.into(), tuple: CafTuple::single(value) }
+        Self::Tuple { id: variant.into(), tuple: CafTuple::single(value) }
     }
 
     pub fn tuple(variant: &str, tuple: CafTuple) -> Self
     {
-        Self::Tuple{ id: variant.into(), tuple }
+        Self::Tuple { id: variant.into(), tuple }
     }
 
     pub fn map(variant: &str, map: CafMap) -> Self
     {
-        Self::Map{ id: variant.into(), map }
+        Self::Map { id: variant.into(), map }
     }
 }
 

@@ -25,22 +25,16 @@ impl CafMapKey
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(
-        &self,
-        writer: &mut impl std::io::Write,
-        space: impl AsRef<str>,
-    ) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
     {
         match self {
             Self::FieldName { fill, name } => {
                 fill.write_to_or_else(writer, space)?;
                 writer.write(name.as_bytes())?;
             }
-            Self::String(string) => {
-                string.write_to_with_space(writer, space)?;
-            }
-            Self::Numeric(number) => {
-                number.write_to_with_space(writer, space)?;
+            Self::Value(value) => {
+                value.write_to_with_space(writer, space)?;
             }
         }
         Ok(())
@@ -52,14 +46,17 @@ impl CafMapKey
     {
         match self {
             Self::FieldName { name, .. } => Ok(String::from(name.as_str())),
-            Self::String(string) => {
-                let serde_json::Value::String(string) = string.to_json()? else { unreachable!() };
-                Ok(string)
-            }
-            Self::Numeric(number) => {
-                let string = String::from(number.number.original.as_str());
-                Ok(string)
-            }
+            Self::Value(value) => match value {
+                CafValue::String(string) => {
+                    let serde_json::Value::String(string) = string.to_json()? else { unreachable!() };
+                    Ok(string)
+                }
+                CafValue::Number(number) => {
+                    let string = String::from(number.number.original.as_str());
+                    Ok(string)
+                }
+                _ => todo!(),
+            },
         }
     }
 
@@ -67,10 +64,12 @@ impl CafMapKey
     {
         // Try to convert a number.
         if let Some(number) = CafNumber::try_from_json_string(key.as_ref()) {
-            return Ok(Self::Numeric(number));
+            return Ok(Self::Value(CafValue::Number(number)));
         }
         // Otherwise it must be a string.
-        Ok(Self::String(CafString::from_json_string(key.as_ref())?))
+        Ok(Self::Value(CafValue::String(CafString::from_json_string(
+            key.as_ref(),
+        )?)))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -79,11 +78,8 @@ impl CafMapKey
             (Self::FieldName { fill, .. }, Self::FieldName { fill: other_fill, .. }) => {
                 fill.recover(other_fill);
             }
-            (Self::String(string), Self::String(other_string)) => {
-                string.recover_fill(other_string);
-            }
-            (Self::Numeric(number), Self::Numeric(other_number)) => {
-                number.recover_fill(other_number);
+            (Self::Value(value), Self::Value(other_value)) => {
+                value.recover_fill(other_value);
             }
             _ => (),
         }
@@ -105,9 +101,9 @@ impl CafMapKey
 #[derive(Debug, Clone, PartialEq)]
 pub struct CafMapKeyValue
 {
-    key: CafMapKey,
-    semicolon_fill: CafFill, //todo: does allowing fill between key and semicolon create parsing ambiguities?
-    value: CafValue,
+    pub key: CafMapKey,
+    pub semicolon_fill: CafFill, //todo: does allowing fill between key and semicolon create parsing ambiguities?
+    pub value: CafValue,
 }
 
 impl CafMapKeyValue
@@ -117,11 +113,8 @@ impl CafMapKeyValue
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(
-        &self,
-        writer: &mut impl std::io::Write,
-        space: impl AsRef<str>,
-    ) -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
+        -> Result<(), std::io::Error>
     {
         self.key.write_to_with_space(writer, space)?;
         self.semicolon_fill.write_to(writer)?;
@@ -159,12 +152,20 @@ impl CafMapKeyValue
 
     pub fn struct_field(key: &str, value: CafValue) -> Self
     {
-        Self{ key: CafMapKey::field_name(key), semicolon_fill: CafFill::default(), value }
+        Self {
+            key: CafMapKey::field_name(key),
+            semicolon_fill: CafFill::default(),
+            value,
+        }
     }
 
     pub fn map_entry(key: CafValue, value: CafValue) -> Self
     {
-        Self{ key: CafMapKey::value(key), semicolon_fill: CafFill::default(), value }
+        Self {
+            key: CafMapKey::value(key),
+            semicolon_fill: CafFill::default(),
+            value,
+        }
     }
 }
 
@@ -415,6 +416,18 @@ impl CafMap
             entry.recover_fill(other_entry);
         }
         self.end_fill.recover(&other.end_fill);
+    }
+}
+
+impl From<Vec<CafMapEntry>> for CafMap
+{
+    fn from(entries: Vec<CafMapEntry>) -> Self
+    {
+        Self {
+            start_fill: CafFill::default(),
+            entries,
+            end_fill: CafFill::default(),
+        }
     }
 }
 
