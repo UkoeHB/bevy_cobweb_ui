@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Result for the CafValue serializer and deserialize seed.
+/// Result for the [`CafInstruction`] and [`CafValue`] serializer and deserialize seed.
 pub type CafResult<T> = Result<T, CafError>;
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Constructions a [`CafValue`] from any serializable rust type `T`.
+/// Allows constructing a [`CafValue`] from any serializable rust type `T`.
 pub struct CafValueSerializer;
 
 impl serde::Serializer for CafValueSerializer

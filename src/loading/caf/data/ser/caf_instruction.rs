@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Constructions a [`CafInstruction`] from any serializable rust type `T` that has been registered with bevy's
+/// Allows constructing a [`CafInstruction`] from any serializable rust type `T` that has been registered with bevy's
 /// type registry.
 pub struct CafInstructionSerializer
 {

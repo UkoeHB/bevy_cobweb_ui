@@ -38,7 +38,7 @@ impl CafStringSegment
         Ok(())
     }
 
-    pub fn write_to_json(&self, buff: &mut String)
+    pub fn write_to_string(&self, buff: &mut String)
     {
         // Here we write as a deserialized string.
         buff.push_str(self.segment.as_str());
@@ -129,9 +129,22 @@ impl CafString
     {
         let mut buff = String::default();
         for segment in self.segments.iter() {
-            segment.write_to_json(&mut buff);
+            segment.write_to_string(&mut buff);
         }
         Ok(serde_json::Value::String(buff))
+    }
+
+    pub fn get_string_ref(&self, buff: &mut String) -> &str
+    {
+        if self.segments.len() == 1 {
+            return self.segments[0].segment.as_str();
+        }
+
+        for segment in self.segments.iter() {
+            segment.write_to_string(&mut buff);
+        }
+
+        return buff.as_str();
     }
 
     // TODO: recover leading spaces for multi-line text? what if the lines change?

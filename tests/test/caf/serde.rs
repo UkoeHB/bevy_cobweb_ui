@@ -16,6 +16,9 @@ use std::marker::PhantomData;
 
 use super::helpers::*;
 
+// TODO: test newtype and newtype variant of tuple
+// TODO: test newtype of vec as inner value
+
 //-------------------------------------------------------------------------------------------------------------------
 
 #[test]
