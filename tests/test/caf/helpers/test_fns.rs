@@ -95,7 +95,7 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected = deserializer.deserialize(json_val.clone()).unwrap();
+    let reflected = deserializer.deserialize(&json_val).unwrap();
 
     // Reflect to rust value
     let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
