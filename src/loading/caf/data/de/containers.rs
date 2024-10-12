@@ -85,13 +85,30 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
+pub(super) fn visit_wrapped_array_ref<'de, V>(array: &'de CafArray, visitor: V) -> CafResult<V::Value>
+where
+    V: Visitor<'de>,
+{
+    let mut deserializer = WrappedArrayRefDeserializer { arr: Some(array) };
+    let seq = visitor.visit_seq(&mut deserializer)?;
+    if deserializer.arr.is_none() {
+        Ok(seq)
+    } else {
+        Err(serde::de::Error::invalid_length(1, &"no wrapped array"))
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(super) fn visit_tuple_ref<'de, V>(tuple: &'de CafTuple, visitor: V) -> CafResult<V::Value>
 where
     V: Visitor<'de>,
 {
     let len = tuple.entries.len();
     let mut deserializer = SeqRefDeserializer::new(&tuple.entries);
+    println!("visit tuple {tuple:?}");
     let seq = visitor.visit_seq(&mut deserializer)?;
+    println!("visit tuple success");
     let remaining = deserializer.iter.len();
     if remaining == 0 {
         Ok(seq)
@@ -157,7 +174,7 @@ impl<'de> SeqAccess<'de> for SeqRefDeserializer<'de>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct MapRefDeserializer<'de>
+pub(super) struct MapRefDeserializer<'de>
 {
     iter: <&'de [CafMapEntry] as IntoIterator>::IntoIter,
     value: Option<&'de CafValue>,
@@ -165,7 +182,7 @@ struct MapRefDeserializer<'de>
 
 impl<'de> MapRefDeserializer<'de>
 {
-    fn new(entries: &'de [CafMapEntry]) -> Self
+    pub(super) fn new(entries: &'de [CafMapEntry]) -> Self
     {
         MapRefDeserializer { iter: entries.into_iter(), value: None }
     }
@@ -190,10 +207,7 @@ impl<'de> MapAccess<'de> for MapRefDeserializer<'de>
                     CafMapKey::Value(value) => seed.deserialize(value).map(Some),
                 }
             }
-            None => Err(serde::de::Error::invalid_value(
-                Unexpected::Other(&"no map entries"),
-                &"map entry with key/value",
-            )),
+            None => Ok(None),
             _ => Err(serde::de::Error::invalid_value(
                 Unexpected::Other(&"unresolved map entry"),
                 &"map entry with key/value",
@@ -216,6 +230,37 @@ impl<'de> MapAccess<'de> for MapRefDeserializer<'de>
         match self.iter.size_hint() {
             (lower, Some(upper)) if lower == upper => Some(upper),
             _ => None,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct WrappedArrayRefDeserializer<'de>
+{
+    arr: Option<&'de CafArray>,
+}
+
+impl<'de> SeqAccess<'de> for WrappedArrayRefDeserializer<'de>
+{
+    type Error = CafError;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> CafResult<Option<T::Value>>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        match self.arr.take() {
+            Some(arr) => seed.deserialize(arr).map(Some),
+            None => Ok(None),
+        }
+    }
+
+    fn size_hint(&self) -> Option<usize>
+    {
+        if self.arr.is_some() {
+            Some(1)
+        } else {
+            Some(0)
         }
     }
 }

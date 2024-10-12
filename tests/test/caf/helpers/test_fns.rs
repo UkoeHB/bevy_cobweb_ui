@@ -82,18 +82,30 @@ pub fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
 /// Only works for instructions without reflect-defaulted fields.
 pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, json_raw: &str, instruction: T)
 {
+    let type_registry = w.resource::<AppTypeRegistry>().read();
+    let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
+
     // Caf raw to Caf instruction
     // TODO
 
+    // Rust value to caf instruction
+    // TODO: remove once raw -> instruction is available
+    let instruction_from_rust = CafInstruction::extract(&instruction, &type_registry).unwrap();
+    //let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    //assert_eq!(instruction, direct_value);
+
     // Caf instruction to reflect
-    // TODO
+    let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
+    let reflected = deserializer.deserialize(&instruction_from_rust).unwrap();
+
+    // Reflect to rust value
+    let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
+    assert_eq!(instruction, extracted);
 
     // Json raw to json value
     let json_val = serde_json::Value::from_str(json_raw).unwrap();
 
     // Json value to reflect
-    let type_registry = w.resource::<AppTypeRegistry>().read();
-    let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
     let reflected = deserializer.deserialize(&json_val).unwrap();
 
@@ -108,17 +120,17 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     //assert_eq!(json_val, json_val_deser);
 
     // Rust value to caf instruction
-    let instruction_from_raw = CafInstruction::extract(&instruction, &type_registry).unwrap();
+    let instruction_from_rust = CafInstruction::extract(&instruction, &type_registry).unwrap();
 
     // Caf instruction to json value
     // TODO: remove once raw -> Caf -> json can be done above
-    let json_val_from_caf = instruction_from_raw.to_json().unwrap();
+    let json_val_from_caf = instruction_from_rust.to_json().unwrap();
     assert_eq!(json_val, json_val_from_caf);
 
     // Caf instruction to caf raw
     let mut buff = Vec::<u8>::default();
     let mut cursor = Cursor::new(&mut buff);
-    instruction_from_raw.write_to(&mut cursor).unwrap();
+    instruction_from_rust.write_to(&mut cursor).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
 }
