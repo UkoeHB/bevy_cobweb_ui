@@ -18,6 +18,7 @@ use super::helpers::*;
 
 // TODO: test newtype and newtype variant of tuple
 // TODO: test newtype of vec as inner value
+// TODO: test layered newtypes
 // TODO: test built-in values
 // TODO: test lossy conversions (scientific notation, multiline strings, ??)
 
@@ -27,7 +28,7 @@ use super::helpers::*;
 fn unit_struct()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(app.world(), "UnitStruct", "{}", UnitStruct);
+    test_equivalence(app.world(), "UnitStruct", "()", "{}", UnitStruct);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -36,9 +37,10 @@ fn unit_struct()
 fn plain_struct()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "PlainStruct{boolean:false}",
+        "{boolean:false}",
         r#"{"boolean":false}"#,
         PlainStruct { boolean: false },
     );
@@ -50,16 +52,18 @@ fn plain_struct()
 fn enum_struct()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(app.world(), "EnumStruct::A", r#""A""#, EnumStruct::A);
-    test_instruction_equivalence(
+    test_equivalence(app.world(), "EnumStruct::A", "A", r#""A""#, EnumStruct::A);
+    test_equivalence(
         app.world(),
         "EnumStruct::B(())",
+        "B(())",
         r#"{"B": []}"#,
         EnumStruct::B(UnitStruct),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "EnumStruct::C{boolean:true s_plain:{boolean:true}}",
+        "C{boolean:true s_plain:{boolean:true}}",
         r#"{"C":{"boolean":true,"s_plain":{"boolean":true}}}"#,
         EnumStruct::C { boolean: true, s_plain: PlainStruct { boolean: true } },
     );
@@ -76,9 +80,10 @@ fn aggregate_struct()
     let mut map = BTreeMap::default();
     map.insert(10u32, 10u32);
     map.insert(20u32, 20u32);
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         r#"AggregateStruct{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
+        r#"{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
         r#"{"uint":1,"float":1.0,"boolean":true,"string":"hi","vec":[{"boolean":true},{"boolean":false}],"map":{"10":10,"20":20},"s_struct":[],"s_enum":{"B":[]},"s_plain":{"boolean":true}}"#,
         AggregateStruct {
             uint: 1,
@@ -100,11 +105,18 @@ fn aggregate_struct()
 fn wrap_array()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(app.world(), "WrapArray[]", "[[]]", WrapArray(vec![]));
-    test_instruction_equivalence(app.world(), "WrapArray[()]", "[[[]]]", WrapArray(vec![UnitStruct]));
-    test_instruction_equivalence(
+    test_equivalence(app.world(), "WrapArray[]", "[]", "[[]]", WrapArray(vec![]));
+    test_equivalence(
+        app.world(),
+        "WrapArray[()]",
+        "[()]",
+        "[[[]]]",
+        WrapArray(vec![UnitStruct]),
+    );
+    test_equivalence(
         app.world(),
         "WrapArray[() ()]",
+        "[() ()]",
         "[[[],[]]]",
         WrapArray(vec![UnitStruct, UnitStruct]),
     );
@@ -116,9 +128,10 @@ fn wrap_array()
 fn tuple_struct()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "TupleStruct(() {boolean:true} true)",
+        "(() {boolean:true} true)",
         r#"[[],{"boolean":true},true]"#,
         TupleStruct(UnitStruct, PlainStruct { boolean: true }, true),
     );
@@ -130,28 +143,38 @@ fn tuple_struct()
 fn single_generic()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(app.world(), "SingleGeneric<u32>", "{}", SingleGeneric::<u32>::default());
-    test_instruction_equivalence(
+    test_equivalence(
+        app.world(),
+        "SingleGeneric<u32>",
+        "{}",
+        "{}",
+        SingleGeneric::<u32>::default(),
+    );
+    test_equivalence(
         app.world(),
         "SingleGeneric<(u32, u32)>",
         "{}",
+        "{}",
         SingleGeneric::<(u32, u32)>::default(),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGeneric<UnitStruct>",
         "{}",
+        "{}",
         SingleGeneric::<UnitStruct>::default(),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGeneric<SingleGeneric<u32>>",
         "{}",
+        "{}",
         SingleGeneric::<SingleGeneric<u32>>::default(),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGeneric<MultiGeneric<u32, u32, u32>>",
+        "{}",
         "{}",
         SingleGeneric::<MultiGeneric<u32, u32, u32>>::default(),
     );
@@ -163,21 +186,24 @@ fn single_generic()
 fn single_generic_tuple()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGenericTuple<u32>(1)",
+        "1",
         "[1]",
         SingleGenericTuple::<u32>(1),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGenericTuple<UnitStruct>(())",
+        "()",
         "[[]]",
         SingleGenericTuple::<UnitStruct>(UnitStruct),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "SingleGenericTuple<SingleGeneric<u32>>({})",
+        "{}",
         "[{}]",
         SingleGenericTuple::<SingleGeneric<u32>>(SingleGeneric::default()),
     );
@@ -189,21 +215,24 @@ fn single_generic_tuple()
 fn multi_generic()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "MultiGeneric<u32, u32, u32>",
         "{}",
+        "{}",
         MultiGeneric::<u32, u32, u32>::default(),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "MultiGeneric<u32, u32, UnitStruct>",
         "{}",
+        "{}",
         MultiGeneric::<u32, u32, UnitStruct>::default(),
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "MultiGeneric<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>",
+        "{}",
         "{}",
         MultiGeneric::<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>::default(),
     );
@@ -215,21 +244,24 @@ fn multi_generic()
 fn enum_generic()
 {
     let app = prepare_test_app();
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "EnumGeneric<bool>::A{uint:1}",
+        "A{uint:1}",
         r#"{"A":{"uint":1}}"#,
         EnumGeneric::<bool>::A { uint: 1, _p: PhantomData },
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "EnumGeneric<UnitStruct>::B{s_enum:B(())}",
+        "B{s_enum:B(())}",
         r#"{"B":{"s_enum":{"B":[]}}}"#,
         EnumGeneric::<UnitStruct>::B { s_enum: EnumStruct::B(UnitStruct), _p: PhantomData },
     );
-    test_instruction_equivalence(
+    test_equivalence(
         app.world(),
         "EnumGeneric<SingleGeneric<u32>>::A{uint:1}",
+        "A{uint:1}",
         r#"{"A":{"uint":1}}"#,
         EnumGeneric::<SingleGeneric<u32>>::A { uint: 1, _p: PhantomData },
     );

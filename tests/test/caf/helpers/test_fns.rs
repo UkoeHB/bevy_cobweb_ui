@@ -77,10 +77,10 @@ pub fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Tests if a raw CAF, raw JSON, and rust struct instruction are equivalent.
+/// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
-/// Only works for instructions without reflect-defaulted fields.
-pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, json_raw: &str, instruction: T)
+/// Only works for types without reflect-defaulted fields.
+pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, json_raw: &str, value: T)
 {
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
@@ -90,17 +90,24 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
 
     // Rust value to caf instruction
     // TODO: remove once raw -> instruction is available
-    let instruction_from_rust = CafInstruction::extract(&instruction, &type_registry).unwrap();
-    //let direct_value = T::deserialize(&instruction_from_rust).unwrap();
-    //assert_eq!(instruction, direct_value);
+    let instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
+    let cafvalue_from_rust = CafValue::extract(&value).unwrap();
+    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    let direct_value_from_value = T::deserialize(&cafvalue_from_rust).unwrap();
+    assert_eq!(value, direct_value);
+    assert_eq!(value, direct_value_from_value);
 
     // Caf instruction to reflect
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected = deserializer.deserialize(&instruction_from_rust).unwrap();
+    let reflected_inst = deserializer.deserialize(&instruction_from_rust).unwrap();
+    let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
+    let reflected_val = deserializer.deserialize(&cafvalue_from_rust).unwrap();
 
     // Reflect to rust value
-    let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
-    assert_eq!(instruction, extracted);
+    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
+    let extracted_val = T::from_reflect(reflected_val.as_reflect()).unwrap();
+    assert_eq!(value, extracted_inst);
+    assert_eq!(value, extracted_val);
 
     // Json raw to json value
     let json_val = serde_json::Value::from_str(json_raw).unwrap();
@@ -111,7 +118,7 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
 
     // Reflect to rust value
     let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
-    assert_eq!(instruction, extracted);
+    assert_eq!(value, extracted);
 
     // Instruction to json value
     // TODO: cannot test this currently because reflection is not symmetrical
@@ -120,7 +127,7 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     //assert_eq!(json_val, json_val_deser);
 
     // Rust value to caf instruction
-    let instruction_from_rust = CafInstruction::extract(&instruction, &type_registry).unwrap();
+    let instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
 
     // Caf instruction to json value
     // TODO: remove once raw -> Caf -> json can be done above
@@ -133,6 +140,13 @@ pub fn test_instruction_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &st
     instruction_from_rust.write_to(&mut cursor).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
+
+    // Caf value to caf raw
+    let mut buff = Vec::<u8>::default();
+    let mut cursor = Cursor::new(&mut buff);
+    cafvalue_from_rust.write_to(&mut cursor).unwrap();
+    let reconstructed_raw_val = String::from_utf8(buff).unwrap();
+    assert_eq!(caf_raw_val, reconstructed_raw_val);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

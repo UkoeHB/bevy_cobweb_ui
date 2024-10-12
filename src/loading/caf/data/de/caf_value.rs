@@ -1,6 +1,9 @@
 use serde::de::{Expected, Unexpected, Visitor};
 
-use super::{deserialize_builtin, visit_array_ref, visit_map_ref, visit_tuple_ref, EnumRefDeserializer};
+use super::{
+    deserialize_builtin, visit_array_ref, visit_map_ref, visit_tuple_ref, visit_wrapped_value_ref,
+    EnumRefDeserializer,
+};
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -149,7 +152,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        print!("unit val");
+        println!("unit val");
         match self {
             CafValue::Tuple(tuple) => {
                 if tuple.entries.len() == 0 {
@@ -166,7 +169,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        print!("unit struct val");
+        println!("unit struct val");
         self.deserialize_unit(visitor)
     }
 
@@ -197,11 +200,17 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         }
     }
 
-    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, visitor: V) -> CafResult<V::Value>
+    fn deserialize_tuple_struct<V>(self, _name: &'static str, len: usize, visitor: V) -> CafResult<V::Value>
     where
         V: Visitor<'de>,
     {
-        print!("tuple struct val");
+        println!("tuple struct val");
+
+        // If visiting a newtype struct, need to implicitly destructure it.
+        if len == 1 {
+            return visit_wrapped_value_ref(self, visitor);
+        }
+
         match self {
             CafValue::Tuple(v) => visit_tuple_ref(v, visitor),
             _ => Err(self.invalid_type(&visitor)),
@@ -227,7 +236,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        print!("struct val");
+        println!("struct val");
         match self {
             // Allow empty tuples to be treated as unit structs.
             CafValue::Tuple(tuple) => {

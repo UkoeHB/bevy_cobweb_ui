@@ -136,6 +136,21 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
+pub(super) fn visit_wrapped_value_ref<'de, V>(val: &'de CafValue, visitor: V) -> CafResult<V::Value>
+where
+    V: Visitor<'de>,
+{
+    let mut deserializer = WrappedValueRefDeserializer { val: Some(val) };
+    let seq = visitor.visit_seq(&mut deserializer)?;
+    if deserializer.val.is_none() {
+        Ok(seq)
+    } else {
+        Err(serde::de::Error::invalid_length(1, &"no wrapped val"))
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 struct SeqRefDeserializer<'de>
 {
     iter: std::slice::Iter<'de, CafValue>,
@@ -258,6 +273,37 @@ impl<'de> SeqAccess<'de> for WrappedArrayRefDeserializer<'de>
     fn size_hint(&self) -> Option<usize>
     {
         if self.arr.is_some() {
+            Some(1)
+        } else {
+            Some(0)
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct WrappedValueRefDeserializer<'de>
+{
+    val: Option<&'de CafValue>,
+}
+
+impl<'de> SeqAccess<'de> for WrappedValueRefDeserializer<'de>
+{
+    type Error = CafError;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> CafResult<Option<T::Value>>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        match self.val.take() {
+            Some(val) => seed.deserialize(val).map(Some),
+            None => Ok(None),
+        }
+    }
+
+    fn size_hint(&self) -> Option<usize>
+    {
+        if self.val.is_some() {
             Some(1)
         } else {
             Some(0)
