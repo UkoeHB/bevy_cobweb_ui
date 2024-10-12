@@ -9,7 +9,7 @@
 //   - Need separate sequence for testing #[reflect(default)] fields, since defaulted 'dont show' fields are not
 //   known in rust.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
@@ -70,8 +70,8 @@ pub struct AggregateStruct
     pub boolean: bool,
     pub string: String,
     pub vec: Vec<PlainStruct>,
-    pub map: HashMap<u32, u32>, /* TODO: use map with consistent ordering (that implements
-                                 * reflect/serialize/deserialize) */
+    pub map: BTreeMap<u32, u32>, /* TODO: use map that preserves insertion ordering (that implements
+                                  * reflect/serialize/deserialize) */
     pub s_struct: UnitStruct,
     pub s_enum: EnumStruct,
     pub s_plain: PlainStruct,
