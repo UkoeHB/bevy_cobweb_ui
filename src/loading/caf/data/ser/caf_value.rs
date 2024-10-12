@@ -125,7 +125,7 @@ impl serde::Serializer for CafValueSerializer
     #[inline]
     fn serialize_unit_struct(self, _name: &'static str) -> CafResult<CafValue>
     {
-        Ok(CafValue::Map(CafMap::from(vec![])))
+        Ok(CafValue::Tuple(CafTuple::from(vec![])))
     }
 
     #[inline]

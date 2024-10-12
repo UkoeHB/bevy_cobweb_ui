@@ -97,6 +97,8 @@ pub struct CafString
 {
     pub fill: CafFill,
     pub segments: SmallVec<[CafStringSegment; 1]>,
+    /// Caches the full string if there are multiple segments.
+    pub cached: Option<String>,
 }
 
 impl CafString
@@ -134,17 +136,15 @@ impl CafString
         Ok(serde_json::Value::String(buff))
     }
 
-    pub fn get_string_ref(&self, buff: &mut String) -> &str
+    pub fn as_str(&self) -> &str
     {
         if self.segments.len() == 1 {
-            return self.segments[0].segment.as_str();
+            self.segments[0].segment.as_str()
+        } else if let Some(cached) = &self.cached {
+            cached.as_str()
+        } else {
+            ""
         }
-
-        for segment in self.segments.iter() {
-            segment.write_to_string(&mut buff);
-        }
-
-        return buff.as_str();
     }
 
     // TODO: recover leading spaces for multi-line text? what if the lines change?
@@ -163,6 +163,7 @@ impl TryFrom<char> for CafString
         Ok(Self {
             fill: CafFill::default(),
             segments: SmallVec::from_elem(CafStringSegment::try_from(character)?, 1),
+            cached: None,
         })
     }
 }
@@ -176,6 +177,7 @@ impl TryFrom<&str> for CafString
         Ok(Self {
             fill: CafFill::default(),
             segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+            cached: None,
         })
     }
 }
@@ -189,6 +191,7 @@ impl TryFrom<String> for CafString
         Ok(Self {
             fill: CafFill::default(),
             segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+            cached: None,
         })
     }
 }
@@ -196,6 +199,7 @@ impl TryFrom<String> for CafString
 /*
 Parsing:
 - segments end in [\\][\n] or non-escaped-"
+- if multiple segments, they must be collected into the cached string
 */
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -1,61 +1,67 @@
+use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, Unexpected, VariantAccess, Visitor};
+
+use super::{visit_map_ref, visit_tuple_ref};
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 impl CafEnumVariant
 {
     #[cold]
-    pub(crate) fn unexpected(&self) -> Unexpected {
+    pub(super) fn unexpected(&self) -> Unexpected
+    {
         match self {
-            CafEnumVariant::Unit{..} => Unexpected::UnitVariant,
-            CafEnumVariant::Tuple{entries, ..} => {
-                if entries.len() == 1 {
+            CafEnumVariant::Unit { .. } => Unexpected::UnitVariant,
+            CafEnumVariant::Tuple { tuple, .. } => {
+                if tuple.entries.len() == 1 {
                     Unexpected::NewtypeVariant
                 } else {
                     Unexpected::TupleVariant
                 }
             }
-            CafEnumVariant::Array{..} => Unexpected::NewtypeVariant,
-            CafEnumVariant::Map{..} => Unexpected::StructVariant
+            CafEnumVariant::Array { .. } => Unexpected::NewtypeVariant,
+            CafEnumVariant::Map { .. } => Unexpected::StructVariant,
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct EnumRefDeserializer<'de>
+pub(super) struct EnumRefDeserializer<'de>
 {
-    variant: &'de CafEnumVariant,
+    pub(super) variant: &'de CafEnumVariant,
 }
 
 impl<'de> EnumAccess<'de> for EnumRefDeserializer<'de>
 {
     type Error = CafError;
-    type Variant = VariantRefDeserializer<'de>;
+    type Variant = VariantRefAccess<'de>;
 
-    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Error>
+    fn variant_seed<V>(self, seed: V) -> CafResult<(V::Value, Self::Variant)>
     where
         V: DeserializeSeed<'de>,
     {
         let variant = self.variant.id().into_deserializer();
-        let visitor = VariantRefDeserializer { variant: self.variant };
+        let visitor = VariantRefAccess { variant: self.variant };
         seed.deserialize(variant).map(|v| (v, visitor))
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct VariantRefDeserializer<'de>
+pub struct VariantRefAccess<'de>
 {
     variant: &'de CafEnumVariant,
 }
 
-impl<'de> VariantAccess<'de> for VariantRefDeserializer<'de>
+impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
 {
     type Error = CafError;
 
-    fn unit_variant(self) -> CafResult<()> {
+    fn unit_variant(self) -> CafResult<()>
+    {
         match self.variant {
-            CafEnumVariant::Unit{ .. } => Ok(()),
+            CafEnumVariant::Unit { .. } => Ok(()),
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"unit variant",
@@ -67,8 +73,8 @@ impl<'de> VariantAccess<'de> for VariantRefDeserializer<'de>
     where
         T: DeserializeSeed<'de>,
     {
-        match variant {
-            CafEnumVariant::Tuple{ .., tuple } => {
+        match self.variant {
+            CafEnumVariant::Tuple { tuple, .. } => {
                 if tuple.entries.len() != 1 {
                     Err(serde::de::Error::invalid_type(
                         self.variant.unexpected(),
@@ -79,7 +85,7 @@ impl<'de> VariantAccess<'de> for VariantRefDeserializer<'de>
                 }
             }
             // Enum variant array is special case of tuple-variant-of-sequence.
-            CafEnumVariant::Array{ .., array } => visit_array_ref(array, visitor),
+            CafEnumVariant::Array { array, .. } => seed.deserialize(array),
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"newtype variant",
@@ -91,8 +97,8 @@ impl<'de> VariantAccess<'de> for VariantRefDeserializer<'de>
     where
         V: Visitor<'de>,
     {
-        match variant {
-            CafEnumVariant::Tuple{ .., tuple } => visit_tuple_ref(tuple, visitor),
+        match self.variant {
+            CafEnumVariant::Tuple { tuple, .. } => visit_tuple_ref(tuple, visitor),
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"tuple variant",
@@ -100,16 +106,12 @@ impl<'de> VariantAccess<'de> for VariantRefDeserializer<'de>
         }
     }
 
-    fn struct_variant<V>(
-        self,
-        _fields: &'static [&'static str],
-        visitor: V,
-    ) -> CafResult<V::Value>
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> CafResult<V::Value>
     where
         V: Visitor<'de>,
     {
-        match variant {
-            CafEnumVariant::Map{ .., map } => visit_map_ref(map, visitor),
+        match self.variant {
+            CafEnumVariant::Map { map, .. } => visit_map_ref(map, visitor),
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"struct variant",
