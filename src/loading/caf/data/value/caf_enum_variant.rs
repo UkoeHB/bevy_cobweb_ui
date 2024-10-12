@@ -191,10 +191,10 @@ impl CafEnumVariant
     pub fn id(&self) -> &str
     {
         match self {
-            CafEnumVariant::Unit{ id } |
-            CafEnumVariant::Tuple{ id, .. } |
-            CafEnumVariant::Array{ id, .. } |
-            CafEnumVariant::Map{ id, .. } => id.name.as_str()
+            CafEnumVariant::Unit { id }
+            | CafEnumVariant::Tuple { id, .. }
+            | CafEnumVariant::Array { id, .. }
+            | CafEnumVariant::Map { id, .. } => id.name.as_str(),
         }
     }
 }

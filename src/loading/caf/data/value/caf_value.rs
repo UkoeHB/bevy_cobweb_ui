@@ -13,11 +13,11 @@ pub enum CafValue
     Array(CafArray),
     Tuple(CafTuple),
     Map(CafMap),
-    FlattenGroup(CafFlattenGroup),
     Number(CafNumber),
     Bool(CafBool),
     None(CafNone),
     String(CafString),
+    FlattenGroup(CafFlattenGroup),
     Constant(CafConstant),
     DataMacro(CafDataMacroCall),
     /// Only valid inside a macro definition.
@@ -50,9 +50,6 @@ impl CafValue
             Self::Map(val) => {
                 val.write_to_with_space(writer, space)?;
             }
-            Self::FlattenGroup(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
             Self::Number(val) => {
                 val.write_to_with_space(writer, space)?;
             }
@@ -63,6 +60,9 @@ impl CafValue
                 val.write_to_with_space(writer, space)?;
             }
             Self::String(val) => {
+                val.write_to_with_space(writer, space)?;
+            }
+            Self::FlattenGroup(val) => {
                 val.write_to_with_space(writer, space)?;
             }
             Self::Constant(val) => {
@@ -86,13 +86,13 @@ impl CafValue
             Self::Array(val) => val.to_json(),
             Self::Tuple(val) => val.to_json_for_type(),
             Self::Map(val) => val.to_json(),
-            Self::FlattenGroup(val) => Err(std::io::Error::other(
-                format!("cannot convert flatten group {val:?} to JSON"),
-            )),
             Self::Number(val) => val.to_json(),
             Self::Bool(val) => val.to_json(),
             Self::None(val) => val.to_json(),
             Self::String(val) => val.to_json(),
+            Self::FlattenGroup(val) => Err(std::io::Error::other(
+                format!("cannot convert flatten group {val:?} to JSON"),
+            )),
             Self::Constant(val) => Err(std::io::Error::other(
                 format!("cannot convert constant {val:?} to JSON"),
             )),
@@ -123,9 +123,6 @@ impl CafValue
             (Self::Map(val), Self::Map(other_val)) => {
                 val.recover_fill(other_val);
             }
-            (Self::FlattenGroup(val), Self::FlattenGroup(other_val)) => {
-                val.recover_fill(other_val);
-            }
             (Self::Number(val), Self::Number(other_val)) => {
                 val.recover_fill(other_val);
             }
@@ -136,6 +133,9 @@ impl CafValue
                 val.recover_fill(other_val);
             }
             (Self::String(val), Self::String(other_val)) => {
+                val.recover_fill(other_val);
+            }
+            (Self::FlattenGroup(val), Self::FlattenGroup(other_val)) => {
                 val.recover_fill(other_val);
             }
             (Self::Constant(val), Self::Constant(other_val)) => {
@@ -156,5 +156,7 @@ impl CafValue
         value.serialize(CafValueSerializer)
     }
 }
+
+// Parsing: unit structs are represented with () in values
 
 //-------------------------------------------------------------------------------------------------------------------
