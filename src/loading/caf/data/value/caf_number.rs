@@ -25,11 +25,6 @@ impl CafNumberValue
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        Ok(serde_json::Value::Number(self.deserialized.clone()))
-    }
-
     // TODO: replace with custom representation
     pub fn from_json_number(json_num: serde_json::Number) -> Self
     {
@@ -179,11 +174,6 @@ impl CafNumber
         self.fill.write_to_or_else(writer, space)?;
         self.number.write_to(writer)?;
         Ok(())
-    }
-
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        self.number.to_json()
     }
 
     pub fn recover_fill(&mut self, other: &Self)

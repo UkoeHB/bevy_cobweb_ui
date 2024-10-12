@@ -36,26 +36,6 @@ impl CafTuple
         Ok(())
     }
 
-    /// Includes tuple-structs and floating tuples.
-    pub fn to_json_for_type(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        let mut array = Vec::with_capacity(self.entries.len());
-        for entry in self.entries.iter() {
-            array.push(entry.to_json()?);
-        }
-        Ok(serde_json::Value::Array(array))
-    }
-
-    pub fn to_json_for_enum(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        // A tuple of one item is not wrapped on the JSON side.
-        if self.entries.len() == 1 {
-            self.entries[0].to_json()
-        } else {
-            self.to_json_for_type()
-        }
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.start_fill.recover(&other.start_fill);

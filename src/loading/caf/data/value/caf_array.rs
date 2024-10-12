@@ -36,15 +36,6 @@ impl CafArray
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        let mut array = Vec::with_capacity(self.entries.len());
-        for entry in self.entries.iter() {
-            array.push(entry.to_json()?);
-        }
-        Ok(serde_json::Value::Array(array))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.start_fill.recover(&other.start_fill);

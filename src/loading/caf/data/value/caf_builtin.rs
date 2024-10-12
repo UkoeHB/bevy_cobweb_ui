@@ -71,39 +71,6 @@ impl CafHexColor
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        let mut map = serde_json::Map::<String, serde_json::Value>::default();
-        let key = "Srgba".into();
-        let mut value = serde_json::Map::<String, serde_json::Value>::default();
-        value.insert(
-            "red".into(),
-            serde_json::Value::Number(
-                serde_json::Number::from_f64(self.color.red as f64).expect("color should be finite"),
-            ),
-        );
-        value.insert(
-            "green".into(),
-            serde_json::Value::Number(
-                serde_json::Number::from_f64(self.color.green as f64).expect("color should be finite"),
-            ),
-        );
-        value.insert(
-            "blue".into(),
-            serde_json::Value::Number(
-                serde_json::Number::from_f64(self.color.blue as f64).expect("color should be finite"),
-            ),
-        );
-        value.insert(
-            "alpha".into(),
-            serde_json::Value::Number(
-                serde_json::Number::from_f64(self.color.alpha as f64).expect("color should be finite"),
-            ),
-        );
-        map.insert(key, serde_json::Value::Object(value));
-        Ok(serde_json::Value::Object(map))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
@@ -193,34 +160,6 @@ impl CafBuiltin
             }
         }
         Ok(())
-    }
-
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        match self {
-            Self::Color(color) => color.to_json(),
-            Self::Val { val, .. } => {
-                fn make_val(name: &str, val: f32) -> serde_json::Value
-                {
-                    let mut map = serde_json::Map::<String, serde_json::Value>::default();
-                    let key = name.into();
-                    let value = serde_json::Value::Number(
-                        serde_json::Number::from_f64(val as f64).unwrap_or(serde_json::Number::from(0)),
-                    );
-                    map.insert(key, value);
-                    serde_json::Value::Object(map)
-                }
-                match *val {
-                    Val::Auto => Ok(serde_json::Value::String("Auto".into())),
-                    Val::Px(val) => Ok(make_val("Px", val)),
-                    Val::Percent(val) => Ok(make_val("Percent", val)),
-                    Val::Vw(val) => Ok(make_val("Vw", val)),
-                    Val::Vh(val) => Ok(make_val("Vh", val)),
-                    Val::VMin(val) => Ok(make_val("VMin", val)),
-                    Val::VMax(val) => Ok(make_val("VMax", val)),
-                }
-            }
-        }
     }
 
     pub fn try_from_unit_variant(typename: &str, variant: &str) -> CafResult<Option<Self>>

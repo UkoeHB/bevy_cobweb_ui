@@ -78,33 +78,6 @@ impl CafValue
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        match self {
-            Self::EnumVariant(val) => val.to_json(),
-            Self::Builtin(val) => val.to_json(),
-            Self::Array(val) => val.to_json(),
-            Self::Tuple(val) => val.to_json_for_type(),
-            Self::Map(val) => val.to_json(),
-            Self::Number(val) => val.to_json(),
-            Self::Bool(val) => val.to_json(),
-            Self::None(val) => val.to_json(),
-            Self::String(val) => val.to_json(),
-            Self::FlattenGroup(val) => Err(std::io::Error::other(
-                format!("cannot convert flatten group {val:?} to JSON"),
-            )),
-            Self::Constant(val) => Err(std::io::Error::other(
-                format!("cannot convert constant {val:?} to JSON"),
-            )),
-            Self::DataMacro(val) => Err(std::io::Error::other(
-                format!("cannot convert data macro {val:?} to JSON"),
-            )),
-            Self::MacroParam(val) => Err(std::io::Error::other(
-                format!("cannot convert macro param {val:?} to JSON"),
-            )),
-        }
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {

@@ -133,32 +133,6 @@ impl CafInstruction
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        match self {
-            Self::Unit { .. } => {
-                // {}
-                Ok(serde_json::Value::Object(serde_json::Map::default()))
-            }
-            Self::Tuple { tuple, .. } => {
-                // [..tuple items..]
-                tuple.to_json_for_type()
-            }
-            Self::Array { array, .. } => {
-                // [[..array items..]]
-                Ok(serde_json::Value::Array(vec![array.to_json()?]))
-            }
-            Self::Map { map, .. } => {
-                // {..map items..}
-                map.to_json()
-            }
-            Self::Enum { variant, .. } => {
-                // .. enum variant ..
-                variant.to_json()
-            }
-        }
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
