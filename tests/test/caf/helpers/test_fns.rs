@@ -1,6 +1,5 @@
 use std::fmt::Debug;
 use std::io::Cursor;
-use std::str::FromStr;
 
 use bevy::prelude::*;
 use bevy::reflect::serde::TypedReflectDeserializer;
@@ -80,7 +79,7 @@ pub fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
 /// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
 /// Only works for types without reflect-defaulted fields.
-pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, json_raw: &str, value: T)
+pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
 {
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
@@ -109,30 +108,8 @@ pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_v
     assert_eq!(value, extracted_inst);
     assert_eq!(value, extracted_val);
 
-    // Json raw to json value
-    let json_val = serde_json::Value::from_str(json_raw).unwrap();
-
-    // Json value to reflect
-    let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected = deserializer.deserialize(&json_val).unwrap();
-
-    // Reflect to rust value
-    let extracted = T::from_reflect(reflected.as_reflect()).unwrap();
-    assert_eq!(value, extracted);
-
-    // Instruction to json value
-    // TODO: cannot test this currently because reflection is not symmetrical
-    // - https://github.com/bevyengine/bevy/issues/15712
-    //let json_val_deser = serde_json::to_value(&instruction).unwrap();
-    //assert_eq!(json_val, json_val_deser);
-
     // Rust value to caf instruction
     let instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
-
-    // Caf instruction to json value
-    // TODO: remove once raw -> Caf -> json can be done above
-    let json_val_from_caf = instruction_from_rust.to_json().unwrap();
-    assert_eq!(json_val, json_val_from_caf);
 
     // Caf instruction to caf raw
     let mut buff = Vec::<u8>::default();

@@ -189,13 +189,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::Tuple(tuple) => {
-                if tuple.entries.len() == 0 {
-                    Err(self.invalid_type(&visitor))
-                } else {
-                    visit_tuple_ref(tuple, visitor)
-                }
-            }
+            CafValue::Tuple(tuple) => visit_tuple_ref(tuple, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
