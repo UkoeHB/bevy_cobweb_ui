@@ -149,6 +149,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
+        print!("unit val");
         match self {
             CafValue::Tuple(tuple) => {
                 if tuple.entries.len() == 0 {
@@ -165,6 +166,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
+        print!("unit struct val");
         self.deserialize_unit(visitor)
     }
 
@@ -199,6 +201,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
+        print!("tuple struct val");
         match self {
             CafValue::Tuple(v) => visit_tuple_ref(v, visitor),
             _ => Err(self.invalid_type(&visitor)),
@@ -224,7 +227,16 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
+        print!("struct val");
         match self {
+            // Allow empty tuples to be treated as unit structs.
+            CafValue::Tuple(tuple) => {
+                if tuple.entries.len() == 0 {
+                    visit_tuple_ref(tuple, visitor)
+                } else {
+                    Err(self.invalid_type(&visitor))
+                }
+            }
             CafValue::Map(v) => visit_map_ref(v, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
@@ -254,12 +266,14 @@ impl CafValue
     where
         E: serde::de::Error,
     {
+        println!("{:?}", self);
         serde::de::Error::invalid_type(self.unexpected(), exp)
     }
 
     #[cold]
     fn unexpected(&self) -> Unexpected
     {
+        println!("{:?}", self);
         match self {
             CafValue::EnumVariant(e) => e.unexpected(),
             CafValue::Builtin(_) => Unexpected::Other("builtin"),

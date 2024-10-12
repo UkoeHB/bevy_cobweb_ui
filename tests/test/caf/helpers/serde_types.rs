@@ -70,7 +70,8 @@ pub struct AggregateStruct
     pub boolean: bool,
     pub string: String,
     pub vec: Vec<PlainStruct>,
-    pub map: HashMap<u32, u32>,
+    pub map: HashMap<u32, u32>, /* TODO: use map with consistent ordering (that implements
+                                 * reflect/serialize/deserialize) */
     pub s_struct: UnitStruct,
     pub s_enum: EnumStruct,
     pub s_plain: PlainStruct,

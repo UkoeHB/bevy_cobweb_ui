@@ -18,6 +18,8 @@ use super::helpers::*;
 
 // TODO: test newtype and newtype variant of tuple
 // TODO: test newtype of vec as inner value
+// TODO: test built-in values
+// TODO: test lossy conversions (scientific notation, multiline strings, ??)
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -51,8 +53,8 @@ fn enum_struct()
     test_instruction_equivalence(app.world(), "EnumStruct::A", r#""A""#, EnumStruct::A);
     test_instruction_equivalence(
         app.world(),
-        "EnumStruct::B({})",
-        r#"{"B": {}}"#,
+        "EnumStruct::B(())",
+        r#"{"B": []}"#,
         EnumStruct::B(UnitStruct),
     );
     test_instruction_equivalence(
@@ -71,11 +73,12 @@ fn aggregate_struct()
     let app = prepare_test_app();
     let mut map = HashMap::default();
     map.insert(10u32, 10u32);
-    map.insert(20u32, 20u32);
+    // TODO: can't test maps with multiple entries since HashMap ordering is not specified.
+    //map.insert(20u32, 20u32);
     test_instruction_equivalence(
         app.world(),
-        r#"AggregateStruct{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:{} s_enum:B({}) s_plain:{boolean:true}}"#,
-        r#"{"uint":1,"float":1.0,"boolean":true,"string":"hi","vec":[{"boolean":true},{"boolean":false}],"map":{"10":10,"20":20},"s_struct":{},"s_enum":{"B":{}},"s_plain":{"boolean":true}}"#,
+        r#"AggregateStruct{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
+        r#"{"uint":1,"float":1.0,"boolean":true,"string":"hi","vec":[{"boolean":true},{"boolean":false}],"map":{"10":10},"s_struct":[],"s_enum":{"B":[]},"s_plain":{"boolean":true}}"#,
         AggregateStruct {
             uint: 1,
             float: 1.0,
@@ -97,11 +100,11 @@ fn wrap_array()
 {
     let app = prepare_test_app();
     test_instruction_equivalence(app.world(), "WrapArray[]", "[[]]", WrapArray(vec![]));
-    test_instruction_equivalence(app.world(), "WrapArray[{}]", "[[{}]]", WrapArray(vec![UnitStruct]));
+    test_instruction_equivalence(app.world(), "WrapArray[()]", "[[[]]]", WrapArray(vec![UnitStruct]));
     test_instruction_equivalence(
         app.world(),
-        "WrapArray[{} {}]",
-        "[[{},{}]]",
+        "WrapArray[() ()]",
+        "[[[],[]]]",
         WrapArray(vec![UnitStruct, UnitStruct]),
     );
 }
@@ -114,8 +117,8 @@ fn tuple_struct()
     let app = prepare_test_app();
     test_instruction_equivalence(
         app.world(),
-        "TupleStruct({} {boolean:true} true)",
-        r#"[{},{"boolean":true},true]"#,
+        "TupleStruct(() {boolean:true} true)",
+        r#"[[],{"boolean":true},true]"#,
         TupleStruct(UnitStruct, PlainStruct { boolean: true }, true),
     );
 }
@@ -167,8 +170,8 @@ fn single_generic_tuple()
     );
     test_instruction_equivalence(
         app.world(),
-        "SingleGenericTuple<UnitStruct>({})",
-        "[{}]",
+        "SingleGenericTuple<UnitStruct>(())",
+        "[[]]",
         SingleGenericTuple::<UnitStruct>(UnitStruct),
     );
     test_instruction_equivalence(
@@ -219,8 +222,8 @@ fn enum_generic()
     );
     test_instruction_equivalence(
         app.world(),
-        "EnumGeneric<UnitStruct>::B{s_enum:B({})}",
-        r#"{"B":{"s_enum":{"B":{}}}}"#,
+        "EnumGeneric<UnitStruct>::B{s_enum:B(())}",
+        r#"{"B":{"s_enum":{"B":[]}}}"#,
         EnumGeneric::<UnitStruct>::B { s_enum: EnumStruct::B(UnitStruct), _p: PhantomData },
     );
     test_instruction_equivalence(

@@ -10,12 +10,12 @@ impl CafNumber
     #[cold]
     pub(super) fn unexpected(&self) -> Unexpected
     {
-        if let Some(float) = self.number.deserialized.as_f64() {
-            Unexpected::Float(float)
-        } else if let Some(uint) = self.number.deserialized.as_u64() {
-            Unexpected::Unsigned(uint)
-        } else if let Some(int) = self.number.deserialized.as_i64() {
-            Unexpected::Signed(int)
+        if self.number.deserialized.is_f64() {
+            Unexpected::Float(self.number.deserialized.as_f64().unwrap())
+        } else if self.number.deserialized.is_u64() {
+            Unexpected::Unsigned(self.number.deserialized.as_u64().unwrap())
+        } else if self.number.deserialized.is_i64() {
+            Unexpected::Signed(self.number.deserialized.as_i64().unwrap())
         } else {
             unreachable!();
         }
@@ -31,12 +31,12 @@ macro_rules! deserialize_any {
         where
             V: Visitor<'de>,
         {
-            if let Some(float) = self.number.deserialized.as_f64() {
-                visitor.visit_f64(float)
-            } else if let Some(uint) = self.number.deserialized.as_u64() {
-                visitor.visit_u64(uint)
-            } else if let Some(int) = self.number.deserialized.as_i64() {
-                visitor.visit_i64(int)
+            if self.number.deserialized.is_f64() {
+                visitor.visit_f64(self.number.deserialized.as_f64().unwrap())
+            } else if self.number.deserialized.is_u64() {
+                visitor.visit_u64(self.number.deserialized.as_u64().unwrap())
+            } else if self.number.deserialized.is_i64() {
+                visitor.visit_i64(self.number.deserialized.as_i64().unwrap())
             } else {
                 unreachable!();
             }
