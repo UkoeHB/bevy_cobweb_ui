@@ -11,7 +11,7 @@
 //   - Need separate sequence for testing #[reflect(default)] fields, since defaulted 'dont show' fields are not
 //   known in rust.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use super::helpers::*;
@@ -71,14 +71,15 @@ fn enum_struct()
 fn aggregate_struct()
 {
     let app = prepare_test_app();
-    let mut map = HashMap::default();
+    // TODO: can only test keys that implement Ord, and entries must be sorted in the data representations for
+    // consistency
+    let mut map = BTreeMap::default();
     map.insert(10u32, 10u32);
-    // TODO: can't test maps with multiple entries since HashMap ordering is not specified.
-    //map.insert(20u32, 20u32);
+    map.insert(20u32, 20u32);
     test_instruction_equivalence(
         app.world(),
-        r#"AggregateStruct{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
-        r#"{"uint":1,"float":1.0,"boolean":true,"string":"hi","vec":[{"boolean":true},{"boolean":false}],"map":{"10":10},"s_struct":[],"s_enum":{"B":[]},"s_plain":{"boolean":true}}"#,
+        r#"AggregateStruct{uint:1 float:1.0 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
+        r#"{"uint":1,"float":1.0,"boolean":true,"string":"hi","vec":[{"boolean":true},{"boolean":false}],"map":{"10":10,"20":20},"s_struct":[],"s_enum":{"B":[]},"s_plain":{"boolean":true}}"#,
         AggregateStruct {
             uint: 1,
             float: 1.0,
