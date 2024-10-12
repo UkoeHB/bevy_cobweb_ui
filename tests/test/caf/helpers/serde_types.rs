@@ -43,6 +43,55 @@ impl ApplyLoadable for PlainStruct
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NewtypeStruct(pub u32);
+
+impl ApplyLoadable for NewtypeStruct
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WrapNewtypeStruct(pub NewtypeStruct);
+
+impl ApplyLoadable for WrapNewtypeStruct
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum NewtypeEnum
+{
+    Tuple(()),
+    #[default]
+    X,
+}
+
+impl ApplyLoadable for NewtypeEnum
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ContainsNewtypes
+{
+    pub n: WrapNewtypeStruct,
+    pub w: WrapArray,
+}
+
+impl ApplyLoadable for ContainsNewtypes
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EnumStruct
 {
     #[default]
@@ -211,6 +260,10 @@ impl Plugin for SerdeTypesPlugin
     {
         app.register_derived::<UnitStruct>()
             .register_derived::<PlainStruct>()
+            .register_derived::<NewtypeStruct>()
+            .register_derived::<WrapNewtypeStruct>()
+            .register_derived::<NewtypeEnum>()
+            .register_derived::<ContainsNewtypes>()
             .register_derived::<EnumStruct>()
             .register_derived::<AggregateStruct>()
             .register_derived::<WrapArray>()
