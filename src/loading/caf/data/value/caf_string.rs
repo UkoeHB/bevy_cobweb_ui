@@ -127,15 +127,6 @@ impl CafString
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        let mut buff = String::default();
-        for segment in self.segments.iter() {
-            segment.write_to_string(&mut buff);
-        }
-        Ok(serde_json::Value::String(buff))
-    }
-
     pub fn as_str(&self) -> &str
     {
         if self.segments.len() == 1 {

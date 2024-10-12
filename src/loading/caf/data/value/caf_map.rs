@@ -37,26 +37,6 @@ impl CafMapKey
         Ok(())
     }
 
-    /// Currently only strings and ints/floats are supported as map keys, since we are tied to JSON limitations.
-    //todo
-    pub fn to_json_map_key(&self) -> Result<String, std::io::Error>
-    {
-        match self {
-            Self::FieldName { name, .. } => Ok(String::from(name.as_str())),
-            Self::Value(value) => match value {
-                CafValue::String(string) => {
-                    let serde_json::Value::String(string) = string.to_json()? else { unreachable!() };
-                    Ok(string)
-                }
-                CafValue::Number(number) => {
-                    let string = String::from(number.number.original.as_str());
-                    Ok(string)
-                }
-                _ => todo!(),
-            },
-        }
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
@@ -105,12 +85,6 @@ impl CafMapKeyValue
         self.semicolon_fill.write_to(writer)?;
         writer.write(":".as_bytes())?;
         self.value.write_to(writer)?;
-        Ok(())
-    }
-
-    pub fn add_to_json(&self, map: &mut serde_json::Map<String, serde_json::Value>) -> Result<(), std::io::Error>
-    {
-        map.insert(self.key.to_json_map_key()?, self.value.to_json()?);
         Ok(())
     }
 
@@ -166,21 +140,6 @@ impl CafMapEntry
             }
             Self::MacroParam(param) => {
                 param.write_to_with_space(writer, space)?;
-            }
-        }
-        Ok(())
-    }
-
-    pub fn add_to_json(&self, map: &mut serde_json::Map<String, serde_json::Value>) -> Result<(), std::io::Error>
-    {
-        match self {
-            Self::KeyValue(keyvalue) => {
-                keyvalue.add_to_json(map)?;
-            }
-            Self::MacroParam(param) => {
-                return Err(std::io::Error::other(format!(
-                    "macro param {:?} in caf map entry when converting to JSON", param
-                )));
             }
         }
         Ok(())
@@ -247,15 +206,6 @@ impl CafMap
         self.end_fill.write_to(writer)?;
         writer.write("}".as_bytes())?;
         Ok(())
-    }
-
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        let mut map = serde_json::Map::with_capacity(self.entries.len());
-        for entry in self.entries.iter() {
-            entry.add_to_json(&mut map)?;
-        }
-        Ok(serde_json::Value::Object(map))
     }
 
     pub fn recover_fill(&mut self, other: &Self)

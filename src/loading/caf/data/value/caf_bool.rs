@@ -28,11 +28,6 @@ impl CafBool
         Ok(())
     }
 
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        Ok(serde_json::Value::Bool(self.value))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);

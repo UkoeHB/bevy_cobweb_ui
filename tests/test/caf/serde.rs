@@ -16,9 +16,6 @@ use std::marker::PhantomData;
 
 use super::helpers::*;
 
-// TODO: test newtype and newtype variant of tuple
-// TODO: test newtype of vec as inner value
-// TODO: test layered newtypes
 // TODO: test built-in values
 // TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin, ??)
 

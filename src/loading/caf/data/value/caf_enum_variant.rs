@@ -26,11 +26,6 @@ impl CafEnumVariantIdentifier
         Ok(())
     }
 
-    pub fn to_json_string(&self) -> Result<String, std::io::Error>
-    {
-        Ok(String::from(self.name.as_str()))
-    }
-
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
@@ -102,43 +97,6 @@ impl CafEnumVariant
             }
         }
         Ok(())
-    }
-
-    pub fn to_json(&self) -> Result<serde_json::Value, std::io::Error>
-    {
-        match self {
-            Self::Unit { id } => {
-                // "..id.."
-                Ok(serde_json::Value::String(id.to_json_string()?))
-            }
-            Self::Tuple { id, tuple } => {
-                // {"..id..": [..tuple items..]}
-                // If there is one tuple-enum item then there will be no wrapping array.
-                let key = id.to_json_string()?;
-                let value = tuple.to_json_for_enum()?;
-                let mut map = serde_json::Map::default();
-                map.insert(key, value);
-                Ok(serde_json::Value::Object(map))
-            }
-            Self::Array { id, array } => {
-                // {"..id..": [..array items..]}
-                // Note that unlike tuples, enum-tuples of single items don't need a wrapping array in JSON.
-                // So we just paste the CafArray in directly.
-                let key = id.to_json_string()?;
-                let value = array.to_json()?;
-                let mut map = serde_json::Map::default();
-                map.insert(key, value);
-                Ok(serde_json::Value::Object(map))
-            }
-            Self::Map { id, map } => {
-                // {"..id..": {..map items..}}
-                let key = id.to_json_string()?;
-                let value = map.to_json()?;
-                let mut map = serde_json::Map::default();
-                map.insert(key, value);
-                Ok(serde_json::Value::Object(map))
-            }
-        }
     }
 
     pub fn recover_fill(&mut self, other: &Self)
