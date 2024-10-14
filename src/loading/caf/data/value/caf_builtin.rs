@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use zerocopy::IntoBytes;
 
 use crate::prelude::*;
 
@@ -9,7 +8,9 @@ use crate::prelude::*;
 fn to_hex_int(num: f64) -> Option<u8>
 {
     let converted = (num * 256.0f64 - 1.0) as u8;
-    if num as f32 != ((converted as f64 + 1.0) / (256.0f64)) as f32 {
+    let left = num as f32;
+    let right = ((converted as f64 + 1.0) / (256.0f64)) as f32;
+    if left != right {
         return None;
     }
     Some(converted)
@@ -17,26 +18,9 @@ fn to_hex_int(num: f64) -> Option<u8>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn write_hex_digit(digit: u8, writer: &mut impl std::io::Write)
+fn write_num_as_hex(num: u8, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
 {
-    writer
-        .write(
-            char::from_digit(digit as u32, 16)
-                .unwrap()
-                .to_ascii_uppercase()
-                .as_bytes(),
-        )
-        .expect("writing char should succeed");
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn write_num_as_hex(num: u8, writer: &mut impl std::io::Write)
-{
-    let upper = num >> 4;
-    let lower = num & 0xF;
-    write_hex_digit(upper, writer);
-    write_hex_digit(lower, writer);
+    write!(writer, "{:02X}", num)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -60,14 +44,15 @@ impl CafHexColor
     pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
         -> Result<(), std::io::Error>
     {
+        println!("PRINTING COLOR: {:?}", self.color);
         self.fill.write_to_or_else(writer, space)?;
         writer.write("#".as_bytes()).unwrap();
         if self.color.alpha != 1.0 {
-            write_num_as_hex((self.color.alpha - 1. / 256.) as u8, writer);
+            write_num_as_hex((self.color.alpha * 255.) as u8, writer)?;
         }
-        write_num_as_hex((self.color.red - 1. / 256.) as u8, writer);
-        write_num_as_hex((self.color.green - 1. / 256.) as u8, writer);
-        write_num_as_hex((self.color.blue - 1. / 256.) as u8, writer);
+        write_num_as_hex((self.color.red * 255.) as u8, writer)?;
+        write_num_as_hex((self.color.green * 255.) as u8, writer)?;
+        write_num_as_hex((self.color.blue * 255.) as u8, writer)?;
         Ok(())
     }
 
@@ -132,7 +117,7 @@ impl CafBuiltin
             Self::Val { fill, number, val } => {
                 fill.write_to_or_else(writer, space)?;
                 if let Some(number) = number {
-                    number.write_to(writer)?;
+                    number.write_to_simplified(writer)?;
                 }
                 match val {
                     Val::Auto => {
@@ -179,12 +164,11 @@ impl CafBuiltin
     pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CafValue) -> CafResult<Option<Self>>
     {
         if typename == "Color" && variant == "Srgba" {
-            let CafValue::EnumVariant(CafEnumVariant::Map { id, map }) = value else { return Ok(None) };
-            if id.name != "Srgba" {
-                return Ok(None);
-            }
+            println!("COLOR");
+            let CafValue::Map(CafMap { entries, .. }) = value else { return Ok(None) };
+            println!("ENTRIES");
             let mut color = Srgba::default();
-            for entry in map.entries.iter() {
+            for entry in entries.iter() {
                 let CafMapEntry::KeyValue(keyval) = entry else { return Err(CafError::MalformedBuiltin) };
                 let CafMapKey::FieldName { fill: _, name } = &keyval.key else {
                     return Err(CafError::MalformedBuiltin);
@@ -206,6 +190,7 @@ impl CafBuiltin
                 }
             }
 
+            println!("HEX COLOR");
             return Ok(CafHexColor::try_from(color).map(|c| Self::Color(c)).ok());
         }
 

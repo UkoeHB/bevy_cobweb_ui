@@ -252,6 +252,26 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BuiltinCollection
+{
+    pub auto: Val,
+    pub px: Val,
+    pub percent: Val,
+    pub vw: Val,
+    pub vh: Val,
+    pub vmin: Val,
+    pub vmax: Val,
+    pub color: Color,
+}
+
+impl ApplyLoadable for BuiltinCollection
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub struct SerdeTypesPlugin;
 
 impl Plugin for SerdeTypesPlugin
@@ -281,7 +301,8 @@ impl Plugin for SerdeTypesPlugin
             .register_derived::<MultiGeneric<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>>()
             .register_derived::<EnumGeneric<bool>>()
             .register_derived::<EnumGeneric<UnitStruct>>()
-            .register_derived::<EnumGeneric<SingleGeneric<u32>>>();
+            .register_derived::<EnumGeneric<SingleGeneric<u32>>>()
+            .register_derived::<BuiltinCollection>();
     }
 }
 

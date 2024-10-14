@@ -122,6 +122,7 @@ impl CafSceneLayer
 // - Parsing context must keep track of the layer depth increment in order to place layers in the right positions.
 //   - Note that in scene macro defs, the first layer is anonymous so depth tracking needs to be relative to the
 //   first child layer encountered.
+// - Layer entries should not have the same names unless anonymous.
 
 //-------------------------------------------------------------------------------------------------------------------
 
