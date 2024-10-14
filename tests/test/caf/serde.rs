@@ -14,10 +14,14 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
+use bevy::prelude::*;
+
 use super::helpers::*;
 
 // TODO: test built-in values
+// TODO: test u128/i128 and NaN/inf/-inf
 // TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin, ??)
+// TODO: clean up println/print statements
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -255,6 +259,29 @@ fn enum_generic()
         "EnumGeneric<SingleGeneric<u32>>::A{uint:1}",
         "A{uint:1}",
         EnumGeneric::<SingleGeneric<u32>>::A { uint: 1, _p: PhantomData },
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn builtins()
+{
+    let app = prepare_test_app();
+    test_equivalence(
+        app.world(),
+        "BuiltinCollection{auto:auto px:1px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
+        "{auto:auto px:1px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
+        BuiltinCollection {
+            auto: Val::Auto,
+            px: Val::Px(1.0),
+            percent: Val::Percent(1.0),
+            vw: Val::Vw(1.0),
+            vh: Val::Vh(1.0),
+            vmin: Val::VMin(1.0),
+            vmax: Val::VMax(1.0),
+            color: Color::Srgba(Default::default()),
+        },
     );
 }
 

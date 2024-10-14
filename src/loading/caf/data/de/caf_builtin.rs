@@ -1,6 +1,7 @@
 use bevy::color::Srgba;
 use bevy::ui::Val;
 use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, Unexpected, VariantAccess, Visitor};
+use serde::forward_to_deserialize_any;
 
 use crate::prelude::*;
 
@@ -11,7 +12,7 @@ where
     V: Visitor<'de>,
 {
     match builtin {
-        CafBuiltin::Color(CafHexColor { color, .. }) => visitor.visit_map(SrgbaAccess::new(*color)),
+        CafBuiltin::Color(CafHexColor { color, .. }) => visitor.visit_enum(ColorSrgbaAccess { color: *color }),
         CafBuiltin::Val { val, .. } => visitor.visit_enum(ValAccess { val: *val }),
     }
 }
@@ -19,6 +20,101 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 // TODO: is there an easier way to do this by leveraging the Serialize implementation of Srgba?
+struct ColorSrgbaAccess
+{
+    color: Srgba,
+}
+
+impl<'de> EnumAccess<'de> for ColorSrgbaAccess
+{
+    type Error = CafError;
+    type Variant = ColorSrgbaVariantAccess;
+
+    fn variant_seed<V>(self, seed: V) -> CafResult<(V::Value, Self::Variant)>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        let variant = "Srgba".into_deserializer();
+        let visitor = ColorSrgbaVariantAccess { color: self.color };
+        seed.deserialize(variant).map(|v| (v, visitor))
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct ColorSrgbaVariantAccess
+{
+    color: Srgba,
+}
+
+impl<'de> VariantAccess<'de> for ColorSrgbaVariantAccess
+{
+    type Error = CafError;
+
+    fn unit_variant(self) -> CafResult<()>
+    {
+        Err(serde::de::Error::invalid_type(
+            Unexpected::UnitVariant,
+            &"newtype variant Srgba",
+        ))
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> CafResult<T::Value>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        seed.deserialize(SrgbaDeserializer { color: self.color })
+    }
+
+    fn tuple_variant<V>(self, _len: usize, _visitor: V) -> CafResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        Err(serde::de::Error::invalid_type(
+            Unexpected::TupleVariant,
+            &"newtype variant Srgba",
+        ))
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], _visitor: V) -> CafResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        Err(serde::de::Error::invalid_type(
+            Unexpected::StructVariant,
+            &"newtype variant Srgba",
+        ))
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct SrgbaDeserializer
+{
+    color: Srgba,
+}
+
+impl<'de> serde::Deserializer<'de> for SrgbaDeserializer
+{
+    type Error = CafError;
+
+    fn deserialize_any<V>(self, visitor: V) -> CafResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        visitor.visit_map(SrgbaAccess::new(self.color))
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+        bytes byte_buf option unit seq tuple
+        map identifier ignored_any
+        enum newtype_struct unit_struct tuple_struct struct
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 struct SrgbaAccess
 {
     next: usize,
@@ -67,10 +163,7 @@ impl<'de> MapAccess<'de> for SrgbaAccess
                 let name = "alpha".into_deserializer();
                 seed.deserialize(name).map(Some)
             }
-            _ => Err(serde::de::Error::invalid_value(
-                Unexpected::Other(&"no remaining Srgba fields"),
-                &"Srgba fully constructed",
-            )),
+            _ => Ok(None),
         }
     }
 

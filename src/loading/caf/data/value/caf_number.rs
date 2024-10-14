@@ -6,7 +6,7 @@ use crate::prelude::*;
 
 /// Stores the original number value string and also the number deserialized from JSON.
 ///
-/// We need to keep the original so it can be reserialized in the correct format.
+/// We need to keep the original so it can be reserialized in the pre-existing format if possible.
 ///
 /// We store a JSON value for convenience instead of implementing our own deserialization routine.
 //todo: include nan and +/-inf
@@ -25,6 +25,39 @@ impl CafNumberValue
         Ok(())
     }
 
+    /// Writes floats as ints if they have a negligible fractional component.
+    pub fn write_to_simplified(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    {
+        if !self.deserialized.is_f64() || !self.deserialized.as_f64().unwrap().is_finite() {
+            writer.write(self.original.as_bytes())?;
+            return Ok(());
+        }
+
+        let value = self.deserialized.as_f64().unwrap();
+        if value >= 0.0f64 && value <= (u64::MAX as f64) {
+            let converted = value as u64;
+            let diff = value - (converted as f64);
+            if diff.is_subnormal() || diff == 0.0f64 {
+                let mut buffer = itoa::Buffer::new();
+                let formatted = buffer.format(converted);
+                writer.write(formatted.as_bytes())?;
+                return Ok(());
+            }
+        } else if value >= (i64::MIN as f64) && value <= (i64::MAX as f64) {
+            let converted = value as i64;
+            let diff = value - (converted as f64);
+            if diff.is_subnormal() || diff == 0.0f64 {
+                let mut buffer = itoa::Buffer::new();
+                let formatted = buffer.format(converted);
+                writer.write(formatted.as_bytes())?;
+                return Ok(());
+            }
+        }
+
+        writer.write(self.original.as_bytes())?;
+        Ok(())
+    }
+
     // TODO: replace with custom representation
     pub fn from_json_number(json_num: serde_json::Number) -> Self
     {
@@ -33,7 +66,7 @@ impl CafNumberValue
             SmolStr::from(buffer.format(value))
         } else if let Some(value) = json_num.as_f64() {
             let mut buffer = ryu::Buffer::new();
-            SmolStr::from(buffer.format_finite(value))
+            SmolStr::from(buffer.format(value)) // Includes NaN and inf/-inf
         } else if let Some(value) = json_num.as_i64() {
             let mut buffer = itoa::Buffer::new();
             SmolStr::from(buffer.format(value))
