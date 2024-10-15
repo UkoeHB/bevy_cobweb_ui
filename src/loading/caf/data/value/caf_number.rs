@@ -42,7 +42,7 @@ impl CafNumberValue
                 }
                 let converted = val as u128;
                 let diff = val - (converted as f64);
-                if diff.is_subnormal() || diff == 0.0f64 {
+                if diff.is_subnormal() || diff == 0.0 {
                     return Some(converted);
                 }
                 None
@@ -53,7 +53,7 @@ impl CafNumberValue
                 }
                 let converted = val as u128;
                 let diff = val - (converted as f32);
-                if diff.is_subnormal() || diff == 0.0f32 {
+                if diff.is_subnormal() || diff == 0.0 {
                     return Some(converted);
                 }
                 None
@@ -79,7 +79,7 @@ impl CafNumberValue
                 }
                 let converted = val as i128;
                 let diff = val - (converted as f64);
-                if diff.is_subnormal() || diff == 0.0f64 {
+                if diff.is_subnormal() || diff == 0.0 {
                     return Some(converted);
                 }
                 None
@@ -90,7 +90,7 @@ impl CafNumberValue
                 }
                 let converted = val as i128;
                 let diff = val - (converted as f32);
-                if diff.is_subnormal() || diff == 0.0f32 {
+                if diff.is_subnormal() || diff == 0.0 {
                     return Some(converted);
                 }
                 None
