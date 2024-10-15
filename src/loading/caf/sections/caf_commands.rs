@@ -12,7 +12,7 @@ pub enum CafCommandEntry
 
 impl CafCommandEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::Instruction(instruction) => {
@@ -42,11 +42,11 @@ pub struct CafCommands
 
 impl CafCommands
 {
-    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#commands".as_bytes())?;
+        writer.write_bytes("#commands".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }

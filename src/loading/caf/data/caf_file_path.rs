@@ -1,19 +1,20 @@
 //-------------------------------------------------------------------------------------------------------------------
-
 use std::sync::Arc;
 
 use bevy::prelude::Deref;
+
+use crate::prelude::*;
 
 #[derive(Debug, Clone, PartialEq, Deref)]
 pub struct CafFilePath(pub Arc<str>);
 
 impl CafFilePath
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write("\"".as_bytes())?;
-        writer.write(self.as_bytes())?;
-        writer.write("\"".as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
+        writer.write_bytes(self.as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
         Ok(())
     }
 }

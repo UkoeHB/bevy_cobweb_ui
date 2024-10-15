@@ -1,80 +1,124 @@
-use smol_str::SmolStr;
-
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores the original number value string and also the number deserialized from JSON.
-///
-/// We need to keep the original so it can be reserialized in the pre-existing format if possible.
-///
-/// We store a JSON value for convenience instead of implementing our own deserialization routine.
-//todo: include nan and +/-inf
 #[derive(Debug, Clone, PartialEq)]
-pub struct CafNumberValue
+pub enum CafNumberValue
 {
-    pub original: SmolStr,
-    pub deserialized: serde_json::Number,
+    Uint(u128),
+    Int(i128),
+    Float64(f64),
+    /// Separate from `Float64` to avoid loss of exactness when going rust -> caf number -> serialized to file.
+    Float32(f32),
 }
 
 impl CafNumberValue
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write(self.original.as_bytes())?;
-        Ok(())
+        match *self {
+            Self::Uint(val) => writer.write_u128(val),
+            Self::Int(val) => writer.write_i128(val),
+            Self::Float64(val) => writer.write_f64(val),
+            Self::Float32(val) => writer.write_f32(val),
+        }
     }
 
-    /// Writes floats as ints if they have a negligible fractional component.
-    pub fn write_to_simplified(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    /// Converts the number to `u128` if possible to do so without precision loss.
+    pub fn as_u128(&self) -> Option<u128>
     {
-        if !self.deserialized.is_f64() || !self.deserialized.as_f64().unwrap().is_finite() {
-            writer.write(self.original.as_bytes())?;
-            return Ok(());
-        }
-
-        let value = self.deserialized.as_f64().unwrap();
-        if value >= 0.0f64 && value <= (u64::MAX as f64) {
-            let converted = value as u64;
-            let diff = value - (converted as f64);
-            if diff.is_subnormal() || diff == 0.0f64 {
-                let mut buffer = itoa::Buffer::new();
-                let formatted = buffer.format(converted);
-                writer.write(formatted.as_bytes())?;
-                return Ok(());
+        match *self {
+            Self::Uint(val) => Some(val),
+            Self::Int(val) => {
+                if val >= 0i128 {
+                    Some(val as u128)
+                } else {
+                    None
+                }
             }
-        } else if value >= (i64::MIN as f64) && value <= (i64::MAX as f64) {
-            let converted = value as i64;
-            let diff = value - (converted as f64);
-            if diff.is_subnormal() || diff == 0.0f64 {
-                let mut buffer = itoa::Buffer::new();
-                let formatted = buffer.format(converted);
-                writer.write(formatted.as_bytes())?;
-                return Ok(());
+            Self::Float64(val) => {
+                if !val.is_finite() {
+                    return None;
+                }
+                let converted = val as u128;
+                let diff = val - (converted as f64);
+                if diff.is_subnormal() || diff == 0.0f64 {
+                    return Some(converted);
+                }
+                None
+            }
+            Self::Float32(val) => {
+                if !val.is_finite() {
+                    return None;
+                }
+                let converted = val as u128;
+                let diff = val - (converted as f32);
+                if diff.is_subnormal() || diff == 0.0f32 {
+                    return Some(converted);
+                }
+                None
             }
         }
-
-        writer.write(self.original.as_bytes())?;
-        Ok(())
     }
 
-    // TODO: replace with custom representation
-    pub fn from_json_number(json_num: serde_json::Number) -> Self
+    /// Converts the number to `i128` if possible to do so without precision loss.
+    pub fn as_i128(&self) -> Option<i128>
     {
-        let string = if let Some(value) = json_num.as_u64() {
-            let mut buffer = itoa::Buffer::new();
-            SmolStr::from(buffer.format(value))
-        } else if let Some(value) = json_num.as_f64() {
-            let mut buffer = ryu::Buffer::new();
-            SmolStr::from(buffer.format(value)) // Includes NaN and inf/-inf
-        } else if let Some(value) = json_num.as_i64() {
-            let mut buffer = itoa::Buffer::new();
-            SmolStr::from(buffer.format(value))
-        } else {
-            unreachable!();
-        };
+        match *self {
+            Self::Uint(val) => {
+                if val <= (i128::MAX as u128) {
+                    Some(val as i128)
+                } else {
+                    None
+                }
+            }
+            Self::Int(val) => Some(val),
+            Self::Float64(val) => {
+                if !val.is_finite() {
+                    return None;
+                }
+                let converted = val as i128;
+                let diff = val - (converted as f64);
+                if diff.is_subnormal() || diff == 0.0f64 {
+                    return Some(converted);
+                }
+                None
+            }
+            Self::Float32(val) => {
+                if !val.is_finite() {
+                    return None;
+                }
+                let converted = val as i128;
+                let diff = val - (converted as f32);
+                if diff.is_subnormal() || diff == 0.0f32 {
+                    return Some(converted);
+                }
+                None
+            }
+        }
+    }
 
-        Self { original: string, deserialized: json_num }
+    /// Converts the number to `f64` if possible to do so without loss of precision.
+    pub fn as_f64(&self) -> Option<f64>
+    {
+        match *self {
+            Self::Uint(val) => {
+                if (val as f64) as u128 == val {
+                    Some(val as f64)
+                } else {
+                    None
+                }
+            }
+            Self::Int(val) => {
+                if (val as f64) as i128 == val {
+                    Some(val as f64)
+                } else {
+                    None
+                }
+            }
+            Self::Float64(val) => Some(val),
+            Self::Float32(val) => Some(val as f64),
+        }
     }
 }
 
@@ -82,7 +126,7 @@ impl From<i8> for CafNumberValue
 {
     fn from(number: i8) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Int(number as i128)
     }
 }
 
@@ -90,7 +134,7 @@ impl From<i16> for CafNumberValue
 {
     fn from(number: i16) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Int(number as i128)
     }
 }
 
@@ -98,7 +142,7 @@ impl From<i32> for CafNumberValue
 {
     fn from(number: i32) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Int(number as i128)
     }
 }
 
@@ -106,7 +150,7 @@ impl From<i64> for CafNumberValue
 {
     fn from(number: i64) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Int(number as i128)
     }
 }
 
@@ -114,8 +158,7 @@ impl From<i128> for CafNumberValue
 {
     fn from(number: i128) -> Self
     {
-        let number = i64::try_from(number).expect("i128 not yet fully supported");
-        Self::from_json_number(number.into())
+        Self::Int(number)
     }
 }
 
@@ -123,7 +166,7 @@ impl From<u8> for CafNumberValue
 {
     fn from(number: u8) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Uint(number as u128)
     }
 }
 
@@ -131,7 +174,7 @@ impl From<u16> for CafNumberValue
 {
     fn from(number: u16) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Uint(number as u128)
     }
 }
 
@@ -139,7 +182,7 @@ impl From<u32> for CafNumberValue
 {
     fn from(number: u32) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Uint(number as u128)
     }
 }
 
@@ -147,7 +190,7 @@ impl From<u64> for CafNumberValue
 {
     fn from(number: u64) -> Self
     {
-        Self::from_json_number(number.into())
+        Self::Uint(number as u128)
     }
 }
 
@@ -155,8 +198,7 @@ impl From<u128> for CafNumberValue
 {
     fn from(number: u128) -> Self
     {
-        let number = u64::try_from(number).expect("u128 not yet fully supported");
-        Self::from_json_number(number.into())
+        Self::Uint(number as u128)
     }
 }
 
@@ -164,7 +206,7 @@ impl From<f32> for CafNumberValue
 {
     fn from(number: f32) -> Self
     {
-        Self::from_json_number(serde_json::Number::from_f64(number as f64).unwrap())
+        Self::Float32(number)
     }
 }
 
@@ -172,7 +214,7 @@ impl From<f64> for CafNumberValue
 {
     fn from(number: f64) -> Self
     {
-        Self::from_json_number(serde_json::Number::from_f64(number as f64).unwrap())
+        Self::Float64(number)
     }
 }
 
@@ -180,6 +222,7 @@ impl From<f64> for CafNumberValue
 Parsing:
 - Use regex to identify number, then parse it using a JSON deserializer with serde_json::Number::from_str() and
 check result
+- See https://docs.rs/lexical-core/1.0.2/lexical_core/
 */
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -193,14 +236,14 @@ pub struct CafNumber
 
 impl CafNumber
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
     pub fn write_to_with_space(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut impl RawSerializer,
         space: impl AsRef<str>,
     ) -> Result<(), std::io::Error>
     {

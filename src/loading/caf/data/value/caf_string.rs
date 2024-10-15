@@ -1,12 +1,9 @@
-use std::io::Cursor;
-
 use smallvec::SmallVec;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Currently only supports ASCII (2-hex-digit) control characters.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CafStringSegment
 {
@@ -14,11 +11,9 @@ pub struct CafStringSegment
     pub leading_spaces: usize,
     /// The originally-parsed bytes, cached for writing back to raw bytes.
     ///
-    /// We do this as a shortcut to avoid extra logic for serializing a normal string. One way would be
-    /// using `serde_json::ser::write_to()` to a string, but the problem is needing to crop the first and last
-    /// characters which will be `"` (since we are potentially multi-line). There is also a problem for strings
-    /// that contain both explicit `\n` newlines and also implicit newlines from being on multiple lines. That
-    /// distinction is lost once the string is fully converted. Note that it's possible editors can't support
+    /// We do this because bytes -> string -> bytes is potentially lossy, since the -> bytes step will convert
+    /// newlines and Unicode characters to escape sequences even if they were literals in the original bytes.
+    ///  Note that it's possible editors can't support
     /// a mix of explicit and implicit newlines, and they will just have to aggressively replace implicit newlines
     /// with explicit newlines.
     //todo: replace this with a shared memory structure like Bytes or Cow<[u8]>?
@@ -28,20 +23,14 @@ pub struct CafStringSegment
 
 impl CafStringSegment
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         for _ in 0..self.leading_spaces {
-            writer.write(" ".as_bytes())?;
+            writer.write_bytes(" ".as_bytes())?;
         }
         // Here we write raw bytes.
-        writer.write(&self.original)?;
+        writer.write_bytes(&self.original)?;
         Ok(())
-    }
-
-    pub fn write_to_string(&self, buff: &mut String)
-    {
-        // Here we write as a deserialized string.
-        buff.push_str(self.segment.as_str());
     }
 }
 
@@ -74,9 +63,12 @@ impl TryFrom<String> for CafStringSegment
     fn try_from(segment: String) -> CafResult<Self>
     {
         let mut original = Vec::with_capacity(segment.len());
-        let mut cursor = Cursor::new(&mut original);
-        format_escaped_str_contents(&mut cursor, segment.as_str())
-            .map_err(|e| CafError::Message(format!("{e:?}")))?;
+        let mut buff = [0u8; 4];
+        // escape_default will insert escapes for all ASCII control characters (e.g. \n) and Unicode characters.
+        for c in segment.chars().flat_map(|c| c.escape_default()) {
+            let encoded = c.encode_utf8(&mut buff);
+            original.extend_from_slice(encoded.as_bytes());
+        }
 
         Ok(Self { leading_spaces: 0, original, segment })
     }
@@ -103,27 +95,27 @@ pub struct CafString
 
 impl CafString
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
     pub fn write_to_with_space(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut impl RawSerializer,
         space: impl AsRef<str>,
     ) -> Result<(), std::io::Error>
     {
         self.fill.write_to_or_else(writer, space)?;
-        writer.write("\"".as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
         let num_segments = self.segments.len();
         for (idx, segment) in self.segments.iter().enumerate() {
             segment.write_to(writer)?;
             if num_segments > 1 && idx + 1 < num_segments {
-                writer.write("\\\n".as_bytes())?;
+                writer.write_bytes("\\\n".as_bytes())?;
             }
         }
-        writer.write("\"".as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
         Ok(())
     }
 

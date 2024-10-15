@@ -13,11 +13,10 @@ pub struct CafRustPrimitive
 
 impl CafRustPrimitive
 {
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         self.fill.write_to_or_else(writer, space)?;
-        writer.write(self.primitive.as_bytes())?;
+        writer.write_bytes(self.primitive.as_bytes())?;
         Ok(())
     }
 
@@ -61,20 +60,19 @@ pub enum CafGenericItem
 
 impl CafGenericItem
 {
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         match self {
             Self::Struct { fill, id, generics } => {
                 fill.write_to_or_else(writer, space)?;
-                writer.write(id.as_bytes())?;
+                writer.write_bytes(id.as_bytes())?;
                 if let Some(generics) = generics {
                     generics.write_to(writer)?;
                 }
             }
             Self::Tuple { fill, values, close_fill } => {
                 fill.write_to_or_else(writer, space)?;
-                writer.write("(".as_bytes())?;
+                writer.write_bytes("(".as_bytes())?;
                 for (idx, generic) in values.iter().enumerate() {
                     if idx == 0 {
                         generic.write_to_with_space(writer, "")?;
@@ -83,7 +81,7 @@ impl CafGenericItem
                     }
                 }
                 close_fill.write_to(writer)?;
-                writer.write(")".as_bytes())?;
+                writer.write_bytes(")".as_bytes())?;
             }
             Self::RustPrimitive(primitive) => {
                 primitive.write_to_with_space(writer, space)?;
@@ -167,8 +165,7 @@ pub enum CafGenericValue
 
 impl CafGenericValue
 {
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         match self {
             Self::Item(val) => {
@@ -232,10 +229,10 @@ pub struct CafGenerics
 
 impl CafGenerics
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.open_fill.write_to(writer)?;
-        writer.write("<".as_bytes())?;
+        writer.write_bytes("<".as_bytes())?;
         for (idx, generic) in self.values.iter().enumerate() {
             if idx == 0 {
                 generic.write_to_with_space(writer, "")?;
@@ -244,7 +241,7 @@ impl CafGenerics
             }
         }
         self.close_fill.write_to(writer)?;
-        writer.write(">".as_bytes())?;
+        writer.write_bytes(">".as_bytes())?;
         Ok(())
     }
 

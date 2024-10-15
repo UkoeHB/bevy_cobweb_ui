@@ -10,11 +10,11 @@ pub struct CafSceneNodeName(pub SmolStr);
 
 impl CafSceneNodeName
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write("\"".as_bytes())?;
-        writer.write(self.as_bytes())?;
-        writer.write("\"".as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
+        writer.write_bytes(self.as_bytes())?;
+        writer.write_bytes("\"".as_bytes())?;
         Ok(())
     }
 }
@@ -38,7 +38,7 @@ pub enum CafSceneLayerEntry
 
 impl CafSceneLayerEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::Instruction(entry) => {
@@ -98,7 +98,7 @@ pub struct CafSceneLayer
 
 impl CafSceneLayer
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.name_fill.write_to_or_else(writer, "\n")?;
         self.name.write_to(writer)?;
@@ -135,11 +135,11 @@ pub struct CafScenes
 
 impl CafScenes
 {
-    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#scenes".as_bytes())?;
+        writer.write_bytes("#scenes".as_bytes())?;
         for scene in self.scenes.iter() {
             scene.write_to(writer)?;
         }

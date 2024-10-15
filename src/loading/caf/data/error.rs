@@ -116,6 +116,22 @@ impl From<CafError> for std::io::Error
     }
 }
 
+impl From<std::io::Error> for CafError
+{
+    fn from(e: std::io::Error) -> Self
+    {
+        Self::Io(e)
+    }
+}
+
+impl From<String> for CafError
+{
+    fn from(e: String) -> Self
+    {
+        Self::Message(e)
+    }
+}
+
 impl Display for CafError
 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result

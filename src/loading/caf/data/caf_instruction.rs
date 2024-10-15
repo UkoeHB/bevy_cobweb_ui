@@ -16,10 +16,10 @@ pub struct CafInstructionIdentifier
 
 impl CafInstructionIdentifier
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.start_fill.write_to(writer)?;
-        writer.write(self.name.as_bytes())?;
+        writer.write_bytes(self.name.as_bytes())?;
         if let Some(generics) = &self.generics {
             generics.write_to(writer)?;
         }
@@ -106,7 +106,7 @@ pub enum CafInstruction
 
 impl CafInstruction
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::Unit { id } => {
@@ -126,7 +126,7 @@ impl CafInstruction
             }
             Self::Enum { id, variant } => {
                 id.write_to(writer)?;
-                writer.write("::".as_bytes())?;
+                writer.write_bytes("::".as_bytes())?;
                 variant.write_to(writer)?;
             }
         }
