@@ -14,16 +14,15 @@ pub struct CafTuple
 
 impl CafTuple
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("(".as_bytes())?;
+        writer.write_bytes("(".as_bytes())?;
         for (idx, entry) in self.entries.iter().enumerate() {
             if idx == 0 {
                 entry.write_to(writer)?;
@@ -32,7 +31,7 @@ impl CafTuple
             }
         }
         self.end_fill.write_to(writer)?;
-        writer.write(")".as_bytes())?;
+        writer.write_bytes(")".as_bytes())?;
         Ok(())
     }
 

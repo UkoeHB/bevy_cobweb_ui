@@ -7,13 +7,16 @@ use crate::prelude::*;
 /// Converts a color field number to a pair of hex digits if there is no precision loss.
 fn to_hex_int(num: f64) -> Option<u8>
 {
-    let converted = (num * 256.0f64 - 1.0) as u8;
-    let left = num as f32;
-    let right = ((converted as f64 + 1.0) / (256.0f64)) as f32;
-    if left != right {
-        return None;
+    let converted = (num * 255.0f64) as u8;
+    let left = num;
+    let right = (converted as f64) / (255.0f64);
+    let diff = (left - right) as f32;
+
+    if diff.is_subnormal() || diff == 0.0 {
+        Some(converted)
+    } else {
+        None
     }
-    Some(converted)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -36,17 +39,16 @@ pub struct CafHexColor
 
 impl CafHexColor
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         println!("PRINTING COLOR: {:?}", self.color);
         self.fill.write_to_or_else(writer, space)?;
-        writer.write("#".as_bytes()).unwrap();
+        writer.write_bytes("#".as_bytes()).unwrap();
         if self.color.alpha != 1.0 {
             write_num_as_hex((self.color.alpha * 255.) as u8, writer)?;
         }
@@ -102,13 +104,12 @@ pub enum CafBuiltin
 
 impl CafBuiltin
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         match self {
             Self::Color(color) => {
@@ -117,29 +118,29 @@ impl CafBuiltin
             Self::Val { fill, number, val } => {
                 fill.write_to_or_else(writer, space)?;
                 if let Some(number) = number {
-                    number.write_to_simplified(writer)?;
+                    number.write_to(writer)?;
                 }
                 match val {
                     Val::Auto => {
-                        writer.write("auto".as_bytes())?;
+                        writer.write_bytes("auto".as_bytes())?;
                     }
                     Val::Percent(..) => {
-                        writer.write("%".as_bytes())?;
+                        writer.write_bytes("%".as_bytes())?;
                     }
                     Val::Px(..) => {
-                        writer.write("px".as_bytes())?;
+                        writer.write_bytes("px".as_bytes())?;
                     }
                     Val::Vw(..) => {
-                        writer.write("vw".as_bytes())?;
+                        writer.write_bytes("vw".as_bytes())?;
                     }
                     Val::Vh(..) => {
-                        writer.write("vh".as_bytes())?;
+                        writer.write_bytes("vh".as_bytes())?;
                     }
                     Val::VMin(..) => {
-                        writer.write("vmin".as_bytes())?;
+                        writer.write_bytes("vmin".as_bytes())?;
                     }
                     Val::VMax(..) => {
-                        writer.write("vmax".as_bytes())?;
+                        writer.write_bytes("vmax".as_bytes())?;
                     }
                 }
             }
@@ -174,7 +175,7 @@ impl CafBuiltin
                     return Err(CafError::MalformedBuiltin);
                 };
                 let CafValue::Number(num) = &keyval.value else { return Ok(None) };
-                let Some(float) = num.number.deserialized.as_f64() else { return Ok(None) };
+                let Some(float) = num.number.as_f64() else { return Ok(None) };
                 let value = float as f32;
 
                 if name == "red" {
@@ -196,7 +197,7 @@ impl CafBuiltin
 
         if typename == "Val" {
             let CafValue::Number(num) = value else { return Ok(None) };
-            let Some(float) = num.number.deserialized.as_f64() else { return Ok(None) };
+            let Some(float) = num.number.as_f64() else { return Ok(None) };
             let extracted = float as f32;
 
             let val = match variant {

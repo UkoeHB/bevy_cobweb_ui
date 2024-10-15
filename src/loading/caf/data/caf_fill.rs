@@ -1,5 +1,7 @@
 use smol_str::SmolStr;
 
+use crate::prelude::*;
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Section of a CAF file containing filler charaters.
@@ -15,20 +17,20 @@ pub struct CafFill
 
 impl CafFill
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write(self.string.as_bytes())?;
+        writer.write_bytes(self.string.as_bytes())?;
         Ok(())
     }
 
     pub fn write_to_or_else(
         &self,
-        writer: &mut impl std::io::Write,
+        writer: &mut impl RawSerializer,
         fallback: impl AsRef<str>,
     ) -> Result<(), std::io::Error>
     {
         if self.string.len() == 0 {
-            writer.write(fallback.as_ref().as_bytes())?;
+            writer.write_bytes(fallback.as_ref().as_bytes())?;
         } else {
             self.write_to(writer)?;
         }

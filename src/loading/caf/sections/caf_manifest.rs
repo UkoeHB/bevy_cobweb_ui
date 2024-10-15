@@ -15,11 +15,11 @@ pub enum CafManifestFile
 
 impl CafManifestFile
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::SelfRef => {
-                writer.write("self".as_bytes())?;
+                writer.write_bytes("self".as_bytes())?;
             }
             Self::File(file) => {
                 file.write_to(writer)?;
@@ -50,9 +50,9 @@ pub struct CafManifestKey(pub Arc<str>);
 
 impl CafManifestKey
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write(self.as_bytes())?;
+        writer.write_bytes(self.as_bytes())?;
         Ok(())
     }
 }
@@ -84,12 +84,12 @@ pub struct CafManifestEntry
 
 impl CafManifestEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.entry_fill.write_to_or_else(writer, "\n")?;
         self.file.write_to(writer)?;
         self.as_fill.write_to_or_else(writer, " ")?;
-        writer.write("as".as_bytes())?;
+        writer.write_bytes("as".as_bytes())?;
         self.key_fill.write_to_or_else(writer, " ")?;
         self.key.write_to(writer)?;
         Ok(())
@@ -137,11 +137,11 @@ pub struct CafManifest
 
 impl CafManifest
 {
-    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#manifest".as_bytes())?;
+        writer.write_bytes("#manifest".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }

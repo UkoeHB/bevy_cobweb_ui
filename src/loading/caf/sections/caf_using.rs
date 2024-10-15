@@ -11,9 +11,9 @@ pub struct CafUsingTypePath(pub Arc<str>);
 
 impl CafUsingTypePath
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        writer.write(self.as_bytes())?;
+        writer.write_bytes(self.as_bytes())?;
         Ok(())
     }
 }
@@ -37,7 +37,7 @@ pub struct CafUsingIdentifier(pub CafInstructionIdentifier);
 
 impl CafUsingIdentifier
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.0.write_to(writer)?;
         Ok(())
@@ -72,12 +72,12 @@ pub struct CafUsingEntry
 
 impl CafUsingEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.entry_fill.write_to_or_else(writer, "\n")?;
         self.type_path.write_to(writer)?;
         self.as_fill.write_to_or_else(writer, " ")?;
-        writer.write("as".as_bytes())?;
+        writer.write_bytes("as".as_bytes())?;
         self.identifier_fill.write_to_or_else(writer, " ")?;
         self.identifier.write_to(writer)?;
         Ok(())
@@ -126,11 +126,11 @@ pub struct CafUsing
 
 impl CafUsing
 {
-    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#using".as_bytes())?;
+        writer.write_bytes("#using".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }

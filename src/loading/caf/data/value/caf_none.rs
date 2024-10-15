@@ -10,16 +10,15 @@ pub struct CafNone
 
 impl CafNone
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         self.fill.write_to_or_else(writer, space)?;
-        writer.write("none".as_bytes())?;
+        writer.write_bytes("none".as_bytes())?;
         Ok(())
     }
 

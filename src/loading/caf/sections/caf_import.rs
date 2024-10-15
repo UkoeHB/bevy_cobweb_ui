@@ -15,14 +15,14 @@ pub enum CafImportAlias
 
 impl CafImportAlias
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::None => {
-                writer.write("_".as_bytes())?;
+                writer.write_bytes("_".as_bytes())?;
             }
             Self::Alias(alias) => {
-                writer.write(alias.as_bytes())?;
+                writer.write_bytes(alias.as_bytes())?;
             }
         }
         Ok(())
@@ -58,12 +58,12 @@ pub struct CafImportEntry
 
 impl CafImportEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.entry_fill.write_to_or_else(writer, "\n")?;
         self.key.write_to(writer)?;
         self.as_fill.write_to_or_else(writer, " ")?;
-        writer.write("as".as_bytes())?;
+        writer.write_bytes("as".as_bytes())?;
         self.alias_fill.write_to_or_else(writer, " ")?;
         self.alias.write_to(writer)?;
         Ok(())
@@ -111,11 +111,11 @@ pub struct CafImport
 
 impl CafImport
 {
-    pub fn write_to(&self, first_section: bool, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, first_section: bool, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("#import".as_bytes())?;
+        writer.write_bytes("#import".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }

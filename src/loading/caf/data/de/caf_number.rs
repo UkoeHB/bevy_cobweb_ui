@@ -10,14 +10,11 @@ impl CafNumber
     #[cold]
     pub(super) fn unexpected(&self) -> Unexpected
     {
-        if self.number.deserialized.is_f64() {
-            Unexpected::Float(self.number.deserialized.as_f64().unwrap())
-        } else if self.number.deserialized.is_u64() {
-            Unexpected::Unsigned(self.number.deserialized.as_u64().unwrap())
-        } else if self.number.deserialized.is_i64() {
-            Unexpected::Signed(self.number.deserialized.as_i64().unwrap())
-        } else {
-            unreachable!();
+        match self.number {
+            CafNumberValue::Uint(val) => Unexpected::Unsigned(val as u64),
+            CafNumberValue::Int(val) => Unexpected::Signed(val as i64),
+            CafNumberValue::Float64(val) => Unexpected::Float(val),
+            CafNumberValue::Float32(val) => Unexpected::Float(val as f64),
         }
     }
 }
@@ -31,14 +28,25 @@ macro_rules! deserialize_any {
         where
             V: Visitor<'de>,
         {
-            if self.number.deserialized.is_f64() {
-                visitor.visit_f64(self.number.deserialized.as_f64().unwrap())
-            } else if self.number.deserialized.is_u64() {
-                visitor.visit_u64(self.number.deserialized.as_u64().unwrap())
-            } else if self.number.deserialized.is_i64() {
-                visitor.visit_i64(self.number.deserialized.as_i64().unwrap())
-            } else {
-                unreachable!();
+            match self.number {
+                CafNumberValue::Uint(val) => {
+                    // Simplify to u64 if possible, in case u128 is unsupported by the visitor.
+                    if val <= u64::MAX as u128 {
+                        visitor.visit_u64(val as u64)
+                    } else {
+                        visitor.visit_u128(val)
+                    }
+                }
+                CafNumberValue::Int(val) => {
+                    // Simplify to i64 if possible, in case i128 is unsupported by the visitor.
+                    if val >= i64::MIN as i128 && val <= i64::MAX as i128 {
+                        visitor.visit_i64(val as i64)
+                    } else {
+                        visitor.visit_i128(val)
+                    }
+                }
+                CafNumberValue::Float64(val) => visitor.visit_f64(val),
+                CafNumberValue::Float32(val) => visitor.visit_f32(val),
             }
         }
     };

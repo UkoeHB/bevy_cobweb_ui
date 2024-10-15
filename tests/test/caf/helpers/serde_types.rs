@@ -43,6 +43,26 @@ impl ApplyLoadable for PlainStruct
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FloatStruct(pub f64);
+
+impl ApplyLoadable for FloatStruct
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct StringStruct(pub String);
+
+impl ApplyLoadable for StringStruct
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NewtypeStruct(pub u32);
 
 impl ApplyLoadable for NewtypeStruct
@@ -280,6 +300,8 @@ impl Plugin for SerdeTypesPlugin
     {
         app.register_derived::<UnitStruct>()
             .register_derived::<PlainStruct>()
+            .register_derived::<FloatStruct>()
+            .register_derived::<StringStruct>()
             .register_derived::<NewtypeStruct>()
             .register_derived::<WrapNewtypeStruct>()
             .register_derived::<NewtypeEnum>()

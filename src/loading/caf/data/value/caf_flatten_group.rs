@@ -11,7 +11,7 @@ pub enum CafFlattenGroupValueEntry
 
 impl CafFlattenGroupValueEntry
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::Value(value) => {
@@ -49,7 +49,7 @@ pub enum CafFlattenGroupVariant
 
 impl CafFlattenGroupVariant
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
             Self::Values(values) => {
@@ -98,19 +98,18 @@ pub struct CafFlattenGroup
 
 impl CafFlattenGroup
 {
-    pub fn write_to(&self, writer: &mut impl std::io::Write) -> Result<(), std::io::Error>
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl std::io::Write, space: &str)
-        -> Result<(), std::io::Error>
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         self.start_fill.write_to_or_else(writer, space)?;
-        writer.write("\\".as_bytes())?;
+        writer.write_bytes("\\".as_bytes())?;
         self.variant.write_to(writer)?;
         self.end_fill.write_to(writer)?;
-        writer.write("\\".as_bytes())?;
+        writer.write_bytes("\\".as_bytes())?;
         Ok(())
     }
 
