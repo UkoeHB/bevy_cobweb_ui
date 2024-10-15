@@ -19,8 +19,30 @@ impl CafNumberValue
         match *self {
             Self::Uint(val) => writer.write_u128(val),
             Self::Int(val) => writer.write_i128(val),
-            Self::Float64(val) => writer.write_f64(val),
-            Self::Float32(val) => writer.write_f32(val),
+            Self::Float64(val) => {
+                if val.is_nan() {
+                    write!(writer, "nan")
+                } else if val.is_infinite() {
+                    match val.is_sign_positive() {
+                        true => write!(writer, "inf"),
+                        false => write!(writer, "-inf"),
+                    }
+                } else {
+                    writer.write_f64(val)
+                }
+            }
+            Self::Float32(val) => {
+                if val.is_nan() {
+                    write!(writer, "nan")
+                } else if val.is_infinite() {
+                    match val.is_sign_positive() {
+                        true => write!(writer, "inf"),
+                        false => write!(writer, "-inf"),
+                    }
+                } else {
+                    writer.write_f32(val)
+                }
+            }
         }
     }
 
