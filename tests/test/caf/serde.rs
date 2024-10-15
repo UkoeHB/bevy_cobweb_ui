@@ -1,16 +1,5 @@
 //! Serializing and deserializing instructions and values.
 
-// Need to distinguish between CAF input and expected CAF output (after JSON round trip),
-// since multi-line string formatting is lossy when entering JSON/Rust.
-
-// Value round trip: rust type -> json value -> Caf -> json value -> reflect -> rust type
-//   - Replace with CAF round trip once CAF parsing is ready. Note that Caf -> CAF -> Caf is potentially mutating
-//   if whitespace is inserted during serialization.
-// CAF round trip: CAF -> Caf -> json value -> reflect rust type (check against expected) -> json value
-// -> Caf (+ recover fill) -> CAF
-//   - Need separate sequence for testing #[reflect(default)] fields, since defaulted 'dont show' fields are not
-//   known in rust.
-
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
@@ -18,9 +7,8 @@ use bevy::prelude::*;
 
 use super::helpers::*;
 
-// TODO: test built-in values
-// TODO: test u128/i128 and NaN/inf/-inf
-// TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin, ??)
+// TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin,
+// reflect-defaulted fields, ??)
 // TODO: clean up println/print statements
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -353,52 +341,6 @@ fn builtins()
             color: Color::Srgba(Srgba::RED),
         },
     );
-}
-
-fn print_it(float: f32)
-{
-    println!("{:?}", float);
-}
-#[test]
-fn floats()
-{
-    print_it(0.0);
-    print_it(0.1);
-    print_it(1.0);
-    print_it(f32::NAN);
-    print_it(f32::INFINITY);
-    print_it(f32::NEG_INFINITY);
-    print_it(10000000.0);
-    print_it(10000000000.0);
-    print_it(100200200000000000.0);
-    print_it(1002002000000000.0);
-    print_it(10020020000000.0);
-    print_it(100200200000.0);
-    print_it(1002002000.0);
-    print_it(133333333330000000.0);
-    print_it(13333333333000000.0);
-    print_it(1333333333300000.0);
-    print_it(13333333333000.0);
-    print_it(133333333330.0);
-    print_it(1003000000.0);
-    print_it(-10040000000000000.0);
-    print_it(-1004000000000000.0);
-    print_it(-100400000000000.0);
-    print_it(-10040000000000.0);
-    print_it(0.0000001);
-    print_it(1.0000000001);
-    //assert!(false);
-}
-
-#[test]
-fn rawstr()
-{
-    println!(r#"{}"#, "a\n
-e
-    b\
-f");
-    println!("c\nd");
-    //assert!(false);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

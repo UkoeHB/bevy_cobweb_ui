@@ -71,7 +71,7 @@ impl<'a> RawSerializer for DefaultRawSerializer<'a>
             }
         }
 
-        // Pre-write NaN and inf/-inf with custom formatting.
+        // Write NaN and inf/-inf with custom formatting.
         if val.is_nan() {
             write!(self, "nan")
         } else if val.is_infinite() {
@@ -103,7 +103,7 @@ impl<'a> RawSerializer for DefaultRawSerializer<'a>
             }
         }
 
-        // Pre-write NaN and inf/-inf with custom formatting.
+        // Write NaN and inf/-inf with custom formatting.
         if val.is_nan() {
             write!(self, "nan")
         } else if val.is_infinite() {
