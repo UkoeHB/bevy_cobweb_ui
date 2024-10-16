@@ -18,7 +18,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("any: {:?}", self);
         match self {
             CafInstruction::Unit { .. } => visitor.visit_unit(),
             CafInstruction::Tuple { tuple, .. } => visit_tuple_ref(tuple, visitor),
@@ -37,12 +36,10 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("enum: {:?}", self);
         let re = match self {
             CafInstruction::Enum { variant, .. } => visitor.visit_enum(EnumRefDeserializer { variant }),
             _ => Err(self.invalid_type(&visitor)),
         }?;
-        println!("enum re");
         Ok(re)
     }
 
@@ -51,7 +48,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("newtype: {:?}", self);
         match self {
             CafInstruction::Tuple { tuple, .. } => {
                 if tuple.entries.len() == 1 {
@@ -69,7 +65,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("unit struct: {:?}", self);
         match self {
             CafInstruction::Unit { .. } => visitor.visit_unit(),
             _ => Err(self.invalid_type(&visitor)),
@@ -80,7 +75,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("tuple struct: {:?}", self);
         match self {
             CafInstruction::Tuple { tuple, .. } => visit_tuple_ref(tuple, visitor),
             CafInstruction::Array { array, .. } => {
@@ -103,7 +97,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
     where
         V: Visitor<'de>,
     {
-        println!("struct: {:?}", self);
         match self {
             CafInstruction::Unit { .. } => {
                 // Use this instead of `visitor.visit_unit()` because some visitor implementations don't handle it
@@ -132,7 +125,6 @@ impl CafInstruction
     where
         E: serde::de::Error,
     {
-        println!("INVALID {:?}", self);
         serde::de::Error::invalid_type(self.unexpected(), exp)
     }
 

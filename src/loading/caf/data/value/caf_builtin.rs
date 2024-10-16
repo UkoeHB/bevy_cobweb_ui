@@ -46,7 +46,6 @@ impl CafHexColor
 
     pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
-        println!("PRINTING COLOR: {:?}", self.color);
         self.fill.write_to_or_else(writer, space)?;
         writer.write_bytes("#".as_bytes()).unwrap();
         if self.color.alpha != 1.0 {
@@ -165,9 +164,7 @@ impl CafBuiltin
     pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CafValue) -> CafResult<Option<Self>>
     {
         if typename == "Color" && variant == "Srgba" {
-            println!("COLOR");
             let CafValue::Map(CafMap { entries, .. }) = value else { return Ok(None) };
-            println!("ENTRIES");
             let mut color = Srgba::default();
             for entry in entries.iter() {
                 let CafMapEntry::KeyValue(keyval) = entry else { return Err(CafError::MalformedBuiltin) };
@@ -191,7 +188,6 @@ impl CafBuiltin
                 }
             }
 
-            println!("HEX COLOR");
             return Ok(CafHexColor::try_from(color).map(|c| Self::Color(c)).ok());
         }
 

@@ -10,7 +10,6 @@ impl CafEnumVariant
     #[cold]
     pub(super) fn unexpected(&self) -> Unexpected
     {
-        println!("{:?}", self);
         match self {
             CafEnumVariant::Unit { .. } => Unexpected::UnitVariant,
             CafEnumVariant::Tuple { tuple, .. } => {
@@ -61,7 +60,6 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
 
     fn unit_variant(self) -> CafResult<()>
     {
-        println!("unit variant");
         match self.variant {
             CafEnumVariant::Unit { .. } => Ok(()),
             _ => Err(serde::de::Error::invalid_type(
@@ -75,17 +73,14 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
     where
         T: DeserializeSeed<'de>,
     {
-        println!("newtype variant");
         match self.variant {
             CafEnumVariant::Tuple { tuple, .. } => {
                 if tuple.entries.len() != 1 {
-                    println!("tuple entries not 1");
                     Err(serde::de::Error::invalid_type(
                         self.variant.unexpected(),
                         &"newtype variant",
                     ))
                 } else {
-                    println!("tuple entries 1: {:?}", tuple.entries[0]);
                     seed.deserialize(&tuple.entries[0])
                 }
             }
@@ -102,7 +97,6 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
     where
         V: Visitor<'de>,
     {
-        println!("tuple variant");
         match self.variant {
             CafEnumVariant::Tuple { tuple, .. } => visit_tuple_ref(tuple, visitor),
             _ => Err(serde::de::Error::invalid_type(
@@ -116,7 +110,6 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
     where
         V: Visitor<'de>,
     {
-        println!("struct variant");
         match self.variant {
             CafEnumVariant::Map { map, .. } => visit_map_ref(map, visitor),
             _ => Err(serde::de::Error::invalid_type(
