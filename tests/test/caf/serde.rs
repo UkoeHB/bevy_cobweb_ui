@@ -8,8 +8,7 @@ use bevy::prelude::*;
 use super::helpers::*;
 
 // TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin,
-// reflect-defaulted fields, ??)
-// TODO: clean up println/print statements
+// reflect-defaulted fields, ??) (these require parsing to be implemented)
 
 //-------------------------------------------------------------------------------------------------------------------
 

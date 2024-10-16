@@ -136,7 +136,6 @@ impl serde::Serializer for CafValueSerializer
         variant: &'static str,
     ) -> CafResult<CafValue>
     {
-        println!("serializing unit {name}::{variant}");
         if let Some(result) = CafBuiltin::try_from_unit_variant(name, variant)? {
             return Ok(CafValue::Builtin(result));
         }
@@ -161,7 +160,6 @@ impl serde::Serializer for CafValueSerializer
     where
         T: ?Sized + Serialize,
     {
-        println!("serializing newtype variant {name}::{variant}");
         // Serialize the value so we know what to do with it.
         // TODO: for builtin types this feels super unnecessary, but rust sucks and doesn't have
         // 'if constexpr' OR specialization OR any way to get a unique type ID for non-static types.

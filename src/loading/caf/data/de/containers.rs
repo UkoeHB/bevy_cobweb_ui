@@ -106,9 +106,7 @@ where
 {
     let len = tuple.entries.len();
     let mut deserializer = SeqRefDeserializer::new(&tuple.entries);
-    println!("visit tuple {tuple:?}");
     let seq = visitor.visit_seq(&mut deserializer)?;
-    println!("visit tuple success");
     let remaining = deserializer.iter.len();
     if remaining == 0 {
         Ok(seq)

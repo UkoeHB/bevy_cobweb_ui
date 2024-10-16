@@ -152,7 +152,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        println!("unit val");
         match self {
             CafValue::Tuple(tuple) => {
                 if tuple.entries.len() == 0 {
@@ -169,7 +168,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        println!("unit struct val");
         self.deserialize_unit(visitor)
     }
 
@@ -198,8 +196,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        println!("tuple struct val");
-
         // If visiting a newtype struct, need to implicitly destructure it.
         if len == 1 {
             return visit_wrapped_value_ref(self, visitor);
@@ -230,7 +226,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
     where
         V: Visitor<'de>,
     {
-        println!("struct val");
         match self {
             // Allow empty tuples to be treated as unit structs.
             CafValue::Tuple(tuple) => {
@@ -269,14 +264,12 @@ impl CafValue
     where
         E: serde::de::Error,
     {
-        println!("{:?}", self);
         serde::de::Error::invalid_type(self.unexpected(), exp)
     }
 
     #[cold]
     fn unexpected(&self) -> Unexpected
     {
-        println!("{:?}", self);
         match self {
             CafValue::EnumVariant(e) => e.unexpected(),
             CafValue::Builtin(_) => Unexpected::Other("builtin"),
