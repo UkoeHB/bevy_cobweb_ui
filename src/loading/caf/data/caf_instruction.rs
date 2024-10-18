@@ -70,6 +70,7 @@ impl TryFrom<&'static str> for CafInstructionIdentifier
 /*
 Parsing:
 - identifier is camelcase
+- generics have no preceding whitespace
 */
 
 //-------------------------------------------------------------------------------------------------------------------

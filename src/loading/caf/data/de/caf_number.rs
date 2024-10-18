@@ -28,6 +28,8 @@ macro_rules! deserialize_any {
         where
             V: Visitor<'de>,
         {
+            // TODO: might need to implement the specific number hints separately in case we need to coerce
+            // an int to float
             match self.number {
                 CafNumberValue::Uint(val) => {
                     // Simplify to u64 if possible, in case u128 is unsupported by the visitor.

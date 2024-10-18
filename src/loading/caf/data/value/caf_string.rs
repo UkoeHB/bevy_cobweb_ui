@@ -13,7 +13,7 @@ pub struct CafStringSegment
     ///
     /// We do this because bytes -> string -> bytes is potentially lossy, since the -> bytes step will convert
     /// newlines and Unicode characters to escape sequences even if they were literals in the original bytes.
-    ///  Note that it's possible editors can't support
+    /// Note that it's possible editors can't support
     /// a mix of explicit and implicit newlines, and they will just have to aggressively replace implicit newlines
     /// with explicit newlines.
     //todo: replace this with a shared memory structure like Bytes or Cow<[u8]>?
@@ -63,11 +63,12 @@ impl TryFrom<String> for CafStringSegment
     fn try_from(segment: String) -> CafResult<Self>
     {
         let mut original = Vec::with_capacity(segment.len());
-        let mut buff = [0u8; 4];
         // escape_default will insert escapes for all ASCII control characters (e.g. \n) and Unicode characters.
         for c in segment.chars().flat_map(|c| c.escape_default()) {
-            let encoded = c.encode_utf8(&mut buff);
-            original.extend_from_slice(encoded.as_bytes());
+            let len = original.len();
+            let size = c.len_utf8();
+            original.resize(len + size, 0u8);
+            c.encode_utf8(&mut original[len..(len+size)]);
         }
 
         Ok(Self { leading_spaces: 0, original, segment })

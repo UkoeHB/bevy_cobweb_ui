@@ -270,8 +270,4 @@ impl CafGenerics
     }
 }
 
-/*
-Parsing: lowercase identifiers, can be a sequence separated by '.' and not ending or starting with '.'
-*/
-
 //-------------------------------------------------------------------------------------------------------------------

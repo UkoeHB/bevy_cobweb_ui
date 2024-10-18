@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use super::helpers::*;
 
 // TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin,
-// reflect-defaulted fields, ??) (these require parsing to be implemented)
+// reflect-defaulted fields, unicode with leading zeros, ??) (these require parsing to be implemented)
 
 //-------------------------------------------------------------------------------------------------------------------
 
