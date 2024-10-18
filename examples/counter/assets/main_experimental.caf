@@ -247,7 +247,7 @@ test!() = a::b::test!()
 
 Test!() = a::b::Test!()
 
-test!(a = none b = 52 c = (true none auto)) = MyTuple(@a @b ?c $constant 100.0 (SomeTupleValue 200))
+test!(a = none b = 52 c = (true false none auto nan inf -inf)) = MyTuple(@a @b ?c $constant 100.0 (SomeTupleValue 200))
 
 // Only camel-case macros can be used as instructions (aka instruction macro) (only \\ brackets are allowed).
 Text!(t s) = TextLine{ text: ?t size: ?s }
@@ -306,7 +306,7 @@ Nice!() = TheEnd
     )
     +a::b::imported_spec()
     TextLine{ text: "testing multi \
-        line text"
+        line text \u{abcd} \n\t\r\\"
     }
 \
 
@@ -326,16 +326,17 @@ The scene section must be the *last* section in a caf file.
 */
 #scenes
 // A spec invocation will bring in parameterized content for the scene.
-"scene_from_spec"+spec_override(
+"scene_from_spec"
     // This one is inserted to the base node
     BgColor($colors::tailwind::AMBER_50)
-    'inner'{
-        // This is inserted to the 'inner' node (named "inner").
-        BgColor($colors::tailwind::AMBER_50)
-        "add-node"
-            ImplicitNode
-    }
-)
+    +spec_override(
+        'inner'{
+            // This is inserted to the 'inner' node (named "inner").
+            BgColor($colors::tailwind::AMBER_50)
+            "add-node"
+                ImplicitNode
+        }
+    )
 
 // Custom node structure for the example app.
 // - The node name "root" is optional. An index will be used for its scene path if missing.
