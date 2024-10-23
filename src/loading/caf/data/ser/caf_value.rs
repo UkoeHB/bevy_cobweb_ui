@@ -98,13 +98,13 @@ impl serde::Serializer for CafValueSerializer
     #[inline]
     fn serialize_char(self, value: char) -> CafResult<CafValue>
     {
-        Ok(CafValue::String(CafString::try_from(value)?))
+        Ok(CafValue::String(CafString::from(value)))
     }
 
     #[inline]
     fn serialize_str(self, value: &str) -> CafResult<CafValue>
     {
-        Ok(CafValue::String(CafString::try_from(value)?))
+        Ok(CafValue::String(CafString::from(value)))
     }
 
     fn serialize_bytes(self, value: &[u8]) -> CafResult<CafValue>

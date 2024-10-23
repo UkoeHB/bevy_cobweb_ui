@@ -1,6 +1,34 @@
+use nom::branch::alt;
+use nom::bytes::complete::{tag, take_until, take_while1};
+use nom::character::complete::one_of;
+use nom::combinator::{map, recognize, rest};
+use nom::error::ErrorKind;
+use nom::multi::many0_count;
+use nom::sequence::{preceded, terminated};
+use nom::{AsChar, Parser};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Special characters that can appear after a fill sequence.
+fn is_allowed_special_char(c: char) -> bool
+{
+    match c {
+        '"' | ':' | '#' | '@' | '+' | '-' | '=' | '$' | '?' | '{' | '}' | '(' | ')' | '[' | ']' | '<' | '>'
+        | '.' | '\'' | '\\' | '_' => true,
+        _ => false,
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Returns true if the next character is banned immediately after a fill sequence.
+fn invalid_postfill(c: char) -> bool
+{
+    !c.is_alphanum() && !is_allowed_special_char(c)
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -37,20 +65,41 @@ impl CafFill
         Ok(())
     }
 
-    /// Parse the current read source into a filler. The filler may be empty.
-    ///
-    /// Errors if an illegal character is encountered.
-    //pub fn parse() -> IResult<, (Self, )>
-    //{
-    // TODO
-    // Scan for:
-    // - Spaces
-    // - Newlines
-    // - Line comments
-    // - Block comments
-    // - Ignored characters: ,;
-    // - Banned characters: (see sublime-syntax)
-    //}
+    /// Parses a fill sequence from the input string. The fill may be empty.
+    pub fn parse(input: Span) -> (CafFill, Span)
+    {
+        // Get fill.
+        let (remaining, fill) = map(
+            recognize(many0_count(alt((
+                // collect whitespace and special characters
+                recognize(one_of::<_, _, (Span, ErrorKind)>(" \n,;")),
+                // collect line comments until \n or end of file
+                preceded(tag("//"), alt((terminated(take_until("\n"), tag("\n")), rest))),
+                // collect block comments until block terminator or end of file
+                preceded(tag("/*"), alt((terminated(take_until("*/"), tag("*/")), rest))),
+            )))),
+            |r| -> CafFill { CafFill::new(*r.fragment()) },
+        )
+        .parse(input)
+        .expect("parsing fill should never fail");
+
+        // Cleanup illegal characters.
+        let remaining = if let Ok((after_invalid, invalid_span)) =
+            take_while1::<_, _, ()>(invalid_postfill).parse(remaining)
+        {
+            // Note: use CafStringSegment to escape all weird characters in the invalid span
+            tracing::warn!(
+                "discarding banned character sequence \"{}\" at {}",
+                String::from_utf8(CafStringSegment::from(*invalid_span.fragment()).original).unwrap().as_str(),
+                get_location(remaining).as_str()
+            );
+            after_invalid
+        } else {
+            remaining
+        };
+
+        (fill, remaining)
+    }
 
     pub fn new(string: impl Into<SmolStr>) -> Self
     {

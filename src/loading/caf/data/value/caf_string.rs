@@ -34,33 +34,27 @@ impl CafStringSegment
     }
 }
 
-impl TryFrom<&str> for CafStringSegment
+impl From<&str> for CafStringSegment
 {
-    type Error = CafError;
-
-    fn try_from(string: &str) -> CafResult<Self>
+    fn from(string: &str) -> Self
     {
-        Ok(Self::try_from(String::from(string))?)
+        Self::from(String::from(string))
     }
 }
 
-impl TryFrom<char> for CafStringSegment
+impl From<char> for CafStringSegment
 {
-    type Error = CafError;
-
-    fn try_from(character: char) -> CafResult<Self>
+    fn from(character: char) -> Self
     {
-        Ok(Self::try_from(String::from(character))?)
+        Self::from(String::from(character))
     }
 }
 
-impl TryFrom<String> for CafStringSegment
+impl From<String> for CafStringSegment
 {
-    type Error = CafError;
-
-    /// Note that `Self::write_to` -> `Self::try_from` is lossy because String has no awareness of
+    /// Note that `Self::write_to` -> `Self::from` is lossy because String has no awareness of
     /// multi-line string formatting. The string contents are preserved, but not their presentation in CAF.
-    fn try_from(segment: String) -> CafResult<Self>
+    fn from(segment: String) -> Self
     {
         let mut original = Vec::with_capacity(segment.len());
         // escape_default will insert escapes for all ASCII control characters (e.g. \n) and Unicode characters.
@@ -68,10 +62,10 @@ impl TryFrom<String> for CafStringSegment
             let len = original.len();
             let size = c.len_utf8();
             original.resize(len + size, 0u8);
-            c.encode_utf8(&mut original[len..(len+size)]);
+            c.encode_utf8(&mut original[len..(len + size)]);
         }
 
-        Ok(Self { leading_spaces: 0, original, segment })
+        Self { leading_spaces: 0, original, segment }
     }
 }
 
@@ -138,45 +132,39 @@ impl CafString
     }
 }
 
-impl TryFrom<char> for CafString
+impl From<char> for CafString
 {
-    type Error = CafError;
-
-    fn try_from(character: char) -> CafResult<Self>
+    fn from(character: char) -> Self
     {
-        Ok(Self {
+        Self {
             fill: CafFill::default(),
-            segments: SmallVec::from_elem(CafStringSegment::try_from(character)?, 1),
+            segments: SmallVec::from_elem(CafStringSegment::from(character), 1),
             cached: None,
-        })
+        }
     }
 }
 
-impl TryFrom<&str> for CafString
+impl From<&str> for CafString
 {
-    type Error = CafError;
-
-    fn try_from(string: &str) -> CafResult<Self>
+    fn from(string: &str) -> Self
     {
-        Ok(Self {
+        Self {
             fill: CafFill::default(),
-            segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+            segments: SmallVec::from_elem(CafStringSegment::from(string), 1),
             cached: None,
-        })
+        }
     }
 }
 
-impl TryFrom<String> for CafString
+impl From<String> for CafString
 {
-    type Error = CafError;
-
-    fn try_from(string: String) -> CafResult<Self>
+    fn from(string: String) -> Self
     {
-        Ok(Self {
+        Self {
             fill: CafFill::default(),
-            segments: SmallVec::from_elem(CafStringSegment::try_from(string)?, 1),
+            segments: SmallVec::from_elem(CafStringSegment::from(string), 1),
             cached: None,
-        })
+        }
     }
 }
 

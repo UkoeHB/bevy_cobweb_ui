@@ -1,4 +1,6 @@
 use bevy::prelude::Deref;
+use nom::bytes::complete::tag;
+use nom::Parser;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -140,10 +142,25 @@ impl CafScenes
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
         writer.write_bytes("#scenes".as_bytes())?;
-        for scene in self.scenes.iter() {
-            scene.write_to(writer)?;
+        for layer in self.scenes.iter() {
+            layer.write_to(writer)?;
         }
         Ok(())
+    }
+
+    pub fn try_parse(
+        content: Span,
+        fill: CafFill,
+    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    {
+        let Ok((remaining, _)) = tag::<_, _, ()>("#scenes").parse(content) else {
+            return Ok((None, fill, content));
+        };
+
+        // TODO
+
+        let scenes = CafScenes { start_fill: fill, scenes: vec![] };
+        Ok((Some(scenes), CafFill::default(), remaining))
     }
 }
 

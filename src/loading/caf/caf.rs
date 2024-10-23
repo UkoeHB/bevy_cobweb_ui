@@ -26,6 +26,45 @@ impl CafSection
             Self::Scenes(section) => section.write_to(first_section, writer),
         }
     }
+
+    /// Tries to parse a section from the available content.
+    pub fn try_parse(
+        content: Span,
+        fill: CafFill,
+    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    {
+        let fill = match CafManifest::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Manifest(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        let fill = match CafImport::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Import(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        let fill = match CafUsing::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Using(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        let fill = match CafDefs::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Defs(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        let fill = match CafCommands::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Commands(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        let fill = match CafScenes::try_parse(content, fill)? {
+            (Some(section), fill, remaining) => return Ok((Some(Self::Scenes(section)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        Ok((None, fill, content))
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -53,6 +92,29 @@ impl Caf
             writer.write_bytes("\n".as_bytes())?;
         }
         Ok(())
+    }
+
+    pub fn parse(span: Span) -> Result<Self, nom::error::Error<Span>>
+    {
+        let mut sections = vec![];
+        let (mut fill, mut content) = CafFill::parse(span);
+
+        let end_fill = loop {
+            match CafSection::try_parse(content, fill)? {
+                (Some(section), next_fill, remaining) => {
+                    sections.push(section);
+                    content = remaining;
+                    fill = next_fill;
+                }
+                (None, end_fill, _) => break end_fill,
+            }
+        };
+
+        Ok(Self {
+            sections,
+            end_fill,
+            metadata: CafMetadata { file_path: String::from(span.extra.file) },
+        })
     }
 }
 

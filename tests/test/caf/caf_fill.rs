@@ -1,7 +1,26 @@
-use bevy::utils::default;
 use bevy_cobweb_ui::prelude::*;
 
 use super::helpers::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn test_fill(val: &str, expected: &str)
+{
+    // Parse CafFill from value.
+    let (parsed, _) = CafFill::parse(test_span(val));
+    assert_eq!(parsed, CafFill::new(expected));
+
+    // Parse Caf from value.
+    let parsed_caf = Caf::parse(test_span(val)).unwrap();
+    assert_eq!(parsed_caf.end_fill, parsed);
+
+    // Write as raw.
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    parsed.write_to(&mut serializer).unwrap();
+    let reconstructed_raw = String::from_utf8(buff).unwrap();
+    assert_eq!(reconstructed_raw, expected);
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -22,9 +41,31 @@ fn end_helpers()
 #[test]
 fn whitespace()
 {
-    caf_parse_test("\n", Caf { end_fill: CafFill::new("\n"), ..default() });
-    caf_parse_test("\n\n", Caf { end_fill: CafFill::new("\n\n"), ..default() });
-    caf_parse_test(" \n", Caf { end_fill: CafFill::new(" \n"), ..default() });
+    // Basic
+    test_fill("", "");
+    test_fill(" ", " ");
+    test_fill("  ", "  ");
+    test_fill("\n", "\n");
+    test_fill("\n\n", "\n\n");
+    test_fill(" \n", " \n");
+    test_fill("\n ", "\n ");
+
+    // Terminated
+    test_fill("a", "");
+    test_fill(" a", " ");
+    test_fill(" a ", " ");
+    test_fill("a ", "");
+    test_fill("\na", "\n");
+    test_fill("\na\n", "\n");
+
+    // Banned characters
+    test_fill("\r", "");
+    test_fill("\t", "");
+    test_fill("^", "");
+    test_fill("ß", "");
+    test_fill("\r ", "");
+    test_fill(" \r ", " ");
+    test_fill("\n\r ", "\n");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -32,25 +73,22 @@ fn whitespace()
 #[test]
 fn comments()
 {
-    caf_parse_test("//\n", Caf { end_fill: CafFill::new("//\n"), ..default() });
-    caf_parse_test("// \n", Caf { end_fill: CafFill::new("// \n"), ..default() });
-    caf_parse_test(" // \n", Caf { end_fill: CafFill::new(" // \n"), ..default() });
-    caf_parse_test("//a\n", Caf { end_fill: CafFill::new("//a\n"), ..default() });
-    caf_parse_test("/**/\n", Caf { end_fill: CafFill::new("/**/\n"), ..default() });
-    caf_parse_test("/* a */\n", Caf { end_fill: CafFill::new("/* a */\n"), ..default() });
-    caf_parse_test(
-        "// b\n/* a */\n",
-        Caf { end_fill: CafFill::new("// b\n/* a */\n"), ..default() },
-    );
-    caf_parse_test(
-        "// b/* a */\n",
-        Caf { end_fill: CafFill::new("// b/* a */\n"), ..default() },
-    );
-    caf_parse_test(
-        "// b/* a */\n// x \n",
-        Caf { end_fill: CafFill::new("// b/* a */\n// x \n"), ..default() },
-    );
-    caf_parse_test_fail("a /* a */\n", Caf { end_fill: CafFill::new(" /* a */\n"), ..default() });
+    // Basic
+    test_fill("//", "//");
+    test_fill("// ", "// ");
+    test_fill(" // ", " // ");
+    test_fill("//\n", "//\n");
+    test_fill("// \n", "// \n");
+    test_fill(" // \n ", " // \n ");
+    test_fill("//a\n", "//a\n");
+    test_fill("/**/", "/**/");
+    test_fill(" /**/ ", " /**/ ");
+    test_fill(" /**/ //", " /**/ //");
+    test_fill(" /* a */ //\n //\n/* a */", " /* a */ //\n //\n/* a */");
+
+    // Terminated
+    test_fill("//\na ", "//\n");
+    test_fill("/**/ a ", "/**/ ");
 }
 
 //-------------------------------------------------------------------------------------------------------------------

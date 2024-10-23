@@ -44,6 +44,12 @@ impl From<bool> for CafBool
 /*
 Parsing:
 - parse as string
+
+fn parse()
+{
+    value(false, false_parser)
+    value(true, true_parser)
+}
 */
 
 //-------------------------------------------------------------------------------------------------------------------
