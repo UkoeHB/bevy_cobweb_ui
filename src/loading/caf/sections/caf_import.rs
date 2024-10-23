@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
 use nom::bytes::complete::tag;
+use nom::character::complete::char;
+use nom::combinator::recognize;
+use nom::multi::many0_count;
+use nom::sequence::{preceded, tuple};
 use nom::Parser;
 use smol_str::SmolStr;
 
@@ -29,6 +33,24 @@ impl CafImportAlias
         }
         Ok(())
     }
+
+    pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
+    {
+        // Case: no alias
+        if let Ok((remaining, _)) = char::<_, ()>('_').parse(content) {
+            return Ok((Self::None, remaining));
+        }
+
+        // Case: alias
+        recognize(tuple((
+            // Base identifier
+            snake_identifier,
+            // Extensions
+            many0_count(preceded(tag("::"), snake_identifier)),
+        )))
+        .parse(content)
+        .map(|(r, k)| (Self::Alias(SmolStr::from(*k.fragment())), r))
+    }
 }
 
 impl Default for CafImportAlias
@@ -38,12 +60,6 @@ impl Default for CafImportAlias
         Self::None
     }
 }
-
-/*
-Parsing:
-- None: match '_'
-- Alias: identifier with lowercase, underscores, and numbers after the first letter
-*/
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -71,6 +87,35 @@ impl CafImportEntry
         Ok(())
     }
 
+    pub fn try_parse(entry_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((key, remaining)) = CafManifestKey::parse(content) else {
+            return Ok((None, entry_fill, content));
+        };
+        if !entry_fill.ends_with_newline() {
+            tracing::warn!("import entry doesn't start on a new line at {}", get_location(content).as_str());
+            return Err(span_verify_error(content));
+        }
+        let (as_fill, remaining) = CafFill::parse(remaining);
+        if as_fill.len() == 0 {
+            tracing::warn!("no fill/whitespace before import 'as' at {}", get_location(remaining).as_str());
+            return Err(span_verify_error(remaining));
+        }
+        let (remaining, _) = tag("as").parse(remaining)?;
+        let (alias_fill, remaining) = CafFill::parse(remaining);
+        if alias_fill.len() == 0 {
+            tracing::warn!("no fill/whitespace after import 'as' at {}", get_location(remaining).as_str());
+            return Err(span_verify_error(remaining));
+        }
+        let (alias, remaining) = CafImportAlias::parse(remaining)?;
+        let (next_fill, remaining) = CafFill::parse(remaining);
+        Ok((
+            Some(Self { entry_fill, key, as_fill, alias_fill, alias }),
+            next_fill,
+            remaining,
+        ))
+    }
+
     // Makes a new entry with default spacing.
     pub fn new(key: impl AsRef<str>, alias: impl AsRef<str>) -> Self
     {
@@ -95,12 +140,6 @@ impl Default for CafImportEntry
         }
     }
 }
-
-/*
-Parsing:
-- Must start with newline.
-- Must be 'key as alias'.
-*/
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -130,10 +169,22 @@ impl CafImport
             return Ok((None, start_fill, content));
         };
 
-        // TODO
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
+        let mut entries = vec![];
 
-        let import = CafImport { start_fill, entries: vec![] };
-        Ok((Some(import), CafFill::default(), remaining))
+        let end_fill = loop {
+            match CafImportEntry::try_parse(item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, _) => break end_fill,
+            }
+        };
+
+        let import = Self { start_fill, entries };
+        Ok((Some(import), end_fill, remaining))
     }
 }
 

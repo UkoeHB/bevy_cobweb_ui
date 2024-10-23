@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::character::complete::{digit1, one_of};
+use nom::character::complete::{char, digit1};
 use nom::combinator::recognize;
 use nom::error::ErrorKind;
 use nom::multi::many0_count;
@@ -25,7 +25,7 @@ pub(crate) fn snake_identifier(input: Span) -> IResult<Span, Span>
 {
     recognize(tuple((
         lowercase_alpha1,
-        many0_count(alt((lowercase_alpha1, digit1, recognize(one_of("_"))))),
+        many0_count(alt((lowercase_alpha1, digit1, recognize(char('_'))))),
     )))
     .parse(input)
 }
