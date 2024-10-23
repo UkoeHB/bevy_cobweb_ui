@@ -1,3 +1,6 @@
+use nom::bytes::complete::tag;
+use nom::Parser;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -53,6 +56,19 @@ impl CafDefs
             def.write_to(writer)?;
         }
         Ok(())
+    }
+
+    pub fn try_parse(
+        content: Span,
+        fill: CafFill,
+    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    {
+        let Ok((remaining, _)) = tag::<_, _, ()>("#defs").parse(content) else { return Ok((None, fill, content)) };
+
+        // TODO
+
+        let defs = CafDefs { start_fill: fill, defs: vec![] };
+        Ok((Some(defs), CafFill::default(), remaining))
     }
 
     pub fn eq_ignore_whitespace(&self, _other: &CafDefs) -> bool

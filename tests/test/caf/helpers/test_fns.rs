@@ -68,13 +68,6 @@ pub fn caf_parse_test(raw: impl AsRef<str>, value: Caf)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub fn caf_parse_test_fail(raw: impl AsRef<str>, value: Caf)
-{
-    assert!(!caf_parse_test_result(raw, value));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// See [`test_equivalence_impl`].
 pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
 {

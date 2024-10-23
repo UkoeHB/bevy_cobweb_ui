@@ -233,4 +233,13 @@ impl CafBuiltin
 // Parsing:
 // - Allow both uints and floats for Val settings. (looks like uints coerce to floats on Value deserialization)
 
+/*
+
+fn parse()
+{
+    value(Val::Auto, auto_parser)
+}
+
+*/
+
 //-------------------------------------------------------------------------------------------------------------------

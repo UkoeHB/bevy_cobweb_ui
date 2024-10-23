@@ -1,3 +1,6 @@
+use nom::bytes::complete::tag;
+use nom::Parser;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -51,6 +54,21 @@ impl CafCommands
             entry.write_to(writer)?;
         }
         Ok(())
+    }
+
+    pub fn try_parse(
+        content: Span,
+        fill: CafFill,
+    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    {
+        let Ok((remaining, _)) = tag::<_, _, ()>("#commands").parse(content) else {
+            return Ok((None, fill, content));
+        };
+
+        // TODO
+
+        let commands = CafCommands { start_fill: fill, entries: vec![] };
+        Ok((Some(commands), CafFill::default(), remaining))
     }
 }
 

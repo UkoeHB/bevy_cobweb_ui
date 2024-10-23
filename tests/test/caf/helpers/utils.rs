@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_cobweb_ui::prelude::{CafLocationMetadata, Span};
 
 use crate::caf::helpers::*;
 
@@ -10,6 +11,13 @@ pub fn prepare_test_app() -> App
     app.add_plugins(SerdeTypesPlugin);
     app.update();
     app
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub fn test_span(val: &str) -> Span
+{
+    Span::new_extra(val, CafLocationMetadata { file: "test" })
 }
 
 //-------------------------------------------------------------------------------------------------------------------
