@@ -20,7 +20,7 @@ fn manifest_section()
         b"#manifest
 ",
     );
-    let CafSection::Manifest(manifest) = &res.sections[0] else { todo!() };
+    let CafSection::Manifest(manifest) = &res.sections[0] else { unreachable!() };
     assert_eq!(manifest.entries.len(), 0);
 
     let res = test_caf(
@@ -28,7 +28,7 @@ fn manifest_section()
 self as a
 ",
     );
-    let CafSection::Manifest(manifest) = &res.sections[0] else { todo!() };
+    let CafSection::Manifest(manifest) = &res.sections[0] else { unreachable!() };
     assert_eq!(manifest.entries.len(), 1);
     assert_eq!(manifest.entries[0].file, CafManifestFile::SelfRef);
     assert_eq!(manifest.entries[0].key, CafManifestKey(Arc::from("a")));
@@ -40,7 +40,7 @@ self as a.b
 \"path/to/b.caf\" as a.b.c
 ",
     );
-    let CafSection::Manifest(manifest) = &res.sections[0] else { todo!() };
+    let CafSection::Manifest(manifest) = &res.sections[0] else { unreachable!() };
     assert_eq!(manifest.entries.len(), 2);
     assert_eq!(manifest.entries[0].file, CafManifestFile::SelfRef);
     assert_eq!(manifest.entries[0].key, CafManifestKey(Arc::from("a.b")));

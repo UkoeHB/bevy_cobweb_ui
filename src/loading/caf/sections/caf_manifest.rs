@@ -210,7 +210,7 @@ impl CafManifest
             }
         };
 
-        let manifest = CafManifest { start_fill, entries };
+        let manifest = Self { start_fill, entries };
         Ok((Some(manifest), end_fill, remaining))
     }
 }
