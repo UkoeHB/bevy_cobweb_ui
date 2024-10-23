@@ -2,6 +2,9 @@ use std::sync::Arc;
 
 use bevy::prelude::{default, Deref};
 use nom::bytes::complete::tag;
+use nom::combinator::recognize;
+use nom::multi::many0_count;
+use nom::sequence::{preceded, tuple};
 use nom::Parser;
 
 use crate::prelude::*;
@@ -29,6 +32,18 @@ impl CafManifestFile
         }
         Ok(())
     }
+
+    pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
+    {
+        // Case: self
+        if let Ok((remaining, _)) = tag::<_, _, ()>("self").parse(content) {
+            return Ok((Self::SelfRef, remaining));
+        }
+
+        // Case: string file path
+        let (file, remaining) = CafFilePath::parse(content)?;
+        Ok((Self::File(file), remaining))
+    }
 }
 
 impl Default for CafManifestFile
@@ -38,12 +53,6 @@ impl Default for CafManifestFile
         Self::File(CafFilePath::default())
     }
 }
-
-/*
-Parsing:
-- Self: match 'self'
-- File: file path parses
-*/
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -57,6 +66,18 @@ impl CafManifestKey
         writer.write_bytes(self.as_bytes())?;
         Ok(())
     }
+
+    pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
+    {
+        recognize(tuple((
+            // Base identifier
+            snake_identifier,
+            // Extensions
+            many0_count(preceded(tag("."), snake_identifier)),
+        )))
+        .parse(content)
+        .map(|(r, k)| (Self(Arc::from(*k.fragment())), r))
+    }
 }
 
 impl Default for CafManifestKey
@@ -66,10 +87,6 @@ impl Default for CafManifestKey
         Self(Arc::from(""))
     }
 }
-
-/*
-Parsing: lowercase identifiers, can be a sequence separated by '.' and not ending or starting with '.'
-*/
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -97,6 +114,35 @@ impl CafManifestEntry
         Ok(())
     }
 
+    pub fn try_parse(entry_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((file, remaining)) = CafManifestFile::parse(content) else {
+            return Ok((None, entry_fill, content));
+        };
+        if !entry_fill.ends_with_newline() {
+            tracing::warn!("manifest entry doesn't start on a new line at {}", get_location(content).as_str());
+            return Err(span_verify_error(content));
+        }
+        let (as_fill, remaining) = CafFill::parse(remaining);
+        if as_fill.len() == 0 {
+            tracing::warn!("no fill/whitespace before manifest 'as' at {}", get_location(remaining).as_str());
+            return Err(span_verify_error(remaining));
+        }
+        let (remaining, _) = tag("as").parse(remaining)?;
+        let (key_fill, remaining) = CafFill::parse(remaining);
+        if key_fill.len() == 0 {
+            tracing::warn!("no fill/whitespace after manifest 'as' at {}", get_location(remaining).as_str());
+            return Err(span_verify_error(remaining));
+        }
+        let (key, remaining) = CafManifestKey::parse(remaining)?;
+        let (next_fill, remaining) = CafFill::parse(remaining);
+        Ok((
+            Some(Self { entry_fill, file, as_fill, key_fill, key }),
+            next_fill,
+            remaining,
+        ))
+    }
+
     // Makes a new entry with default spacing.
     pub fn new(file: impl AsRef<str>, key: impl AsRef<str>) -> Self
     {
@@ -122,12 +168,6 @@ impl Default for CafManifestEntry
     }
 }
 
-/*
-Parsing:
-- Must start with newline.
-- Must be 'file as key'.
-*/
-
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
@@ -150,19 +190,28 @@ impl CafManifest
         Ok(())
     }
 
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let Ok((remaining, _)) = tag::<_, _, ()>("#manifest").parse(content) else {
-            return Ok((None, fill, content));
+            return Ok((None, start_fill, content));
         };
 
-        // TODO
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
+        let mut entries = vec![];
 
-        let manifest = CafManifest { start_fill: fill, entries: vec![] };
-        Ok((Some(manifest), CafFill::default(), remaining))
+        let end_fill = loop {
+            match CafManifestEntry::try_parse(item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, _) => break end_fill,
+            }
+        };
+
+        let manifest = CafManifest { start_fill, entries };
+        Ok((Some(manifest), end_fill, remaining))
     }
 }
 

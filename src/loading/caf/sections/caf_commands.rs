@@ -56,18 +56,15 @@ impl CafCommands
         Ok(())
     }
 
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let Ok((remaining, _)) = tag::<_, _, ()>("#commands").parse(content) else {
-            return Ok((None, fill, content));
+            return Ok((None, start_fill, content));
         };
 
         // TODO
 
-        let commands = CafCommands { start_fill: fill, entries: vec![] };
+        let commands = CafCommands { start_fill, entries: vec![] };
         Ok((Some(commands), CafFill::default(), remaining))
     }
 }
