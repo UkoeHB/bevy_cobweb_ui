@@ -5,89 +5,14 @@ use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy_cobweb_ui::prelude::*;
 use serde::de::DeserializeSeed;
 
-//-------------------------------------------------------------------------------------------------------------------
-/*
-pub fn caf_round_trip(raw: impl AsRef<str>)
-{
-    let raw = raw.as_ref().as_bytes();
-
-    // Caf raw to Caf value
-    //TODO
-
-    // Caf value to caf raw
-    let mut bytes = Vec::<u8>::default();
-    let mut cursor = Cursor::new(&mut bytes);
-    value.write_to(&mut cursor).unwrap();
-
-    // Compare to raw.
-    assert_eq!(raw, &bytes[..]);
-
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-/*
-pub fn caf_parse_skip_space(raw: impl AsRef<str>, value: Caf)
-{
-    let raw = raw.as_ref().as_bytes();
-
-
-    // Caf raw to Caf value
-    //TODO
-
-    // Compare to expected Caf value
-    // TODO
-}
-*/
-//-------------------------------------------------------------------------------------------------------------------
-
-pub fn caf_parse_test_result(raw: impl AsRef<str>, value: Caf) -> bool
-{
-    let raw = raw.as_ref().as_bytes();
-
-    // Caf raw to Caf value
-    //TODO
-
-    // Compare to expected Caf value
-    // TODO
-
-    // Caf value to caf raw
-    let mut bytes = Vec::<u8>::default();
-    let mut serializer = DefaultRawSerializer::new(&mut bytes);
-    value.write_to(&mut serializer).unwrap();
-
-    // Compare to raw.
-    raw == &bytes[..]
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-pub fn caf_parse_test(raw: impl AsRef<str>, value: Caf)
-{
-    assert!(caf_parse_test_result(raw, value));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// See [`test_equivalence_impl`].
-pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
-{
-    test_equivalence_impl(w, caf_raw, caf_raw_val, value, true);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// See [`test_equivalence_impl`].
-pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
-{
-    test_equivalence_impl(w, caf_raw, caf_raw_val, value, false);
-}
+use crate::caf::helpers::test_span;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
 /// Only works for types without reflect-defaulted fields.
-pub fn test_equivalence_impl<T: Loadable + Debug>(
+fn test_equivalence_impl<T: Loadable + Debug>(
     w: &World,
     caf_raw: &str,
     caf_raw_val: &str,
@@ -142,6 +67,52 @@ pub fn test_equivalence_impl<T: Loadable + Debug>(
     cafvalue_from_rust.write_to(&mut serializer).unwrap();
     let reconstructed_raw_val = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw_val, reconstructed_raw_val);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// See [`test_equivalence_impl`].
+pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+{
+    test_equivalence_impl(w, caf_raw, caf_raw_val, value, true);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// See [`test_equivalence_impl`].
+pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+{
+    test_equivalence_impl(w, caf_raw, caf_raw_val, value, false);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub fn test_caf(raw: &[u8]) -> Caf
+{
+    // Parse
+    let string = String::from_utf8_lossy(raw);
+    let parsed = Caf::parse(test_span(&string)).unwrap();
+
+    // Write back
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    parsed.write_to(&mut serializer).unwrap();
+    assert_eq!(String::from_utf8_lossy(&buff), string);
+
+    parsed
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Expects parsing a CAF byte sequence to fail, with `remaining` bytes unparsed.
+pub fn test_caf_fail(raw: &[u8], remaining: &[u8])
+{
+    // Parse
+    let string = String::from_utf8_lossy(raw);
+    let Err(error) = Caf::parse(test_span(&string)) else { unreachable!() };
+    let span = unwrap_error_content(error);
+    let remaining = String::from_utf8_lossy(remaining);
+    assert_eq!(remaining, *span.fragment());
 }
 
 //-------------------------------------------------------------------------------------------------------------------

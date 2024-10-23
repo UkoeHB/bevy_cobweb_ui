@@ -28,37 +28,34 @@ impl CafSection
     }
 
     /// Tries to parse a section from the available content.
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let fill = match CafManifest::try_parse(content, fill)? {
+        let fill = match CafManifest::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Manifest(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
-        let fill = match CafImport::try_parse(content, fill)? {
+        let fill = match CafImport::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Import(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
-        let fill = match CafUsing::try_parse(content, fill)? {
+        let fill = match CafUsing::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Using(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
-        let fill = match CafDefs::try_parse(content, fill)? {
+        let fill = match CafDefs::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Defs(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
-        let fill = match CafCommands::try_parse(content, fill)? {
+        let fill = match CafCommands::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Commands(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
-        let fill = match CafScenes::try_parse(content, fill)? {
+        let fill = match CafScenes::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Scenes(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
@@ -94,19 +91,26 @@ impl Caf
         Ok(())
     }
 
-    pub fn parse(span: Span) -> Result<Self, nom::error::Error<Span>>
+    pub fn parse(span: Span) -> Result<Self, SpanError>
     {
         let mut sections = vec![];
-        let (mut fill, mut content) = CafFill::parse(span);
+        let (mut fill, mut remaining) = CafFill::parse(span);
 
         let end_fill = loop {
-            match CafSection::try_parse(content, fill)? {
-                (Some(section), next_fill, remaining) => {
+            match CafSection::try_parse(fill, remaining)? {
+                (Some(section), next_fill, after_section) => {
                     sections.push(section);
-                    content = remaining;
                     fill = next_fill;
+                    remaining = after_section;
                 }
-                (None, end_fill, _) => break end_fill,
+                (None, end_fill, end_of_file) => {
+                    if end_of_file.len() != 0 {
+                        tracing::warn!("incomplete CAF file parsing, error at {}", get_location(end_of_file).as_str());
+                        return Err(span_verify_error(end_of_file));
+                    }
+
+                    break end_fill;
+                }
             }
         };
 

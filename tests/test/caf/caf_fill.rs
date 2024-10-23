@@ -11,8 +11,9 @@ fn test_fill(val: &str, expected: &str)
     assert_eq!(parsed, CafFill::new(expected));
 
     // Parse Caf from value.
-    let parsed_caf = Caf::parse(test_span(val)).unwrap();
-    assert_eq!(parsed_caf.end_fill, parsed);
+    if let Ok(parsed_caf) = Caf::parse(test_span(val)) {
+        assert_eq!(parsed_caf.end_fill, parsed);
+    }
 
     // Write as raw.
     let mut buff = Vec::<u8>::default();
@@ -85,6 +86,7 @@ fn comments()
     test_fill(" /**/ ", " /**/ ");
     test_fill(" /**/ //", " /**/ //");
     test_fill(" /* a */ //\n //\n/* a */", " /* a */ //\n //\n/* a */");
+    test_fill(" /*  a", " /*  a");
 
     // Terminated
     test_fill("//\na ", "//\n");

@@ -148,18 +148,15 @@ impl CafScenes
         Ok(())
     }
 
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let Ok((remaining, _)) = tag::<_, _, ()>("#scenes").parse(content) else {
-            return Ok((None, fill, content));
+            return Ok((None, start_fill, content));
         };
 
         // TODO
 
-        let scenes = CafScenes { start_fill: fill, scenes: vec![] };
+        let scenes = CafScenes { start_fill, scenes: vec![] };
         Ok((Some(scenes), CafFill::default(), remaining))
     }
 }

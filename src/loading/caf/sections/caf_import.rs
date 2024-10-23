@@ -124,18 +124,15 @@ impl CafImport
         Ok(())
     }
 
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let Ok((remaining, _)) = tag::<_, _, ()>("#import").parse(content) else {
-            return Ok((None, fill, content));
+            return Ok((None, start_fill, content));
         };
 
         // TODO
 
-        let import = CafImport { start_fill: fill, entries: vec![] };
+        let import = CafImport { start_fill, entries: vec![] };
         Ok((Some(import), CafFill::default(), remaining))
     }
 }

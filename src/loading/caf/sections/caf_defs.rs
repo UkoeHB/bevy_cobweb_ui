@@ -58,16 +58,15 @@ impl CafDefs
         Ok(())
     }
 
-    pub fn try_parse(
-        content: Span,
-        fill: CafFill,
-    ) -> Result<(Option<Self>, CafFill, Span), nom::error::Error<Span>>
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let Ok((remaining, _)) = tag::<_, _, ()>("#defs").parse(content) else { return Ok((None, fill, content)) };
+        let Ok((remaining, _)) = tag::<_, _, ()>("#defs").parse(content) else {
+            return Ok((None, start_fill, content));
+        };
 
         // TODO
 
-        let defs = CafDefs { start_fill: fill, defs: vec![] };
+        let defs = CafDefs { start_fill, defs: vec![] };
         Ok((Some(defs), CafFill::default(), remaining))
     }
 
