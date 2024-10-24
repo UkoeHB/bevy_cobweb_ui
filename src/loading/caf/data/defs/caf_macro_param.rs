@@ -8,6 +8,8 @@
 // - Catch-all into flatten group
 // - type params for generics: use ^param notation without whitespace, cannot be assigned (non-optional)
 
+use nom::IResult;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -26,6 +28,18 @@ impl CafMacroParam
         -> Result<(), std::io::Error>
     {
         Ok(())
+    }
+
+    pub fn parse_nomlike(content: Span) -> IResult<Span, Self>
+    {
+        // TODO
+        Err(span_verify_error(content))
+    }
+
+    pub fn is_required(&self) -> bool
+    {
+        // TODO
+        true
     }
 
     pub fn recover_fill(&mut self, _other: &Self) {}

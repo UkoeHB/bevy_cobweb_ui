@@ -179,7 +179,10 @@ impl CafImport
                     item_fill = next_fill;
                     remaining = after_entry;
                 }
-                (None, end_fill, _) => break end_fill,
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
             }
         };
 

@@ -8,7 +8,7 @@ use super::helpers::{test_caf, test_caf_fail};
 //-------------------------------------------------------------------------------------------------------------------
 
 #[test]
-fn importsection()
+fn import_section()
 {
     /*
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
