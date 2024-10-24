@@ -128,7 +128,11 @@ impl serde::Serializer for CafInstructionSerializer
     #[inline]
     fn serialize_unit_struct(self, _name: &'static str) -> CafResult<CafInstruction>
     {
-        Ok(CafInstruction::Unit { fill: CafFill::default(), id: self.name.try_into()? })
+        Ok(CafInstruction {
+            fill: CafFill::default(),
+            id: self.name.try_into()?,
+            variant: CafInstructionVariant::Unit,
+        })
     }
 
     #[inline]
@@ -139,10 +143,10 @@ impl serde::Serializer for CafInstructionSerializer
         variant: &'static str,
     ) -> CafResult<CafInstruction>
     {
-        Ok(CafInstruction::Enum {
+        Ok(CafInstruction {
             fill: CafFill::default(),
             id: self.name.try_into()?,
-            variant: CafEnumVariant::unit(variant),
+            variant: CafInstructionVariant::Enum(CafEnumVariant::unit(variant)),
         })
     }
 
@@ -155,12 +159,16 @@ impl serde::Serializer for CafInstructionSerializer
         let value_ser = CafValue::extract(value)?;
 
         if let CafValue::Array(array) = value_ser {
-            Ok(CafInstruction::Array { fill: CafFill::default(), id: self.name.try_into()?, array })
-        } else {
-            Ok(CafInstruction::Tuple {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                tuple: CafTuple::single(value_ser),
+                variant: CafInstructionVariant::Array(array),
+            })
+        } else {
+            Ok(CafInstruction {
+                fill: CafFill::default(),
+                id: self.name.try_into()?,
+                variant: CafInstructionVariant::Tuple(CafTuple::single(value_ser)),
             })
         }
     }
@@ -179,16 +187,16 @@ impl serde::Serializer for CafInstructionSerializer
         let value_ser = CafValue::extract(value)?;
 
         if let CafValue::Array(arr) = value_ser {
-            Ok(CafInstruction::Enum {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafEnumVariant::array(variant, arr),
+                variant: CafInstructionVariant::Enum(CafEnumVariant::array(variant, arr)),
             })
         } else {
-            Ok(CafInstruction::Enum {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafEnumVariant::newtype(variant, value_ser),
+                variant: CafInstructionVariant::Enum(CafEnumVariant::newtype(variant, value_ser)),
             })
         }
     }
@@ -279,13 +287,17 @@ impl serde::ser::SerializeTupleStruct for SerializeTupleStruct
     fn end(self) -> CafResult<CafInstruction>
     {
         if self.vec.len() > 0 {
-            Ok(CafInstruction::Tuple {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                tuple: CafTuple::from(self.vec),
+                variant: CafInstructionVariant::Tuple(CafTuple::from(self.vec)),
             })
         } else {
-            Ok(CafInstruction::Unit { fill: CafFill::default(), id: self.name.try_into()? })
+            Ok(CafInstruction {
+                fill: CafFill::default(),
+                id: self.name.try_into()?,
+                variant: CafInstructionVariant::Unit,
+            })
         }
     }
 }
@@ -314,10 +326,10 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant
 
     fn end(self) -> CafResult<CafInstruction>
     {
-        Ok(CafInstruction::Enum {
+        Ok(CafInstruction {
             fill: CafFill::default(),
             id: self.name.try_into()?,
-            variant: CafEnumVariant::tuple(self.variant, CafTuple::from(self.vec)),
+            variant: CafInstructionVariant::Enum(CafEnumVariant::tuple(self.variant, CafTuple::from(self.vec))),
         })
     }
 }
@@ -347,13 +359,17 @@ impl serde::ser::SerializeStruct for SerializeStruct
     fn end(self) -> CafResult<CafInstruction>
     {
         if self.vec.len() > 0 {
-            Ok(CafInstruction::Map {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                map: CafMap::from(self.vec),
+                variant: CafInstructionVariant::Map(CafMap::from(self.vec)),
             })
         } else {
-            Ok(CafInstruction::Unit { fill: CafFill::default(), id: self.name.try_into()? })
+            Ok(CafInstruction {
+                fill: CafFill::default(),
+                id: self.name.try_into()?,
+                variant: CafInstructionVariant::Unit,
+            })
         }
     }
 }
@@ -384,16 +400,16 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant
     fn end(self) -> CafResult<CafInstruction>
     {
         if self.vec.len() > 0 {
-            Ok(CafInstruction::Enum {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafEnumVariant::map(self.variant, CafMap::from(self.vec)),
+                variant: CafInstructionVariant::Enum(CafEnumVariant::map(self.variant, CafMap::from(self.vec))),
             })
         } else {
-            Ok(CafInstruction::Enum {
+            Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafEnumVariant::unit(self.variant),
+                variant: CafInstructionVariant::Enum(CafEnumVariant::unit(self.variant)),
             })
         }
     }

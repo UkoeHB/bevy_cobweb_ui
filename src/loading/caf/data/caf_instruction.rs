@@ -80,65 +80,38 @@ Parsing:
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Variant for [`CafInstruction`].
 #[derive(Debug, Clone, PartialEq)]
-pub enum CafInstruction
+pub enum CafInstructionVariant
 {
     /// Corresponds to a unit struct.
-    Unit
-    {
-        fill: CafFill, id: CafInstructionIdentifier
-    },
+    Unit,
     /// Corresponds to a tuple struct.
-    Tuple
-    {
-        fill: CafFill, id: CafInstructionIdentifier, tuple: CafTuple
-    },
+    Tuple(CafTuple),
     /// This is a shorthand and equivalent to a tuple struct of an array.
-    Array
-    {
-        fill: CafFill, id: CafInstructionIdentifier, array: CafArray
-    },
+    Array(CafArray),
     /// Corresponds to a plain struct.
-    Map
-    {
-        fill: CafFill, id: CafInstructionIdentifier, map: CafMap
-    },
+    Map(CafMap),
     /// Corresponds to an enum.
-    Enum
-    {
-        fill: CafFill,
-        id: CafInstructionIdentifier,
-        variant: CafEnumVariant,
-    },
+    Enum(CafEnumVariant),
 }
 
-impl CafInstruction
+impl CafInstructionVariant
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Unit { fill, id } => {
-                fill.write_to(writer)?;
-                id.write_to(writer)?;
-            }
-            Self::Tuple { fill, id, tuple } => {
-                fill.write_to(writer)?;
-                id.write_to(writer)?;
+            Self::Unit => (),
+            Self::Tuple(tuple) => {
                 tuple.write_to(writer)?;
             }
-            Self::Array { fill, id, array } => {
-                fill.write_to(writer)?;
-                id.write_to(writer)?;
+            Self::Array(array) => {
                 array.write_to(writer)?;
             }
-            Self::Map { fill, id, map } => {
-                fill.write_to(writer)?;
-                id.write_to(writer)?;
+            Self::Map(map) => {
                 map.write_to(writer)?;
             }
-            Self::Enum { fill, id, variant } => {
-                fill.write_to(writer)?;
-                id.write_to(writer)?;
+            Self::Enum(variant) => {
                 writer.write_bytes("::".as_bytes())?;
                 variant.write_to(writer)?;
             }
@@ -149,52 +122,48 @@ impl CafInstruction
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::Unit { fill, id }, Self::Unit { fill: other_fill, id: other }) => {
-                fill.recover(&other_fill);
-                id.recover_fill(other);
-            }
-            (
-                Self::Tuple { fill, id, tuple },
-                Self::Tuple { fill: other_fill, id: other_id, tuple: other_tuple },
-            ) => {
-                fill.recover(&other_fill);
-                id.recover_fill(other_id);
+            (Self::Tuple(tuple), Self::Tuple(other_tuple)) => {
                 tuple.recover_fill(other_tuple);
             }
-            (
-                Self::Array { fill, id, array },
-                Self::Array { fill: other_fill, id: other_id, array: other_array },
-            ) => {
-                fill.recover(&other_fill);
-                id.recover_fill(other_id);
+            (Self::Array(array), Self::Array(other_array)) => {
                 array.recover_fill(other_array);
             }
-            (Self::Map { fill, id, map }, Self::Map { fill: other_fill, id: other_id, map: other_map }) => {
-                fill.recover(&other_fill);
-                id.recover_fill(other_id);
+            (Self::Map(map), Self::Map(other_map)) => {
                 map.recover_fill(other_map);
             }
-            (
-                Self::Enum { fill, id, variant },
-                Self::Enum { fill: other_fill, id: other_id, variant: other_variant },
-            ) => {
-                fill.recover(&other_fill);
-                id.recover_fill(other_id);
+            (Self::Enum(variant), Self::Enum(other_variant)) => {
                 variant.recover_fill(other_variant);
             }
             _ => (),
         }
     }
+}
 
-    pub fn id(&self) -> &CafInstructionIdentifier
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CafInstruction
+{
+    pub fill: CafFill,
+    pub id: CafInstructionIdentifier,
+    pub variant: CafInstructionVariant,
+}
+
+impl CafInstruction
+{
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        match self {
-            Self::Unit { id, .. }
-            | Self::Tuple { id, .. }
-            | Self::Array { id, .. }
-            | Self::Map { id, .. }
-            | Self::Enum { id, .. } => id,
-        }
+        self.fill.write_to(writer)?;
+        self.id.write_to(writer)?;
+        self.variant.write_to(writer)?;
+        Ok(())
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.fill.recover(&other.fill);
+        self.id.recover_fill(&other.id);
+        self.variant.recover_fill(&other.variant);
     }
 
     pub fn extract<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CafResult<Self>
