@@ -9,7 +9,6 @@ use crate::prelude::*;
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct CafInstructionIdentifier
 {
-    pub start_fill: CafFill,
     pub name: SmolStr,
     pub generics: Option<CafGenerics>,
 }
@@ -18,7 +17,6 @@ impl CafInstructionIdentifier
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        self.start_fill.write_to(writer)?;
         writer.write_bytes(self.name.as_bytes())?;
         if let Some(generics) = &self.generics {
             generics.write_to(writer)?;
@@ -40,13 +38,24 @@ impl CafInstructionIdentifier
         buff
     }
 
+    pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
+    {
+        let (remaining, id) = camel_identifier(content)?;
+        let (generics, remaining) = CafGenerics::try_parse(remaining)?;
+        Ok((Self { name: SmolStr::from(*id.fragment()), generics }, remaining))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
-        self.start_fill.recover(&other.start_fill);
-
         if let (Some(generics), Some(other_generics)) = (&mut self.generics, &other.generics) {
             generics.recover_fill(other_generics);
         }
+    }
+
+    pub fn is_resolved(&self) -> bool
+    {
+        let Some(generics) = &self.generics else { return true };
+        generics.is_resolved()
     }
 
     //todo: resolve_constants
@@ -59,11 +68,7 @@ impl TryFrom<&'static str> for CafInstructionIdentifier
 
     fn try_from(short_path: &'static str) -> CafResult<Self>
     {
-        Ok(Self {
-            start_fill: CafFill::default(),
-            name: SmolStr::new_static(short_path),
-            generics: None,
-        })
+        Ok(Self { name: SmolStr::new_static(short_path), generics: None })
     }
 }
 
@@ -81,27 +86,29 @@ pub enum CafInstruction
     /// Corresponds to a unit struct.
     Unit
     {
-        id: CafInstructionIdentifier
+        fill: CafFill, id: CafInstructionIdentifier
     },
     /// Corresponds to a tuple struct.
     Tuple
     {
-        id: CafInstructionIdentifier, tuple: CafTuple
+        fill: CafFill, id: CafInstructionIdentifier, tuple: CafTuple
     },
     /// This is a shorthand and equivalent to a tuple struct of an array.
     Array
     {
-        id: CafInstructionIdentifier, array: CafArray
+        fill: CafFill, id: CafInstructionIdentifier, array: CafArray
     },
     /// Corresponds to a plain struct.
     Map
     {
-        id: CafInstructionIdentifier, map: CafMap
+        fill: CafFill, id: CafInstructionIdentifier, map: CafMap
     },
     /// Corresponds to an enum.
     Enum
     {
-        id: CafInstructionIdentifier, variant: CafEnumVariant
+        fill: CafFill,
+        id: CafInstructionIdentifier,
+        variant: CafEnumVariant,
     },
 }
 
@@ -110,22 +117,27 @@ impl CafInstruction
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Unit { id } => {
+            Self::Unit { fill, id } => {
+                fill.write_to(writer)?;
                 id.write_to(writer)?;
             }
-            Self::Tuple { id, tuple } => {
+            Self::Tuple { fill, id, tuple } => {
+                fill.write_to(writer)?;
                 id.write_to(writer)?;
                 tuple.write_to(writer)?;
             }
-            Self::Array { id, array } => {
+            Self::Array { fill, id, array } => {
+                fill.write_to(writer)?;
                 id.write_to(writer)?;
                 array.write_to(writer)?;
             }
-            Self::Map { id, map } => {
+            Self::Map { fill, id, map } => {
+                fill.write_to(writer)?;
                 id.write_to(writer)?;
                 map.write_to(writer)?;
             }
-            Self::Enum { id, variant } => {
+            Self::Enum { fill, id, variant } => {
+                fill.write_to(writer)?;
                 id.write_to(writer)?;
                 writer.write_bytes("::".as_bytes())?;
                 variant.write_to(writer)?;
@@ -137,22 +149,36 @@ impl CafInstruction
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::Unit { id }, Self::Unit { id: other }) => {
+            (Self::Unit { fill, id }, Self::Unit { fill: other_fill, id: other }) => {
+                fill.recover(&other_fill);
                 id.recover_fill(other);
             }
-            (Self::Tuple { id, tuple }, Self::Tuple { id: other_id, tuple: other_tuple }) => {
+            (
+                Self::Tuple { fill, id, tuple },
+                Self::Tuple { fill: other_fill, id: other_id, tuple: other_tuple },
+            ) => {
+                fill.recover(&other_fill);
                 id.recover_fill(other_id);
                 tuple.recover_fill(other_tuple);
             }
-            (Self::Array { id, array }, Self::Array { id: other_id, array: other_array }) => {
+            (
+                Self::Array { fill, id, array },
+                Self::Array { fill: other_fill, id: other_id, array: other_array },
+            ) => {
+                fill.recover(&other_fill);
                 id.recover_fill(other_id);
                 array.recover_fill(other_array);
             }
-            (Self::Map { id, map }, Self::Map { id: other_id, map: other_map }) => {
+            (Self::Map { fill, id, map }, Self::Map { fill: other_fill, id: other_id, map: other_map }) => {
+                fill.recover(&other_fill);
                 id.recover_fill(other_id);
                 map.recover_fill(other_map);
             }
-            (Self::Enum { id, variant }, Self::Enum { id: other_id, variant: other_variant }) => {
+            (
+                Self::Enum { fill, id, variant },
+                Self::Enum { fill: other_fill, id: other_id, variant: other_variant },
+            ) => {
+                fill.recover(&other_fill);
                 id.recover_fill(other_id);
                 variant.recover_fill(other_variant);
             }
@@ -163,7 +189,7 @@ impl CafInstruction
     pub fn id(&self) -> &CafInstructionIdentifier
     {
         match self {
-            Self::Unit { id }
+            Self::Unit { id, .. }
             | Self::Tuple { id, .. }
             | Self::Array { id, .. }
             | Self::Map { id, .. }
