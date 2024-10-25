@@ -89,6 +89,12 @@ impl CafTuple
             end_fill: CafFill::default(),
         }
     }
+
+    /// Returns `true` if the value has no macro params.
+    pub fn no_macro_params(&self) -> bool
+    {
+        !self.entries.iter().any(|e| !e.no_macro_params())
+    }
 }
 
 impl From<Vec<CafValue>> for CafTuple

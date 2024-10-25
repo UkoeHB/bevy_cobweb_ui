@@ -238,6 +238,12 @@ impl CafMapEntry
             Self::MacroParam(param) => param.is_catch_all(),
         }
     }
+
+    /// Returns `true` if the value is a key-value type.
+    pub fn is_keyvalue(&self) -> bool
+    {
+        matches!(*self, Self::KeyValue(..))
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -322,6 +328,12 @@ impl CafMap
     pub fn is_structlike(&self) -> bool
     {
         !self.entries.iter().any(|e| !e.is_struct_field())
+    }
+
+    /// Returns `true` if the value has no macro params.
+    pub fn no_macro_params(&self) -> bool
+    {
+        !self.entries.iter().any(|e| !e.is_keyvalue())
     }
 }
 

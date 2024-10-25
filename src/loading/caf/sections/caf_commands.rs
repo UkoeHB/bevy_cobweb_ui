@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Full instruction.
+/// Commands are instructions.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafCommandEntry
 {
@@ -27,12 +27,39 @@ impl CafCommandEntry
         }
         Ok(())
     }
-}
 
-/*
-Parsing:
-- Entry cannot contain macro params.
-*/
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let starts_newline = fill.ends_with_newline();
+        let fill = match CafInstruction::try_parse(fill, content)? {
+            (Some(instruction), next_fill, remaining) => {
+                if !starts_newline {
+                    tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
+                    return Err(span_verify_error(content));
+                }
+                if !instruction.no_macro_params() {
+                    tracing::warn!("failed parsing command entry at {}; entry contains a macro param, which is not \
+                        allowed in commands", get_location(content).as_str());
+                    return Err(span_verify_error(content));
+                }
+                return Ok((Some(Self::Instruction(instruction)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+        let fill = match CafInstructionMacroCall::try_parse(fill, content)? {
+            (Some(call), next_fill, remaining) => {
+                if !starts_newline {
+                    tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
+                    return Err(span_verify_error(content));
+                }
+                return Ok((Some(Self::InstructionMacroCall(call)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+
+        Ok((None, fill, content))
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -62,10 +89,25 @@ impl CafCommands
             return Ok((None, start_fill, content));
         };
 
-        // TODO
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
+        let mut entries = vec![];
 
-        let commands = CafCommands { start_fill, entries: vec![] };
-        Ok((Some(commands), CafFill::default(), remaining))
+        let end_fill = loop {
+            match CafCommandEntry::try_parse(item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
+            }
+        };
+
+        let command = Self { start_fill, entries };
+        Ok((Some(command), end_fill, remaining))
     }
 }
 
