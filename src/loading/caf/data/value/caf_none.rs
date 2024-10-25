@@ -22,6 +22,16 @@ impl CafNone
         Ok(())
     }
 
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((remaining, maybe_none)) = snake_identifier(content) else { return Ok((None, fill, content)) };
+        if *maybe_none.fragment() != "none" {
+            return Ok((None, fill, content));
+        };
+        let (next_fill, remaining) = CafFill::parse(remaining);
+        Ok((Some(Self { fill }), next_fill, remaining))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);

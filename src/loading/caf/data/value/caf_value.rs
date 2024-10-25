@@ -7,7 +7,7 @@ use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafValue
 {
-    EnumVariant(CafEnumVariant),
+    Enum(CafEnum),
     /// Special built-in types like `none` and `#FFFFFF` for colors.
     Builtin(CafBuiltin),
     Array(CafArray),
@@ -17,7 +17,6 @@ pub enum CafValue
     Bool(CafBool),
     None(CafNone),
     String(CafString),
-    FlattenGroup(CafFlattenGroup),
     Constant(CafConstant),
     DataMacro(CafDataMacroCall),
     /// Only valid inside a macro definition.
@@ -34,7 +33,7 @@ impl CafValue
     pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
         match self {
-            Self::EnumVariant(val) => {
+            Self::Enum(val) => {
                 val.write_to_with_space(writer, space)?;
             }
             Self::Builtin(val) => {
@@ -61,9 +60,6 @@ impl CafValue
             Self::String(val) => {
                 val.write_to_with_space(writer, space)?;
             }
-            Self::FlattenGroup(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
             Self::Constant(val) => {
                 val.write_to_with_space(writer, space)?;
             }
@@ -77,10 +73,64 @@ impl CafValue
         Ok(())
     }
 
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let fill = match CafEnum::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Enum(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafBuiltin::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Builtin(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafArray::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Array(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafTuple::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Tuple(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafMap::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Map(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafNumber::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Number(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafBool::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Bool(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafNone::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::None(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafString::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::String(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafConstant::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::Constant(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafDataMacroCall::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::DataMacro(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafMacroParam::try_parse(fill, content)? {
+            (Some(value), fill, remaining) => return Ok((Some(Self::MacroParam(value)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::EnumVariant(val), Self::EnumVariant(other_val)) => {
+            (Self::Enum(val), Self::Enum(other_val)) => {
                 val.recover_fill(other_val);
             }
             (Self::Builtin(val), Self::Builtin(other_val)) => {
@@ -107,9 +157,6 @@ impl CafValue
             (Self::String(val), Self::String(other_val)) => {
                 val.recover_fill(other_val);
             }
-            (Self::FlattenGroup(val), Self::FlattenGroup(other_val)) => {
-                val.recover_fill(other_val);
-            }
             (Self::Constant(val), Self::Constant(other_val)) => {
                 val.recover_fill(other_val);
             }
@@ -128,7 +175,5 @@ impl CafValue
         value.serialize(CafValueSerializer)
     }
 }
-
-// Parsing: unit structs are represented with () in values
 
 //-------------------------------------------------------------------------------------------------------------------

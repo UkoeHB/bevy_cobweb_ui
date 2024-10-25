@@ -139,7 +139,7 @@ impl serde::Serializer for CafValueSerializer
         if let Some(result) = CafBuiltin::try_from_unit_variant(name, variant)? {
             return Ok(CafValue::Builtin(result));
         }
-        Ok(CafValue::EnumVariant(CafEnumVariant::unit(variant)))
+        Ok(CafValue::Enum(CafEnum::unit(variant)))
     }
 
     #[inline]
@@ -171,9 +171,9 @@ impl serde::Serializer for CafValueSerializer
         }
 
         if let CafValue::Array(arr) = value_ser {
-            Ok(CafValue::EnumVariant(CafEnumVariant::array(variant, arr)))
+            Ok(CafValue::Enum(CafEnum::array(variant, arr)))
         } else {
-            Ok(CafValue::EnumVariant(CafEnumVariant::newtype(variant, value_ser)))
+            Ok(CafValue::Enum(CafEnum::newtype(variant, value_ser)))
         }
     }
 
@@ -333,12 +333,9 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant
     fn end(self) -> CafResult<CafValue>
     {
         if self.vec.len() > 0 {
-            Ok(CafValue::EnumVariant(CafEnumVariant::tuple(
-                self.variant,
-                CafTuple::from(self.vec),
-            )))
+            Ok(CafValue::Enum(CafEnum::tuple(self.variant, CafTuple::from(self.vec))))
         } else {
-            Ok(CafValue::EnumVariant(CafEnumVariant::unit(self.variant)))
+            Ok(CafValue::Enum(CafEnum::unit(self.variant)))
         }
     }
 }
@@ -435,12 +432,9 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant
     fn end(self) -> CafResult<CafValue>
     {
         if self.vec.len() > 0 {
-            Ok(CafValue::EnumVariant(CafEnumVariant::map(
-                self.variant,
-                CafMap::from(self.vec),
-            )))
+            Ok(CafValue::Enum(CafEnum::map(self.variant, CafMap::from(self.vec))))
         } else {
-            Ok(CafValue::EnumVariant(CafEnumVariant::unit(self.variant)))
+            Ok(CafValue::Enum(CafEnum::unit(self.variant)))
         }
     }
 }

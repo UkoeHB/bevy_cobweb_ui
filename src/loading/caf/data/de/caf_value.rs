@@ -34,7 +34,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::EnumVariant(e) => visitor.visit_enum(EnumRefDeserializer { variant: e }),
+            CafValue::Enum(e) => visitor.visit_enum(EnumRefDeserializer { variant: e }),
             CafValue::Builtin(b) => deserialize_builtin(b, visitor),
             CafValue::Array(a) => visit_array_ref(a, visitor),
             CafValue::Tuple(t) => visit_tuple_ref(t, visitor),
@@ -43,7 +43,6 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
             CafValue::Bool(b) => visitor.visit_bool(b.value),
             CafValue::None(_) => visitor.visit_none(),
             CafValue::String(s) => visitor.visit_borrowed_str(s.as_str()),
-            CafValue::FlattenGroup(_) => Err(self.invalid_type(&visitor)),
             CafValue::Constant(_) => Err(self.invalid_type(&visitor)),
             CafValue::DataMacro(_) => Err(self.invalid_type(&visitor)),
             CafValue::MacroParam(_) => Err(self.invalid_type(&visitor)),
@@ -83,7 +82,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::EnumVariant(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
+            CafValue::Enum(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
             CafValue::Builtin(builtin) => deserialize_builtin(builtin, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
@@ -271,7 +270,7 @@ impl CafValue
     fn unexpected(&self) -> Unexpected
     {
         match self {
-            CafValue::EnumVariant(e) => e.unexpected(),
+            CafValue::Enum(e) => e.unexpected(),
             CafValue::Builtin(_) => Unexpected::Other("builtin"),
             CafValue::Array(_) => Unexpected::Seq,
             CafValue::Tuple(tuple) => {
@@ -282,7 +281,6 @@ impl CafValue
                 }
             }
             CafValue::Map(_) => Unexpected::Map,
-            CafValue::FlattenGroup(_) => Unexpected::Other("flatten group"),
             CafValue::Number(n) => n.unexpected(),
             CafValue::Bool(b) => Unexpected::Bool(b.value),
             CafValue::None(_) => Unexpected::Option,

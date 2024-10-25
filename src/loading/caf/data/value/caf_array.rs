@@ -1,3 +1,6 @@
+use nom::character::complete::char;
+use nom::Parser;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -33,6 +36,40 @@ impl CafArray
         self.end_fill.write_to(writer)?;
         writer.write_bytes("]".as_bytes())?;
         Ok(())
+    }
+
+    pub fn try_parse(start_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((remaining, _)) = char::<_, ()>('[').parse(content) else { return Ok((None, start_fill, content)) };
+
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
+        let mut entries = vec![];
+
+        let end_fill = loop {
+            let fill_len = item_fill.len();
+            match CafValue::try_parse(item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    if entries.len() > 0 {
+                        if fill_len == 0 {
+                            tracing::warn!("failed parsing array at {}; entry #{} is not preceded by fill/whitespace",
+                                get_location(content), entries.len() + 1);
+                            return Err(span_verify_error(content));
+                        }
+                    }
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
+            }
+        };
+
+        let (remaining, _) = char(']').parse(remaining)?;
+        let (post_fill, remaining) = CafFill::parse(remaining);
+        Ok((Some(Self { start_fill, entries, end_fill }), post_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)

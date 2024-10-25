@@ -36,10 +36,22 @@ impl CafMacroParam
         Err(span_verify_error(content))
     }
 
+    pub fn try_parse(_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        // TODO
+        Err(span_verify_error(content))
+    }
+
     pub fn is_required(&self) -> bool
     {
         // TODO
-        true
+        false
+    }
+
+    pub fn is_catch_all(&self) -> bool
+    {
+        // TODO
+        false
     }
 
     pub fn recover_fill(&mut self, _other: &Self) {}

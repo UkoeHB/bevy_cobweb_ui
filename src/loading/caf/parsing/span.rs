@@ -29,10 +29,18 @@ pub fn get_location(span: Span) -> String
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Makes a [`SpanError`] for a specific error code while parsing.
+pub fn span_error(content: Span, code: ErrorKind) -> SpanError
+{
+    nom::Err::Error(nom::error::Error { input: content, code })
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Makes a [`SpanError`] for a verification error while parsing.
 pub fn span_verify_error(content: Span) -> SpanError
 {
-    nom::Err::Error(nom::error::Error { input: content, code: ErrorKind::Verify })
+    span_error(content, ErrorKind::Verify)
 }
 
 //-------------------------------------------------------------------------------------------------------------------

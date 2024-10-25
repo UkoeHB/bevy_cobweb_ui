@@ -146,7 +146,7 @@ impl serde::Serializer for CafInstructionSerializer
         Ok(CafInstruction {
             fill: CafFill::default(),
             id: self.name.try_into()?,
-            variant: CafInstructionVariant::Enum(CafEnumVariant::unit(variant)),
+            variant: CafInstructionVariant::Enum(CafEnum::unit(variant)),
         })
     }
 
@@ -190,13 +190,13 @@ impl serde::Serializer for CafInstructionSerializer
             Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafInstructionVariant::Enum(CafEnumVariant::array(variant, arr)),
+                variant: CafInstructionVariant::Enum(CafEnum::array(variant, arr)),
             })
         } else {
             Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafInstructionVariant::Enum(CafEnumVariant::newtype(variant, value_ser)),
+                variant: CafInstructionVariant::Enum(CafEnum::newtype(variant, value_ser)),
             })
         }
     }
@@ -329,7 +329,7 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant
         Ok(CafInstruction {
             fill: CafFill::default(),
             id: self.name.try_into()?,
-            variant: CafInstructionVariant::Enum(CafEnumVariant::tuple(self.variant, CafTuple::from(self.vec))),
+            variant: CafInstructionVariant::Enum(CafEnum::tuple(self.variant, CafTuple::from(self.vec))),
         })
     }
 }
@@ -403,13 +403,13 @@ impl serde::ser::SerializeStructVariant for SerializeStructVariant
             Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafInstructionVariant::Enum(CafEnumVariant::map(self.variant, CafMap::from(self.vec))),
+                variant: CafInstructionVariant::Enum(CafEnum::map(self.variant, CafMap::from(self.vec))),
             })
         } else {
             Ok(CafInstruction {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
-                variant: CafInstructionVariant::Enum(CafEnumVariant::unit(self.variant)),
+                variant: CafInstructionVariant::Enum(CafEnum::unit(self.variant)),
             })
         }
     }

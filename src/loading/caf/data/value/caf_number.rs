@@ -1,3 +1,9 @@
+use nom::character::complete::char;
+use nom::error::ErrorKind;
+use nom::multi::many0_count;
+use nom::number::complete::{double, le_i128, le_u128, recognize_float_parts};
+use nom::Parser;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -44,6 +50,63 @@ impl CafNumberValue
                 }
             }
         }
+    }
+
+    pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
+    {
+        // Sign
+        let (remaining, num_minuses) = many0_count(char('-')).parse(content)?;
+        let sign = match num_minuses {
+            0 => true,
+            1 => false,
+            _ => {
+                tracing::warn!("failed parsing number at {}; encountered multiple '-' in a row",
+                    get_location(content));
+                return Err(span_verify_error(content));
+            }
+        };
+
+        // Special float types: nan, inf, -inf
+        if let Ok((remaining, text)) = snake_identifier(remaining) {
+            let float = match *text.fragment() {
+                "nan" => f64::NAN,
+                "inf" => match sign {
+                    true => f64::INFINITY,
+                    false => f64::NEG_INFINITY,
+                },
+                _ => return Err(span_error(content, ErrorKind::Float)),
+            };
+            return Ok((Self::Float64(float), remaining));
+        }
+
+        // Break apart post-sign content
+        let (remaining, (_, integer, decimal, exponent)) = recognize_float_parts(remaining)?;
+
+        if integer.len() == 0 {
+            return Err(span_error(content, ErrorKind::Float));
+        }
+
+        // Float
+        if decimal.len() > 0 || exponent != 0 {
+            // Backtrack to re-parse content as a double, incorporating the sign automatically.
+            let (remaining, float) = double(content)?;
+            return Ok((Self::Float64(float), remaining));
+        }
+
+        // Integer
+        let number = match sign {
+            true => match le_u128::<_, ()>(integer.fragment().as_bytes()).map(|(_, i)| Self::Uint(i)) {
+                Ok(num) => num,
+                Err(_) => Err(span_error(integer, ErrorKind::Digit))?,
+            },
+            // Backtrack to incorporate sign automatically.
+            false => match le_i128::<_, ()>(content.fragment().as_bytes()).map(|(_, i)| Self::Int(i)) {
+                Ok(num) => num,
+                Err(_) => Err(span_error(integer, ErrorKind::Digit))?,
+            },
+        };
+
+        Ok((number, remaining))
     }
 
     /// Converts the number to `u128` if possible to do so without precision loss.
@@ -140,6 +203,35 @@ impl CafNumberValue
             }
             Self::Float64(val) => Some(val),
             Self::Float32(val) => Some(val as f64),
+        }
+    }
+
+    /// Converts the number to `f32` if possible to do so without loss of accuracy.
+    pub fn as_f32(&self) -> Option<f32>
+    {
+        match *self {
+            Self::Uint(val) => {
+                if (val as f32) as u128 == val {
+                    Some(val as f32)
+                } else {
+                    None
+                }
+            }
+            Self::Int(val) => {
+                if (val as f32) as i128 == val {
+                    Some(val as f32)
+                } else {
+                    None
+                }
+            }
+            Self::Float64(val) => {
+                if (val as f32) as f64 == val {
+                    Some(val as f32)
+                } else {
+                    None
+                }
+            }
+            Self::Float32(val) => Some(val),
         }
     }
 }
@@ -272,6 +364,13 @@ impl CafNumber
         self.fill.write_to_or_else(writer, space)?;
         self.number.write_to(writer)?;
         Ok(())
+    }
+
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((number, remaining)) = CafNumberValue::parse(content) else { return Ok((None, fill, content)) };
+        let (next_fill, remaining) = CafFill::parse(remaining);
+        Ok((Some(Self { fill, number }), next_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)

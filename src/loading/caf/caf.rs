@@ -34,27 +34,22 @@ impl CafSection
             (Some(section), fill, remaining) => return Ok((Some(Self::Manifest(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-
         let fill = match CafImport::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Import(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-
         let fill = match CafUsing::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Using(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-
         let fill = match CafDefs::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Defs(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-
         let fill = match CafCommands::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Commands(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-
         let fill = match CafScenes::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Scenes(section)), fill, remaining)),
             (None, fill, _) => fill,

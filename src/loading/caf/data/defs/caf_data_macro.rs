@@ -23,6 +23,12 @@ impl CafDataMacroCall
         Ok(())
     }
 
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        // TODO
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, _other: &Self) {}
 }
 

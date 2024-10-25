@@ -1,4 +1,6 @@
 use bevy::reflect::TypeRegistry;
+use nom::bytes::complete::tag;
+use nom::Parser;
 use serde::Serialize;
 use smol_str::SmolStr;
 
@@ -72,12 +74,6 @@ impl TryFrom<&'static str> for CafInstructionIdentifier
     }
 }
 
-/*
-Parsing:
-- identifier is camelcase
-- generics have no preceding whitespace
-*/
-
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Variant for [`CafInstruction`].
@@ -93,7 +89,7 @@ pub enum CafInstructionVariant
     /// Corresponds to a plain struct.
     Map(CafMap),
     /// Corresponds to an enum.
-    Enum(CafEnumVariant),
+    Enum(CafEnum),
 }
 
 impl CafInstructionVariant
@@ -117,6 +113,36 @@ impl CafInstructionVariant
             }
         }
         Ok(())
+    }
+
+    pub fn parse(content: Span) -> Result<(Self, CafFill, Span), SpanError>
+    {
+        if let (Some(tuple), next_fill, remaining) = CafTuple::try_parse(CafFill::default(), content)? {
+            return Ok((Self::Tuple(tuple), next_fill, remaining));
+        }
+        if let (Some(array), next_fill, remaining) = CafArray::try_parse(CafFill::default(), content)? {
+            return Ok((Self::Array(array), next_fill, remaining));
+        }
+        if let (Some(map), next_fill, remaining) = CafMap::try_parse(CafFill::default(), content)? {
+            if !map.is_structlike() {
+                tracing::warn!("failed parsing instruction struct at {}, map is not structlike", get_location(content));
+                return Err(span_verify_error(content));
+            }
+            return Ok((Self::Map(map), next_fill, remaining));
+        }
+        if let Ok((remaining, _)) = tag::<_, _, ()>("::").parse(content) {
+            match CafEnum::try_parse(CafFill::default(), remaining)? {
+                (Some(variant), next_fill, remaining) => return Ok((Self::Enum(variant), next_fill, remaining)),
+                _ => {
+                    tracing::warn!("failed parsing instruction enum at {}; no valid variant name",
+                        get_location(content));
+                    return Err(span_verify_error(content));
+                }
+            }
+        }
+
+        let (next_fill, remaining) = CafFill::parse(content);
+        Ok((Self::Unit, next_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -157,6 +183,15 @@ impl CafInstruction
         self.id.write_to(writer)?;
         self.variant.write_to(writer)?;
         Ok(())
+    }
+
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((id, remaining)) = CafInstructionIdentifier::parse(content) else {
+            return Ok((None, fill, content));
+        };
+        let (variant, post_fill, remaining) = CafInstructionVariant::parse(remaining)?;
+        Ok((Some(Self { fill, id, variant }), post_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)

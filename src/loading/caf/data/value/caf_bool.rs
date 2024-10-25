@@ -27,6 +27,18 @@ impl CafBool
         Ok(())
     }
 
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        let Ok((remaining, maybe_bool)) = snake_identifier(content) else { return Ok((None, fill, content)) };
+        let value = match *maybe_bool.fragment() {
+            "true" => true,
+            "false" => false,
+            _ => return Ok((None, fill, content)),
+        };
+        let (next_fill, remaining) = CafFill::parse(remaining);
+        Ok((Some(Self { fill, value }), next_fill, remaining))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.fill.recover(&other.fill);
