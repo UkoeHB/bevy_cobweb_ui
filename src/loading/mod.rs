@@ -16,7 +16,8 @@ mod plugin;
 mod references;
 mod scene_loader;
 
-pub use caf::*;
+pub use caf::Caf;
+pub(crate) use caf::*;
 pub use cobweb_asset_cache::*;
 pub use cobweb_asset_loader::*;
 pub(crate) use constants_buffer::*;

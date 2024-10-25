@@ -2,6 +2,7 @@ use std::fmt::Debug;
 
 use bevy::prelude::*;
 use bevy::reflect::serde::TypedReflectDeserializer;
+use bevy_cobweb_ui::prelude::caf::*;
 use bevy_cobweb_ui::prelude::*;
 use serde::de::DeserializeSeed;
 
@@ -24,6 +25,9 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
 
     // Caf raw to Caf instruction
+    // Caf raw val to Caf value
+    // Caf raw to Caf command raw
+    // Caf raw to Caf scene raw
     // TODO
 
     // Rust value to caf instruction

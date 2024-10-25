@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_cobweb_ui::prelude::{CafLocationMetadata, Span};
+use bevy_cobweb_ui::prelude::caf::*;
 
 use crate::caf::helpers::*;
 

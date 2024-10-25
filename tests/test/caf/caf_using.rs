@@ -1,4 +1,4 @@
-use bevy_cobweb_ui::prelude::*;
+use bevy_cobweb_ui::prelude::caf::*;
 
 use super::helpers::{test_caf, test_caf_fail};
 

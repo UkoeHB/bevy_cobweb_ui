@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Commands are instructions.
+/// Commands are parsed as instructions.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafCommandEntry
 {

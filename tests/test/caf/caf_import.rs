@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy_cobweb_ui::prelude::*;
+use bevy_cobweb_ui::prelude::caf::*;
 use smol_str::SmolStr;
 
 use super::helpers::{test_caf, test_caf_fail};
