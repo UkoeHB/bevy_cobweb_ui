@@ -73,6 +73,12 @@ self as a
 \"a.caf.json as a\"",
         b"\"a.caf.json as a\"",
     );
+    // Section not starting on newline
+    test_caf_fail(
+        b" #manifest
+",
+        b"#manifest\n",
+    );
     // Entry not starting with newline
     test_caf_fail(
         b"#manifest

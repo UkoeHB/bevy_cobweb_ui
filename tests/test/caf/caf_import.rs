@@ -71,6 +71,12 @@ a as _
 1",
         b"1",
     );
+    // Section not starting on newline
+    test_caf_fail(
+        b" #import
+",
+        b"#import\n",
+    );
     // Entry not starting with newline
     test_caf_fail(
         b"#import

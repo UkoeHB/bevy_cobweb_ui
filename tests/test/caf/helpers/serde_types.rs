@@ -273,6 +273,16 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BuiltinColor(pub Color);
+
+impl ApplyLoadable for BuiltinColor
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BuiltinCollection
 {
     pub auto_val: Val,
@@ -324,6 +334,7 @@ impl Plugin for SerdeTypesPlugin
             .register_derived::<EnumGeneric<bool>>()
             .register_derived::<EnumGeneric<UnitStruct>>()
             .register_derived::<EnumGeneric<SingleGeneric<u32>>>()
+            .register_derived::<BuiltinColor>()
             .register_derived::<BuiltinCollection>();
     }
 }

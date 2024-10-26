@@ -125,6 +125,22 @@ fn strings()
         "StringStruct(\"\\u{df}\")",
         StringStruct("ß".into()),
     );
+
+    // Lossy conversion: unicode sequence lowercased
+    test_equivalence_lossy(
+        w,
+        "StringStruct(\"\\u{DF}\")",
+        "StringStruct(\"\\u{df}\")",
+        StringStruct("ß".into()),
+    );
+
+    // Lossy conversion: escapable characters will be escaped
+    test_equivalence_lossy(
+        w,
+        "StringStruct(\"\nß\")",
+        "StringStruct(\"\\n\\u{df}\")",
+        StringStruct("\nß".into()),
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -403,21 +419,12 @@ fn builtins()
         },
     );
 
-    // Lossy conversion: manual builtin forced to builtin syntax
+    // Lossy conversion: hex color will be uppercased
     test_equivalence_lossy(
         a.world(),
-        "BuiltinCollection{auto_val:Auto px:Px(1.1) percent:Percent(1.1) vw:Vw(1.1) vh:Vh(1.1) vmin:VMin(1.1) vmax:VMax(1.1) color:Srgba({red:1.0 green:0.0 blue:0.0 alpha:1.0})}",
-        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
-        BuiltinCollection {
-            auto_val: Val::Auto,
-            px: Val::Px(1.1),
-            percent: Val::Percent(1.1),
-            vw: Val::Vw(1.1),
-            vh: Val::Vh(1.1),
-            vmin: Val::VMin(1.1),
-            vmax: Val::VMax(1.1),
-            color: Color::Srgba(Srgba::RED),
-        },
+        "BuiltinColor(#ff0000)",
+        "BuiltinColor(#FF0000)",
+        BuiltinColor(Color::Srgba(Srgba::RED)),
     );
 }
 

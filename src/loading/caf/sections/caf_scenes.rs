@@ -154,6 +154,12 @@ impl CafScenes
             return Ok((None, start_fill, content));
         };
 
+        if start_fill.len() != 0 && !start_fill.ends_with_newline() {
+            tracing::warn!("failed parsing scenes section at {} that doesn't start on newline",
+                get_location(content).as_str());
+            return Err(span_verify_error(content));
+        }
+
         // TODO
 
         let scenes = CafScenes { start_fill, scenes: vec![] };

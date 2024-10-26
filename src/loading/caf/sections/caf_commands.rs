@@ -89,6 +89,12 @@ impl CafCommands
             return Ok((None, start_fill, content));
         };
 
+        if start_fill.len() != 0 && !start_fill.ends_with_newline() {
+            tracing::warn!("failed parsing commands section at {} that doesn't start on newline",
+                get_location(content).as_str());
+            return Err(span_verify_error(content));
+        }
+
         let (mut item_fill, mut remaining) = CafFill::parse(remaining);
         let mut entries = vec![];
 

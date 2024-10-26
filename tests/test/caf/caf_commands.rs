@@ -68,6 +68,12 @@ A
 1",
         b"1",
     );
+    // Section not starting on newline
+    test_caf_fail(
+        b" #commands
+",
+        b"#commands\n",
+    );
     // Entry not starting with newline
     test_caf_fail(
         b"#commands
