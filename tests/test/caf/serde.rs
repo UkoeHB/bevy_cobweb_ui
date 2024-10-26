@@ -7,9 +7,6 @@ use bevy::prelude::*;
 
 use super::helpers::*;
 
-// TODO: test lossy conversions (*scientific notation, *multiline strings, *manual builtin to auto-builtin,
-// reflect-defaulted fields, *unicode with leading zeros, ??) (these require parsing to be implemented)
-
 //-------------------------------------------------------------------------------------------------------------------
 
 #[test]
@@ -425,6 +422,34 @@ fn builtins()
         "BuiltinColor(#ff0000)",
         "BuiltinColor(#FF0000)",
         BuiltinColor(Color::Srgba(Srgba::RED)),
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn reflect_defaulted()
+{
+    let a = prepare_test_app();
+    test_equivalence(
+        a.world(),
+        "ReflectDefaulted{a:1 b:2}",
+        "{a:1 b:2}",
+        ReflectDefaulted { a: 1, b: 2 },
+    );
+
+    // Lossy conversion: reflect-defaulted fields will be inserted on reserialize
+    test_equivalence_lossy_reflection(
+        a.world(),
+        "ReflectDefaulted{}",
+        "ReflectDefaulted{a:0 b:0}",
+        ReflectDefaulted::default(),
+    );
+    test_equivalence_lossy_reflection(
+        a.world(),
+        "ReflectDefaulted{b:1}",
+        "ReflectDefaulted{a:0 b:1}",
+        ReflectDefaulted { b: 1, ..Default::default() },
     );
 }
 

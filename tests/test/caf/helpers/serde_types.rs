@@ -302,6 +302,22 @@ impl ApplyLoadable for BuiltinCollection
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReflectDefaulted
+{
+    #[reflect(default)]
+    pub a: u32,
+    #[reflect(default)]
+    pub b: u32,
+}
+
+impl ApplyLoadable for ReflectDefaulted
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub struct SerdeTypesPlugin;
 
 impl Plugin for SerdeTypesPlugin
@@ -335,7 +351,8 @@ impl Plugin for SerdeTypesPlugin
             .register_derived::<EnumGeneric<UnitStruct>>()
             .register_derived::<EnumGeneric<SingleGeneric<u32>>>()
             .register_derived::<BuiltinColor>()
-            .register_derived::<BuiltinCollection>();
+            .register_derived::<BuiltinCollection>()
+            .register_derived::<ReflectDefaulted>();
     }
 }
 

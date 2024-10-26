@@ -141,7 +141,13 @@ pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &
 ///
 /// Expects the conversion `raw -> Caf (-> value -> Caf) -> raw` to be lossy in the sense that original syntax
 /// won't be preserved.
-pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+fn test_equivalence_lossy_impl<T: Loadable + Debug>(
+    w: &World,
+    caf_raw: &str,
+    caf_raw_reserialized: &str,
+    value: T,
+    allow_t_deserialize: bool,
+)
 {
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
@@ -168,8 +174,10 @@ pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf
     // conversions
 
     // Rust value from caf instruction parsed (direct)
-    let direct_value = T::deserialize(&instruction_parsed).unwrap();
-    assert_eq!(value, direct_value);
+    if allow_t_deserialize {
+        let direct_value = T::deserialize(&instruction_parsed).unwrap();
+        assert_eq!(value, direct_value);
+    }
 
     // Rust value from caf instruction from rust (direct)
     let direct_value = T::deserialize(&instruction_from_rust).unwrap();
@@ -185,6 +193,28 @@ pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf
     instruction_from_rust.write_to(&mut serializer).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(reconstructed_raw, caf_raw_reserialized);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+{
+    test_equivalence_lossy_impl(w, caf_raw, caf_raw_reserialized, value, true);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// The original caf value will only be deserialized via reflection.
+///
+/// Useful when `T` has reflect-defaulted fields.
+pub fn test_equivalence_lossy_reflection<T: Loadable + Debug>(
+    w: &World,
+    caf_raw: &str,
+    caf_raw_reserialized: &str,
+    value: T,
+)
+{
+    test_equivalence_lossy_impl(w, caf_raw, caf_raw_reserialized, value, false);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
