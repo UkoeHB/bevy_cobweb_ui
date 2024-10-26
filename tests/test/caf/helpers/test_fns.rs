@@ -39,7 +39,15 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     };
 
     // Caf raw to Caf command raw
-    // TODO
+    let command_raw = format!("#commands\n{caf_raw}\n");
+    let mut caf_parsed = match Caf::parse(test_span(command_raw.as_str())) {
+        Ok(caf_parsed) => caf_parsed,
+        Err(err) => panic!("{command_raw}, ERR={err:?}"),
+    };
+    let CafSection::Commands(commands) = &mut caf_parsed.sections[0] else { unreachable!() };
+    let CafCommandEntry::Instruction(cmd_instruction) = &mut commands.entries[0] else { unreachable!() };
+    cmd_instruction.fill = CafFill::default(); // Clear fill so equality test works.
+    assert_eq!(*cmd_instruction, instruction_parsed);
 
     // Caf raw to Caf scene raw
     // TODO

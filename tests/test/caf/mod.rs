@@ -1,5 +1,6 @@
 pub mod helpers;
 
+mod caf_commands;
 mod caf_fill;
 mod caf_import;
 mod caf_manifest;
