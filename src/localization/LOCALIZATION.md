@@ -22,13 +22,13 @@ Negotiated languages are stored in the [`LocalizationManifest`](bevy_cobweb_ui::
 
 ## Text localization
 
-Text is localized using the [`fluent`](https://projectfluent.org/) localization framework. This framework requires 'fluent resources', which are assets containing key:string pairs of text snippets to localize. Each language will have the same set (or subset) of keys, but different translated strings.
+Text is localized using the [`fluent`](https://projectfluent.org/) localization framework. This framework requires 'fluent resources', which are asset files containing key:string pairs of text snippets to localize. Only the strings are translated. Users will use the `fluent` keys to request localized text on their entities.
 
-Users will use the `fluent` keys to request localized text on their entities.
+If the user's requested language is only 'partially translated' (meaning it only has translated strings for some keys), then a fallback language from the negotiated language list will be used as needed.
 
 ### Fluent resources
 
-A `fluent` resource is a file containing key:string pairs for a language.
+As mentioned above, a `fluent` resource is a file containing key:string pairs for a language.
 
 For example, here is a resource `menu.ftl` for English at `assets/locales/en-US/menu.ftl`:
 ```
@@ -51,7 +51,7 @@ Here is a bundle `main.ftl.ron` at `assets/locales/en-US/main.ftl.ron`:
 
 ### Localization manifest
 
-You can add `fluent` manifests to your app using the [`LoadLocalizationManifest`](bevy_cobweb_ui::prelude::LoadLocalizationManifest) command.
+You can add `fluent` bundles to your app using the [`LoadLocalizationManifest`](bevy_cobweb_ui::prelude::LoadLocalizationManifest) command.
 
 For example:
 ```rust
@@ -81,11 +81,11 @@ This command will reset the [`LocalizationManifest`](bevy_cobweb_ui::prelude::Lo
 
 The default language should be your app's primary language which can be treated as a global fallback if an asset is only partially localized.
 
-**Note**: When `fluent` resources are extracted and bundled, we *do not* add any date/time/etc. formatting [fallback languages](https://docs.rs/fluent/0.16.1/fluent/bundle/struct.FluentBundle.html#locale-fallback-chain). This is because we cannot display multiple fonts in a single text section, in the case where a different language is used to format a data/time from the surrounding text and the formatting language isn't supported by the text's font. If a text section fails to localize due to formatting issues, then it should just fall back within the negotiated languages list.
+**Note**: When `fluent` resources are extracted, we *do not* add any date/time/etc. formatting [fallback languages](https://docs.rs/fluent/0.16.1/fluent/bundle/struct.FluentBundle.html#locale-fallback-chain). This is because we cannot display multiple fonts in a single text section, in the case where a different language is used to format a data/time from the surrounding text and the formatting language isn't supported by the text's font. If a text section fails to localize due to formatting issues, then it should just fall back within the negotiated languages list.
 
 ### Localizing text on entities
 
-To localize text, add a [`LocalizedText`](bevy_cobweb_ui::prelude::LocalizedText) component to your entity and write a `fluent` key into the `Text` component.
+To localize text, add a [`LocalizedText`](bevy_cobweb_ui::prelude::LocalizedText) component to your entity and store a string with a `fluent` key in the `Text` component.
 
 For example, assuming a `fluent` resource with a `hello-world = Hello, World!` entry is loaded:
 ```rust
@@ -151,7 +151,7 @@ To coordinate localization across multiple asset managers, we broadcast reactive
 - [`RelocalizeApp`](bevy_cobweb_ui::prelude::RelocalizeApp): Emitted after `LanguagesNegotiated` when the app has finished any asset loads triggered by `LanguagesNegotiated`. This is a signal for the app to relocalize existing text and assets with the updated localized assets.
 - Individual asset managers emit their own events when loaded. For example see [`TextLocalizerLoaded`](bevy_cobweb_ui::prelude::TextLocalizerLoaded).
 
-The first `RelocalizeApp` event will occur immediately before entering [`LoadState::Done`](bevy_cobweb_ui::prelude::LoadState::Done), assuming you add a `LoadLocalizationManifest` command at startup or using a cobweb asset file.
+The first `RelocalizeApp` event will occur immediately before entering [`LoadState::Done`](bevy_cobweb_ui::prelude::LoadState::Done), assuming you add a `LoadLocalizationManifest` command at startup or are using a cobweb asset file.
 
 We avoid relocalizing the app until all assets have loaded to avoid jank from assets loading asynchronously. This means there may be a delay between the user selecting a new language and that language being applied. You can use the `LanguagesNegotiated -> RelocalizeApp` event sequence to display a 'loading' indicator to users.
 
