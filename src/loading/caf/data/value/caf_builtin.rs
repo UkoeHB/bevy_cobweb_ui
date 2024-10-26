@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::{value, verify};
@@ -147,11 +146,6 @@ impl TryFrom<Srgba> for CafHexColor
     }
 }
 
-/*
-Parsing:
-- proper hex format with optional alpha at the beginning
-*/
-
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
@@ -231,16 +225,29 @@ impl CafBuiltin
 
         // Val::X(f32)
         let Ok((number, remaining)) = CafNumberValue::parse(content) else { return Ok((None, fill, content)) };
-        let Some(num) = number.as_f32_lossy() else { return Ok((None, fill, content)) };
-        let Ok((remaining, val)) = alt((
-            value(Val::Percent(num), char::<_, ()>('%')),
-            value(Val::Px(num), tag("px")),
-            value(Val::Vw(num), tag("vw")),
-            value(Val::Vh(num), tag("vh")),
-            value(Val::VMin(num), tag("vmin")),
-            value(Val::VMax(num), tag("vmax")),
-        ))
-        .parse(remaining) else {
+        let get_num = || -> Result<f32, SpanError> {
+            match number.as_f32_lossy() {
+                Some(num) => Ok(num),
+                None => {
+                    tracing::warn!("failed parsing builtin Val at {}; number failed to convert to f32",
+                        get_location(content).as_str());
+                    Err(span_verify_failure(content)) // non-recoverable error
+                }
+            }
+        };
+        let (remaining, val) = if let Ok((remaining, _)) = char::<_, ()>('%').parse(remaining) {
+            (remaining, Val::Percent(get_num()?))
+        } else if let Ok((remaining, _)) = tag::<_, _, ()>("px").parse(remaining) {
+            (remaining, Val::Px(get_num()?))
+        } else if let Ok((remaining, _)) = tag::<_, _, ()>("vw").parse(remaining) {
+            (remaining, Val::Vw(get_num()?))
+        } else if let Ok((remaining, _)) = tag::<_, _, ()>("vh").parse(remaining) {
+            (remaining, Val::Vh(get_num()?))
+        } else if let Ok((remaining, _)) = tag::<_, _, ()>("vmin").parse(remaining) {
+            (remaining, Val::VMin(get_num()?))
+        } else if let Ok((remaining, _)) = tag::<_, _, ()>("vmax").parse(remaining) {
+            (remaining, Val::VMax(get_num()?))
+        } else {
             return Ok((None, fill, content));
         };
 

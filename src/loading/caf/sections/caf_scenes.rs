@@ -110,6 +110,15 @@ impl CafSceneLayer
         Ok(())
     }
 
+    pub fn try_parse(
+        _indent: usize,
+        fill: CafFill,
+        content: Span,
+    ) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.name_fill.recover(&other.name_fill);
@@ -160,10 +169,25 @@ impl CafScenes
             return Err(span_verify_error(content));
         }
 
-        // TODO
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
+        let mut scenes = vec![];
 
-        let scenes = CafScenes { start_fill, scenes: vec![] };
-        Ok((Some(scenes), CafFill::default(), remaining))
+        let end_fill = loop {
+            match CafSceneLayer::try_parse(0, item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    scenes.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
+            }
+        };
+
+        let scenes = CafScenes { start_fill, scenes };
+        Ok((Some(scenes), end_fill, remaining))
     }
 }
 

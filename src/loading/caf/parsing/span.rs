@@ -45,6 +45,22 @@ pub fn span_verify_error(content: Span) -> SpanError
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Makes an unrecoverable [`SpanError`].
+pub fn span_failure(content: Span, code: ErrorKind) -> SpanError
+{
+    nom::Err::Failure(nom::error::Error { input: content, code })
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Makes a [`SpanError`] for a verification failure while parsing (not recoverable).
+pub fn span_verify_failure(content: Span) -> SpanError
+{
+    span_failure(content, ErrorKind::Verify)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Extracts the span that a [`SpanError`] references.
 pub fn unwrap_error_content(error: SpanError) -> Span
 {
