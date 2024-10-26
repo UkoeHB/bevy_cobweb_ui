@@ -110,9 +110,22 @@ fn strings()
 //-------------------------------------------------------------------------------------------------------------------
 
 #[test]
-fn multiline_strings()
+fn string_conversions()
 {
-    // TODO
+    // Single-segment strings
+    test_string_conversion("", "", "", 1);
+    test_string_conversion("a", "a", "a", 1);
+    test_string_conversion("a\n", "a\n", "a\\n", 1);
+    test_string_conversion("a\nb", "a\nb", "a\\nb", 1);
+    test_string_conversion("a\\nb", "a\nb", "a\\nb", 1);
+    test_string_conversion("a\\\\b", "a\\b", "a\\\\b", 1);
+
+    // Multi-segment strings
+    test_string_conversion("\\\n", "", "", 2);
+    test_string_conversion("a\\\nb", "ab", "ab", 2);
+    test_string_conversion("a\\\n b", "ab", "ab", 2);
+    test_string_conversion("a\\\nb\\\nc", "abc", "abc", 3);
+    test_string_conversion("a\na1 a2\\\n\nb\\\nc d", "a\na1 a2\nbc d", "a\\na1 a2\\nbc d", 3);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

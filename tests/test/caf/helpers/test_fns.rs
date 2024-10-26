@@ -166,3 +166,43 @@ pub fn test_caf_fail(raw: &[u8], remaining: &[u8])
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+pub fn test_string_conversion(raw: &str, converted: &str, reserialized: &str, num_segments: usize)
+{
+    // Wrap raw in quotes
+    let raw = format!("\"{}\"", raw);
+
+    // Raw to value
+    let cafvalue_parsed = match CafValue::try_parse(CafFill::default(), test_span(raw.as_str())) {
+        Ok((Some(cafvalue_parsed), _, _)) => cafvalue_parsed,
+        Err(err) => panic!("{}, ERR={err:?}", raw.as_str()),
+        _ => panic!("{}, TRY FAILED", raw.as_str()),
+    };
+    let CafValue::String(string) = &cafvalue_parsed else { panic!("{cafvalue_parsed:?}") };
+    assert_eq!(string.segments.len(), num_segments);
+    assert_eq!(string.as_str(), converted);
+
+    // Value to raw
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    cafvalue_parsed.write_to(&mut serializer).unwrap();
+    let reconstructed_raw_val = String::from_utf8(buff).unwrap();
+    assert_eq!(raw, reconstructed_raw_val);
+
+    // Converted to value
+    let cafvalue_from_str = CafValue::extract(converted).unwrap();
+    let CafValue::String(string) = &cafvalue_from_str else { panic!("{cafvalue_from_str:?}") };
+    assert_eq!(string.segments.len(), 1);
+    assert_eq!(string.as_str(), converted);
+    //don't test equality of the CafValue, since extraction-from-converted is lossy
+
+    // Converted value to raw
+    // Note: 'reserialized' contains escape sequences, whereas 'converted' contains literal chars
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    cafvalue_from_str.write_to(&mut serializer).unwrap();
+    let converted_raw_val = String::from_utf8(buff).unwrap();
+    assert_eq!(format!("\"{reserialized}\""), converted_raw_val);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
