@@ -104,7 +104,7 @@ impl CafHexColor
         let (remaining, digits) = parse_hex_u32(remaining)?;
         let end_len = remaining.input_len();
 
-        let len = end_len - start_len;
+        let len = start_len.saturating_sub(end_len);
         if len != 8 && len != 6 {
             tracing::warn!("failed parsing hex color at {}; hex length is {} but expected 6 or 8",
                 get_location(content), len);
@@ -113,10 +113,10 @@ impl CafHexColor
 
         let mut color = Srgba::default();
         if len == 8 {
-            color.alpha = (((digits << 6) as u8) as f32) / 255.;
+            color.alpha = (((digits >> 24) as u8) as f32) / 255.;
         }
-        color.red = (((digits << 4) as u8) as f32) / 255.;
-        color.green = (((digits << 2) as u8) as f32) / 255.;
+        color.red = (((digits >> 16) as u8) as f32) / 255.;
+        color.green = (((digits >> 8) as u8) as f32) / 255.;
         color.blue = ((digits as u8) as f32) / 255.;
 
         let (next_fill, remaining) = CafFill::parse(remaining);
@@ -231,7 +231,7 @@ impl CafBuiltin
 
         // Val::X(f32)
         let Ok((number, remaining)) = CafNumberValue::parse(content) else { return Ok((None, fill, content)) };
-        let Some(num) = number.as_f32() else { return Ok((None, fill, content)) };
+        let Some(num) = number.as_f32_lossy() else { return Ok((None, fill, content)) };
         let Ok((remaining, val)) = alt((
             value(Val::Percent(num), char::<_, ()>('%')),
             value(Val::Px(num), tag("px")),

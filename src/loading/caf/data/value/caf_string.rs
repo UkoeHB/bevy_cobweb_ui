@@ -114,9 +114,13 @@ fn parse_fragment(input: Span) -> IResult<Span, StringFragment>
 
 fn parse_string(input: Span) -> IResult<Span, SmallVec<[CafStringSegment; 1]>>
 {
-    let build_string = fold_many0(
+    // Opening "
+    let (remaining, _) = char('"').parse(input)?;
+
+    // String contents
+    let (remaining, (last_segment_input, mut segments)) = fold_many0(
         parse_fragment,
-        || (input, SmallVec::from_elem(CafStringSegment::default(), 1)),
+        || (remaining, SmallVec::from_elem(CafStringSegment::default(), 1)),
         |(mut input, mut segments): (_, SmallVec<[CafStringSegment; 1]>), fragment| {
             match fragment {
                 StringFragment::Literal(s) => segments.last_mut().unwrap().segment.push_str(*s.fragment()),
@@ -132,19 +136,19 @@ fn parse_string(input: Span) -> IResult<Span, SmallVec<[CafStringSegment; 1]>>
             }
             (input, segments)
         },
-    );
+    )
+    .parse(remaining)?;
 
-    // Note: assumes no internal parsers match directly on '"'.
-    delimited(char('"'), build_string, char('"'))
-        .parse(input)
-        // Collect original bytes of the last segment.
-        .map(|(remaining, (input, mut segments))| {
-            let input_bytes = input.fragment().as_bytes();
-            let remaining_bytes = remaining.fragment().as_bytes();
-            let len = input_bytes.len().saturating_sub(remaining_bytes.len() + 1); // + 1 for the terminal '"'
-            segments.last_mut().unwrap().original = Vec::from(&input_bytes[..len]);
-            (remaining, segments)
-        })
+    // Collect original bytes of the last segment.
+    let input_bytes = last_segment_input.fragment().as_bytes();
+    let remaining_bytes = remaining.fragment().as_bytes();
+    let len = input_bytes.len().saturating_sub(remaining_bytes.len());
+    segments.last_mut().unwrap().original = Vec::from(&input_bytes[..len]);
+
+    // Closing "
+    let (remaining, _) = char('"').parse(remaining)?;
+
+    Ok((remaining, segments))
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -68,9 +68,22 @@ impl TryFrom<&'static str> for CafInstructionIdentifier
 {
     type Error = CafError;
 
+    /// Fails if generics fail to parse.
     fn try_from(short_path: &'static str) -> CafResult<Self>
     {
-        Ok(Self { name: SmolStr::new_static(short_path), generics: None })
+        match Self::parse(Span::new_extra(
+            short_path,
+            CafLocationMetadata { file: "CafInstructionIdentifier::try_from" },
+        )) {
+            Ok((id, remaining)) => {
+                if remaining.fragment().len() == 0 {
+                    Ok(id)
+                } else {
+                    Err(CafError::MalformedInstructionId)
+                }
+            }
+            Err(_) => Err(CafError::MalformedInstructionId),
+        }
     }
 }
 

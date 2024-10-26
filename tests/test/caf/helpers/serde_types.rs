@@ -275,7 +275,7 @@ where
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BuiltinCollection
 {
-    pub auto: Val,
+    pub auto_val: Val,
     pub px: Val,
     pub percent: Val,
     pub vw: Val,

@@ -25,27 +25,30 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
 
     // Caf raw to Caf instruction
+    let instruction_parsed = match CafInstruction::try_parse(CafFill::default(), test_span(caf_raw)) {
+        Ok((Some(instruction_parsed), _, _)) => instruction_parsed,
+        Err(err) => panic!("{caf_raw}, ERR={err:?}"),
+        _ => panic!("{caf_raw}, TRY FAILED"),
+    };
+
     // Caf raw val to Caf value
+    let cafvalue_parsed = match CafValue::try_parse(CafFill::default(), test_span(caf_raw_val)) {
+        Ok((Some(cafvalue_parsed), _, _)) => cafvalue_parsed,
+        Err(err) => panic!("{caf_raw}, ERR={err:?}"),
+        _ => panic!("{caf_raw}, TRY FAILED"),
+    };
+
     // Caf raw to Caf command raw
+    // TODO
+
     // Caf raw to Caf scene raw
     // TODO
 
-    // Rust value to caf instruction
-    // TODO: remove once raw -> instruction is available
-    let instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
-    let cafvalue_from_rust = CafValue::extract(&value).unwrap();
-    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
-    let direct_value_from_value = T::deserialize(&cafvalue_from_rust).unwrap();
-    if check_vals {
-        assert_eq!(value, direct_value);
-        assert_eq!(value, direct_value_from_value);
-    }
-
     // Caf instruction to reflect
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected_inst = deserializer.deserialize(&instruction_from_rust).unwrap();
+    let reflected_inst = deserializer.deserialize(&instruction_parsed).unwrap();
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected_val = deserializer.deserialize(&cafvalue_from_rust).unwrap();
+    let reflected_val = deserializer.deserialize(&cafvalue_parsed).unwrap();
 
     // Reflect to rust value
     let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
@@ -56,16 +59,51 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     }
 
     // Rust value to caf instruction
-    let instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
+    let mut instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
+    let mut cafvalue_from_rust = CafValue::extract(&value).unwrap();
+    instruction_from_rust.recover_fill(&instruction_parsed);
+    cafvalue_from_rust.recover_fill(&cafvalue_parsed);
+    assert_eq!(instruction_from_rust, instruction_parsed);
+    assert_eq!(cafvalue_from_rust, cafvalue_parsed);
 
-    // Caf instruction to caf raw
+    // Rust value from caf instruction parsed (direct)
+    let direct_value = T::deserialize(&instruction_parsed).unwrap();
+    let direct_value_from_value = T::deserialize(&cafvalue_parsed).unwrap();
+    if check_vals {
+        assert_eq!(value, direct_value);
+        assert_eq!(value, direct_value_from_value);
+    }
+
+    // Rust value from caf instruction from rust (direct)
+    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    let direct_value_from_value = T::deserialize(&cafvalue_from_rust).unwrap();
+    if check_vals {
+        assert_eq!(value, direct_value);
+        assert_eq!(value, direct_value_from_value);
+    }
+
+    // Caf instruction-from-raw to caf raw
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    instruction_parsed.write_to(&mut serializer).unwrap();
+    let reconstructed_raw = String::from_utf8(buff).unwrap();
+    assert_eq!(caf_raw, reconstructed_raw);
+
+    // Caf value-from-raw to caf raw
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    cafvalue_parsed.write_to(&mut serializer).unwrap();
+    let reconstructed_raw_val = String::from_utf8(buff).unwrap();
+    assert_eq!(caf_raw_val, reconstructed_raw_val);
+
+    // Caf instruction-from-rust to caf raw
     let mut buff = Vec::<u8>::default();
     let mut serializer = DefaultRawSerializer::new(&mut buff);
     instruction_from_rust.write_to(&mut serializer).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
 
-    // Caf value to caf raw
+    // Caf value-from-rust to caf raw
     let mut buff = Vec::<u8>::default();
     let mut serializer = DefaultRawSerializer::new(&mut buff);
     cafvalue_from_rust.write_to(&mut serializer).unwrap();

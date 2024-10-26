@@ -15,6 +15,13 @@ use super::helpers::*;
 #[test]
 fn unit_struct()
 {
+    /*
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_max_level(tracing::Level::TRACE)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    */
+
     let a = prepare_test_app();
     test_equivalence(a.world(), "UnitStruct", "()", UnitStruct);
 }
@@ -38,6 +45,13 @@ fn plain_struct()
 #[test]
 fn numbers()
 {
+    /*
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_max_level(tracing::Level::TRACE)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    */
+
     let a = prepare_test_app();
     let w = a.world();
     test_equivalence(w, "FloatStruct(0)", "0", FloatStruct(0.0f64));
@@ -91,6 +105,14 @@ fn strings()
         StringStruct("hi\nhi".into()),
     );
     test_equivalence(w, "StringStruct(\"\\u{df}\")", "\"\\u{df}\"", StringStruct("ß".into()));
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn multiline_strings()
+{
+    // TODO
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -309,13 +331,20 @@ fn enum_generic()
 #[test]
 fn builtins()
 {
+    /*
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_max_level(tracing::Level::TRACE)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    */
+
     let a = prepare_test_app();
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
-        "{auto:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
+        "BuiltinCollection{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
+        "{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
         BuiltinCollection {
-            auto: Val::Auto,
+            auto_val: Val::Auto,
             px: Val::Px(0.0),
             percent: Val::Percent(1.0),
             vw: Val::Vw(1.0),
@@ -327,10 +356,10 @@ fn builtins()
     );
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
-        "{auto:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
+        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
+        "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
         BuiltinCollection {
-            auto: Val::Auto,
+            auto_val: Val::Auto,
             px: Val::Px(1.1),
             percent: Val::Percent(1.1),
             vw: Val::Vw(1.1),
