@@ -7,8 +7,8 @@ use bevy::prelude::*;
 
 use super::helpers::*;
 
-// TODO: test lossy conversions (scientific notation, multiline strings, manual builtin to auto-builtin,
-// reflect-defaulted fields, unicode with leading zeros, ??) (these require parsing to be implemented)
+// TODO: test lossy conversions (*scientific notation, *multiline strings, *manual builtin to auto-builtin,
+// reflect-defaulted fields, *unicode with leading zeros, ??) (these require parsing to be implemented)
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -86,6 +86,18 @@ fn numbers()
         "1.0000000001",
         FloatStruct(1.0000000001f64),
     );
+
+    // Lossy conversion: leading zeroes in floats
+    test_equivalence_lossy(w, "FloatStruct(00.0)", "FloatStruct(0)", FloatStruct(00.0f64));
+    test_equivalence_lossy(w, "FloatStruct(01.1)", "FloatStruct(1.1)", FloatStruct(01.1f64));
+
+    // Lossy conversion: trailing zeroes in floats
+    test_equivalence_lossy(w, "FloatStruct(1.0)", "FloatStruct(1)", FloatStruct(1.0f64));
+    test_equivalence_lossy(w, "FloatStruct(1.10)", "FloatStruct(1.1)", FloatStruct(1.10f64));
+
+    // Lossy conversion: scientific notation
+    test_equivalence_lossy(w, "FloatStruct(1e5)", "FloatStruct(100000)", FloatStruct(1e5f64));
+    test_equivalence_lossy(w, "FloatStruct(-1e5)", "FloatStruct(-100000)", FloatStruct(-1e5f64));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -105,6 +117,14 @@ fn strings()
         StringStruct("hi\nhi".into()),
     );
     test_equivalence(w, "StringStruct(\"\\u{df}\")", "\"\\u{df}\"", StringStruct("ß".into()));
+
+    // Lossy conversion: leading zeroes in unicode sequence
+    test_equivalence_lossy(
+        w,
+        "StringStruct(\"\\u{00df}\")",
+        "StringStruct(\"\\u{df}\")",
+        StringStruct("ß".into()),
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -371,6 +391,23 @@ fn builtins()
         a.world(),
         "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
         "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
+        BuiltinCollection {
+            auto_val: Val::Auto,
+            px: Val::Px(1.1),
+            percent: Val::Percent(1.1),
+            vw: Val::Vw(1.1),
+            vh: Val::Vh(1.1),
+            vmin: Val::VMin(1.1),
+            vmax: Val::VMax(1.1),
+            color: Color::Srgba(Srgba::RED),
+        },
+    );
+
+    // Lossy conversion: manual builtin forced to builtin syntax
+    test_equivalence_lossy(
+        a.world(),
+        "BuiltinCollection{auto_val:Auto px:Px(1.1) percent:Percent(1.1) vw:Vw(1.1) vh:Vh(1.1) vmin:VMin(1.1) vmax:VMax(1.1) color:Srgba({red:1.0 green:0.0 blue:0.0 alpha:1.0})}",
+        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
         BuiltinCollection {
             auto_val: Val::Auto,
             px: Val::Px(1.1),

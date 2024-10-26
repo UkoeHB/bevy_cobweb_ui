@@ -8,7 +8,7 @@ use crate::prelude::*;
 pub enum CafValue
 {
     Enum(CafEnum),
-    /// Special built-in types like `none` and `#FFFFFF` for colors.
+    /// Special built-in types like `auto` and `#FFFFFF` for colors.
     Builtin(CafBuiltin),
     Array(CafArray),
     Tuple(CafTuple),

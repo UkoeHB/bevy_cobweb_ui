@@ -137,6 +137,58 @@ pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
+///
+/// Expects the conversion `raw -> Caf (-> value -> Caf) -> raw` to be lossy in the sense that original syntax
+/// won't be preserved.
+pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+{
+    let type_registry = w.resource::<AppTypeRegistry>().read();
+    let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
+
+    // Caf raw to Caf instruction
+    let instruction_parsed = match CafInstruction::try_parse(CafFill::default(), test_span(caf_raw)) {
+        Ok((Some(instruction_parsed), _, _)) => instruction_parsed,
+        Err(err) => panic!("{caf_raw}, ERR={err:?}"),
+        _ => panic!("{caf_raw}, TRY FAILED"),
+    };
+
+    // Caf instruction to reflect
+    let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
+    let reflected_inst = deserializer.deserialize(&instruction_parsed).unwrap();
+
+    // Reflect to rust value
+    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
+    assert_eq!(value, extracted_inst);
+
+    // Rust value to caf instruction
+    let mut instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
+    instruction_from_rust.recover_fill(&instruction_parsed);
+    //assert_eq!(instruction_from_rust, instruction_parsed); // possibly not true e.g. in the case of builtin
+    // conversions
+
+    // Rust value from caf instruction parsed (direct)
+    let direct_value = T::deserialize(&instruction_parsed).unwrap();
+    assert_eq!(value, direct_value);
+
+    // Rust value from caf instruction from rust (direct)
+    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    assert_eq!(value, direct_value);
+
+    // Caf instruction-from-raw to caf raw
+    // NOTE: we don't test this since there are 'intermediate' lossy cases where the lossiness occurs on
+    // raw -> Caf -> raw instead of raw -> Caf -> rust -> Caf -> raw
+
+    // Caf instruction-from-rust to caf raw
+    let mut buff = Vec::<u8>::default();
+    let mut serializer = DefaultRawSerializer::new(&mut buff);
+    instruction_from_rust.write_to(&mut serializer).unwrap();
+    let reconstructed_raw = String::from_utf8(buff).unwrap();
+    assert_eq!(reconstructed_raw, caf_raw_reserialized);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub fn test_caf(raw: &[u8]) -> Caf
 {
     // Parse
