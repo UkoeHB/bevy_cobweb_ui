@@ -282,6 +282,8 @@ Nice!() = TheEnd
     flex{..}
     // Single-quotes means it is inserted to a scene node. These parameters only support .. and nested single-quoted params.
     'inner'{.. 'innermost'{..}}
+    // There is no 'catch all' at the base layer because scene macros are inserted in-line to a scene layer.
+    // The user can just add stuff directly to the scene layer where the macro is inserted.
 ) = \
     FlexStyle{
         dims: {width: ?param1}
@@ -412,7 +414,8 @@ The scene section must be the *last* section in a caf file.
                 animate!([] 20px on_over{0.3 InExpo})
                 animate!([Selected] 20px on_over{0.3 InExpo}))
 
-            "inserted"+spec_in_tree(num: 42)
+            "inserted"
+                +spec_in_tree(num: 42)
 
             "another"
                 F!(10px 11px)

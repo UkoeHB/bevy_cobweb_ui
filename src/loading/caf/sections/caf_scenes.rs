@@ -19,10 +19,15 @@ impl CafSceneNodeName
         writer.write_bytes("\"".as_bytes())?;
         Ok(())
     }
-}
 
-// Parsing:
-// - String should be snake-case only, starting with a lowercase letter and numbers are optional.
+    // TODO: consider custom-parsing this to restrict what can be used for node names and make this more performant
+    pub fn try_parse(content: Span) -> Result<(Option<(Self, CafFill)>, Span), SpanError>
+    {
+        let (maybe_name, next_fill, remaining) = CafString::try_parse(CafFill::default(), content)?;
+        let Some(name) = maybe_name else { return Ok((None, content)) };
+        Ok((Some((Self(SmolStr::from(name.as_str())), next_fill)), remaining))
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -30,12 +35,12 @@ impl CafSceneNodeName
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafSceneLayerEntry
 {
-    Instruction(CafInstruction),
     InstructionMacroCall(CafInstructionMacroCall),
+    Instruction(CafInstruction),
     SceneMacroCall(CafSceneMacroCall),
+    Layer(CafSceneLayer),
     /// This is the `..'node_name'` and `..*` syntax.
     SceneMacroParam(CafSceneMacroParam),
-    Layer(CafSceneLayer),
 }
 
 impl CafSceneLayerEntry
@@ -43,16 +48,16 @@ impl CafSceneLayerEntry
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Instruction(entry) => {
-                entry.write_to(writer)?;
-            }
             Self::InstructionMacroCall(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::Layer(entry) => {
+            Self::Instruction(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacroCall(entry) => {
+                entry.write_to(writer)?;
+            }
+            Self::Layer(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacroParam(entry) => {
@@ -62,19 +67,74 @@ impl CafSceneLayerEntry
         Ok(())
     }
 
+    pub fn try_parse(
+        parent_indent: usize,
+        expected_indent: usize,
+        fill: CafFill,
+        content: Span,
+    ) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        // If no indent but not eof, warn and error, else return none.
+        let Some(indent) = fill.ends_newline_then_num_spaces() else {
+            if content.fragment().len() == 0 {
+                // End-of-file
+                return Ok((None, fill, content));
+            }
+            tracing::warn!("failed parsing scene at {}; encountered something that isn't on a separate line",
+                get_location(content));
+            return Err(span_verify_error(content));
+        };
+
+        // The next item isn't on the active layer.
+        if indent <= parent_indent {
+            return Ok((None, fill, content));
+        }
+
+        // Warn and allow if indent is != expected
+        if indent != expected_indent {
+            tracing::warn!("encountered scene item that isn't aligned with other items in the same layer at {}; \
+                item indent: {}, expected: {}", get_location(content).as_str(), indent, expected_indent);
+        }
+
+        // Parse item.
+        // - Parse instruction macro calls before instructions to avoid conflicts.
+        let fill = match CafInstructionMacroCall::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::InstructionMacroCall(item)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafInstruction::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::Instruction(item)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafSceneMacroCall::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCall(item)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafSceneLayer::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::Layer(item)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+        let fill = match CafSceneMacroParam::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroParam(item)), fill, remaining)),
+            (None, fill, _) => fill,
+        };
+
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::Instruction(entry), Self::Instruction(other_entry)) => {
-                entry.recover_fill(other_entry);
-            }
             (Self::InstructionMacroCall(entry), Self::InstructionMacroCall(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
-            (Self::Layer(entry), Self::Layer(other_entry)) => {
+            (Self::Instruction(entry), Self::Instruction(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
             (Self::SceneMacroCall(entry), Self::SceneMacroCall(other_entry)) => {
+                entry.recover_fill(other_entry);
+            }
+            (Self::Layer(entry), Self::Layer(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
             (Self::SceneMacroParam(entry), Self::SceneMacroParam(other_entry)) => {
@@ -110,30 +170,61 @@ impl CafSceneLayer
         Ok(())
     }
 
-    pub fn try_parse(
-        _indent: usize,
-        fill: CafFill,
-        content: Span,
-    ) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    /// `indent` should be the indent of this layer's id
+    pub fn try_parse(name_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        Ok((None, fill, content))
+        let (Some((name, mut item_fill)), mut remaining) = CafSceneNodeName::try_parse(content)? else {
+            return Ok((None, name_fill, content));
+        };
+
+        // Extract layer indent
+        let Some(layer_indent) = name_fill.ends_newline_then_num_spaces() else {
+            tracing::warn!("failed parsing scene at {}; node name is not on a separate line from the previous item",
+                get_location(remaining));
+            return Err(span_verify_error(content));
+        };
+
+        // Get content indent from first item_fill.
+        let mut entries = vec![];
+        let Some(content_indent) = item_fill.ends_newline_then_num_spaces() else {
+            if remaining.fragment().len() == 0 {
+                // End-of-file
+                return Ok((Some(Self { name_fill, name, entries }), item_fill, remaining));
+            }
+            tracing::warn!("failed parsing scene at {}; first item after a node name isn't on a separate line",
+                get_location(remaining));
+            return Err(span_verify_error(remaining));
+        };
+
+        // Collect entries.
+        let end_fill = loop {
+            // Note: this will properly handle the case where content_indent <= layer_indent.
+            match CafSceneLayerEntry::try_parse(layer_indent, content_indent, item_fill, remaining)? {
+                (Some(entry), next_fill, after_entry) => {
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
+            }
+        };
+
+        Ok((Some(Self { name_fill, name, entries }), end_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
     {
         self.name_fill.recover(&other.name_fill);
-        // name has no fill
         for (entry, other) in self.entries.iter_mut().zip(other.entries.iter()) {
             entry.recover_fill(other);
         }
     }
-}
 
-// Parsing: layer name must have preceding spaces with a newline separating anything else (such as comments).
-// - Parsing context must keep track of the layer depth increment in order to place layers in the right positions.
-//   - Note that in scene macro defs, the first layer is anonymous so depth tracking needs to be relative to the
-//   first child layer encountered.
-// - Layer entries should not have the same names unless anonymous.
+    // TODO: when extracting scene layer, check for uniqueness of non-anonymous names
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -165,16 +256,22 @@ impl CafScenes
 
         if start_fill.len() != 0 && !start_fill.ends_with_newline() {
             tracing::warn!("failed parsing scenes section at {} that doesn't start on newline",
-                get_location(content).as_str());
-            return Err(span_verify_error(content));
+                get_location(remaining).as_str());
+            return Err(span_verify_error(remaining));
         }
 
         let (mut item_fill, mut remaining) = CafFill::parse(remaining);
         let mut scenes = vec![];
 
         let end_fill = loop {
-            match CafSceneLayer::try_parse(0, item_fill, remaining)? {
+            let item_depth = item_fill.ends_newline_then_num_spaces();
+            match CafSceneLayer::try_parse(item_fill, remaining)? {
                 (Some(entry), next_fill, after_entry) => {
+                    if item_depth != Some(0) {
+                        tracing::warn!("failed parsing scene at {}; scene is assessed to be on base layer \
+                            but doesn't start with a newline", get_location(remaining).as_str());
+                        return Err(span_verify_error(remaining));
+                    }
                     scenes.push(entry);
                     item_fill = next_fill;
                     remaining = after_entry;
@@ -192,5 +289,7 @@ impl CafScenes
 }
 
 // Parsing: layers cannot contain scene macro params, and layer entries cannot contain macro params.
+// - TODO: evaluate if this is useful, the perf cost to validate is non-negligible if done by re-traversing the
+//   data
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -29,6 +29,11 @@ impl CafSceneMacroCall
         Ok(())
     }
 
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, _other: &Self) {}
 }
 
@@ -69,6 +74,11 @@ impl CafSceneMacroParam
         -> Result<(), std::io::Error>
     {
         Ok(())
+    }
+
+    pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
+    {
+        Ok((None, fill, content))
     }
 
     pub fn recover_fill(&mut self, _other: &Self) {}
