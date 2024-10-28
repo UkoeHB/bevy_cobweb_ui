@@ -192,6 +192,9 @@ where
 /// Extention trait for loading scenes into entities.
 pub trait LoadSceneExt: scene_traits::SceneNodeLoader
 {
+    /// Equivalent to [`LoadSceneExt::load_scene`] with no callback.
+    fn load_scene_basic(&mut self, scene_loader: &mut SceneLoader, path: SceneRef) -> &mut Self;
+
     /// Spawns an entity (and optionally makes it a child of
     /// [`Self::scene_parent_entity`](scene_traits::SceneNodeLoader::scene_parent_entity)), then loads the scene at
     /// `path` into it.
@@ -207,6 +210,11 @@ impl<T> LoadSceneExt for T
 where
     T: scene_traits::SceneNodeLoader,
 {
+    fn load_scene_basic(&mut self, scene_loader: &mut SceneLoader, path: SceneRef) -> &mut Self
+    {
+        self.load_scene(scene_loader, path, |_| {})
+    }
+
     fn load_scene<C>(&mut self, scene_loader: &mut SceneLoader, path: SceneRef, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
