@@ -17,7 +17,7 @@ pub fn prepare_test_app() -> App
 
 pub fn test_span(val: &str) -> Span
 {
-    Span::new_extra(val, CafLocationMetadata { file: "test" })
+    Span::new_extra(val, CafLocationMetadata { file: "test.caf" })
 }
 
 //-------------------------------------------------------------------------------------------------------------------

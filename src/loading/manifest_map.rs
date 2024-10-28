@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use crate::prelude::*;
 
@@ -9,17 +8,17 @@ use crate::prelude::*;
 #[derive(Default, Debug)]
 pub(crate) struct ManifestMap
 {
-    map: HashMap<Arc<str>, SceneFile>,
+    map: HashMap<ManifestKey, CafFile>,
 }
 
 impl ManifestMap
 {
-    pub(crate) fn insert(&mut self, key: Arc<str>, file: SceneFile) -> Option<SceneFile>
+    pub(crate) fn insert(&mut self, key: ManifestKey, file: CafFile) -> Option<CafFile>
     {
         self.map.insert(key, file)
     }
 
-    pub(crate) fn remove(&mut self, key: &Arc<str>) -> Option<SceneFile>
+    pub(crate) fn remove(&mut self, key: &ManifestKey) -> Option<CafFile>
     {
         self.map.remove(key)
     }
@@ -27,9 +26,8 @@ impl ManifestMap
     /// Gets a file reference from a scene file reference.
     ///
     /// Returns `None` if the requested file is [`SceneFile::ManifestKey`] and lookup failed.
-    pub(crate) fn get(&self, file: &SceneFile) -> Option<SceneFile>
+    pub(crate) fn get(&self, key: &ManifestKey) -> Option<CafFile>
     {
-        let SceneFile::ManifestKey(key) = file else { return Some(file.clone()) };
         self.map.get(key).cloned()
     }
 
@@ -43,7 +41,7 @@ impl ManifestMap
             tracing::error!("tried accessing manifest key {:?} but no file was found", key);
             return;
         };
-        *maybe_key = file_ref.clone();
+        *maybe_key = SceneFile::File(file_ref.clone());
     }
 }
 

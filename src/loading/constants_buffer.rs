@@ -5,7 +5,30 @@ use serde_json::Value;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-use crate::prelude::*;
+use super::CafImportAlias;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+const CONSTANT_SEPARATOR: &str = "::";
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
+{
+    // skip empties and concatenate: a::b::c
+    let mut count = 0;
+    SmolStr::from_iter(
+        path.iter()
+            .filter(|p| !p.as_ref().is_empty())
+            .flat_map(|p| {
+                count += 1;
+                match count {
+                    1 => ["", p.as_ref()],
+                    _ => [separator, p.as_ref()],
+                }
+            }),
+    )
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -21,40 +44,40 @@ type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, Value>>;
 pub(crate) struct ConstantsBuffer
 {
     stack: SmallVec<[(SmolStr, Arc<ConstantsMap>); 5]>,
-    new_file: ConstantsMap,
+    _new_file: ConstantsMap,
 }
 
 impl ConstantsBuffer
 {
-    pub(crate) fn start_new_file(&mut self)
+    pub(crate) fn _start_new_file(&mut self)
     {
-        self.new_file = HashMap::default();
+        self._new_file = HashMap::default();
     }
 
-    pub(crate) fn end_new_file(&mut self)
+    pub(crate) fn _end_new_file(&mut self)
     {
-        let map = std::mem::take(&mut self.new_file);
+        let map = std::mem::take(&mut self._new_file);
         self.stack.push((SmolStr::default(), Arc::new(map)));
     }
 
     /// Adds an entry to the new file being constructed.
-    pub(crate) fn add_entry(&mut self, path: SmolStr, map: HashMap<SmolStr, Value>)
+    pub(crate) fn _add_entry(&mut self, path: SmolStr, map: HashMap<SmolStr, Value>)
     {
-        self.new_file.insert(path, map);
+        self._new_file.insert(path, map);
     }
 
     /// Gets an already-inserted entry in the new file being constructed.
-    pub(crate) fn get_entry_mut(&mut self, path: impl AsRef<str>) -> Option<&mut HashMap<SmolStr, Value>>
+    pub(crate) fn _get_entry_mut(&mut self, path: impl AsRef<str>) -> Option<&mut HashMap<SmolStr, Value>>
     {
         let path = path.as_ref();
-        self.new_file.get_mut(path)
+        self._new_file.get_mut(path)
     }
 
     /// Searches backward through the stack until a match is found.
-    pub(crate) fn get_path(&self, path: impl AsRef<str>) -> Option<&HashMap<SmolStr, Value>>
+    pub(crate) fn _get_path(&self, path: impl AsRef<str>) -> Option<&HashMap<SmolStr, Value>>
     {
         let path = path.as_ref();
-        self.new_file.get(path).or_else(|| {
+        self._new_file.get(path).or_else(|| {
             self.stack.iter().rev().find_map(|(prefix, m)| {
                 let stripped = path.strip_prefix(prefix.as_str())?;
                 let cleaned = stripped
@@ -65,9 +88,9 @@ impl ConstantsBuffer
         })
     }
 
-    pub(crate) fn append(&mut self, alias: impl AsRef<str>, to_append: &Self)
+    pub(crate) fn append(&mut self, alias: &CafImportAlias, to_append: &Self)
     {
-        let alias = alias.as_ref();
+        let alias = alias.as_str();
 
         // Remove duplicates in self.
         for (to_append_prefix, to_append) in to_append.stack.iter() {

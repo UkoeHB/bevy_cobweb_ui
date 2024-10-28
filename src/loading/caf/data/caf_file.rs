@@ -10,11 +10,29 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
-pub struct CafFilePath(pub Arc<str>);
+/// Represents the path to a cobweb asset file in the `asset` directory.
+///
+/// Cobweb asset files use the `.caf` extension. If your original path includes an asset source, then
+/// the asset source must be included in the name (e.g. `embedded://scene.caf` -> `scene.caf`).
+///
+/// Example: `ui/home.caf` for a `home` cobweb asset in `assets/ui`.
+#[derive(Debug, Clone, Deref, Eq, PartialEq, Hash)]
+pub struct CafFile(Arc<str>);
 
-impl CafFilePath
+impl CafFile
 {
+    /// Tries to create a new CAF file reference.
+    ///
+    /// Fails if the file doesn't end with `.caf`.
+    pub fn try_new(file: impl AsRef<str>) -> Option<Self>
+    {
+        let file = file.as_ref();
+        if !file.ends_with(".caf") {
+            return None;
+        }
+        Some(Self(Arc::from(file)))
+    }
+
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         writer.write_bytes("\"".as_bytes())?;
@@ -41,9 +59,14 @@ impl CafFilePath
 
         Ok((Self(Arc::from(*path.fragment())), remaining))
     }
+
+    pub fn as_str(&self) -> &str
+    {
+        &self.0
+    }
 }
 
-impl Default for CafFilePath
+impl Default for CafFile
 {
     fn default() -> Self
     {

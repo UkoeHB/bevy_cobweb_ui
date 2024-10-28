@@ -1,33 +1,13 @@
-use serde_json::{Map, Value};
-use smol_str::SmolStr;
+use std::collections::HashMap;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) fn extract_import_section(
-    file: &SceneFile,
-    map: &Map<String, Value>,
-    imports: &mut Vec<(String, SmolStr)>,
-)
+pub(super) fn extract_import_section(section: &CafImport, imports: &mut HashMap<ManifestKey, CafImportAlias>)
 {
-    let Some(import_section) = map.get(IMPORT_KEYWORD) else {
-        return;
-    };
-
-    let Value::Object(import_section) = import_section else {
-        tracing::error!("failed parsing 'import' section in {:?}, it is not an Object", file);
-        return;
-    };
-
-    for (import, alias) in import_section.iter() {
-        let Value::String(alias) = alias else {
-            tracing::error!("failed parsing import alias {:?} for {:?} in 'import' section of {:?}, it is not a \
-                String", alias, import, file);
-            continue;
-        };
-
-        imports.push((import.clone(), alias.as_str().into()));
+    for entry in section.entries.iter() {
+        imports.insert(entry.key.clone(), entry.alias.clone());
     }
 }
 

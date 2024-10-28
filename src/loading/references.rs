@@ -4,6 +4,8 @@ use std::sync::Arc;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
+pub use crate::prelude::caf::{CafFile, ManifestKey};
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The token that separates parts of a scene path.
@@ -14,33 +16,26 @@ pub const SCENE_PATH_SEPARATOR: &str = "::";
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents the path to a cobweb asset file in the `asset` directory, or a manifest key for that file.
-///
-/// Cobweb asset files use the `.caf.json` extension. If your original path includes an asset source, then
-/// the asset source will be stripped from the name (e.g. `embedded://scene.caf.json` -> `scene.caf.json`).
-///
-/// Example: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum SceneFile
 {
-    File(Arc<str>),
-    ManifestKey(Arc<str>),
+    File(CafFile),
+    ManifestKey(ManifestKey),
 }
 
 impl SceneFile
 {
-    /// Creates a new loadable file reference from a file name.
+    /// Creates a new CAF file reference from a file name.
     ///
-    /// If the file name does not include the `.caf.json` file extension, then it will be treated as a
+    /// If the file name does not include the `.caf` file extension, then it will be treated as a
     /// manifest key.
     pub fn new(file: impl AsRef<str>) -> Self
     {
         let file = file.as_ref();
-        match file.ends_with(".caf.json") {
-            true => {
-                let file = file.split_once("://").map(|(_, path)| path).unwrap_or(file);
-                Self::File(Arc::from(file))
-            }
-            false => Self::ManifestKey(Arc::from(file)),
+        if let Some(file) = CafFile::try_new(file) {
+            Self::File(file)
+        } else {
+            Self::ManifestKey(ManifestKey::new(file))
         }
     }
 
@@ -48,8 +43,8 @@ impl SceneFile
     pub fn as_str(&self) -> &str
     {
         match self {
-            Self::File(file) => file,
-            Self::ManifestKey(key) => key,
+            Self::File(file) => file.as_str(),
+            Self::ManifestKey(key) => key.as_str(),
         }
     }
 
@@ -57,12 +52,12 @@ impl SceneFile
     pub fn inner(&self) -> &Arc<str>
     {
         match self {
-            Self::File(file) => file,
-            Self::ManifestKey(key) => key,
+            Self::File(file) => &*file,
+            Self::ManifestKey(key) => &*key,
         }
     }
 
-    /// Returns `true` if this file reference is a file path (i.e. it ends with `.caf.json`).
+    /// Returns `true` if this file reference is a file path (i.e. it ends with `.caf`).
     pub fn is_file_path(&self) -> bool
     {
         matches!(*self, Self::File(_))
@@ -74,10 +69,28 @@ impl SceneFile
         matches!(*self, Self::ManifestKey(_))
     }
 
-    /// Returns `true` if the string ends in `.caf.json`.
+    /// Gets the internal file if there is one.
+    pub fn file(&self) -> Option<&CafFile>
+    {
+        match self {
+            Self::File(file) => Some(file),
+            Self::ManifestKey(_) => None,
+        }
+    }
+
+    /// Gets the internal manifest key if there is one.
+    pub fn manifest_key(&self) -> Option<&ManifestKey>
+    {
+        match self {
+            Self::File(_) => None,
+            Self::ManifestKey(key) => Some(key),
+        }
+    }
+
+    /// Returns `true` if the string ends in `.caf`.
     pub fn str_is_file_path(string: impl AsRef<str>) -> bool
     {
-        string.as_ref().ends_with(".caf.json")
+        string.as_ref().ends_with(".caf")
     }
 
     /// Extends an existing scene file with a path extension.
@@ -232,7 +245,7 @@ impl Default for ScenePath
 /// Represents a complete reference to a scene node in a cobweb asset asset.
 ///
 /// Example:
-/// - **File**: `ui/home.caf.json` for a `home` cobweb asset in `assets/ui`.
+/// - **File**: `ui/home.caf` for a `home` cobweb asset in `assets/ui`.
 /// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
 /// asset.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]

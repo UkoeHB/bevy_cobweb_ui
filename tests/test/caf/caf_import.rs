@@ -31,7 +31,7 @@ a as _
     );
     let CafSection::Import(import) = &res.sections[0] else { unreachable!() };
     assert_eq!(import.entries.len(), 1);
-    assert_eq!(import.entries[0].key, CafManifestKey(Arc::from("a")));
+    assert_eq!(import.entries[0].key, ManifestKey(Arc::from("a")));
     assert_eq!(import.entries[0].alias, CafImportAlias::None);
 
     let res = test_caf(
@@ -44,11 +44,11 @@ a.b.c as a::b::c
     );
     let CafSection::Import(import) = &res.sections[0] else { unreachable!() };
     assert_eq!(import.entries.len(), 3);
-    assert_eq!(import.entries[0].key, CafManifestKey(Arc::from("a")));
+    assert_eq!(import.entries[0].key, ManifestKey(Arc::from("a")));
     assert_eq!(import.entries[0].alias, CafImportAlias::Alias(SmolStr::from("a")));
-    assert_eq!(import.entries[1].key, CafManifestKey(Arc::from("a.b")));
+    assert_eq!(import.entries[1].key, ManifestKey(Arc::from("a.b")));
     assert_eq!(import.entries[1].alias, CafImportAlias::Alias(SmolStr::from("a::b")));
-    assert_eq!(import.entries[2].key, CafManifestKey(Arc::from("a.b.c")));
+    assert_eq!(import.entries[2].key, ManifestKey(Arc::from("a.b.c")));
     assert_eq!(import.entries[2].alias, CafImportAlias::Alias(SmolStr::from("a::b::c")));
 }
 

@@ -2,51 +2,44 @@ use std::collections::HashMap;
 
 use bevy::prelude::Commands;
 use bevy::reflect::TypeRegistry;
+use serde_json::{Map, Value};
 
-use super::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn handle_loadable(
-    id_scratch: String,
     type_registry: &TypeRegistry,
     caf_cache: &mut CobwebAssetCache,
-    file: &CafFile,
+    file: &SceneFile,
     current_path: &ScenePath,
-    instruction: &CafInstruction,
+    short_name: &str,
+    value: Value,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-) -> String
+)
 {
     // Get the loadable's longname.
-    let id_scratch = instruction.id.to_canonical(Some(id_scratch));
     let Some((_short_name, long_name, type_id, deserializer)) =
-        get_loadable_meta(type_registry, file, current_path, id_scratch.as_str(), name_shortcuts)
+        get_loadable_meta(type_registry, file, current_path, short_name, name_shortcuts)
     else {
-        return id_scratch;
+        return;
     };
 
     // Get the loadable's value.
-    let loadable_value = get_loadable_value(deserializer, instruction);
+    let loadable_value = get_loadable_value(deserializer, value);
 
     // Save this loadable.
     caf_cache.insert_loadable(
-        &SceneRef {
-            file: SceneFile::File(file.clone()),
-            path: current_path.clone(),
-        },
+        &SceneRef { file: file.clone(), path: current_path.clone() },
         loadable_value,
         type_id,
         long_name,
     );
-
-    id_scratch
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn handle_scene_node(
-    id_scratch: String,
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
@@ -54,14 +47,21 @@ fn handle_scene_node(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     parent_path: &ScenePath,
-    caf_layer: &CafSceneLayer,
+    key: &str,
+    value: Value,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-) -> String
+)
 {
-    let Some(node_path) = parent_path.extend_single(&*caf_layer.name) else {
+    let Value::Object(data) = value else {
+        tracing::error!("failed parsing scene node {:?} at {:?} in {:?}, node is not an Object",
+            key, parent_path, scene.file);
+        return;
+    };
+
+    let Some(node_path) = parent_path.extend_single(key) else {
         tracing::error!("failed parsing scene node {:?} at {:?} in {:?}, node ID is a multi-segment path, only \
-            single-segment node ids are allowed in scene definitions", *caf_layer.name, parent_path, scene.file);
-        return id_scratch;
+            single-segment node ids are allowed in scene definitions", key, parent_path, scene.file);
+        return;
     };
 
     // Save this node in the scene.
@@ -83,8 +83,7 @@ fn handle_scene_node(
     };
 
     // Parse the child layer of this node.
-    extract_scene_layer(
-        id_scratch,
+    parse_scene_layer(
         type_registry,
         c,
         caf_cache,
@@ -92,15 +91,14 @@ fn handle_scene_node(
         child_layer,
         scene,
         &node_path,
-        caf_layer,
+        data,
         name_shortcuts,
-    )
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_scene_layer(
-    mut id_scratch: String,
+fn parse_scene_layer(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
@@ -108,55 +106,53 @@ fn extract_scene_layer(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     current_path: &ScenePath,
-    caf_layer: &CafSceneLayer,
+    mut data: Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-) -> String
+)
 {
     // Prep the node.
     caf_cache.prepare_scene_node(SceneRef { file: scene.file.clone(), path: current_path.clone() });
 
     // Begin layer update.
-    scene_layer.start_update(caf_layer.entries.len());
+    scene_layer.start_update(data.len());
 
-    for entry in caf_layer.entries.iter() {
-        match entry {
-            CafSceneLayerEntry::Instruction(instruction) => {
-                id_scratch = handle_loadable(
-                    id_scratch,
-                    type_registry,
-                    caf_cache,
-                    scene
-                        .file
-                        .file()
-                        .expect("all SceneFile should contain CafFile in scene extraction"),
-                    current_path,
-                    instruction,
-                    name_shortcuts,
-                );
-            }
-            CafSceneLayerEntry::Layer(next_caf_layer) => {
-                id_scratch = handle_scene_node(
-                    id_scratch,
-                    type_registry,
-                    c,
-                    caf_cache,
-                    scene_loader,
-                    scene_layer,
-                    scene,
-                    current_path,
-                    next_caf_layer,
-                    name_shortcuts,
-                );
-            }
-            CafSceneLayerEntry::InstructionMacroCall(_) => {
-                tracing::warn!("ignoring instruction macro call in scene node {:?} in {:?}", current_path, scene.file);
-            }
-            CafSceneLayerEntry::SceneMacroCall(_) => {
-                tracing::warn!("ignoring scene macro call in scene node {:?} in {:?}", current_path, scene.file);
-            }
-            CafSceneLayerEntry::SceneMacroParam(_) => {
-                tracing::warn!("ignoring scene macro param in scene node {:?} in {:?}", current_path, scene.file);
-            }
+    for (key, value) in data.iter_mut() {
+        // Skip keyword map entries.
+        if is_any_keyword(key) {
+            continue;
+        }
+
+        // Remove qualifier from key if it has one.
+        let key = match key.split_once('(') {
+            Some((key, _)) => key,
+            _ => key,
+        };
+
+        let value = value.take();
+
+        if is_loadable_entry(key) {
+            handle_loadable(
+                type_registry,
+                caf_cache,
+                &scene.file,
+                current_path,
+                key,
+                value,
+                name_shortcuts,
+            );
+        } else {
+            handle_scene_node(
+                type_registry,
+                c,
+                caf_cache,
+                scene_loader,
+                scene_layer,
+                scene,
+                current_path,
+                key,
+                value,
+                name_shortcuts,
+            );
         }
     }
 
@@ -172,38 +168,59 @@ fn extract_scene_layer(
                 id, scene);
         }
     }
-
-    id_scratch
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn extract_scenes(
+pub(crate) fn parse_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
     scene_loader: &mut SceneLoader,
-    file: &CafFile,
-    section: &CafScenes,
+    file: &SceneFile,
+    mut data: Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
     let mut scene_registry = scene_loader.take_scene_registry();
-    let mut id_scratch = String::default();
 
-    for caf_layer in section.scenes.iter() {
+    for (key, value) in data.iter_mut() {
+        // Skip keyword map entries.
+        if is_any_keyword(key) {
+            continue;
+        }
+
+        // Remove qualifier from key if it has one.
+        let key = match key.split_once('(') {
+            Some((key, _)) => key,
+            _ => key,
+        };
+
+        // Reject loadables at the scene root layer.
+        if is_loadable_entry(key) {
+            tracing::error!("ignoring loadable {:?} in the base layer of {:?}, only scene root nodes are allowed in \
+                the base layer of cobweb asset files", key, file);
+            continue;
+        }
+
         // Get this scene for editing.
-        let Some(path) = ScenePath::parse_single(&*caf_layer.name) else {
+        let Some(path) = ScenePath::parse_single(key) else {
             tracing::error!("failed parsing scene {:?} in {:?}, scene root ID is a multi-segment path, only \
-                single-segment node ids are allowed in scene definitions", *caf_layer.name, file);
+                single-segment node ids are allowed in scene definitions", key, file);
             continue;
         };
-        let scene_ref = SceneRef { file: SceneFile::File(file.clone()), path };
+        let scene_ref = SceneRef { file: file.clone(), path };
         let scene_layer = scene_registry.get_or_insert(scene_ref.clone());
 
+        // Expect the scene to have a map in it.
+        let value = value.take();
+        let Value::Object(data) = value else {
+            tracing::error!("failed parsing scene {:?}, content is not an Object", scene_ref);
+            continue;
+        };
+
         // Parse the scene.
-        id_scratch = extract_scene_layer(
-            id_scratch,
+        parse_scene_layer(
             type_registry,
             c,
             caf_cache,
@@ -211,7 +228,7 @@ pub(super) fn extract_scenes(
             scene_layer,
             &scene_ref,
             &scene_ref.path,
-            caf_layer,
+            data,
             name_shortcuts,
         );
     }

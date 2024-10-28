@@ -51,6 +51,14 @@ impl CafImportAlias
         .parse(content)
         .map(|(r, k)| (Self::Alias(SmolStr::from(*k.fragment())), r))
     }
+
+    pub fn as_str(&self) -> &str
+    {
+        match self {
+            CafImportAlias::None => "",
+            CafImportAlias::Alias(alias) => alias.as_str(),
+        }
+    }
 }
 
 impl Default for CafImportAlias
@@ -68,7 +76,7 @@ impl Default for CafImportAlias
 pub struct CafImportEntry
 {
     pub entry_fill: CafFill,
-    pub key: CafManifestKey,
+    pub key: ManifestKey,
     pub as_fill: CafFill,
     pub alias_fill: CafFill,
     pub alias: CafImportAlias,
@@ -89,7 +97,7 @@ impl CafImportEntry
 
     pub fn try_parse(entry_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let Ok((key, remaining)) = CafManifestKey::parse(content) else {
+        let Ok((key, remaining)) = ManifestKey::parse(content) else {
             return Ok((None, entry_fill, content));
         };
         if !entry_fill.ends_with_newline() {
@@ -120,7 +128,7 @@ impl CafImportEntry
     pub fn new(key: impl AsRef<str>, alias: impl AsRef<str>) -> Self
     {
         Self {
-            key: CafManifestKey(Arc::from(key.as_ref())),
+            key: ManifestKey(Arc::from(key.as_ref())),
             alias: CafImportAlias::Alias(SmolStr::from(alias.as_ref())),
             ..Default::default()
         }

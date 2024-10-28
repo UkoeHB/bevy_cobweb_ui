@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::*;
 
-use crate::load_embedded_scene_file;
+//use crate::load_embedded_scene_file;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -307,9 +307,11 @@ pub(crate) struct CobwebRadioButtonPlugin;
 
 impl Plugin for CobwebRadioButtonPlugin
 {
-    fn build(&self, app: &mut App)
+    fn build(&self, _app: &mut App)
     {
-        load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button", "radio_button.caf.json");
+        // TODO: re-enable once CAF scene macros are implemented
+        //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
+        // "radio_button.caf.json");
     }
 }
 

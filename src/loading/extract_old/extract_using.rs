@@ -1,26 +1,38 @@
 use std::collections::HashMap;
 
 use bevy::reflect::TypeRegistry;
+use serde_json::{Map, Value};
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn extract_using_section(
+pub(crate) fn extract_using_section(
     type_registry: &TypeRegistry,
-    file: &CafFile,
-    section: &CafUsing,
+    file: &SceneFile,
+    map: &Map<String, Value>,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
-    let mut fullpath = String::default();
+    let Some(using_section) = map.get(USING_KEYWORD) else {
+        return;
+    };
 
-    for entry in section.entries.iter() {
-        fullpath = entry.identifier.to_canonical(Some(fullpath));
+    let Value::Array(longnames) = using_section else {
+        tracing::error!("failed parsing 'using' section in {:?}, it is not an Array", file);
+        return;
+    };
 
-        let Some(registration) = type_registry.get_with_type_path(fullpath.as_str()) else {
+    for longname in longnames.iter() {
+        let Value::String(longname) = longname else {
+            tracing::error!("failed parsing longname {:?} in 'using' section of {:?}, it is not a String",
+                longname, file);
+            continue;
+        };
+
+        let Some(registration) = type_registry.get_with_type_path(longname.as_str()) else {
             tracing::error!("longname {:?} in 'using' section of {:?} not found in type registry",
-                fullpath, file);
+                longname, file);
             continue;
         };
         let short_name = registration.type_info().type_path_table().short_path();

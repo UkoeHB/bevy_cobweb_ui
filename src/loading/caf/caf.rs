@@ -64,10 +64,13 @@ impl CafSection
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct Caf
 {
+    /// Location of the caf file within the project's `assets` directory.
+    ///
+    /// Must have the `.caf` extension.
+    pub file: CafFile,
     pub sections: Vec<CafSection>,
     /// Whitespace and comments at the end of the file.
     pub end_fill: CafFill,
-    pub metadata: CafMetadata,
 }
 
 impl Caf
@@ -88,6 +91,12 @@ impl Caf
 
     pub fn parse(span: Span) -> Result<Self, SpanError>
     {
+        let Some(file) = CafFile::try_new(span.extra.file) else {
+            tracing::warn!("failed parsing CAF file at {}; file name doesn't end with '.caf'",
+                get_location(span).as_str());
+            return Err(span_verify_error(span));
+        };
+
         let mut sections = vec![];
         let (mut fill, mut remaining) = CafFill::parse(span);
 
@@ -109,11 +118,7 @@ impl Caf
             }
         };
 
-        Ok(Self {
-            sections,
-            end_fill,
-            metadata: CafMetadata { file_path: String::from(span.extra.file) },
-        })
+        Ok(Self { file, sections, end_fill })
     }
 }
 

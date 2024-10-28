@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use bevy::asset::io::Reader;
+use bevy::asset::io::{AssetSourceId, Reader};
 use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde_json::from_slice;
 use thiserror::Error;
 
 use crate::prelude::*;
@@ -26,18 +25,39 @@ impl AssetLoader for CobwebAssetLoader
         load_context: &'a mut LoadContext<'_>,
     ) -> Result<Self::Asset, Self::Error>
     {
-        let mut bytes = Vec::new();
-        reader.read_to_end(&mut bytes).await?;
-        let data: serde_json::Value = from_slice(&bytes)?;
-        Ok(CobwebAssetFile {
-            file: SceneFile::new(&load_context.asset_path().path().to_string_lossy()),
-            data,
-        })
+        // Get file name including source.
+        let file = load_context.asset_path().path().to_string_lossy();
+        let file = match load_context.asset_path().source() {
+            AssetSourceId::Default => String::from(&*file),
+            AssetSourceId::Name(name) => format!("{}://{}", *name, &*file),
+        };
+
+        // Read the file.
+        let mut string = String::default();
+        reader.read_to_string(&mut string).await?;
+
+        // Parse the raw file data.
+        let data = match Caf::parse(Span::new_extra(&string, CafLocationMetadata { file: file.as_str() })) {
+            Ok(data) => data,
+            Err(nom::Err::Error(err)) | Err(nom::Err::Failure(err)) => {
+                let nom::error::Error { input, code } = err;
+                return Err(CobwebAssetLoaderError::CafParsing(
+                    format!("error at {}: {:?}", get_location(input).as_str(), code),
+                ));
+            }
+            Err(nom::Err::Incomplete(err)) => {
+                return Err(CobwebAssetLoaderError::CafParsing(
+                    format!("insufficient data in {}: {:?}", file.as_str(), err),
+                ));
+            }
+        };
+
+        Ok(CobwebAssetFile(data))
     }
 
     fn extensions(&self) -> &[&str]
     {
-        &[".caf.json"]
+        &[".caf"]
     }
 }
 
@@ -65,28 +85,24 @@ pub enum CobwebAssetLoaderError
     /// An [IO Error](std::io::Error).
     #[error("Could not read the CobwebAssetFile file: {0}")]
     Io(#[from] std::io::Error),
-    /// A [JSON Error](serde_json::error::Error).
-    #[error("Could not parse the CobwebAssetFile JSON: {0}")]
-    JsonError(#[from] serde_json::error::Error),
+    /// A CAF Error.
+    #[error("Could not parse the CobwebAssetFile data: {0}")]
+    CafParsing(String),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A partially-deserialized CobwebAssetCache file.
+/// A deserialized CAF file.
 #[derive(Debug, Asset, TypePath)]
-pub(crate) struct CobwebAssetFile
-{
-    pub(crate) file: SceneFile,
-    pub(crate) data: serde_json::Value,
-}
+pub(crate) struct CobwebAssetFile(pub(crate) Caf);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Stores asset paths for all cobweb asset files that should be loaded.
+/// Stores asset paths for all pre-registered cobweb asset files that should be loaded.
 #[derive(Resource, Default)]
 pub(crate) struct LoadedCobwebAssetFiles
 {
-    preset_files: Vec<String>,
+    preset_files: Vec<CafFile>,
     handles: HashMap<AssetId<CobwebAssetFile>, Handle<CobwebAssetFile>>,
 }
 
@@ -94,25 +110,32 @@ impl LoadedCobwebAssetFiles
 {
     fn add_preset_file(&mut self, file: &str)
     {
-        tracing::info!("registered CobwebAssetCache file {:?}", file);
-        self.preset_files.push(String::from(file));
+        match CafFile::try_new(file) {
+            Some(file) => {
+                tracing::info!("registered CAF file {}", file.as_str());
+                self.preset_files.push(file);
+            }
+            None => {
+                tracing::warn!("failed registering CAF file {}; does not have '.caf' extension", file)
+            }
+        }
     }
 
-    fn take_preset_files(&mut self) -> Vec<String>
+    fn take_preset_files(&mut self) -> Vec<CafFile>
     {
         std::mem::take(&mut self.preset_files)
     }
 
     pub(crate) fn start_loading(
         &mut self,
-        file: String,
+        file: CafFile,
         caf_cache: &mut CobwebAssetCache,
         asset_server: &AssetServer,
     )
     {
-        caf_cache.prepare_file(SceneFile::new(file.as_str()));
-        let handle = asset_server.load(file);
+        let handle = asset_server.load(String::from(file.as_str()));
         self.handles.insert(handle.id(), handle);
+        caf_cache.prepare_file(file);
     }
 
     /// Does not remove the handle in case the asset gets reloaded.

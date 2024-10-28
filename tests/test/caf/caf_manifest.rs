@@ -31,7 +31,7 @@ self as a
     let CafSection::Manifest(manifest) = &res.sections[0] else { unreachable!() };
     assert_eq!(manifest.entries.len(), 1);
     assert_eq!(manifest.entries[0].file, CafManifestFile::SelfRef);
-    assert_eq!(manifest.entries[0].key, CafManifestKey(Arc::from("a")));
+    assert_eq!(manifest.entries[0].key, ManifestKey(Arc::from("a")));
 
     let res = test_caf(
         b"
@@ -43,9 +43,9 @@ self as a.b
     let CafSection::Manifest(manifest) = &res.sections[0] else { unreachable!() };
     assert_eq!(manifest.entries.len(), 2);
     assert_eq!(manifest.entries[0].file, CafManifestFile::SelfRef);
-    assert_eq!(manifest.entries[0].key, CafManifestKey(Arc::from("a.b")));
-    assert_eq!(manifest.entries[1].file, CafManifestFile::File(CafFilePath(Arc::from("path/to/b.caf"))));
-    assert_eq!(manifest.entries[1].key, CafManifestKey(Arc::from("a.b.c")));
+    assert_eq!(manifest.entries[0].key, ManifestKey(Arc::from("a.b")));
+    assert_eq!(manifest.entries[1].file, CafManifestFile::File(CafFile::try_new("path/to/b.caf").unwrap()));
+    assert_eq!(manifest.entries[1].key, ManifestKey(Arc::from("a.b.c")));
 }
 
 //-------------------------------------------------------------------------------------------------------------------

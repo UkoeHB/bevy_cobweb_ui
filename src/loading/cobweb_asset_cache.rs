@@ -7,17 +7,14 @@ use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
 use bevy::utils::warn_once;
 use bevy_cobweb::prelude::*;
-use serde_json::{Map, Value};
 use smallvec::SmallVec;
-use smol_str::SmolStr;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn preprocess_cobweb_asset_files(
-    mut manifest_buffer: Local<HashMap<String, Arc<str>>>,
-    mut imports_buffer: Local<Vec<(String, SmolStr)>>,
+    mut manifest_buffer: Local<HashMap<CafFile, ManifestKey>>,
     asset_server: Res<AssetServer>,
     mut events: EventReader<AssetEvent<CobwebAssetFile>>,
     mut caf_files: ResMut<LoadedCobwebAssetFiles>,
@@ -45,15 +42,7 @@ fn preprocess_cobweb_asset_files(
         };
 
         let caf_cache = caf_cache.get_noreact();
-        preprocess_caf_file(
-            &mut manifest_buffer,
-            &mut imports_buffer,
-            &asset_server,
-            &mut caf_files,
-            caf_cache,
-            asset.file,
-            asset.data,
-        );
+        preprocess_caf_file(&mut manifest_buffer, &asset_server, &mut caf_files, caf_cache, asset.0);
     }
 
     // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
@@ -151,12 +140,12 @@ fn insert_loadable_entry(
 struct PreprocessedSceneFile
 {
     /// This file.
-    file: SceneFile,
+    file: CafFile,
     /// Imports for detecting when a re-load is required.
     /// - Can include both manifest keys and file paths.
-    imports: HashMap<SceneFile, SmolStr>,
+    imports: HashMap<ManifestKey, CafImportAlias>,
     /// Data cached for re-loading when dependencies are reloaded.
-    data: Map<String, Value>,
+    data: Caf,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -173,10 +162,10 @@ struct ProcessedSceneFile
     /// Imports for detecting when a re-load is required.
     /// - Can include both manifest keys and file paths.
     #[cfg(feature = "hot_reload")]
-    imports: HashMap<SceneFile, SmolStr>,
+    imports: HashMap<ManifestKey, CafImportAlias>,
     /// Data cached for re-loading when dependencies are reloaded.
     #[cfg(feature = "hot_reload")]
-    data: Map<String, Value>,
+    data: Caf,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -203,7 +192,7 @@ pub(crate) struct SubscriptionRef
 pub(crate) enum ReflectedLoadable
 {
     Value(Arc<Box<dyn Reflect + 'static>>),
-    DeserializationFailed(Arc<serde_json::Error>),
+    DeserializationFailed(Arc<CafError>),
 }
 
 impl ReflectedLoadable
@@ -243,20 +232,15 @@ impl ReflectedLoadable
     fn make_hint<T: Loadable>() -> String
     {
         let temp = T::default();
-        let mut hint = serde_json::to_string_pretty(&temp).unwrap();
-        // Pretty JSON makes a lot of lines, so only use it for small types.
-        if hint.len() > 250 {
-            hint = serde_json::to_string(&temp).unwrap();
-        }
-        // We need to manually add this for some reason...
-        // TODO: this is not always required .. ? was there a bevy bug fix?
-        if let Some(bevy::reflect::TypeInfo::TupleStruct(info)) = temp.get_represented_type_info() {
-            if info.field_len() == 1 {
-                hint.insert(0, '[');
-                hint.push(']');
+        match CafValue::extract(&temp) {
+            Ok(value) => {
+                let mut buff = Vec::<u8>::default();
+                let mut serializer = DefaultRawSerializer::new(&mut buff);
+                value.write_to(&mut serializer).unwrap();
+                String::from_utf8(buff).unwrap()
             }
+            Err(err) => format!("! hint serialization failed: {:?}", err),
         }
-        hint
     }
 }
 
@@ -272,7 +256,7 @@ impl ReflectedLoadable
 pub struct CobwebAssetCache
 {
     /// Tracks which files have not initialized yet.
-    pending: HashSet<SceneFile>,
+    pending: HashSet<CafFile>,
     /// Tracks the total number of files that should load.
     ///
     /// Used for progress tracking on initial load.
@@ -282,13 +266,13 @@ pub struct CobwebAssetCache
     /// - Inside an arc/mutex so the SceneLoader can also use it.
     manifest_map: Arc<Mutex<ManifestMap>>,
     /// Tracks which files have been assigned manifest keys.
-    file_to_manifest_key: HashMap<SceneFile, Option<Arc<str>>>,
+    file_to_manifest_key: HashMap<CafFile, Option<ManifestKey>>,
 
     /// Tracks pre-processed files.
     preprocessed: Vec<PreprocessedSceneFile>,
 
     /// Records processed files.
-    processed: HashMap<SceneFile, ProcessedSceneFile>,
+    processed: HashMap<CafFile, ProcessedSceneFile>,
 
     /// Tracks loadable commands from all loaded files.
     command_loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
@@ -339,24 +323,24 @@ impl CobwebAssetCache
     }
 
     /// Prepares a cobweb asset file.
-    pub(crate) fn prepare_file(&mut self, file: SceneFile)
+    pub(crate) fn prepare_file(&mut self, file: CafFile)
     {
         let _ = self.pending.insert(file.clone());
         self.total_expected_sheets += 1;
 
         // Make sure this file has a manifest key entry, which indicates it doesn't need to be initialized again
-        // if it is present in a manifest or import section.
+        // if it is present in a manifest section.
         self.register_manifest_key(file, None);
     }
 
     /// Sets the manifest key for a file.
     ///
-    /// The `manifest_key` may be `None` if this file is being imported. We use manifest key presence as a proxy
+    /// The `manifest_key` may be `None` if loaded via the App extension. We use manifest key presence as a proxy
     /// for whether or not a file has been initialized.
     ///
     /// Returns `true` if this is the first time this file's manifest key has been registered. This can be used
     /// to decide whether to start loading transitive imports/manifests.
-    pub(crate) fn register_manifest_key(&mut self, file: SceneFile, manifest_key: Option<Arc<str>>) -> bool
+    pub(crate) fn register_manifest_key(&mut self, file: CafFile, manifest_key: Option<ManifestKey>) -> bool
     {
         match self.file_to_manifest_key.entry(file.clone()) {
             Vacant(entry) => {
@@ -372,7 +356,7 @@ impl CobwebAssetCache
                 true
             }
             Occupied(mut entry) => {
-                // Manifest key can be None when a file is imported or loaded via the App extension.
+                // Manifest key can be None when a file is loaded via the App extension.
                 let Some(new_key) = manifest_key else {
                     return false;
                 };
@@ -385,7 +369,7 @@ impl CobwebAssetCache
                         }
 
                         tracing::warn!("changing manifest key for {:?} (old: {:?}, new: {:?})",
-                            file.clone(), prev_key.clone(), new_key.clone());
+                            file, prev_key, new_key);
                         let prev = prev_key.clone();
                         *prev_key = new_key.clone();
                         self.manifest_map().remove(&prev);
@@ -407,7 +391,7 @@ impl CobwebAssetCache
     }
 
     /// Initializes a file that has been loaded.
-    pub(crate) fn initialize_file(&mut self, file: &SceneFile)
+    pub(crate) fn initialize_file(&mut self, file: &CafFile)
     {
         let _ = self.pending.remove(file);
     }
@@ -415,40 +399,36 @@ impl CobwebAssetCache
     /// Inserts a preprocessed file for later processing.
     pub(crate) fn add_preprocessed_file(
         &mut self,
-        file: SceneFile,
-        mut imports: HashMap<SceneFile, SmolStr>,
-        data: Map<String, Value>,
+        file: CafFile,
+        imports: HashMap<ManifestKey, CafImportAlias>,
+        data: Caf,
     )
     {
-        // The file should not reference itself.
-        if imports.remove(&file).is_some() {
-            tracing::warn!("loadable file {:?} tried to import itself", file.as_str());
-        }
-
         // Check that all dependencies are known.
         // - Note: We don't need to check for circular dependencies here. It can be checked after processing files
         //   by seeing if there are any pending files remaining. Once all pending files are loaded, if a file fails
         //   to process that implies it has circular dependencies.
         for import in imports.keys() {
-            // If manifest key, try to convert.
-            let Some(import) = self.manifest_map().get(import) else { continue };
+            // Try to convert to file. This may fail if the imported file is not initialized yet.
+            let Some(import_file) = self.manifest_map().get(import) else { continue };
 
             // Check if pending.
-            if self.pending.contains(&import) {
+            if self.pending.contains(&import_file) {
                 continue;
             }
 
             // Check if processed.
-            if self.processed.contains_key(&import) {
+            if self.processed.contains_key(&import_file) {
                 continue;
             }
 
             // Check if preprocessed.
-            if self.preprocessed.iter().any(|p| p.file == import) {
+            if self.preprocessed.iter().any(|p| p.file == import_file) {
                 continue;
             }
 
-            tracing::error!("ignoring loadable file {:?} that has unregistered import {:?}", file.as_str(), import.as_str());
+            tracing::error!("ignoring loadable file {:?} that points to an untracked file {}; this is a bug",
+                file.as_str(), import.as_str());
             return;
         }
 
@@ -475,8 +455,16 @@ impl CobwebAssetCache
         let mut specs = SpecsMap::default();
 
         for (dependency, alias) in preprocessed.imports.iter() {
-            let Some(dependency) = self.manifest_map().get(&dependency) else { continue };
-            let processed = self.processed.get(&dependency).unwrap();
+            let Some(dependency) = self.manifest_map().get(&dependency) else {
+                tracing::error!("failed extracting import {:?} for {:?}; failed manifest key lookup (this is a bug)",
+                    dependency, preprocessed.file);
+                continue;
+            };
+            let Some(processed) = self.processed.get(&dependency) else {
+                tracing::error!("failed extracting import {:?} for {:?}; dependency is not processed (this is a bug)",
+                    dependency, preprocessed.file);
+                continue;
+            };
 
             name_shortcuts.extend(processed.using.iter());
             constants_buff.append(alias, &processed.constants_buff);
@@ -494,7 +482,7 @@ impl CobwebAssetCache
 
         // Process the file.
         // - This updates the using/constants/specs maps with info extracted from the file.
-        parse_caf_file(
+        extract_caf_data(
             type_registry,
             c,
             self,
@@ -516,32 +504,28 @@ impl CobwebAssetCache
         // Check for already-processed files that need to rebuild since they depend on this file.
         #[cfg(feature = "hot_reload")]
         {
-            let preprocessed_manifest_key = self
+            if let Some(manifest_key) = self
                 .file_to_manifest_key
                 .get(&preprocessed.file)
                 .cloned()
                 .flatten()
-                .map(|m| SceneFile::ManifestKey(m));
-            let needs_rebuild: Vec<SceneFile> = self
-                .processed
-                .iter()
-                .filter_map(|(file, processed)| {
-                    if let Some(manifest_key) = &preprocessed_manifest_key {
+            {
+                let needs_rebuild: Vec<CafFile> = self
+                    .processed
+                    .iter()
+                    .filter_map(|(file, processed)| {
                         if processed.imports.contains_key(&manifest_key) {
                             return Some(file.clone());
                         }
-                    }
-                    if processed.imports.contains_key(&preprocessed.file) {
-                        return Some(file.clone());
-                    }
-                    None
-                })
-                .collect();
+                        None
+                    })
+                    .collect();
 
-            for needs_rebuild in needs_rebuild {
-                let processed = self.processed.remove(&needs_rebuild).unwrap();
-                // Add via API to check for recursive dependencies.
-                self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
+                for needs_rebuild in needs_rebuild {
+                    let processed = self.processed.remove(&needs_rebuild).unwrap();
+                    // Add via API to check for recursive dependencies.
+                    self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
+                }
             }
         }
     }
@@ -566,14 +550,16 @@ impl CobwebAssetCache
             std::mem::swap(&mut self.preprocessed, &mut preprocessed);
 
             for preprocessed in preprocessed.drain(..) {
-                // Check if dependencies are ready.
+                // Check if any dependency is not ready.
                 {
                     let manifest_map = self.manifest_map.lock().unwrap();
                     if preprocessed
                         .imports
                         .keys()
-                        .map(|i| manifest_map.get(i).unwrap_or_else(|| i.clone()))
-                        .any(|i| !self.processed.contains_key(&i))
+                        .any(|i| match manifest_map.get(i) {
+                            Some(i) => !self.processed.contains_key(&i),
+                            None => true,
+                        })
                     {
                         self.preprocessed.push(preprocessed);
                         continue;
@@ -593,7 +579,7 @@ impl CobwebAssetCache
         // Check for failed loads.
         if self.pending.is_empty() && !self.preprocessed.is_empty() {
             for preproc in self.preprocessed.drain(..) {
-                tracing::error!("discarding loadable file {:?} that failed to resolve imports; it either has a \
+                tracing::error!("discarding CAF file {:?} that failed to resolve imports; it either has a \
                     dependency cycle or tries to import unknown manifest keys", preproc.file.as_str());
             }
         }
@@ -778,13 +764,13 @@ impl CobwebAssetCache
     fn cleanup_pending_updates(&mut self)
     {
         if !self.commands_need_updates.is_empty() {
-            warn_once!("The loadable sheet contains pending updates for command types that weren't registered. This warning \
+            warn_once!("There are pending updates for command types that weren't registered. This warning \
                 only prints once.");
         }
         if !self.needs_updates.is_empty() {
             // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
             // call `apply_deferred` before the cleanup system runs.
-            warn_once!("The loadable sheet contains pending updates for types that weren't registered. This warning only \
+            warn_once!("There are pending updates for instruction types that weren't registered. This warning only \
                 prints once, and may print spuriously if you spawn loaded entities in Last.");
         }
         self.commands_need_updates.clear();

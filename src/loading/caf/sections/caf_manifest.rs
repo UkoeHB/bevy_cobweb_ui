@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::prelude::{default, Deref};
+use bevy::prelude::Deref;
 use nom::bytes::complete::tag;
 use nom::combinator::recognize;
 use nom::multi::many0_count;
@@ -15,7 +15,7 @@ use crate::prelude::*;
 pub enum CafManifestFile
 {
     SelfRef,
-    File(CafFilePath),
+    File(CafFile),
 }
 
 impl CafManifestFile
@@ -41,7 +41,7 @@ impl CafManifestFile
         }
 
         // Case: string file path
-        let (file, remaining) = CafFilePath::parse(content)?;
+        let (file, remaining) = CafFile::parse(content)?;
         Ok((Self::File(file), remaining))
     }
 }
@@ -50,17 +50,27 @@ impl Default for CafManifestFile
 {
     fn default() -> Self
     {
-        Self::File(CafFilePath::default())
+        Self::File(CafFile::default())
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
-pub struct CafManifestKey(pub Arc<str>);
+/// Represents a manifest key pointing to a cobweb asset file. Manifest keys must be registered with a `#manifest`
+/// section in a cobweb asset file.
+///
+/// Example: `builtin.widgets.radio_button` for a pre-registered radio button CAF file.
+#[derive(Debug, Clone, Eq, PartialEq, Deref, Hash)]
+pub struct ManifestKey(pub Arc<str>);
 
-impl CafManifestKey
+impl ManifestKey
 {
+    /// Creates a new CAF manifest key.
+    pub fn new(key: impl AsRef<str>) -> Self
+    {
+        Self(Arc::from(key.as_ref()))
+    }
+
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         writer.write_bytes(self.as_bytes())?;
@@ -78,9 +88,14 @@ impl CafManifestKey
         .parse(content)
         .map(|(r, k)| (Self(Arc::from(*k.fragment())), r))
     }
+
+    pub fn as_str(&self) -> &str
+    {
+        &self.0
+    }
 }
 
-impl Default for CafManifestKey
+impl Default for ManifestKey
 {
     fn default() -> Self
     {
@@ -98,7 +113,7 @@ pub struct CafManifestEntry
     pub file: CafManifestFile,
     pub as_fill: CafFill,
     pub key_fill: CafFill,
-    pub key: CafManifestKey,
+    pub key: ManifestKey,
 }
 
 impl CafManifestEntry
@@ -134,23 +149,13 @@ impl CafManifestEntry
             tracing::warn!("no fill/whitespace after manifest 'as' at {}", get_location(remaining).as_str());
             return Err(span_verify_error(remaining));
         }
-        let (key, remaining) = CafManifestKey::parse(remaining)?;
+        let (key, remaining) = ManifestKey::parse(remaining)?;
         let (next_fill, remaining) = CafFill::parse(remaining);
         Ok((
             Some(Self { entry_fill, file, as_fill, key_fill, key }),
             next_fill,
             remaining,
         ))
-    }
-
-    // Makes a new entry with default spacing.
-    pub fn new(file: impl AsRef<str>, key: impl AsRef<str>) -> Self
-    {
-        Self {
-            file: CafManifestFile::File(CafFilePath(Arc::from(file.as_ref()))),
-            key: CafManifestKey(Arc::from(key.as_ref())),
-            ..default()
-        }
     }
 }
 
@@ -163,7 +168,7 @@ impl Default for CafManifestEntry
             file: Default::default(),
             as_fill: CafFill::new(" "),
             key_fill: CafFill::new(" "),
-            key: CafManifestKey(Arc::from("")),
+            key: ManifestKey(Arc::from("")),
         }
     }
 }
