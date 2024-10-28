@@ -1,3 +1,4 @@
+use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::ui_builder::*;
@@ -36,6 +37,15 @@ pub trait UiBuilderReactExt
         triggers: impl ReactionTriggerBundle,
         reactor: impl FnOnce(Entity) -> C,
     ) -> &mut Self;
+
+    /// Mirrors [`UiReactEntityCommandsExt::update`].
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self;
+
+    /// Mirrors [`UiReactEntityCommandsExt::modify`].
+    fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self;
 }
 
 impl UiBuilderReactExt for UiBuilder<'_, Entity>
@@ -86,6 +96,21 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     ) -> &mut Self
     {
         self.entity_commands().update_on(triggers, reactor);
+        self
+    }
+
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self
+    {
+        self.entity_commands().update_on((), reactor);
+        self
+    }
+
+    fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
+    {
+        self.entity_commands().modify(callback);
         self
     }
 }

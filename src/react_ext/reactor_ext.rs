@@ -145,6 +145,32 @@ pub trait UiReactEntityCommandsExt
         C: IntoSystem<(), (), M> + Send + Sync + 'static,
         T: ReactionTriggerBundle,
         R: FnOnce(Entity) -> C;
+
+    /// Updates an entity with a oneshot system.
+    ///
+    /// The system runs:
+    /// - Immediately after being registered.
+    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
+    ///   only).
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self;
+
+    /// Provides access to entity commands for the entity.
+    ///
+    /// Useful if you need to insert/modify components or instructions on an entity that has CAF instructions that
+    /// overlap with those components/instructions. For example, you might have a CAF instruction
+    /// [`FlexStyle`], and then in rust manually apply the instruction [`Width`] (which will modify
+    /// `FlexStyle`). If the `FlexStyle` instruction is changed and hot reloaded, then the `Width`
+    /// instruction's effects will be erased. However, if you use `modify` to apply the `Width` instruction,
+    /// then it will be re-applied whenever the entity hot-reloads loaded instructions.
+    ///
+    /// The callback runs:
+    /// - Immediately after being registered.
+    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
+    ///   only).
+    fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self;
 }
 
 impl UiReactEntityCommandsExt for EntityCommands<'_>
@@ -205,6 +231,24 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         }
 
         self
+    }
+
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self
+    {
+        self.update_on((), reactor)
+    }
+
+    fn modify(&mut self, mut callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
+    {
+        self.update_on((), |id| {
+            move |mut c: Commands| {
+                let Some(ec) = c.get_entity(id) else { return };
+                (callback)(ec)
+            }
+        })
     }
 }
 

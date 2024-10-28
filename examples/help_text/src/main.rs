@@ -15,18 +15,7 @@ use bevy_cobweb_ui::sickle::prelude::*;
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let scene = SceneRef::new("main.caf.json", "scene");
-
-    c.ui_builder(UiRoot).load_scene(&mut s, scene, |_| {});
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn setup(mut commands: Commands)
-{
-    commands.spawn(Camera2dBundle {
-        transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
-        ..default()
-    });
+    c.ui_builder(UiRoot).load_scene_basic(&mut s, scene);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -40,7 +29,9 @@ fn main()
         }))
         .add_plugins(CobwebUiPlugin)
         .load("main.caf.json")
-        .add_systems(PreStartup, setup)
+        .add_systems(PreStartup, |mut c: Commands| {
+            c.spawn(Camera2dBundle::default());
+        })
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
