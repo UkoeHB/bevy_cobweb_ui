@@ -16,16 +16,18 @@ A framework for building UI and managing assets in a `bevy` app. Built on [bevy_
 
 ## Getting Started
 
-To get started you need three things.
+1. (Optional) Install syntax highlighting for the CAF asset format.
+    - [VSCode](https://github.com/UkoeHB/vscode-caf/)
+    - [SublimeText](https://github.com/UkoeHB/sublime-caf/)
 1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
-2. Load a CAF file if you have one. Usually these are stored in your assets directory.
-3. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading CAF files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
+1. Load a CAF file if you have one. Usually these are stored in your assets directory.
+1. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading CAF files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
 
 ```rust
 app
     .add_plugins(bevy::DefaultPlugins)
     .add_plugins(CobwebUiPlugin)
-    .load("main.caf.json")
+    .load("main.caf")
     .add_systems(OnEnter(LoadState::Done), build_ui);
 ```
 
