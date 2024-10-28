@@ -329,12 +329,6 @@ impl CafMap
     {
         !self.entries.iter().any(|e| !e.is_struct_field())
     }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        !self.entries.iter().any(|e| !e.is_keyvalue())
-    }
 }
 
 impl From<Vec<CafMapEntry>> for CafMap

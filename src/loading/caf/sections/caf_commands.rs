@@ -37,13 +37,10 @@ impl CafCommandEntry
                     tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
                     return Err(span_verify_error(content));
                 }
+                // NOTE: macro params are not allowed in commands but we don't check here to avoid the perf cost
+                // of traversing the structure. Allow errors to be detected downstream (e.g. when deserializing).
                 // TODO: re-evaluate if this is useful; the perf cost of traversing everything again is
                 // non-negligible
-                if !instruction.no_macro_params() {
-                    tracing::warn!("failed parsing command entry at {}; entry contains a macro param, which is not \
-                        allowed in commands", get_location(content).as_str());
-                    return Err(span_verify_error(content));
-                }
                 return Ok((Some(Self::Instruction(instruction)), next_fill, remaining));
             }
             (None, fill, _) => fill,

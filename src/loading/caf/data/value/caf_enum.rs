@@ -98,17 +98,6 @@ impl CafEnumVariant
             _ => (),
         }
     }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        match self {
-            Self::Unit => true,
-            Self::Tuple(val) => val.no_macro_params(),
-            Self::Array(val) => val.no_macro_params(),
-            Self::Map(val) => val.no_macro_params(),
-        }
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -194,12 +183,6 @@ impl CafEnum
             id: variant.into(),
             variant: CafEnumVariant::Map(map),
         }
-    }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        self.variant.no_macro_params()
     }
 }
 

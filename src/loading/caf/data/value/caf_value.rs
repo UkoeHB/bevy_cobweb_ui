@@ -174,25 +174,6 @@ impl CafValue
     {
         value.serialize(CafValueSerializer)
     }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        match self {
-            Self::Enum(val) => val.no_macro_params(),
-            Self::Builtin(_) => true,
-            Self::Array(val) => val.no_macro_params(),
-            Self::Tuple(val) => val.no_macro_params(),
-            Self::Map(val) => val.no_macro_params(),
-            Self::Number(_) => true,
-            Self::Bool(_) => true,
-            Self::None(_) => true,
-            Self::String(_) => true,
-            Self::Constant(_) => true,
-            Self::DataMacro(val) => val.no_macro_params(),
-            Self::MacroParam(_) => false,
-        }
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

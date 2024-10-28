@@ -176,18 +176,6 @@ impl CafInstructionVariant
             _ => (),
         }
     }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        match self {
-            Self::Unit => true,
-            Self::Tuple(value) => value.no_macro_params(),
-            Self::Array(value) => value.no_macro_params(),
-            Self::Map(value) => value.no_macro_params(),
-            Self::Enum(value) => value.no_macro_params(),
-        }
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -233,12 +221,6 @@ impl CafInstruction
             .ok_or(CafError::InstructionNotRegistered)?;
         let name = registration.type_info().type_path_table().short_path();
         value.serialize(CafInstructionSerializer { name })
-    }
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        self.variant.no_macro_params()
     }
 }
 

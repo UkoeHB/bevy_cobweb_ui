@@ -30,13 +30,6 @@ impl CafDataMacroCall
     }
 
     pub fn recover_fill(&mut self, _other: &Self) {}
-
-    /// Returns `true` if the value has no macro params.
-    pub fn no_macro_params(&self) -> bool
-    {
-        // TODO
-        true
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
