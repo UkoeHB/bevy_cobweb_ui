@@ -93,6 +93,8 @@ pub enum CobwebAssetLoaderError
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A deserialized CAF file.
+// TODO: for editor feature, save hash of file data so editor can detect manual updates vs updates triggered by a
+// save event
 #[derive(Debug, Asset, TypePath)]
 pub(crate) struct CobwebAssetFile(pub(crate) Caf);
 

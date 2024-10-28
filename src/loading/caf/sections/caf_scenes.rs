@@ -1,5 +1,9 @@
 use bevy::prelude::Deref;
+use nom::branch::alt;
 use nom::bytes::complete::tag;
+use nom::character::complete::char;
+use nom::combinator::{map, success};
+use nom::sequence::terminated;
 use nom::Parser;
 use smol_str::SmolStr;
 
@@ -20,12 +24,19 @@ impl CafSceneNodeName
         Ok(())
     }
 
-    // TODO: consider custom-parsing this to restrict what can be used for node names and make this more performant
-    pub fn try_parse(content: Span) -> Result<(Option<(Self, CafFill)>, Span), SpanError>
+    pub fn try_parse(content: Span) -> Result<(Option<Self>, Span), SpanError>
     {
-        let (maybe_name, next_fill, remaining) = CafString::try_parse(CafFill::default(), content)?;
-        let Some(name) = maybe_name else { return Ok((None, content)) };
-        Ok((Some((Self(SmolStr::from(name.as_str())), next_fill)), remaining))
+        let Ok((remaining, _)) = char::<_, ()>('\"').parse(content) else { return Ok((None, content)) };
+        // Allows snake identifiers and empty identifiers.
+        let Ok((remaining, name)) =
+            terminated(alt((map(snake_identifier, |i| *i.fragment()), success(""))), tag("\"")).parse(remaining)
+        else {
+            tracing::warn!("failed parsing scene node name at {}; name is not snake-case (e.g. a_b_c)",
+                get_location(content).as_str());
+            return Err(span_verify_error(content));
+        };
+
+        Ok((Some(Self(SmolStr::from(name))), remaining))
     }
 }
 
@@ -152,7 +163,7 @@ pub struct CafSceneLayer
 {
     /// Fill before the layer name.
     ///
-    /// Whatespace between the name and most recent newline is used to control scene layer depth.
+    /// Whitespace between the name and most recent newline is used to control scene layer depth.
     pub name_fill: CafFill,
     pub name: CafSceneNodeName,
     pub entries: Vec<CafSceneLayerEntry>,
@@ -173,7 +184,7 @@ impl CafSceneLayer
     /// `indent` should be the indent of this layer's id
     pub fn try_parse(name_fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let (Some((name, mut item_fill)), mut remaining) = CafSceneNodeName::try_parse(content)? else {
+        let (Some(name), remaining) = CafSceneNodeName::try_parse(content)? else {
             return Ok((None, name_fill, content));
         };
 
@@ -185,11 +196,11 @@ impl CafSceneLayer
         };
 
         // Get content indent from first item_fill.
-        let mut entries = vec![];
+        let (mut item_fill, mut remaining) = CafFill::parse(remaining);
         let Some(content_indent) = item_fill.ends_newline_then_num_spaces() else {
             if remaining.fragment().len() == 0 {
                 // End-of-file
-                return Ok((Some(Self { name_fill, name, entries }), item_fill, remaining));
+                return Ok((Some(Self { name_fill, name, entries: vec![] }), item_fill, remaining));
             }
             tracing::warn!("failed parsing scene at {}; first item after a node name isn't on a separate line",
                 get_location(remaining));
@@ -197,6 +208,7 @@ impl CafSceneLayer
         };
 
         // Collect entries.
+        let mut entries = vec![];
         let end_fill = loop {
             // Note: this will properly handle the case where content_indent <= layer_indent.
             match CafSceneLayerEntry::try_parse(layer_indent, content_indent, item_fill, remaining)? {
@@ -222,8 +234,6 @@ impl CafSceneLayer
             entry.recover_fill(other);
         }
     }
-
-    // TODO: when extracting scene layer, check for uniqueness of non-anonymous names
 }
 
 //-------------------------------------------------------------------------------------------------------------------

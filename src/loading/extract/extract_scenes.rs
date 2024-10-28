@@ -178,6 +178,8 @@ fn extract_scene_layer(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+// TODO: handle anonymous nodes
+// TODO: disallow duplicate node names, excluding anonymous nodes
 pub(super) fn extract_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
