@@ -19,7 +19,7 @@ fn preprocess_cobweb_asset_files(
     mut events: EventReader<AssetEvent<CobwebAssetFile>>,
     mut caf_files: ResMut<LoadedCobwebAssetFiles>,
     mut assets: ResMut<Assets<CobwebAssetFile>>,
-    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
 )
 {
     for event in events.read() {
@@ -41,8 +41,7 @@ fn preprocess_cobweb_asset_files(
             continue;
         };
 
-        let caf_cache = caf_cache.get_noreact();
-        preprocess_caf_file(&mut manifest_buffer, &asset_server, &mut caf_files, caf_cache, asset.0);
+        preprocess_caf_file(&mut manifest_buffer, &asset_server, &mut caf_files, &mut caf_cache, asset.0);
     }
 
     // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
@@ -53,7 +52,7 @@ fn preprocess_cobweb_asset_files(
 
 fn process_cobweb_asset_files(
     types: Res<AppTypeRegistry>,
-    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
     mut c: Commands,
     mut scene_loader: ResMut<SceneLoader>,
 )
@@ -61,42 +60,57 @@ fn process_cobweb_asset_files(
     let type_registry = types.read();
 
     if caf_cache
-        .get_noreact()
         .process_cobweb_asset_files(&type_registry, &mut c, &mut scene_loader)
     {
-        caf_cache.get_mut(&mut c);
+        c.broadcast(CafCacheUpdated);
     }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn apply_pending_commands(mut c: Commands, mut caf_cache: ResMut<CobwebAssetCache>, loaders: Res<LoaderCallbacks>)
+{
+    caf_cache.apply_pending_commands(&mut c, &loaders);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Only enabled for hot_reload because normally entities are loaded only once, the first time they subscribe
+/// to a loadable ref.
+#[cfg(feature = "hot_reload")]
+fn apply_pending_updates(mut c: Commands, mut caf_cache: ResMut<CobwebAssetCache>, loaders: Res<LoaderCallbacks>)
+{
+    caf_cache.apply_pending_node_updates(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
 fn cleanup_cobweb_asset_cache(
-    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
     mut scene_loader: ResMut<SceneLoader>,
     mut removed: RemovedComponents<HasLoadables>,
 )
 {
     for removed in removed.read() {
-        caf_cache
-            .get_noreact()
-            .remove_entity(&mut scene_loader, removed);
+        caf_cache.remove_entity(&mut scene_loader, removed);
     }
 
-    caf_cache.get_noreact().cleanup_pending_updates();
+    caf_cache.cleanup_pending_updates();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(not(feature = "hot_reload"))]
-fn cleanup_cobweb_asset_cache(mut caf_cache: ReactResMut<CobwebAssetCache>)
+fn cleanup_cobweb_asset_cache(mut caf_cache: ResMut<CobwebAssetCache>)
 {
-    caf_cache.get_noreact().cleanup_pending_updates();
+    caf_cache.cleanup_pending_updates();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn insert_loadable_entry(
+// TODO: this needs to return Added/Updated/NoChange
+fn insert_command_loadable_entry(
     loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
     loadable_ref: &SceneRef,
     loadable: ReflectedLoadable,
@@ -132,6 +146,129 @@ fn insert_loadable_entry(
     }
 
     true
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn insert_node_loadable_entry(
+    loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
+    loadable_ref: &SceneRef,
+    index: usize,
+    loadable: ReflectedLoadable,
+    type_id: TypeId,
+    full_type_name: &str,
+) -> InsertNodeResult
+{
+    match loadables.entry(loadable_ref.clone()) {
+        Vacant(entry) => {
+            if index != 0 {
+                tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
+                    the current loadables length is 0", full_type_name, loadable_ref, index);
+                return false;
+            }
+            let mut vec = SmallVec::default();
+            vec.push(ErasedLoadable { type_id, loadable });
+            entry.insert(vec);
+
+            InsertNodeResult::Added
+        }
+        Occupied(mut entry) => {
+            // Insert if the loadable value changed.
+            if let Some(erased_loadable) = entry.get_mut().get_mut(index) {
+                // Check if the type is changing.
+                if erased_loadable.type_id != type_id {
+                    let removed_type_id = erased_loadable.type_id;
+                    *erased_loadable = ErasedLoadable { type_id, loadable };
+                    return InsertNodeResult::Replaced(removed_type_id, type_id);
+                }
+
+                // Check if the value is changing.
+                match erased_loadable.loadable.equals(&loadable) {
+                    Some(true) => InsertNodeResult::NoChange,
+                    Some(false) => {
+                        // Replace the existing value.
+                        *erased_loadable = ErasedLoadable { type_id, loadable };
+                        InsertNodeResult::Changed
+                    }
+                    None => {
+                        tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
+                            PartialEq", full_type_name, loadable_ref);
+                        InsertNodeResult::NoChange;
+                    }
+                }
+            } else if index == entry.get().len() {
+                entry.get_mut().push(ErasedLoadable { type_id, loadable });
+                InsertNodeResult::Changed
+            } else {
+                tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
+                    the current loadables length is {}", full_type_name, loadable_ref, index, entry.get().len());
+                InsertNodeResult::NoChange;
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(PartialEq)]
+enum InsertNodeResult
+{
+    /// (removed, added)
+    Replaced(TypeId, TypeId),
+    Changed,
+    Added,
+    NoChange,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct RevertCommand
+{
+    entity: Entity,
+    reverter: fn(Entity, &mut World),
+}
+
+impl Command for RevertCommand
+{
+    fn apply(self, world: &mut World)
+    {
+        (self.reverter)(self.entity, world);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct CommandLoadCommand
+{
+    callback: fn(&mut World, ReflectedLoadable, LoadableRef),
+    loadable_ref: SceneRef,
+    loadable: ReflectedLoadable
+}
+
+impl Command for CommandLoadCommand
+{
+    fn apply(self, world: &mut World)
+    {
+        (self.callback)(world, self.loadable, self.loadable_ref);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+struct NodeLoadCommand
+{
+    callback: fn(&mut World, Entity, ReflectedLoadable, LoadableRef),
+    entity: Entity,
+    loadable_ref: SceneRef,
+    loadable: ReflectedLoadable
+}
+
+impl Command for NodeLoadCommand
+{
+    fn apply(self, world: &mut World)
+    {
+        (self.callback)(world, self.entity, self.loadable, self.loadable_ref);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -183,7 +320,7 @@ struct ErasedLoadable
 pub(crate) struct SubscriptionRef
 {
     pub(crate) entity: Entity,
-    pub(crate) setter: ContextSetter,
+    pub(crate) initializer: NodeInitializer,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -246,13 +383,13 @@ impl ReflectedLoadable
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive resource that manages content loaded from cobweb asset files (`.caf.json` files).
+/// Resource that manages content loaded from cobweb asset files (`.caf.json` files).
 ///
 /// Can be used to load scenes with [`LoadSceneExt::load_scene`], or load individual scene nodes with
 /// [`CafLoadingEntityCommandsExt::load`].
 ///
 /// Note that command loadables in caf files are automatically applied to the world.
-#[derive(ReactResource, Default, Debug)]
+#[derive(Resource, Default, Debug)]
 pub struct CobwebAssetCache
 {
     /// Tracks which files have not initialized yet.
@@ -287,11 +424,13 @@ pub struct CobwebAssetCache
     subscriptions_rev: HashMap<Entity, SmallVec<[SceneRef; 1]>>,
 
     /// Records commands that need to be applied.
-    /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    commands_need_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, SceneRef); 1]>>,
+    commands_need_updates: Vec<(ErasedLoadable, SceneRef)>,
+    /// Records type ids of loadables that need to be reverted on specific entities.
+    #[cfg(feature = "hot_reload")]
+    needs_revert: EntityHashMap<HashSet<TypeId>>,
     /// Records entities that need loadable updates.
-    /// - We clear this at the end of every tick, so there should not be stale `ReflectedLoadable` values.
-    needs_updates: HashMap<TypeId, SmallVec<[(ReflectedLoadable, SceneRef, SmallVec<[SubscriptionRef; 1]>); 1]>>,
+    #[cfg(feature = "hot_reload")]
+    needs_updates: EntityHashMap<(NodeInitializer, SceneRef)>,
 }
 
 impl CobwebAssetCache
@@ -609,7 +748,7 @@ impl CobwebAssetCache
         full_type_name: &str,
     ) -> bool
     {
-        if !insert_loadable_entry(
+        if !insert_command_loadable_entry(
             &mut self.command_loadables,
             loadable_ref,
             loadable.clone(),
@@ -619,65 +758,122 @@ impl CobwebAssetCache
             return false;
         }
 
-        let entry = self.commands_need_updates.entry(type_id).or_default();
-        entry.push((loadable.clone(), loadable_ref.clone()));
+        // TODO: rework this so commands are globally ordered
+        self.commands_need_updates.push((ErasedLoadable{ type_id, loadable: loadable.clone() }, loadable_ref.clone()));
 
         true
     }
 
     /// Prepares a scene node.
     ///
-    /// We need to prepare scene nodes because they may be empty, which means a loadable won't be inserted.
+    /// We need to prepare scene nodes because they may be empty.
     pub(crate) fn prepare_scene_node(&mut self, loadable_ref: SceneRef)
     {
         self.loadables.entry(loadable_ref).or_default();
     }
 
-    /// Inserts a loadable at the specified path if its value will change.
-    ///
-    /// Returns `true` if this method added any pending subscriber updates.
+    /// Inserts a loadable at the specified path and index if its value will change.
     pub(crate) fn insert_loadable(
         &mut self,
         loadable_ref: &SceneRef,
+        index: usize,
         loadable: ReflectedLoadable,
         type_id: TypeId,
         full_type_name: &str,
-    ) -> bool
+    )
     {
-        if !insert_loadable_entry(
+        let res = insert_node_loadable_entry(
             &mut self.loadables,
             loadable_ref,
+            index,
             loadable.clone(),
             type_id,
             full_type_name,
-        ) {
-            return false;
+        );
+        if res == InsertNodeResult::NoChange {
+            return;
         }
 
         // Identify entites that should update.
         #[cfg(feature = "hot_reload")]
         {
-            let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return false };
+            let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return };
             if subscriptions.is_empty() {
-                return false;
+                return;
             }
-            let entry = self.needs_updates.entry(type_id).or_default();
-            entry.push((loadable, loadable_ref.clone(), subscriptions.clone()));
-        }
 
-        true
+            for subscription in subscriptions {
+                // Note: we revert for additions because additions encompass both 'fresh adds' and
+                // 'rearranged'.
+                let revert_entry = self.needs_revert.entry(subscription.entity).or_default();
+                if let InsertNodeResult::Replaced(removed, _) = &res {
+                    entry.insert(*removed);
+                }
+                revert_entry.insert(type_id);
+                self.needs_updates.insert(subscription.entity, (subscription.initializer, loadable_ref.clone()));
+            }
+        }
     }
 
-    /// Schedules all pending commands to be processed.
-    #[cfg(not(feature = "hot_reload"))]
-    pub(crate) fn apply_pending_commands(&self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    /// Cleans up any removed loadables if the loadable set became smaller after a hot reload.
+    ///
+    /// Runs after all loadables in a scene node have been inserted.
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn end_loadable_insertion(&mut self, loadable_ref: &SceneRef, count: usize)
     {
-        for type_id in self.commands_need_updates.keys() {
-            let Some(syscommand) = callbacks.get(*type_id) else {
-                tracing::warn!("ignoring loadable command with type id {:?} that wasn't registered", type_id);
+        let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return };
+        if subscriptions.is_empty() {
+            return;
+        }
+
+        // Revert trailing removals
+        for removed in self.loadables.get(loadable_ref).into_iter().flat_map(|l| l[count..]) {
+            for subscription in subscriptions {
+                self.needs_revert.entry(subscription.entity).or_default().insert(type_id);
+            }
+        }
+    }
+
+    fn load_entity(
+        &self,
+        subscription: SubscriptionRef,
+        loadable_ref: SceneRef,
+        callbacks: &LoaderCallbacks,
+        c: &mut Commands,
+    )
+    {
+        // Initialize
+        let Some(mut ec) = c.get_entity(subscription.entity) else { return };
+        (subscription.initializer)(&mut ec);
+
+        // Queue loadables
+        let Some(loadables) = self.loadables.get(&loadable_ref) else {
+            tracing::warn!("failed loading {loadable_ref:?} into {:?}, path is unknown; either the path is \
+                invalid or you loaded the entity before LoadState::Done", subscription.entity);
+            return;
+        };
+
+        for loadable in loadables.iter() {
+            let Some(callback) = callbacks.get(loadable.type_id) else {
+                tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
+                    loadable_ref);
                 continue;
             };
-            c.add(syscommand);
+
+            c.add(NodeLoadCommand{
+                callback,
+                subscription.entity,
+                loadable_ref: loadable_ref.clone(),
+                loadable: loadable.loadable.clone()
+            });
+        }
+
+        // Notify the entity that it loaded.
+        #[cfg(feature = "hot_reload")]
+        {
+            if !loadables.is_empty() {
+                c.react().entity_event(entity, Loaded);
+            }
         }
     }
 
@@ -688,23 +884,16 @@ impl CobwebAssetCache
         &mut self,
         entity: Entity,
         mut loadable_ref: SceneRef,
-        setter: ContextSetter,
-        c: &mut Commands,
+        initializer: NodeInitializer,
         callbacks: &LoaderCallbacks,
+        c: &mut Commands,
     )
     {
         // Replace manifest key in the requested loadable.
         self.manifest_map().swap_for_file(&mut loadable_ref.file);
 
-        // Get values that the entity is subscribing to.
-        let Some(loadables) = self.loadables.get(&loadable_ref) else {
-            tracing::warn!("failed loading {loadable_ref:?} into {entity:?}, path is unknown; either the path is \
-                invalid or you loaded the entity before LoadState::Done");
-            return;
-        };
-
         // Add to subscriptions.
-        let subscription = SubscriptionRef { entity, setter };
+        let subscription = SubscriptionRef { entity, initializer };
         #[cfg(feature = "hot_reload")]
         {
             self.subscriptions
@@ -717,31 +906,45 @@ impl CobwebAssetCache
                 .push(loadable_ref.clone());
         }
 
-        // Schedule updates for each loadable so they will be applied to the entity.
-        for loadable in loadables.iter() {
-            let type_id = loadable.type_id;
-            self.needs_updates.entry(type_id).or_default().push((
-                loadable.loadable.clone(),
-                loadable_ref.clone(),
-                SmallVec::from_elem(subscription, 1),
-            ));
+        // Load the entity immediately.
+        self.load_entity(subscription, loadable_ref, callbacks, c);
+    }
 
-            let Some(syscommand) = callbacks.get(type_id) else {
+    /// Schedules all pending commands to be processed.
+    fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    {
+        for (loadable, loadable_ref) in self.commands_need_updates.drain(..) {
+            let Some(callback) = callbacks.get(loadable.type_id) else {
                 tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
                     loadable_ref);
                 continue;
             };
 
-            c.add(syscommand);
+            c.add(CommandLoadCommand{
+                callback,
+                loadable_ref: loadable_ref.clone(),
+                loadable: loadable.loadable.clone()
+            });
         }
+    }
 
-        // Notify the entity that some of its loadables have loaded.
-        #[cfg(feature = "hot_reload")]
-        {
-            if !loadables.is_empty() {
-                c.react().entity_event(entity, Loaded);
+    #[cfg(feature = "hot_reload")]
+    fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    {
+        // Revert loadables as needed.
+        for (entity, type_ids) in self.needs_revert.drain(..) {
+            for type_id in type_ids {
+                let Some(reverter) = callbacks.get_for_revert(type_id) else { continue };
+                c.add(RevertCommand{ entity, reverter });
             }
         }
+
+        // Reload entities.
+        let mut need_updates = std::mem::take(&mut self.needs_updates);
+        for (entity, (initializer, loadable_ref)) in need_updates.drain(..) {
+            self.load_entity(SubscriptionRef{ entity, initializer}, loadable_ref, callbacks, c);
+        }
+        self.needs_updates = needs_updates;
     }
 
     /// Cleans up despawned entities.
@@ -761,53 +964,10 @@ impl CobwebAssetCache
     }
 
     /// Cleans up pending updates that failed to be processed.
+    // TODO: remove? does rework make this unnecessary?
     fn cleanup_pending_updates(&mut self)
     {
-        if !self.commands_need_updates.is_empty() {
-            warn_once!("There are pending updates for command types that weren't registered. This warning \
-                only prints once.");
-        }
-        if !self.needs_updates.is_empty() {
-            // Note: This can technically print spuriously if the user spawns loaded entities in Last and doesn't
-            // call `apply_deferred` before the cleanup system runs.
-            warn_once!("There are pending updates for instruction types that weren't registered. This warning only \
-                prints once, and may print spuriously if you spawn loaded entities in Last.");
-        }
-        self.commands_need_updates.clear();
-        self.needs_updates.clear();
-    }
 
-    /// Takes command loadables of type `T` extracted from `#commands` sections.
-    pub(crate) fn take_commands<T: Loadable>(&mut self) -> SmallVec<[(ReflectedLoadable, SceneRef); 1]>
-    {
-        self.commands_need_updates
-            .remove(&TypeId::of::<T>())
-            .unwrap_or_default()
-    }
-
-    /// Takes entity loadables for entites that subscribed to `T` found at recently-updated scene paths.
-    pub(crate) fn take_loadables<T: Loadable>(
-        &mut self,
-    ) -> SmallVec<[(ReflectedLoadable, SceneRef, SmallVec<[SubscriptionRef; 1]>); 1]>
-    {
-        self.needs_updates
-            .remove(&TypeId::of::<T>())
-            .unwrap_or_default()
-    }
-
-    /// Updates entities that subscribed to `T` found at recently-updated scene paths.
-    pub(crate) fn update_loadables<T: Loadable>(
-        &mut self,
-        mut callback: impl FnMut(Entity, ContextSetter, &SceneRef, &ReflectedLoadable),
-    )
-    {
-        let mut needs_updates = self.take_loadables::<T>();
-
-        for (loadable, loadable_ref, mut subscriptions) in needs_updates.drain(..) {
-            for subscription in subscriptions.drain(..) {
-                (callback)(subscription.entity, subscription.setter, &loadable_ref, &loadable);
-            }
-        }
     }
 }
 
@@ -826,6 +986,11 @@ impl AssetLoadProgress for CobwebAssetCache
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Reactive event broadcasted when the [`CobwebAssetCache`] has been updated with CAF asset data.
+pub struct CafCacheUpdated;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// System set in [`First`] where files are processed.
 #[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub struct FileProcessingSet;
@@ -840,15 +1005,18 @@ impl Plugin for CobwebAssetCachePlugin
     fn build(&self, app: &mut App)
     {
         let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
-        app.insert_react_resource(CobwebAssetCache::new(manifest_map.clone()))
+        app.insert_resource(CobwebAssetCache::new(manifest_map.clone()))
             .insert_resource(SceneLoader::new(manifest_map))
-            .register_reactive_asset_tracker::<CobwebAssetCache>()
+            .register_asset_tracker::<CobwebAssetCache>()
             .add_systems(
                 First,
                 (
                     preprocess_cobweb_asset_files,
                     process_cobweb_asset_files
-                        .run_if(|s: ReactRes<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
+                        .run_if(|s: Res<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
+                    apply_pending_commands,
+                    #[cfg(feature = "hot_reload")]
+                    apply_pending_node_updates,
                 )
                     .chain()
                     .in_set(FileProcessingSet),

@@ -29,7 +29,14 @@ impl<T> Loadable for T where
 /// See [`register_instruction`](crate::prelude::CobwebAssetRegistrationAppExt::register_instruction).
 pub trait Instruction: Loadable
 {
+    /// Applies the instruction to the entity.
     fn apply(self, entity: Entity, world: &mut World);
+
+    /// Reverts the instruction on the entity.
+    ///
+    /// This should clean up as many side effects of the instruction as possible.
+    // TODO: make this mandatory
+    fn revert(_entity: Entity, _world: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -39,6 +46,9 @@ pub trait InstructionExt
 {
     /// Applies an instruction to the entity.
     fn apply(&mut self, instruction: impl Instruction) -> &mut Self;
+
+    /// Reverts an instruction on the entity.
+    fn revert<T: Instruction>(&mut self) -> &mut Self;
 }
 
 impl InstructionExt for EntityCommands<'_>
@@ -46,6 +56,12 @@ impl InstructionExt for EntityCommands<'_>
     fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
         self.add(move |e: Entity, w: &mut World| instruction.apply(e, w));
+        self
+    }
+
+    fn revert<T: Instruction>(&mut self) -> &mut Self
+    {
+        self.add(|e: Entity, w: &mut World| T::revert(e, w));
         self
     }
 }

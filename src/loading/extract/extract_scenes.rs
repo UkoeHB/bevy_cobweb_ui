@@ -14,6 +14,7 @@ fn handle_loadable(
     caf_cache: &mut CobwebAssetCache,
     file: &CafFile,
     current_path: &ScenePath,
+    loadable_index: usize,
     loadable: &CafLoadable,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> String
@@ -35,6 +36,7 @@ fn handle_loadable(
             file: SceneFile::File(file.clone()),
             path: current_path.clone(),
         },
+        loadable_index,
         loadable_value,
         type_id,
         long_name,
@@ -113,11 +115,13 @@ fn extract_scene_layer(
 ) -> String
 {
     // Prep the node.
-    caf_cache.prepare_scene_node(SceneRef { file: scene.file.clone(), path: current_path.clone() });
+    let scene_location = SceneRef { file: scene.file.clone(), path: current_path.clone() };
+    caf_cache.prepare_scene_node(scene_location.clone());
 
     // Begin layer update.
     scene_layer.start_update(caf_layer.entries.len());
 
+    let mut loadable_count = 0;
     for entry in caf_layer.entries.iter() {
         match entry {
             CafSceneLayerEntry::Loadable(loadable) => {
@@ -130,9 +134,11 @@ fn extract_scene_layer(
                         .file()
                         .expect("all SceneFile should contain CafFile in scene extraction"),
                     current_path,
+                    loadable_count,
                     loadable,
                     name_shortcuts,
                 );
+                loadable_count += 1;
             }
             CafSceneLayerEntry::Layer(next_caf_layer) => {
                 id_scratch = handle_scene_node(
@@ -159,6 +165,9 @@ fn extract_scene_layer(
             }
         }
     }
+
+    #[cfg(feature = "hot_reload")]
+    caf_cache.end_loadable_insertion(&scene_location, loadable_count);
 
     // End layer update and handle removed nodes.
     for SceneLayerData { id, .. } in scene_layer.end_update() {

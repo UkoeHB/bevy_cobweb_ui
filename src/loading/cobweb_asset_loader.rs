@@ -66,12 +66,12 @@ impl AssetLoader for CobwebAssetLoader
 /// Instructs the asset server to load all pre-set CobwebAssetCache files.
 fn load_cobweb_assets(
     mut files: ResMut<LoadedCobwebAssetFiles>,
-    mut caf_cache: ReactResMut<CobwebAssetCache>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
     asset_server: Res<AssetServer>,
 )
 {
     for file in files.take_preset_files() {
-        files.start_loading(file, caf_cache.get_noreact(), &asset_server);
+        files.start_loading(file, &mut caf_cache, &asset_server);
     }
 }
 
