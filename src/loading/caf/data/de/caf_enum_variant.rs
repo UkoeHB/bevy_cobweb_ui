@@ -1,6 +1,6 @@
 use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, Unexpected, VariantAccess, Visitor};
 
-use super::{visit_map_ref, visit_tuple_ref};
+use super::{visit_map_ref, visit_tuple_ref, visit_wrapped_erased_ref, ErasedNewtypeStruct};
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -75,30 +75,38 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
     {
         match &self.variant.variant {
             CafEnumVariant::Tuple(tuple) => {
-                if tuple.entries.len() != 1 {
-                    Err(serde::de::Error::invalid_type(
-                        self.variant.unexpected(),
-                        &"newtype variant",
-                    ))
-                } else {
+                if tuple.entries.len() == 1 {
                     seed.deserialize(&tuple.entries[0])
+                } else {
+                    seed.deserialize(tuple)
                 }
             }
-            // Enum variant array is special case of tuple-variant-of-sequence.
+            // Special cases: enum variant flattening
             CafEnumVariant::Array(array) => seed.deserialize(array),
-            _ => Err(serde::de::Error::invalid_type(
-                self.variant.unexpected(),
-                &"newtype variant",
-            )),
+            CafEnumVariant::Map(map) => seed.deserialize(map),
+            CafEnumVariant::Unit => seed.deserialize(ErasedNewtypeStruct),
         }
     }
 
-    fn tuple_variant<V>(self, _len: usize, visitor: V) -> CafResult<V::Value>
+    fn tuple_variant<V>(self, len: usize, visitor: V) -> CafResult<V::Value>
     where
         V: Visitor<'de>,
     {
         match &self.variant.variant {
-            CafEnumVariant::Tuple(tuple) => visit_tuple_ref(tuple, visitor),
+            CafEnumVariant::Tuple(tuple) => visit_tuple_ref(&tuple.entries, visitor),
+            // Special case: flattened
+            CafEnumVariant::Unit => {
+                if len == 0 {
+                    visit_tuple_ref(&[], visitor)
+                } else if len == 1 {
+                    visit_wrapped_erased_ref(visitor)
+                } else {
+                    Err(serde::de::Error::invalid_type(
+                        self.variant.unexpected(),
+                        &"tuple variant",
+                    ))
+                }
+            }
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"tuple variant",
@@ -111,7 +119,9 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
         V: Visitor<'de>,
     {
         match &self.variant.variant {
-            CafEnumVariant::Map(map) => visit_map_ref(map, visitor),
+            CafEnumVariant::Map(map) => visit_map_ref(&map.entries, visitor),
+            // Special case: flattened
+            CafEnumVariant::Unit => visit_map_ref(&[], visitor),
             _ => Err(serde::de::Error::invalid_type(
                 self.variant.unexpected(),
                 &"struct variant",

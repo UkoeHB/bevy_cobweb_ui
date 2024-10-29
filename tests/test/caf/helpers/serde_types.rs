@@ -63,9 +63,9 @@ impl ApplyLoadable for StringStruct
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct NewtypeStruct(pub u32);
+pub struct SimpleTupleStruct(pub u32, pub u32);
 
-impl ApplyLoadable for NewtypeStruct
+impl ApplyLoadable for SimpleTupleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -73,7 +73,33 @@ impl ApplyLoadable for NewtypeStruct
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct WrapNewtypeStruct(pub NewtypeStruct);
+pub struct SimpleStruct
+{
+    pub a: u32,
+    pub b: u32,
+}
+
+impl ApplyLoadable for SimpleStruct
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NewtypeStruct<T>(pub T);
+
+impl<T> ApplyLoadable for NewtypeStruct<T>
+where
+    T: TypePath + Loadable + Reflect + GetTypeRegistration,
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WrapNewtypeStruct(pub NewtypeStruct<u32>);
 
 impl ApplyLoadable for WrapNewtypeStruct
 {
@@ -122,6 +148,8 @@ pub enum EnumStruct
         boolean: bool,
         s_plain: PlainStruct,
     },
+    D(SimpleTupleStruct),
+    E(SimpleStruct),
 }
 
 impl ApplyLoadable for EnumStruct
@@ -328,7 +356,16 @@ impl Plugin for SerdeTypesPlugin
             .register_derived::<PlainStruct>()
             .register_derived::<FloatStruct>()
             .register_derived::<StringStruct>()
-            .register_derived::<NewtypeStruct>()
+            .register_derived::<SimpleTupleStruct>()
+            .register_derived::<SimpleStruct>()
+            .register_derived::<NewtypeStruct<()>>()
+            .register_derived::<NewtypeStruct<u32>>()
+            .register_derived::<NewtypeStruct<(u32, u32)>>()
+            .register_derived::<NewtypeStruct<UnitStruct>>()
+            .register_derived::<NewtypeStruct<NewtypeStruct<UnitStruct>>>()
+            .register_derived::<NewtypeStruct<SimpleTupleStruct>>()
+            .register_derived::<NewtypeStruct<SimpleStruct>>()
+            .register_derived::<NewtypeStruct<NewtypeStruct<u32>>>()
             .register_derived::<WrapNewtypeStruct>()
             .register_derived::<NewtypeEnum>()
             .register_derived::<ContainsNewtypes>()

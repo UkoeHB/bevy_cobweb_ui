@@ -45,6 +45,9 @@ pub enum CafError
     NotAnInstruction,
     /// A built-in type failed to serialize to [`CafBuiltin`].
     MalformedBuiltin,
+    /// Failed deserializing a newtype instruction or enum variant that is represented as a unit-like
+    /// struct/variant.
+    UnresolvedNewtypeStruct,
     /// An instruction identifier failed to parse.
     MalformedInstructionId,
 }
@@ -60,6 +63,7 @@ impl CafError
             Self::InstructionNotRegistered
             | Self::NotAnInstruction
             | Self::MalformedBuiltin
+            | Self::UnresolvedNewtypeStruct
             | Self::MalformedInstructionId => ErrorCategory::Syntax,
         }
     }
@@ -149,6 +153,9 @@ impl Display for CafError
                 f.write_str("tried serializing a type as CafInstruction that isn't a struct/enum")
             }
             Self::MalformedBuiltin => f.write_str("tried serializing a builtin type that is malformed"),
+            Self::UnresolvedNewtypeStruct => f.write_str(
+                "failed deserializing a newtype struct or enum variant represented as a unit struct/variant",
+            ),
             Self::MalformedInstructionId => {
                 f.write_str("tried extracting an instruction id from a malformed short path")
             }

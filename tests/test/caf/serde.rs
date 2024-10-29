@@ -167,22 +167,86 @@ fn string_conversions()
 fn newtypes()
 {
     let a = prepare_test_app();
-    test_equivalence(a.world(), "NewtypeStruct(1)", "1", NewtypeStruct(1));
+    test_equivalence(a.world(), "NewtypeStruct<u32>(1)", "1", NewtypeStruct(1u32));
     test_equivalence(
         a.world(),
-        "WrapNewtypeStruct(1)",
+        "NewtypeStruct<NewtypeStruct<u32>>(1)",
         "1",
-        WrapNewtypeStruct(NewtypeStruct(1)),
+        NewtypeStruct(NewtypeStruct(1u32)),
     );
-    test_equivalence(a.world(), "NewtypeEnum::Tuple(())", "Tuple(())", NewtypeEnum::Tuple(()));
+    test_equivalence(a.world(), "NewtypeEnum::Tuple", "Tuple", NewtypeEnum::Tuple(()));
     test_equivalence(
         a.world(),
         "ContainsNewtypes{n:1 w:[()]}",
         "{n:1 w:[()]}",
         ContainsNewtypes {
-            n: WrapNewtypeStruct(NewtypeStruct(1)),
+            n: WrapNewtypeStruct(NewtypeStruct(1u32)),
             w: WrapArray(vec![UnitStruct]),
         },
+    );
+    test_equivalence(a.world(), "WrapArray", "[]", WrapArray(vec![]));
+    test_equivalence(a.world(), "WrapArray[()]", "[()]", WrapArray(vec![UnitStruct]));
+    test_equivalence(
+        a.world(),
+        "WrapArray[() ()]",
+        "[() ()]",
+        WrapArray(vec![UnitStruct, UnitStruct]),
+    );
+
+    // Lossy conversion: newtype of unit struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<UnitStruct>(())",
+        "NewtypeStruct<UnitStruct>",
+        NewtypeStruct(UnitStruct),
+    );
+
+    // Lossy conversion: newtype of newtype of unit struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<NewtypeStruct<UnitStruct>>(())",
+        "NewtypeStruct<NewtypeStruct<UnitStruct>>",
+        NewtypeStruct(NewtypeStruct(UnitStruct)),
+    );
+
+    // Lossy conversion: newtype of empty tuple is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<()>(())",
+        "NewtypeStruct<()>",
+        NewtypeStruct(()),
+    );
+
+    // Lossy conversion: newtype of tuple is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<(u32, u32)>((1 1))",
+        "NewtypeStruct<(u32, u32)>(1 1)",
+        NewtypeStruct((1u32, 1u32)),
+    );
+
+    // Lossy conversion: newtype of tuple-struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<SimpleTupleStruct>((1 1))",
+        "NewtypeStruct<SimpleTupleStruct>(1 1)",
+        NewtypeStruct(SimpleTupleStruct(1u32, 1u32)),
+    );
+
+    // Lossy conversion: newtype of vec is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "WrapArray([()])",
+        "WrapArray[()]",
+        WrapArray(vec![UnitStruct]),
+    );
+
+    // Lossy conversion: newtype of struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "NewtypeStruct<SimpleStruct>({a:1 b:2})",
+        "NewtypeStruct<SimpleStruct>{a:1 b:2}",
+        NewtypeStruct(SimpleStruct { a: 1, b: 2 }),
     );
 }
 
@@ -193,12 +257,40 @@ fn enum_struct()
 {
     let a = prepare_test_app();
     test_equivalence(a.world(), "EnumStruct::A", "A", EnumStruct::A);
-    test_equivalence(a.world(), "EnumStruct::B(())", "B(())", EnumStruct::B(UnitStruct));
+    test_equivalence(a.world(), "EnumStruct::B", "B", EnumStruct::B(UnitStruct));
     test_equivalence(
         a.world(),
         "EnumStruct::C{boolean:true s_plain:{boolean:true}}",
         "C{boolean:true s_plain:{boolean:true}}",
         EnumStruct::C { boolean: true, s_plain: PlainStruct { boolean: true } },
+    );
+    test_equivalence(
+        a.world(),
+        "EnumStruct::D(1 2)",
+        "D(1 2)",
+        EnumStruct::D(SimpleTupleStruct(1, 2)),
+    );
+    test_equivalence(
+        a.world(),
+        "EnumStruct::E{a:1 b:2}",
+        "E{a:1 b:2}",
+        EnumStruct::E(SimpleStruct { a: 1, b: 2 }),
+    );
+
+    // Lossy conversion: newtype-variant of tuple-struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "EnumStruct::D((1 2))",
+        "EnumStruct::D(1 2)",
+        EnumStruct::D(SimpleTupleStruct(1, 2)),
+    );
+
+    // Lossy conversion: newtype-variant of struct is flattened
+    test_equivalence_lossy(
+        a.world(),
+        "EnumStruct::E({a:1 b:2})",
+        "EnumStruct::E{a:1 b:2}",
+        EnumStruct::E(SimpleStruct { a: 1, b: 2 }),
     );
 }
 
@@ -215,8 +307,8 @@ fn aggregate_struct()
     map.insert(20u32, 20u32);
     test_equivalence(
         a.world(),
-        r#"AggregateStruct{uint:1 float:1 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
-        r#"{uint:1 float:1 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B(()) s_plain:{boolean:true}}"#,
+        r#"AggregateStruct{uint:1 float:1 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B s_plain:{boolean:true}}"#,
+        r#"{uint:1 float:1 boolean:true string:"hi" vec:[{boolean:true} {boolean:false}] map:{10:10 20:20} s_struct:() s_enum:B s_plain:{boolean:true}}"#,
         AggregateStruct {
             uint: 1,
             float: 1.0,
@@ -228,22 +320,6 @@ fn aggregate_struct()
             s_enum: EnumStruct::B(UnitStruct),
             s_plain: PlainStruct { boolean: true },
         },
-    );
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[test]
-fn wrap_array()
-{
-    let a = prepare_test_app();
-    test_equivalence(a.world(), "WrapArray[]", "[]", WrapArray(vec![]));
-    test_equivalence(a.world(), "WrapArray[()]", "[()]", WrapArray(vec![UnitStruct]));
-    test_equivalence(
-        a.world(),
-        "WrapArray[() ()]",
-        "[() ()]",
-        WrapArray(vec![UnitStruct, UnitStruct]),
     );
 }
 
@@ -308,13 +384,13 @@ fn single_generic_tuple()
     );
     test_equivalence(
         a.world(),
-        "SingleGenericTuple<UnitStruct>(())",
+        "SingleGenericTuple<UnitStruct>",
         "()",
         SingleGenericTuple::<UnitStruct>(UnitStruct),
     );
     test_equivalence(
         a.world(),
-        "SingleGenericTuple<SingleGeneric<u32>>({})",
+        "SingleGenericTuple<SingleGeneric<u32>>",
         "{}",
         SingleGenericTuple::<SingleGeneric<u32>>(SingleGeneric::default()),
     );
@@ -360,8 +436,8 @@ fn enum_generic()
     );
     test_equivalence(
         a.world(),
-        "EnumGeneric<UnitStruct>::B{s_enum:B(())}",
-        "B{s_enum:B(())}",
+        "EnumGeneric<UnitStruct>::B{s_enum:B}",
+        "B{s_enum:B}",
         EnumGeneric::<UnitStruct>::B { s_enum: EnumStruct::B(UnitStruct), _p: PhantomData },
     );
     test_equivalence(
@@ -441,7 +517,7 @@ fn reflect_defaulted()
     // Lossy conversion: reflect-defaulted fields will be inserted on reserialize
     test_equivalence_lossy_reflection(
         a.world(),
-        "ReflectDefaulted{}",
+        "ReflectDefaulted",
         "ReflectDefaulted{a:0 b:0}",
         ReflectDefaulted::default(),
     );

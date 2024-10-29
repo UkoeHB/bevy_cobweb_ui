@@ -36,9 +36,9 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         match self {
             CafValue::Enum(e) => visitor.visit_enum(EnumRefDeserializer { variant: e }),
             CafValue::Builtin(b) => deserialize_builtin(b, visitor),
-            CafValue::Array(a) => visit_array_ref(a, visitor),
-            CafValue::Tuple(t) => visit_tuple_ref(t, visitor),
-            CafValue::Map(m) => visit_map_ref(m, visitor),
+            CafValue::Array(a) => visit_array_ref(&a.entries, visitor),
+            CafValue::Tuple(t) => visit_tuple_ref(&t.entries, visitor),
+            CafValue::Map(m) => visit_map_ref(&m.entries, visitor),
             CafValue::Number(n) => n.deserialize_any(visitor),
             CafValue::Bool(b) => visitor.visit_bool(b.value),
             CafValue::None(_) => visitor.visit_none(),
@@ -135,7 +135,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::Array(v) => visit_array_ref(v, visitor),
+            CafValue::Array(v) => visit_array_ref(&v.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -175,8 +175,8 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::Array(v) => visit_array_ref(v, visitor),
-            CafValue::Tuple(v) => visit_tuple_ref(v, visitor),
+            CafValue::Array(v) => visit_array_ref(&v.entries, visitor),
+            CafValue::Tuple(v) => visit_tuple_ref(&v.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -186,7 +186,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::Tuple(tuple) => visit_tuple_ref(tuple, visitor),
+            CafValue::Tuple(tuple) => visit_tuple_ref(&tuple.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -201,7 +201,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         }
 
         match self {
-            CafValue::Tuple(v) => visit_tuple_ref(v, visitor),
+            CafValue::Tuple(v) => visit_tuple_ref(&v.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -211,7 +211,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
         V: Visitor<'de>,
     {
         match self {
-            CafValue::Map(v) => visit_map_ref(v, visitor),
+            CafValue::Map(v) => visit_map_ref(&v.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -229,12 +229,12 @@ impl<'de> serde::Deserializer<'de> for &'de CafValue
             // Allow empty tuples to be treated as unit structs.
             CafValue::Tuple(tuple) => {
                 if tuple.entries.len() == 0 {
-                    visit_tuple_ref(tuple, visitor)
+                    visit_map_ref(&[], visitor)
                 } else {
                     Err(self.invalid_type(&visitor))
                 }
             }
-            CafValue::Map(v) => visit_map_ref(v, visitor),
+            CafValue::Map(v) => visit_map_ref(&v.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }

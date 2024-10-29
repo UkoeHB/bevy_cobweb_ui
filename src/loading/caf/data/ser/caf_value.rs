@@ -170,8 +170,24 @@ impl serde::Serializer for CafValueSerializer
             return Ok(CafValue::Builtin(result));
         }
 
-        if let CafValue::Array(arr) = value_ser {
-            Ok(CafValue::Enum(CafEnum::array(variant, arr)))
+        if let CafValue::Array(array) = value_ser {
+            if array.entries.len() == 0 {
+                Ok(CafValue::Enum(CafEnum::unit(variant)))
+            } else {
+                Ok(CafValue::Enum(CafEnum::array(variant, array)))
+            }
+        } else if let CafValue::Tuple(tuple) = value_ser {
+            if tuple.entries.len() == 0 {
+                Ok(CafValue::Enum(CafEnum::unit(variant)))
+            } else {
+                Ok(CafValue::Enum(CafEnum::tuple(variant, tuple)))
+            }
+        } else if let CafValue::Map(map) = value_ser {
+            if map.entries.len() == 0 {
+                Ok(CafValue::Enum(CafEnum::unit(variant)))
+            } else {
+                Ok(CafValue::Enum(CafEnum::map(variant, map)))
+            }
         } else {
             Ok(CafValue::Enum(CafEnum::newtype(variant, value_ser)))
         }
@@ -285,9 +301,13 @@ impl serde::ser::SerializeTuple for SerializeTuple
         Ok(())
     }
 
-    fn end(self) -> CafResult<CafValue>
+    fn end(mut self) -> CafResult<CafValue>
     {
-        Ok(CafValue::Tuple(CafTuple::from(self.vec)))
+        if self.vec.len() == 1 {
+            Ok(self.vec.drain(..).next().unwrap())
+        } else {
+            Ok(CafValue::Tuple(CafTuple::from(self.vec)))
+        }
     }
 }
 
@@ -332,10 +352,10 @@ impl serde::ser::SerializeTupleVariant for SerializeTupleVariant
 
     fn end(self) -> CafResult<CafValue>
     {
-        if self.vec.len() > 0 {
-            Ok(CafValue::Enum(CafEnum::tuple(self.variant, CafTuple::from(self.vec))))
-        } else {
+        if self.vec.len() == 0 {
             Ok(CafValue::Enum(CafEnum::unit(self.variant)))
+        } else {
+            Ok(CafValue::Enum(CafEnum::tuple(self.variant, CafTuple::from(self.vec))))
         }
     }
 }
@@ -403,6 +423,8 @@ impl serde::ser::SerializeStruct for SerializeStruct
 
     fn end(self) -> CafResult<CafValue>
     {
+        // Note: we don't convert to a tuple if the struct has no fields, because we want empty structs to be
+        // displayed as '{}' for clarity.
         Ok(CafValue::Map(CafMap::from(self.vec)))
     }
 }

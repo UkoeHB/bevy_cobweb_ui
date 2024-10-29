@@ -183,6 +183,13 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug>(
     let direct_value = T::deserialize(&instruction_from_rust).unwrap();
     assert_eq!(value, direct_value);
 
+    // Rust value from caf instruction from rust (reflect)
+    // - Need to make sure the 'canonical' representation can be deserialized with reflection.
+    let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
+    let reflected_inst = deserializer.deserialize(&instruction_from_rust).unwrap();
+    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
+    assert_eq!(value, extracted_inst);
+
     // Caf instruction-from-raw to caf raw
     // NOTE: we don't test this since there are 'intermediate' lossy cases where the lossiness occurs on
     // raw -> Caf -> raw instead of raw -> Caf -> rust -> Caf -> raw
