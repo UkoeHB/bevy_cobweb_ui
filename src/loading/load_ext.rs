@@ -150,7 +150,7 @@ fn reactive_loader<T: ReactComponent + Loadable>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Uses `T` to derive changes on subscribed entities.
-fn derived_loader<T: ApplyLoadable + Loadable>(world: &mut World)
+fn instruction_loader<T: Instruction + Loadable>(world: &mut World)
 {
     let mut loadables = world
         .react_resource_mut_noreact::<CobwebAssetCache>()
@@ -231,68 +231,71 @@ pub(crate) struct ContextSetter
 /// Extends `App` with methods supporting [`CobwebAssetCache`] use.
 pub trait CobwebAssetRegistrationAppExt
 {
-    /// Registers a loadable type that will be applied to the Bevy world when it is loaded.
-    fn register_command_loadable<T: Command + Loadable>(&mut self) -> &mut Self;
+    /// Registers a command that will be applied to the Bevy world when it is loaded.
+    fn register_command<T: Command + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`Self::register_command_loadable`].
-    fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
+    /// Combines [`App::register_type`] with [`Self::register_command`].
+    fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a loadable type that will be inserted as `T` bundles on entities that subscribe to
-    /// cobweb asset file paths containing the type.
-    fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self;
+    /// Registers a bundle that can be inserted on entities via CAF loadables.
+    fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a loadable type that will be inserted as [`React<T>`] components on entities that subscribe to
-    /// cobweb asset file paths containing the type.
-    fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
+    /// Combines [`App::register_type`] with [`Self::register_bundle`].
+    fn register_bundle_type<T: TypePath + GetTypeRegistration + Bundle + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a loadable type that will be inserted as `T` bundles on entities that subscribe to
-    /// cobweb asset file paths containing the type.
-    fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self;
+    /// Registers a [`React<T>`] component that can be inserted on entities via CAF loadables.
+    fn register_reactive<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`Self::register_derived_loadable`].
-    fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self;
+    /// Registers an instruction that can be applied to entities via CAF loadables.
+    fn register_instruction<T: Instruction + Loadable>(&mut self) -> &mut Self;
+
+    /// Combines [`App::register_type`] with [`Self::register_instruction`].
+    fn register_instruction_type<T: TypePath + GetTypeRegistration + Instruction + Loadable>(
+        &mut self,
+    ) -> &mut Self;
 }
 
 impl CobwebAssetRegistrationAppExt for App
 {
-    fn register_command_loadable<T: Command + Loadable>(&mut self) -> &mut Self
+    fn register_command<T: Command + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, command_loader::<T>, PhantomData::<T>, "command");
         self
     }
 
-    fn register_command<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self
+    fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self
     {
-        self.register_type::<T>()
-            .register_type::<Multi<T>>()
-            .register_command_loadable::<T>()
-            .register_command_loadable::<Multi<T>>()
+        self.register_type::<T>().register_command::<T>()
     }
 
-    fn register_loadable<T: Bundle + Loadable>(&mut self) -> &mut Self
+    fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, bundle_loader::<T>, PhantomData::<T>, "bundle");
         self
     }
 
-    fn register_reactive_loadable<T: ReactComponent + Loadable>(&mut self) -> &mut Self
+    fn register_bundle_type<T: TypePath + GetTypeRegistration + Bundle + Loadable>(&mut self) -> &mut Self
+    {
+        self.register_type::<T>().register_bundle::<T>()
+    }
+
+    fn register_reactive<T: ReactComponent + Loadable>(&mut self) -> &mut Self
     {
         register_loadable_impl(self, reactive_loader::<T>, PhantomData::<T>, "reactive");
         self
     }
 
-    fn register_derived_loadable<T: ApplyLoadable + Loadable>(&mut self) -> &mut Self
+    fn register_instruction<T: Instruction + Loadable>(&mut self) -> &mut Self
     {
-        register_loadable_impl(self, derived_loader::<T>, PhantomData::<T>, "derived");
+        register_loadable_impl(self, instruction_loader::<T>, PhantomData::<T>, "instruction");
         self
     }
 
-    fn register_derived<T: TypePath + GetTypeRegistration + ApplyLoadable + Loadable>(&mut self) -> &mut Self
+    fn register_instruction_type<T: TypePath + GetTypeRegistration + Instruction + Loadable>(
+        &mut self,
+    ) -> &mut Self
     {
-        self.register_type::<T>()
-            .register_type::<Multi<T>>()
-            .register_derived_loadable::<T>()
-            .register_derived_loadable::<Multi<T>>()
+        self.register_type::<T>().register_instruction::<T>()
     }
 }
 

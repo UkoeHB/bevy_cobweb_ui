@@ -108,7 +108,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for registering reactors for node entities.
+/// Helper trait for managing CAF scene node entities.
 pub trait UiReactEntityCommandsExt
 {
     /// Inserts a reactive component to the entity.
@@ -116,11 +116,6 @@ pub trait UiReactEntityCommandsExt
     /// The component can be accessed with the [`React<T>`] component, or with the
     /// [`Reactive`]/[`ReactiveMut`] system parameters.
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self;
-
-    /// Inserts a derived value to the entity.
-    ///
-    /// Uses `T::ApplyLoadable` to convert the value into entity mutations.
-    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self;
 
     /// Registers an [`entity_event`] reactor for the current entity.
     ///
@@ -179,12 +174,6 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     {
         let id = self.id();
         self.commands().react().insert(id, component);
-        self
-    }
-
-    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self
-    {
-        self.add(move |entity: Entity, world: &mut World| value.apply(entity, world));
         self
     }
 

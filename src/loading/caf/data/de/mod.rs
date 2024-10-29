@@ -1,6 +1,6 @@
 mod caf_builtin;
 mod caf_enum_variant;
-mod caf_instruction;
+mod caf_loadable;
 mod caf_number;
 mod caf_value;
 mod containers;

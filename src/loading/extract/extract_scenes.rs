@@ -14,12 +14,12 @@ fn handle_loadable(
     caf_cache: &mut CobwebAssetCache,
     file: &CafFile,
     current_path: &ScenePath,
-    instruction: &CafInstruction,
+    loadable: &CafLoadable,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> String
 {
     // Get the loadable's longname.
-    let id_scratch = instruction.id.to_canonical(Some(id_scratch));
+    let id_scratch = loadable.id.to_canonical(Some(id_scratch));
     let Some((_short_name, long_name, type_id, deserializer)) =
         get_loadable_meta(type_registry, file, current_path, id_scratch.as_str(), name_shortcuts)
     else {
@@ -27,7 +27,7 @@ fn handle_loadable(
     };
 
     // Get the loadable's value.
-    let loadable_value = get_loadable_value(deserializer, instruction);
+    let loadable_value = get_loadable_value(deserializer, loadable);
 
     // Save this loadable.
     caf_cache.insert_loadable(
@@ -120,7 +120,7 @@ fn extract_scene_layer(
 
     for entry in caf_layer.entries.iter() {
         match entry {
-            CafSceneLayerEntry::Instruction(instruction) => {
+            CafSceneLayerEntry::Loadable(loadable) => {
                 id_scratch = handle_loadable(
                     id_scratch,
                     type_registry,
@@ -130,7 +130,7 @@ fn extract_scene_layer(
                         .file()
                         .expect("all SceneFile should contain CafFile in scene extraction"),
                     current_path,
-                    instruction,
+                    loadable,
                     name_shortcuts,
                 );
             }
@@ -148,8 +148,8 @@ fn extract_scene_layer(
                     name_shortcuts,
                 );
             }
-            CafSceneLayerEntry::InstructionMacroCall(_) => {
-                tracing::warn!("ignoring instruction macro call in scene node {:?} in {:?}", current_path, scene.file);
+            CafSceneLayerEntry::LoadableMacroCall(_) => {
+                tracing::warn!("ignoring loadable macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
             CafSceneLayerEntry::SceneMacroCall(_) => {
                 tracing::warn!("ignoring scene macro call in scene node {:?} in {:?}", current_path, scene.file);

@@ -184,7 +184,7 @@ pub trait AnimatableAttribute: Loadable + TypePath {}
 
 impl<T> ThemedAttribute for Splat<T>
 where
-    T: ApplyLoadable + Splattable + ThemedAttribute,
+    T: Instruction + Splattable + ThemedAttribute,
 {
     type Value = T::Splat;
     fn update(entity: Entity, world: &mut World, value: Self::Value)
@@ -220,7 +220,7 @@ where
     pub target: Option<SmolStr>,
 }
 
-impl<T: ThemedAttribute> ApplyLoadable for Themed<T>
+impl<T: ThemedAttribute> Instruction for Themed<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
@@ -271,7 +271,7 @@ where
     pub target: Option<SmolStr>,
 }
 
-impl<T: ResponsiveAttribute + ThemedAttribute> ApplyLoadable for Responsive<T>
+impl<T: ResponsiveAttribute + ThemedAttribute> Instruction for Responsive<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
@@ -324,7 +324,7 @@ where
     pub target: Option<SmolStr>,
 }
 
-impl<T: AnimatableAttribute + ThemedAttribute> ApplyLoadable for Animated<T>
+impl<T: AnimatableAttribute + ThemedAttribute> Instruction for Animated<T>
 where
     <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
 {

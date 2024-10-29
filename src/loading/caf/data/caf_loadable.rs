@@ -9,13 +9,13 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Default, Debug, Clone, PartialEq)]
-pub struct CafInstructionIdentifier
+pub struct CafLoadableIdentifier
 {
     pub name: SmolStr,
     pub generics: Option<CafGenerics>,
 }
 
-impl CafInstructionIdentifier
+impl CafLoadableIdentifier
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
@@ -64,7 +64,7 @@ impl CafInstructionIdentifier
     //todo: resolve_macro
 }
 
-impl TryFrom<&'static str> for CafInstructionIdentifier
+impl TryFrom<&'static str> for CafLoadableIdentifier
 {
     type Error = CafError;
 
@@ -73,25 +73,25 @@ impl TryFrom<&'static str> for CafInstructionIdentifier
     {
         match Self::parse(Span::new_extra(
             short_path,
-            CafLocationMetadata { file: "CafInstructionIdentifier::try_from" },
+            CafLocationMetadata { file: "CafLoadableIdentifier::try_from" },
         )) {
             Ok((id, remaining)) => {
                 if remaining.fragment().len() == 0 {
                     Ok(id)
                 } else {
-                    Err(CafError::MalformedInstructionId)
+                    Err(CafError::MalformedLoadableId)
                 }
             }
-            Err(_) => Err(CafError::MalformedInstructionId),
+            Err(_) => Err(CafError::MalformedLoadableId),
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Variant for [`CafInstruction`].
+/// Variant for [`CafLoadable`].
 #[derive(Debug, Clone, PartialEq)]
-pub enum CafInstructionVariant
+pub enum CafLoadableVariant
 {
     /// Corresponds to a unit struct.
     Unit,
@@ -105,7 +105,7 @@ pub enum CafInstructionVariant
     Enum(CafEnum),
 }
 
-impl CafInstructionVariant
+impl CafLoadableVariant
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
@@ -137,17 +137,15 @@ impl CafInstructionVariant
             return Ok((Self::Array(array), next_fill, remaining));
         }
         if let (Some(map), next_fill, remaining) = CafMap::try_parse(CafFill::default(), content)? {
-            if !map.is_structlike() {
-                tracing::warn!("failed parsing instruction struct at {}, map is not structlike", get_location(content));
-                return Err(span_verify_error(content));
-            }
+            // Note: we don't test if the map is struct-like here since it may *not* be a struct if a data map
+            // was flattened into a newtype loadable.
             return Ok((Self::Map(map), next_fill, remaining));
         }
         if let Ok((remaining, _)) = tag::<_, _, ()>("::").parse(content) {
             match CafEnum::try_parse(CafFill::default(), remaining)? {
                 (Some(variant), next_fill, remaining) => return Ok((Self::Enum(variant), next_fill, remaining)),
                 _ => {
-                    tracing::warn!("failed parsing instruction enum at {}; no valid variant name",
+                    tracing::warn!("failed parsing loadable enum at {}; no valid variant name",
                         get_location(content));
                     return Err(span_verify_error(content));
                 }
@@ -181,14 +179,14 @@ impl CafInstructionVariant
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CafInstruction
+pub struct CafLoadable
 {
     pub fill: CafFill,
-    pub id: CafInstructionIdentifier,
-    pub variant: CafInstructionVariant,
+    pub id: CafLoadableIdentifier,
+    pub variant: CafLoadableVariant,
 }
 
-impl CafInstruction
+impl CafLoadable
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
@@ -200,10 +198,10 @@ impl CafInstruction
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let Ok((id, remaining)) = CafInstructionIdentifier::parse(content) else {
+        let Ok((id, remaining)) = CafLoadableIdentifier::parse(content) else {
             return Ok((None, fill, content));
         };
-        let (variant, post_fill, remaining) = CafInstructionVariant::parse(remaining)?;
+        let (variant, post_fill, remaining) = CafLoadableVariant::parse(remaining)?;
         Ok((Some(Self { fill, id, variant }), post_fill, remaining))
     }
 
@@ -218,16 +216,10 @@ impl CafInstruction
     {
         let registration = registry
             .get(std::any::TypeId::of::<T>())
-            .ok_or(CafError::InstructionNotRegistered)?;
+            .ok_or(CafError::LoadableNotRegistered)?;
         let name = registration.type_info().type_path_table().short_path();
-        value.serialize(CafInstructionSerializer { name })
+        value.serialize(CafLoadableSerializer { name })
     }
 }
-
-/*
-Parsing:
-- no whitespace allowed between identifier and value
-- map-type instructions can only have field name map keys in the base layer
-*/
 
 //-------------------------------------------------------------------------------------------------------------------

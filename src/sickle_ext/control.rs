@@ -32,7 +32,7 @@ impl<T: Into<SmolStr>> From<T> for ControlRoot
     }
 }
 
-impl ApplyLoadable for ControlRoot
+impl Instruction for ControlRoot
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -78,7 +78,7 @@ impl<T: Into<SmolStr>> From<T> for ControlLabel
     }
 }
 
-impl ApplyLoadable for ControlLabel
+impl Instruction for ControlLabel
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -126,8 +126,8 @@ impl Plugin for ControlPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_derived::<ControlRoot>()
-            .register_derived::<ControlLabel>();
+        app.register_instruction_type::<ControlRoot>()
+            .register_instruction_type::<ControlLabel>();
     }
 }
 

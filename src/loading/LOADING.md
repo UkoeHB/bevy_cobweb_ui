@@ -88,29 +88,29 @@ When the scene node `"root::a"` is loaded to an entity, the [`BgColor`](bevy_cob
 You can define three kinds of loadables:
 - **Bundles**: Inserted as bundles.
 - **Reactive**: Inserted as reactive components.
-- **Derived**: Applied to an entity as a 'derived' effect via the [`ApplyLoadable`](bevy_cobweb_ui::prelude::ApplyLoadable) trait. The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is a derived loadable that inserts the Bevy `BackgroundColor` component.
+- **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is an instruction that inserts the Bevy `BackgroundColor` component.
 
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct MyLoadable(usize);
+struct MyInstruction(usize);
 
-// Use this if you want MyLoadable to be inserted as a `Bundle`.
+// Use this if you want MyInstruction to be inserted as a `Bundle`.
 // The type must implement `Bundle` (or `Component`).
-app.register_loadable::<MyLoadable>();
+app.register_bundle::<MyInstruction>();
 
-// Use this if you want MyLoadable to be inserted as a `React` component.
+// Use this if you want MyInstruction to be inserted as a `React` component.
 // The type must implement `ReactComponent`.
-app.register_reactive::<MyLoadable>();
+app.register_reactive::<MyInstruction>();
 
-// Use this if you want MyLoadable to mutate the entity.
-// The type must implement `ApplyLoadable`.
-app.register_derived::<MyLoadable>();
+// Use this if you want MyInstruction to mutate the entity.
+// The type must implement `Instruction`.
+app.register_instruction_type::<MyInstruction>();
 
-impl ApplyLoadable for MyLoadable
+impl Instruction for MyInstruction
 {
     fn apply(self, ec: &mut EntityCommands)
     {
-        println!("MyLoadable({}) applied to entity {:?}", self.0, ec.id());
+        println!("MyInstruction({}) applied to entity {:?}", self.0, ec.id());
     }
 }
 ```
@@ -212,7 +212,7 @@ impl Command for MyCommand
 }
 
 // Commands must be registered.
-app.register_command::<MyCommand>();
+app.register_command_type::<MyCommand>();
 ```
 
 #### Name shortcuts: `#using`
@@ -459,7 +459,7 @@ When the text spec is expanded, the final scene node will look like:
 
 **Loadable spec**
 
-You can insert a spec as a loadable to the scene tree or `#commands` section with `MyLoadable(#spec:spec_to_insert)`. As with path specs, spec content is inserted, params are resolved, and nested specs are handled.
+You can insert a spec as a loadable to the scene tree or `#commands` section with `MyInstruction(#spec:spec_to_insert)`. As with path specs, spec content is inserted, params are resolved, and nested specs are handled.
 
 We could rewrite the `text` spec like this:
 ```json

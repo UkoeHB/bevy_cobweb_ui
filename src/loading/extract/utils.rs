@@ -52,10 +52,8 @@ pub(super) fn get_loadable_meta<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn get_loadable_value(
-    deserializer: TypedReflectDeserializer,
-    value: &CafInstruction,
-) -> ReflectedLoadable
+pub(super) fn get_loadable_value(deserializer: TypedReflectDeserializer, value: &CafLoadable)
+    -> ReflectedLoadable
 {
     match deserializer.deserialize(value) {
         Ok(value) => ReflectedLoadable::Value(Arc::new(value)),

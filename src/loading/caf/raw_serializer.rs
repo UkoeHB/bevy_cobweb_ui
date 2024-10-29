@@ -4,7 +4,7 @@ use super::CafNumberValue;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Serializer for converting [`Caf`]/[`CafInstruction`]/[`CafValue`] to raw bytes.
+/// Serializer for converting [`Caf`]/[`CafLoadable`]/[`CafValue`] to raw bytes.
 pub trait RawSerializer: std::io::Write
 {
     fn write_u128(&mut self, val: u128) -> Result<(), std::io::Error>;

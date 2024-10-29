@@ -42,12 +42,12 @@ impl CafSceneNodeName
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Full instruction.
+/// Full loadable.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafSceneLayerEntry
 {
-    InstructionMacroCall(CafInstructionMacroCall),
-    Instruction(CafInstruction),
+    LoadableMacroCall(CafLoadableMacroCall),
+    Loadable(CafLoadable),
     SceneMacroCall(CafSceneMacroCall),
     Layer(CafSceneLayer),
     /// This is the `..'node_name'` and `..*` syntax.
@@ -59,10 +59,10 @@ impl CafSceneLayerEntry
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::InstructionMacroCall(entry) => {
+            Self::LoadableMacroCall(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::Instruction(entry) => {
+            Self::Loadable(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacroCall(entry) => {
@@ -108,13 +108,13 @@ impl CafSceneLayerEntry
         }
 
         // Parse item.
-        // - Parse instruction macro calls before instructions to avoid conflicts.
-        let fill = match CafInstructionMacroCall::try_parse(fill, content)? {
-            (Some(item), fill, remaining) => return Ok((Some(Self::InstructionMacroCall(item)), fill, remaining)),
+        // - Parse loadable macro calls before loadables to avoid conflicts.
+        let fill = match CafLoadableMacroCall::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::LoadableMacroCall(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafInstruction::try_parse(fill, content)? {
-            (Some(item), fill, remaining) => return Ok((Some(Self::Instruction(item)), fill, remaining)),
+        let fill = match CafLoadable::try_parse(fill, content)? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::Loadable(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
         let fill = match CafSceneMacroCall::try_parse(fill, content)? {
@@ -136,10 +136,10 @@ impl CafSceneLayerEntry
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::InstructionMacroCall(entry), Self::InstructionMacroCall(other_entry)) => {
+            (Self::LoadableMacroCall(entry), Self::LoadableMacroCall(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
-            (Self::Instruction(entry), Self::Instruction(other_entry)) => {
+            (Self::Loadable(entry), Self::Loadable(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
             (Self::SceneMacroCall(entry), Self::SceneMacroCall(other_entry)) => {

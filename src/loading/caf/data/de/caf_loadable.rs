@@ -10,7 +10,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Allows converting a [`CafValue`] to a concrete type.
-impl<'de> serde::Deserializer<'de> for &'de CafInstruction
+impl<'de> serde::Deserializer<'de> for &'de CafLoadable
 {
     type Error = CafError;
 
@@ -19,11 +19,11 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         match &self.variant {
-            CafInstructionVariant::Unit => visitor.visit_unit(),
-            CafInstructionVariant::Tuple(tuple) => visit_tuple_ref(&tuple.entries, visitor),
-            CafInstructionVariant::Array(array) => visit_array_ref(&array.entries, visitor),
-            CafInstructionVariant::Map(map) => visit_map_ref(&map.entries, visitor),
-            CafInstructionVariant::Enum(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
+            CafLoadableVariant::Unit => visitor.visit_unit(),
+            CafLoadableVariant::Tuple(tuple) => visit_tuple_ref(&tuple.entries, visitor),
+            CafLoadableVariant::Array(array) => visit_array_ref(&array.entries, visitor),
+            CafLoadableVariant::Map(map) => visit_map_ref(&map.entries, visitor),
+            CafLoadableVariant::Enum(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
         }
     }
 
@@ -37,7 +37,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         let re = match &self.variant {
-            CafInstructionVariant::Enum(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
+            CafLoadableVariant::Enum(variant) => visitor.visit_enum(EnumRefDeserializer { variant }),
             _ => Err(self.invalid_type(&visitor)),
         }?;
         Ok(re)
@@ -49,16 +49,16 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         match &self.variant {
-            CafInstructionVariant::Tuple(tuple) => {
+            CafLoadableVariant::Tuple(tuple) => {
                 if tuple.entries.len() == 1 {
                     visitor.visit_newtype_struct(&tuple.entries[0])
                 } else {
                     visit_wrapped_tuple_ref(tuple, visitor)
                 }
             }
-            CafInstructionVariant::Array(array) => visitor.visit_newtype_struct(array),
-            CafInstructionVariant::Map(map) => visitor.visit_newtype_struct(map),
-            CafInstructionVariant::Unit => visitor.visit_newtype_struct(ErasedNewtypeStruct),
+            CafLoadableVariant::Array(array) => visitor.visit_newtype_struct(array),
+            CafLoadableVariant::Map(map) => visitor.visit_newtype_struct(map),
+            CafLoadableVariant::Unit => visitor.visit_newtype_struct(ErasedNewtypeStruct),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -68,7 +68,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         match &self.variant {
-            CafInstructionVariant::Unit => visitor.visit_unit(),
+            CafLoadableVariant::Unit => visitor.visit_unit(),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -78,7 +78,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         match &self.variant {
-            CafInstructionVariant::Tuple(tuple) => {
+            CafLoadableVariant::Tuple(tuple) => {
                 if tuple.entries.len() == len {
                     visit_tuple_ref(&tuple.entries, visitor)
                 } else {
@@ -86,21 +86,21 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
                 }
             }
             // Special cases: flattened
-            CafInstructionVariant::Array(array) => {
+            CafLoadableVariant::Array(array) => {
                 if len == 1 {
                     visit_wrapped_array_ref(array, visitor)
                 } else {
                     Err(self.invalid_type(&visitor))
                 }
             }
-            CafInstructionVariant::Map(map) => {
+            CafLoadableVariant::Map(map) => {
                 if len == 1 {
                     visit_wrapped_map_ref(map, visitor)
                 } else {
                     Err(self.invalid_type(&visitor))
                 }
             }
-            CafInstructionVariant::Unit => {
+            CafLoadableVariant::Unit => {
                 if len == 0 {
                     visit_tuple_ref(&[], visitor)
                 } else if len == 1 {
@@ -123,13 +123,13 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
         V: Visitor<'de>,
     {
         match &self.variant {
-            CafInstructionVariant::Unit => {
+            CafLoadableVariant::Unit => {
                 // Use this instead of `visitor.visit_unit()` because some visitor implementations don't handle it
                 // properly.
                 let mut deserializer = MapRefDeserializer::new(&[]);
                 visitor.visit_map(&mut deserializer)
             }
-            CafInstructionVariant::Map(map) => visit_map_ref(&map.entries, visitor),
+            CafLoadableVariant::Map(map) => visit_map_ref(&map.entries, visitor),
             _ => Err(self.invalid_type(&visitor)),
         }
     }
@@ -143,7 +143,7 @@ impl<'de> serde::Deserializer<'de> for &'de CafInstruction
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl CafInstruction
+impl CafLoadable
 {
     #[cold]
     fn invalid_type<E>(&self, exp: &dyn Expected) -> E
@@ -157,17 +157,17 @@ impl CafInstruction
     fn unexpected(&self) -> Unexpected
     {
         match &self.variant {
-            CafInstructionVariant::Unit => Unexpected::Unit,
-            CafInstructionVariant::Tuple(tuple) => {
+            CafLoadableVariant::Unit => Unexpected::Unit,
+            CafLoadableVariant::Tuple(tuple) => {
                 if tuple.entries.len() == 1 {
                     Unexpected::NewtypeStruct
                 } else {
                     Unexpected::Seq
                 }
             }
-            CafInstructionVariant::Array(..) => Unexpected::NewtypeStruct,
-            CafInstructionVariant::Map(..) => Unexpected::Map,
-            CafInstructionVariant::Enum(variant) => variant.unexpected(),
+            CafLoadableVariant::Array(..) => Unexpected::NewtypeStruct,
+            CafLoadableVariant::Map(..) => Unexpected::Map,
+            CafLoadableVariant::Enum(variant) => variant.unexpected(),
         }
     }
 }

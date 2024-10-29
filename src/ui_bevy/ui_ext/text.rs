@@ -131,7 +131,7 @@ impl TextLine
     }
 }
 
-impl ApplyLoadable for TextLine
+impl Instruction for TextLine
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -160,7 +160,7 @@ impl Default for TextLine
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineSize(pub f32);
 
-impl ApplyLoadable for TextLineSize
+impl Instruction for TextLineSize
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -191,7 +191,7 @@ impl ThemedAttribute for TextLineSize
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineColor(pub Color);
 
-impl ApplyLoadable for TextLineColor
+impl Instruction for TextLineColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -227,7 +227,7 @@ impl Plugin for UiTextExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_derived::<TextLine>()
+        app.register_instruction_type::<TextLine>()
             // IMPORTANT: This must be added after TextLine so the line size will overwrite TextLine defaults.
             .register_themed::<TextLineSize>()
             // IMPORTANT: This must be added after TextLine so the line color will overwrite TextLine defaults.

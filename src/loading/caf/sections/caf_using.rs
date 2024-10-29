@@ -17,7 +17,7 @@ pub struct CafUsingTypePath
     pub path_prefix: Arc<str>,
     /// Note that only instruction types need to be looked up in the type registry, so there is no need to handle
     /// rust primitives or tuples here.
-    pub id: CafInstructionIdentifier,
+    pub id: CafLoadableIdentifier,
 }
 
 impl CafUsingTypePath
@@ -40,7 +40,7 @@ impl CafUsingTypePath
     {
         let (remaining, prefix) =
             recognize(many0_count(terminated(snake_identifier, tag("::")))).parse(content)?;
-        let (id, remaining) = CafInstructionIdentifier::parse(remaining)?;
+        let (id, remaining) = CafLoadableIdentifier::parse(remaining)?;
         if !id.is_resolved() {
             tracing::warn!("failed parsing using type path at {}; path generics are not fully resolved {:?}",
                 get_location(content).as_str(), id);
@@ -61,7 +61,7 @@ impl Default for CafUsingTypePath
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq, Deref)]
-pub struct CafUsingIdentifier(pub CafInstructionIdentifier);
+pub struct CafUsingIdentifier(pub CafLoadableIdentifier);
 
 impl CafUsingIdentifier
 {
@@ -73,7 +73,7 @@ impl CafUsingIdentifier
 
     pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
     {
-        let (id, remaining) = CafInstructionIdentifier::parse(content)?;
+        let (id, remaining) = CafLoadableIdentifier::parse(content)?;
         if !id.is_resolved() {
             tracing::warn!("failed parsing using identifier at {}; id generics are not fully resolved {:?}",
                 get_location(content).as_str(), id);

@@ -1,6 +1,6 @@
-// CafInstructionMacroCall
-// CafInstructionMacroDef
-// - Flatten group or single instruction only
+// CafLoadableMacroCall
+// CafLoadableMacroDef
+// - Flatten group or single loadable only
 
 // def must start at beginning of line
 
@@ -9,9 +9,9 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CafInstructionMacroCall;
+pub struct CafLoadableMacroCall;
 
-impl CafInstructionMacroCall
+impl CafLoadableMacroCall
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
@@ -36,9 +36,9 @@ impl CafInstructionMacroCall
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct CafInstructionMacroDef;
+pub struct CafLoadableMacroDef;
 
-impl CafInstructionMacroDef
+impl CafLoadableMacroDef
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {

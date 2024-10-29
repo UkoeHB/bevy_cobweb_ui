@@ -94,8 +94,8 @@ fn build_ui(mut c: Commands)
                 if is_display {
                     ui.style().background_color(NORMAL_BUTTON.into());
                 } else {
-                    ui.insert_derived(Interactive)
-                        .insert_derived(Responsive::<BgColor> {
+                    ui.apply(Interactive)
+                        .apply(Responsive::<BgColor> {
                             values: InteractiveVals::<Color> {
                                 idle: NORMAL_BUTTON.into(),
                                 hover: Some(HOVERED_BUTTON.into()),
@@ -112,7 +112,7 @@ fn build_ui(mut c: Commands)
                 }
 
                 ui.container(NodeBundle::default(), |ui| {
-                    ui.insert_derived(TextLine { text: item.into(), size: 30.0, ..default() });
+                    ui.apply(TextLine { text: item.into(), size: 30.0, ..default() });
 
                     if is_display {
                         ui.update_on(entity_mutation::<Calculator>(calc_entity), |id| {

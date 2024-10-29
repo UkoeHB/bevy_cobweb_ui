@@ -141,7 +141,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Interactive;
 
-impl ApplyLoadable for Interactive
+impl Instruction for Interactive
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -159,7 +159,7 @@ impl Plugin for UiInteractionExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_derived::<Interactive>()
+        app.register_instruction_type::<Interactive>()
             .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
     }
 }

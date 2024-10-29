@@ -126,7 +126,7 @@ impl LoadedUiImage
     }
 }
 
-impl ApplyLoadable for LoadedUiImage
+impl Instruction for LoadedUiImage
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -148,7 +148,7 @@ impl ThemedAttribute for LoadedUiImage
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UiImageColor(pub Color);
 
-impl ApplyLoadable for UiImageColor
+impl Instruction for UiImageColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -176,7 +176,7 @@ impl AnimatableAttribute for UiImageColor {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UiImageIndex(pub usize);
 
-impl ApplyLoadable for UiImageIndex
+impl Instruction for UiImageIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

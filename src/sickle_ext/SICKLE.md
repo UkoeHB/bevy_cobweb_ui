@@ -17,7 +17,7 @@ To illustrate, here is our implementation of the [`BgColor`](bevy_cobweb_ui::pre
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BgColor(pub Color);
 
-impl ApplyLoadable for BgColor
+impl Instruction for BgColor
 {
     fn apply(self, ec: &mut EntityCommands)
     {
@@ -30,7 +30,7 @@ impl ThemedAttribute for BgColor
     type Value = Color;
     fn update(ec: &mut EntityCommands, value: Self::Value)
     {
-        // Make a BgColor and then call ApplyLoadable::apply.
+        // Make a BgColor and then call Instruction::apply.
         Self(value).apply(ec);
     }
 }

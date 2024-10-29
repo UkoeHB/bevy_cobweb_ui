@@ -55,39 +55,37 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             l.edit("text_section", |l| {
                 // Unlocalized text.
                 l.edit("unlocalized", |l| {
-                    l.insert_derived(TextLine::from_text("This text is not localized."));
+                    l.apply(TextLine::from_text("This text is not localized."));
                 });
 
                 // Untranslated text (only localized in the default language).
                 l.edit("untranslated", |l| {
                     l.insert(LocalizedText::default());
-                    l.insert_derived(TextLine::from_text("untranslated"));
+                    l.apply(TextLine::from_text("untranslated"));
                 });
 
                 // Localized and partly translated text (localized in only some, but not all, alternate languages).
                 l.edit("partially_translated", |l| {
                     l.insert(LocalizedText::default());
-                    l.insert_derived(TextLine::from_text("partly-translated"));
+                    l.apply(TextLine::from_text("partly-translated"));
                 });
 
                 // Localized and fully translated text.
                 l.edit("fully_translated", |l| {
                     l.insert(LocalizedText::default());
-                    l.insert_derived(TextLine::from_text("fully-translated"));
+                    l.apply(TextLine::from_text("fully-translated"));
                 });
 
                 // Localized text with different font fallbacks for different languages.
                 l.edit("font_fallbacks", |l| {
                     l.insert(LocalizedText::default());
-                    l.insert_derived(
-                        TextLine::from_text("font-fallbacks").with_font(FontFamily::new("Fira Sans").bold()),
-                    );
+                    l.apply(TextLine::from_text("font-fallbacks").with_font(FontFamily::new("Fira Sans").bold()));
                 });
 
                 // Localized dynamic text.
                 l.edit("dynamic", |l| {
                     l.insert(LocalizedText::default());
-                    l.insert_derived(TextLine::default());
+                    l.apply(TextLine::default());
                     l.update_on(broadcast::<RelocalizeApp>(), |id| {
                         move |mut count: Local<usize>, mut e: TextEditor| {
                             // Displays count for the number of times the app was localized.

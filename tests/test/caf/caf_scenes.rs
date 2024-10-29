@@ -54,7 +54,7 @@ fn scenes_section()
     let CafSection::Scenes(scenes) = &res.sections[0] else { unreachable!() };
     assert_eq!(scenes.scenes.len(), 1);
     assert_eq!(scenes.scenes[0].entries.len(), 2);
-    let CafSceneLayerEntry::Instruction(instruction) = &scenes.scenes[0].entries[0] else { unreachable!() };
+    let CafSceneLayerEntry::Loadable(instruction) = &scenes.scenes[0].entries[0] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "A");
 
     let res = test_caf(
@@ -73,7 +73,7 @@ fn scenes_section()
     assert_eq!(scenes.scenes.len(), 1);
     assert_eq!(scenes.scenes[0].entries.len(), 6);
     let CafSceneLayerEntry::Layer(layer) = &scenes.scenes[0].entries[5] else { unreachable!() };
-    let CafSceneLayerEntry::Instruction(instruction) = &layer.entries[0] else { unreachable!() };
+    let CafSceneLayerEntry::Loadable(instruction) = &layer.entries[0] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "F");
 }
 

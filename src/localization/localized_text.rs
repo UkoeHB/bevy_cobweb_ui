@@ -332,7 +332,7 @@ impl Plugin for LocalizedTextPlugin
     fn build(&self, app: &mut App)
     {
         app.register_type::<LocalizedText>()
-            .register_loadable::<LocalizedText>()
+            .register_bundle::<LocalizedText>()
             .react(|rc| rc.on_persistent(broadcast::<RelocalizeApp>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<TextLocalizerLoaded>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<FontMapLoaded>(), handle_font_refresh))

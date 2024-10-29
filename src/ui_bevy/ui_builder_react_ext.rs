@@ -7,6 +7,17 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+impl InstructionExt for UiBuilder<'_, Entity>
+{
+    fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
+    {
+        self.entity_commands().apply(instruction);
+        self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Helper trait for registering reactors for node entities using [`UiBuilder`].
 pub trait UiBuilderReactExt
 {
@@ -15,9 +26,6 @@ pub trait UiBuilderReactExt
 
     /// Mirrors [`UiReactEntityCommandsExt::insert_reactive`].
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self;
-
-    /// Mirrors [`UiReactEntityCommandsExt::insert_derived`].
-    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self;
 
     /// Mirrors [`ReactEntityCommandsExt::react`].
     fn react(&mut self) -> ReactCommands<'_, '_>;
@@ -58,12 +66,6 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
         self.entity_commands().insert_reactive(component);
-        self
-    }
-
-    fn insert_derived<T: ApplyLoadable>(&mut self, value: T) -> &mut Self
-    {
-        self.entity_commands().insert_derived(value);
         self
     }
 

@@ -159,7 +159,7 @@ fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut 
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithAbsoluteStyle;
 
-impl ApplyLoadable for WithAbsoluteStyle
+impl Instruction for WithAbsoluteStyle
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -183,7 +183,7 @@ impl ThemedAttribute for WithAbsoluteStyle
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithFlexStyle;
 
-impl ApplyLoadable for WithFlexStyle
+impl Instruction for WithFlexStyle
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -213,7 +213,7 @@ impl ApplyToDims for Width
     }
 }
 
-impl ApplyLoadable for Width
+impl Instruction for Width
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -246,7 +246,7 @@ impl ApplyToDims for Height
     }
 }
 
-impl ApplyLoadable for Height
+impl Instruction for Height
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -279,7 +279,7 @@ impl ApplyToDims for MinWidth
     }
 }
 
-impl ApplyLoadable for MinWidth
+impl Instruction for MinWidth
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -312,7 +312,7 @@ impl ApplyToDims for MinHeight
     }
 }
 
-impl ApplyLoadable for MinHeight
+impl Instruction for MinHeight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -345,7 +345,7 @@ impl ApplyToDims for MaxWidth
     }
 }
 
-impl ApplyLoadable for MaxWidth
+impl Instruction for MaxWidth
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -378,7 +378,7 @@ impl ApplyToDims for MaxHeight
     }
 }
 
-impl ApplyLoadable for MaxHeight
+impl Instruction for MaxHeight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -411,7 +411,7 @@ impl ApplyToDims for AspectRatio
     }
 }
 
-impl ApplyLoadable for AspectRatio
+impl Instruction for AspectRatio
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -444,7 +444,7 @@ impl ApplyToDims for Border
     }
 }
 
-impl ApplyLoadable for Border
+impl Instruction for Border
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -486,7 +486,7 @@ impl ApplyToDims for DimsTop
     }
 }
 
-impl ApplyLoadable for DimsTop
+impl Instruction for DimsTop
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -519,7 +519,7 @@ impl ApplyToDims for DimsBottom
     }
 }
 
-impl ApplyLoadable for DimsBottom
+impl Instruction for DimsBottom
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -552,7 +552,7 @@ impl ApplyToDims for DimsLeft
     }
 }
 
-impl ApplyLoadable for DimsLeft
+impl Instruction for DimsLeft
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -585,7 +585,7 @@ impl ApplyToDims for DimsRight
     }
 }
 
-impl ApplyLoadable for DimsRight
+impl Instruction for DimsRight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -618,7 +618,7 @@ impl ApplyToContentFlex for SetClipping
     }
 }
 
-impl ApplyLoadable for SetClipping
+impl Instruction for SetClipping
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -650,7 +650,7 @@ impl ApplyToContentFlex for Padding
     }
 }
 
-impl ApplyLoadable for Padding
+impl Instruction for Padding
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -692,7 +692,7 @@ impl ApplyToContentFlex for SetFlexDirection
     }
 }
 
-impl ApplyLoadable for SetFlexDirection
+impl Instruction for SetFlexDirection
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -724,7 +724,7 @@ impl ApplyToContentFlex for SetFlexWrap
     }
 }
 
-impl ApplyLoadable for SetFlexWrap
+impl Instruction for SetFlexWrap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -756,7 +756,7 @@ impl ApplyToContentFlex for SetJustifyLines
     }
 }
 
-impl ApplyLoadable for SetJustifyLines
+impl Instruction for SetJustifyLines
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -788,7 +788,7 @@ impl ApplyToContentFlex for SetJustifyMain
     }
 }
 
-impl ApplyLoadable for SetJustifyMain
+impl Instruction for SetJustifyMain
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -820,7 +820,7 @@ impl ApplyToContentFlex for SetJustifyCross
     }
 }
 
-impl ApplyLoadable for SetJustifyCross
+impl Instruction for SetJustifyCross
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -852,7 +852,7 @@ impl ApplyToContentFlex for SetTextDirection
     }
 }
 
-impl ApplyLoadable for SetTextDirection
+impl Instruction for SetTextDirection
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -884,7 +884,7 @@ impl ApplyToContentFlex for ColumnGap
     }
 }
 
-impl ApplyLoadable for ColumnGap
+impl Instruction for ColumnGap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -917,7 +917,7 @@ impl ApplyToContentFlex for RowGap
     }
 }
 
-impl ApplyLoadable for RowGap
+impl Instruction for RowGap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -950,7 +950,7 @@ impl ApplyToSelfFlex for Margin
     }
 }
 
-impl ApplyLoadable for Margin
+impl Instruction for Margin
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -992,7 +992,7 @@ impl ApplyToSelfFlex for FlexBasis
     }
 }
 
-impl ApplyLoadable for FlexBasis
+impl Instruction for FlexBasis
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -1025,7 +1025,7 @@ impl ApplyToSelfFlex for FlexGrow
     }
 }
 
-impl ApplyLoadable for FlexGrow
+impl Instruction for FlexGrow
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -1058,7 +1058,7 @@ impl ApplyToSelfFlex for FlexShrink
     }
 }
 
-impl ApplyLoadable for FlexShrink
+impl Instruction for FlexShrink
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -1091,7 +1091,7 @@ impl ApplyToSelfFlex for SetJustifySelfCross
     }
 }
 
-impl ApplyLoadable for SetJustifySelfCross
+impl Instruction for SetJustifySelfCross
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

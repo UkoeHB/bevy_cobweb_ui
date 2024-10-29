@@ -10,7 +10,7 @@ use crate::caf::helpers::test_span;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
+/// Tests if a raw CAF loadable, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
 /// Only works for types without reflect-defaulted fields.
 fn test_equivalence_impl<T: Loadable + Debug>(
@@ -24,9 +24,9 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
 
-    // Caf raw to Caf instruction
-    let instruction_parsed = match CafInstruction::try_parse(CafFill::default(), test_span(caf_raw)) {
-        Ok((Some(instruction_parsed), _, _)) => instruction_parsed,
+    // Caf raw to Caf loadable
+    let loadable_parsed = match CafLoadable::try_parse(CafFill::default(), test_span(caf_raw)) {
+        Ok((Some(loadable_parsed), _, _)) => loadable_parsed,
         Err(err) => panic!("{caf_raw}, ERR={err:?}"),
         _ => panic!("{caf_raw}, TRY FAILED"),
     };
@@ -45,16 +45,16 @@ fn test_equivalence_impl<T: Loadable + Debug>(
         Err(err) => panic!("{command_raw}, ERR={err:?}"),
     };
     let CafSection::Commands(commands) = &mut caf_parsed.sections[0] else { unreachable!() };
-    let CafCommandEntry::Instruction(cmd_instruction) = &mut commands.entries[0] else { unreachable!() };
-    cmd_instruction.fill = CafFill::default(); // Clear fill so equality test works.
-    assert_eq!(*cmd_instruction, instruction_parsed);
+    let CafCommandEntry::Loadable(cmd_loadable) = &mut commands.entries[0] else { unreachable!() };
+    cmd_loadable.fill = CafFill::default(); // Clear fill so equality test works.
+    assert_eq!(*cmd_loadable, loadable_parsed);
 
     // Caf raw to Caf scene raw
     // TODO
 
-    // Caf instruction to reflect
+    // Caf loadable to reflect
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected_inst = deserializer.deserialize(&instruction_parsed).unwrap();
+    let reflected_inst = deserializer.deserialize(&loadable_parsed).unwrap();
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
     let reflected_val = deserializer.deserialize(&cafvalue_parsed).unwrap();
 
@@ -66,34 +66,34 @@ fn test_equivalence_impl<T: Loadable + Debug>(
         assert_eq!(value, extracted_val);
     }
 
-    // Rust value to caf instruction
-    let mut instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
+    // Rust value to caf loadable
+    let mut loadable_from_rust = CafLoadable::extract(&value, &type_registry).unwrap();
     let mut cafvalue_from_rust = CafValue::extract(&value).unwrap();
-    instruction_from_rust.recover_fill(&instruction_parsed);
+    loadable_from_rust.recover_fill(&loadable_parsed);
     cafvalue_from_rust.recover_fill(&cafvalue_parsed);
-    assert_eq!(instruction_from_rust, instruction_parsed);
+    assert_eq!(loadable_from_rust, loadable_parsed);
     assert_eq!(cafvalue_from_rust, cafvalue_parsed);
 
-    // Rust value from caf instruction parsed (direct)
-    let direct_value = T::deserialize(&instruction_parsed).unwrap();
+    // Rust value from caf loadable parsed (direct)
+    let direct_value = T::deserialize(&loadable_parsed).unwrap();
     let direct_value_from_value = T::deserialize(&cafvalue_parsed).unwrap();
     if check_vals {
         assert_eq!(value, direct_value);
         assert_eq!(value, direct_value_from_value);
     }
 
-    // Rust value from caf instruction from rust (direct)
-    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    // Rust value from caf loadable from rust (direct)
+    let direct_value = T::deserialize(&loadable_from_rust).unwrap();
     let direct_value_from_value = T::deserialize(&cafvalue_from_rust).unwrap();
     if check_vals {
         assert_eq!(value, direct_value);
         assert_eq!(value, direct_value_from_value);
     }
 
-    // Caf instruction-from-raw to caf raw
+    // Caf loadable-from-raw to caf raw
     let mut buff = Vec::<u8>::default();
     let mut serializer = DefaultRawSerializer::new(&mut buff);
-    instruction_parsed.write_to(&mut serializer).unwrap();
+    loadable_parsed.write_to(&mut serializer).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
 
@@ -104,10 +104,10 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     let reconstructed_raw_val = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw_val, reconstructed_raw_val);
 
-    // Caf instruction-from-rust to caf raw
+    // Caf loadable-from-rust to caf raw
     let mut buff = Vec::<u8>::default();
     let mut serializer = DefaultRawSerializer::new(&mut buff);
-    instruction_from_rust.write_to(&mut serializer).unwrap();
+    loadable_from_rust.write_to(&mut serializer).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(caf_raw, reconstructed_raw);
 
@@ -137,7 +137,7 @@ pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Tests if a raw CAF instruction, raw CAF value, raw JSON, and rust struct are equivalent.
+/// Tests if a raw CAF loadable, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
 /// Expects the conversion `raw -> Caf (-> value -> Caf) -> raw` to be lossy in the sense that original syntax
 /// won't be preserved.
@@ -152,52 +152,52 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug>(
     let type_registry = w.resource::<AppTypeRegistry>().read();
     let registration = type_registry.get(std::any::TypeId::of::<T>()).unwrap();
 
-    // Caf raw to Caf instruction
-    let instruction_parsed = match CafInstruction::try_parse(CafFill::default(), test_span(caf_raw)) {
-        Ok((Some(instruction_parsed), _, _)) => instruction_parsed,
+    // Caf raw to Caf loadable
+    let loadable_parsed = match CafLoadable::try_parse(CafFill::default(), test_span(caf_raw)) {
+        Ok((Some(loadable_parsed), _, _)) => loadable_parsed,
         Err(err) => panic!("{caf_raw}, ERR={err:?}"),
         _ => panic!("{caf_raw}, TRY FAILED"),
     };
 
-    // Caf instruction to reflect
+    // Caf loadable to reflect
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected_inst = deserializer.deserialize(&instruction_parsed).unwrap();
+    let reflected_inst = deserializer.deserialize(&loadable_parsed).unwrap();
 
     // Reflect to rust value
     let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
     assert_eq!(value, extracted_inst);
 
-    // Rust value to caf instruction
-    let mut instruction_from_rust = CafInstruction::extract(&value, &type_registry).unwrap();
-    instruction_from_rust.recover_fill(&instruction_parsed);
-    //assert_eq!(instruction_from_rust, instruction_parsed); // possibly not true e.g. in the case of builtin
+    // Rust value to caf loadable
+    let mut loadable_from_rust = CafLoadable::extract(&value, &type_registry).unwrap();
+    loadable_from_rust.recover_fill(&loadable_parsed);
+    //assert_eq!(loadable_from_rust, loadable_parsed); // possibly not true e.g. in the case of builtin
     // conversions
 
-    // Rust value from caf instruction parsed (direct)
+    // Rust value from caf loadable parsed (direct)
     if allow_t_deserialize {
-        let direct_value = T::deserialize(&instruction_parsed).unwrap();
+        let direct_value = T::deserialize(&loadable_parsed).unwrap();
         assert_eq!(value, direct_value);
     }
 
-    // Rust value from caf instruction from rust (direct)
-    let direct_value = T::deserialize(&instruction_from_rust).unwrap();
+    // Rust value from caf loadable from rust (direct)
+    let direct_value = T::deserialize(&loadable_from_rust).unwrap();
     assert_eq!(value, direct_value);
 
-    // Rust value from caf instruction from rust (reflect)
+    // Rust value from caf loadable from rust (reflect)
     // - Need to make sure the 'canonical' representation can be deserialized with reflection.
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
-    let reflected_inst = deserializer.deserialize(&instruction_from_rust).unwrap();
+    let reflected_inst = deserializer.deserialize(&loadable_from_rust).unwrap();
     let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
     assert_eq!(value, extracted_inst);
 
-    // Caf instruction-from-raw to caf raw
+    // Caf loadable-from-raw to caf raw
     // NOTE: we don't test this since there are 'intermediate' lossy cases where the lossiness occurs on
     // raw -> Caf -> raw instead of raw -> Caf -> rust -> Caf -> raw
 
-    // Caf instruction-from-rust to caf raw
+    // Caf loadable-from-rust to caf raw
     let mut buff = Vec::<u8>::default();
     let mut serializer = DefaultRawSerializer::new(&mut buff);
-    instruction_from_rust.write_to(&mut serializer).unwrap();
+    loadable_from_rust.write_to(&mut serializer).unwrap();
     let reconstructed_raw = String::from_utf8(buff).unwrap();
     assert_eq!(reconstructed_raw, caf_raw_reserialized);
 }

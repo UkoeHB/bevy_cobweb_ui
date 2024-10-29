@@ -369,7 +369,7 @@ impl Plugin for LocalizationManifestPlugin
             .register_type::<LocalizationMetaReflected>()
             .register_type::<Vec<LocalizationMetaReflected>>()
             .register_type::<Option<String>>()
-            .register_command::<LoadLocalizationManifest>()
+            .register_command_type::<LoadLocalizationManifest>()
             .add_systems(
                 PostUpdate,
                 update_negotiated_languages

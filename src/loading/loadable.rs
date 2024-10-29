@@ -23,25 +23,29 @@ impl<T> Loadable for T where
 
 /// Trait for converting `Self` into entity modifications.
 ///
-/// Used by [`register_derived_loadable`](crate::prelude::CobwebAssetRegistrationAppExt::register_derived_loadable).
-pub trait ApplyLoadable: Loadable
+/// An instruction can be written in a CAF file, or applied directly with
+/// [`apply`](crate::prelude::UiReactEntityCommandsExt::apply).
+///
+/// See [`register_instruction`](crate::prelude::CobwebAssetRegistrationAppExt::register_instruction).
+pub trait Instruction: Loadable
 {
     fn apply(self, entity: Entity, world: &mut World);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub trait ApplyLoadableExt
+/// Extension trait for applying instructions to entities.
+pub trait InstructionExt
 {
-    /// Calls [`ApplyLoadable::apply`].
-    fn apply(&mut self, loadable: impl ApplyLoadable) -> &mut Self;
+    /// Applies an instruction to the entity.
+    fn apply(&mut self, instruction: impl Instruction) -> &mut Self;
 }
 
-impl ApplyLoadableExt for EntityCommands<'_>
+impl InstructionExt for EntityCommands<'_>
 {
-    fn apply(&mut self, loadable: impl ApplyLoadable + Send + Sync + 'static) -> &mut Self
+    fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
-        self.add(move |e: Entity, w: &mut World| loadable.apply(e, w));
+        self.add(move |e: Entity, w: &mut World| instruction.apply(e, w));
         self
     }
 }
@@ -49,10 +53,13 @@ impl ApplyLoadableExt for EntityCommands<'_>
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper loadable for cases where multiple values of the same type can be loaded.
+///
+/// Note that `Multi<T>` must be manually registered with `register_instruction_type` or
+/// `register_command_type` for all `T` that want to use it.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Multi<T>(Vec<T>);
 
-impl<T: ApplyLoadable + TypePath + FromReflect + GetTypeRegistration> ApplyLoadable for Multi<T>
+impl<T: Instruction + TypePath + FromReflect + GetTypeRegistration> Instruction for Multi<T>
 {
     fn apply(mut self, entity: Entity, world: &mut World)
     {
@@ -74,7 +81,7 @@ impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Mult
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait that enables derived loadables to use the [`Splat`] wrapper loadable.
+/// Trait that enables loadables to use the [`Splat`] wrapper loadable.
 ///
 /// For example, a UI `Border` could be splatted with `Splat<Border>(Val::Px(2.0))`.
 pub trait Splattable
@@ -96,14 +103,14 @@ pub trait Splattable
 
 /// Helper loadable for cases where a loadable can be 'splat-constructed' from a single inner value.
 ///
-/// Note that `Splat<T>` must be manually registered with `register_derived` or `register_command` for all `T` that
-/// want to use it.
+/// Note that `Splat<T>` must be manually registered with `register_instruction_type` or
+/// `register_command_type` for all `T` that want to use it.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Splat<T: Splattable>(T::Splat);
 
-impl<T> ApplyLoadable for Splat<T>
+impl<T> Instruction for Splat<T>
 where
-    T: Splattable + ApplyLoadable + TypePath + FromReflect + GetTypeRegistration,
+    T: Splattable + Instruction + TypePath + FromReflect + GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

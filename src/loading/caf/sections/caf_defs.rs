@@ -10,7 +10,7 @@ pub enum CafDefEntry
 {
     Constant(CafConstantDef),
     DataMacro(CafDataMacroDef),
-    InstructionMacro(CafInstructionMacroDef),
+    LoadableMacro(CafLoadableMacroDef),
     SceneMacro(CafSceneMacroDef),
 }
 
@@ -25,7 +25,7 @@ impl CafDefEntry
             Self::DataMacro(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::InstructionMacro(entry) => {
+            Self::LoadableMacro(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacro(entry) => {

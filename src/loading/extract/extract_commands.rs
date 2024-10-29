@@ -24,9 +24,9 @@ pub(super) fn extract_commands_section(
 
     for entry in section.entries.iter() {
         match entry {
-            CafCommandEntry::Instruction(instruction) => {
+            CafCommandEntry::Loadable(loadable) => {
                 // Get the shortname.
-                shortname = instruction.id.to_canonical(Some(shortname));
+                shortname = loadable.id.to_canonical(Some(shortname));
 
                 // Get the loadable's longname.
                 let Some((_short_name, long_name, type_id, deserializer)) =
@@ -36,7 +36,7 @@ pub(super) fn extract_commands_section(
                 };
 
                 // Get the loadable's value.
-                let command_value = get_loadable_value(deserializer, instruction);
+                let command_value = get_loadable_value(deserializer, loadable);
 
                 // Save this command.
                 caf_cache.insert_command(
@@ -46,8 +46,8 @@ pub(super) fn extract_commands_section(
                     long_name,
                 );
             }
-            CafCommandEntry::InstructionMacroCall(_) => {
-                tracing::error!("ignoring unresolved instruction macro in CAF file command section {:?}", file);
+            CafCommandEntry::LoadableMacroCall(_) => {
+                tracing::error!("ignoring unresolved loadable macro in CAF file command section {:?}", file);
             }
         }
     }

@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UnitStruct;
 
-impl ApplyLoadable for UnitStruct
+impl Instruction for UnitStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -35,7 +35,7 @@ pub struct PlainStruct
     pub boolean: bool,
 }
 
-impl ApplyLoadable for PlainStruct
+impl Instruction for PlainStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -45,7 +45,7 @@ impl ApplyLoadable for PlainStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FloatStruct(pub f64);
 
-impl ApplyLoadable for FloatStruct
+impl Instruction for FloatStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -55,7 +55,7 @@ impl ApplyLoadable for FloatStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StringStruct(pub String);
 
-impl ApplyLoadable for StringStruct
+impl Instruction for StringStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -65,7 +65,7 @@ impl ApplyLoadable for StringStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SimpleTupleStruct(pub u32, pub u32);
 
-impl ApplyLoadable for SimpleTupleStruct
+impl Instruction for SimpleTupleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -79,7 +79,7 @@ pub struct SimpleStruct
     pub b: u32,
 }
 
-impl ApplyLoadable for SimpleStruct
+impl Instruction for SimpleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -89,7 +89,7 @@ impl ApplyLoadable for SimpleStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NewtypeStruct<T>(pub T);
 
-impl<T> ApplyLoadable for NewtypeStruct<T>
+impl<T> Instruction for NewtypeStruct<T>
 where
     T: TypePath + Loadable + Reflect + GetTypeRegistration,
 {
@@ -101,7 +101,7 @@ where
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WrapNewtypeStruct(pub NewtypeStruct<u32>);
 
-impl ApplyLoadable for WrapNewtypeStruct
+impl Instruction for WrapNewtypeStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -116,7 +116,7 @@ pub enum NewtypeEnum
     X,
 }
 
-impl ApplyLoadable for NewtypeEnum
+impl Instruction for NewtypeEnum
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -130,7 +130,7 @@ pub struct ContainsNewtypes
     pub w: WrapArray,
 }
 
-impl ApplyLoadable for ContainsNewtypes
+impl Instruction for ContainsNewtypes
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -152,7 +152,7 @@ pub enum EnumStruct
     E(SimpleStruct),
 }
 
-impl ApplyLoadable for EnumStruct
+impl Instruction for EnumStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -174,7 +174,7 @@ pub struct AggregateStruct
     pub s_plain: PlainStruct,
 }
 
-impl ApplyLoadable for AggregateStruct
+impl Instruction for AggregateStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -184,7 +184,7 @@ impl ApplyLoadable for AggregateStruct
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WrapArray(pub Vec<UnitStruct>);
 
-impl ApplyLoadable for WrapArray
+impl Instruction for WrapArray
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -194,7 +194,7 @@ impl ApplyLoadable for WrapArray
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TupleStruct(pub UnitStruct, pub PlainStruct, pub bool);
 
-impl ApplyLoadable for TupleStruct
+impl Instruction for TupleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -211,7 +211,7 @@ where
     _p: PhantomData<A>,
 }
 
-impl<A> ApplyLoadable for SingleGeneric<A>
+impl<A> Instruction for SingleGeneric<A>
 where
     A: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
 {
@@ -223,7 +223,7 @@ where
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SingleGenericTuple<A>(pub A);
 
-impl<A> ApplyLoadable for SingleGenericTuple<A>
+impl<A> Instruction for SingleGenericTuple<A>
 where
     A: TypePath + Loadable + Reflect + GetTypeRegistration,
 {
@@ -247,7 +247,7 @@ where
     _p: PhantomData<(A, B, C)>,
 }
 
-impl<A, B, C> ApplyLoadable for MultiGeneric<A, B, C>
+impl<A, B, C> Instruction for MultiGeneric<A, B, C>
 where
     A: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
     B: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
@@ -291,7 +291,7 @@ where
     }
 }
 
-impl<A> ApplyLoadable for EnumGeneric<A>
+impl<A> Instruction for EnumGeneric<A>
 where
     A: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
 {
@@ -303,7 +303,7 @@ where
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BuiltinColor(pub Color);
 
-impl ApplyLoadable for BuiltinColor
+impl Instruction for BuiltinColor
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -323,7 +323,7 @@ pub struct BuiltinCollection
     pub color: Color,
 }
 
-impl ApplyLoadable for BuiltinCollection
+impl Instruction for BuiltinCollection
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -339,7 +339,7 @@ pub struct ReflectDefaulted
     pub b: u32,
 }
 
-impl ApplyLoadable for ReflectDefaulted
+impl Instruction for ReflectDefaulted
 {
     fn apply(self, _: Entity, _: &mut World) {}
 }
@@ -352,44 +352,44 @@ impl Plugin for SerdeTypesPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_derived::<UnitStruct>()
-            .register_derived::<PlainStruct>()
-            .register_derived::<FloatStruct>()
-            .register_derived::<StringStruct>()
-            .register_derived::<SimpleTupleStruct>()
-            .register_derived::<SimpleStruct>()
-            .register_derived::<NewtypeStruct<()>>()
-            .register_derived::<NewtypeStruct<u32>>()
-            .register_derived::<NewtypeStruct<(u32, u32)>>()
-            .register_derived::<NewtypeStruct<UnitStruct>>()
-            .register_derived::<NewtypeStruct<NewtypeStruct<UnitStruct>>>()
-            .register_derived::<NewtypeStruct<SimpleTupleStruct>>()
-            .register_derived::<NewtypeStruct<SimpleStruct>>()
-            .register_derived::<NewtypeStruct<NewtypeStruct<u32>>>()
-            .register_derived::<WrapNewtypeStruct>()
-            .register_derived::<NewtypeEnum>()
-            .register_derived::<ContainsNewtypes>()
-            .register_derived::<EnumStruct>()
-            .register_derived::<AggregateStruct>()
-            .register_derived::<WrapArray>()
-            .register_derived::<TupleStruct>()
-            .register_derived::<SingleGeneric<u32>>()
-            .register_derived::<SingleGeneric<(u32, u32)>>()
-            .register_derived::<SingleGeneric<UnitStruct>>()
-            .register_derived::<SingleGeneric<SingleGeneric<u32>>>()
-            .register_derived::<SingleGeneric<MultiGeneric<u32, u32, u32>>>()
-            .register_derived::<SingleGenericTuple<u32>>()
-            .register_derived::<SingleGenericTuple<UnitStruct>>()
-            .register_derived::<SingleGenericTuple<SingleGeneric<u32>>>()
-            .register_derived::<MultiGeneric<u32, u32, u32>>()
-            .register_derived::<MultiGeneric<u32, u32, UnitStruct>>()
-            .register_derived::<MultiGeneric<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>>()
-            .register_derived::<EnumGeneric<bool>>()
-            .register_derived::<EnumGeneric<UnitStruct>>()
-            .register_derived::<EnumGeneric<SingleGeneric<u32>>>()
-            .register_derived::<BuiltinColor>()
-            .register_derived::<BuiltinCollection>()
-            .register_derived::<ReflectDefaulted>();
+        app.register_instruction_type::<UnitStruct>()
+            .register_instruction_type::<PlainStruct>()
+            .register_instruction_type::<FloatStruct>()
+            .register_instruction_type::<StringStruct>()
+            .register_instruction_type::<SimpleTupleStruct>()
+            .register_instruction_type::<SimpleStruct>()
+            .register_instruction_type::<NewtypeStruct<()>>()
+            .register_instruction_type::<NewtypeStruct<u32>>()
+            .register_instruction_type::<NewtypeStruct<(u32, u32)>>()
+            .register_instruction_type::<NewtypeStruct<UnitStruct>>()
+            .register_instruction_type::<NewtypeStruct<NewtypeStruct<UnitStruct>>>()
+            .register_instruction_type::<NewtypeStruct<SimpleTupleStruct>>()
+            .register_instruction_type::<NewtypeStruct<SimpleStruct>>()
+            .register_instruction_type::<NewtypeStruct<NewtypeStruct<u32>>>()
+            .register_instruction_type::<WrapNewtypeStruct>()
+            .register_instruction_type::<NewtypeEnum>()
+            .register_instruction_type::<ContainsNewtypes>()
+            .register_instruction_type::<EnumStruct>()
+            .register_instruction_type::<AggregateStruct>()
+            .register_instruction_type::<WrapArray>()
+            .register_instruction_type::<TupleStruct>()
+            .register_instruction_type::<SingleGeneric<u32>>()
+            .register_instruction_type::<SingleGeneric<(u32, u32)>>()
+            .register_instruction_type::<SingleGeneric<UnitStruct>>()
+            .register_instruction_type::<SingleGeneric<SingleGeneric<u32>>>()
+            .register_instruction_type::<SingleGeneric<MultiGeneric<u32, u32, u32>>>()
+            .register_instruction_type::<SingleGenericTuple<u32>>()
+            .register_instruction_type::<SingleGenericTuple<UnitStruct>>()
+            .register_instruction_type::<SingleGenericTuple<SingleGeneric<u32>>>()
+            .register_instruction_type::<MultiGeneric<u32, u32, u32>>()
+            .register_instruction_type::<MultiGeneric<u32, u32, UnitStruct>>()
+            .register_instruction_type::<MultiGeneric<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>>()
+            .register_instruction_type::<EnumGeneric<bool>>()
+            .register_instruction_type::<EnumGeneric<UnitStruct>>()
+            .register_instruction_type::<EnumGeneric<SingleGeneric<u32>>>()
+            .register_instruction_type::<BuiltinColor>()
+            .register_instruction_type::<BuiltinCollection>()
+            .register_instruction_type::<ReflectDefaulted>();
     }
 }
 

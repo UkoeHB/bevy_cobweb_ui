@@ -126,7 +126,7 @@ impl Plugin for TextureAtlasLoadPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<TextureAtlasLayoutMap>()
-            .register_command::<LoadTextureAtlasLayouts>()
+            .register_command_type::<LoadTextureAtlasLayouts>()
             .register_type::<LoadedTextureAtlasLayout>();
     }
 }

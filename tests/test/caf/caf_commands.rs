@@ -28,7 +28,7 @@ A
     );
     let CafSection::Commands(commands) = &res.sections[0] else { unreachable!() };
     assert_eq!(commands.entries.len(), 1);
-    let CafCommandEntry::Instruction(instruction) = &commands.entries[0] else { unreachable!() };
+    let CafCommandEntry::Loadable(instruction) = &commands.entries[0] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "A");
 
     let res = test_caf(
@@ -41,11 +41,11 @@ C<D>::X{ a: 1, b: 2 }
     );
     let CafSection::Commands(commands) = &res.sections[0] else { unreachable!() };
     assert_eq!(commands.entries.len(), 3);
-    let CafCommandEntry::Instruction(instruction) = &commands.entries[0] else { unreachable!() };
+    let CafCommandEntry::Loadable(instruction) = &commands.entries[0] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "A");
-    let CafCommandEntry::Instruction(instruction) = &commands.entries[1] else { unreachable!() };
+    let CafCommandEntry::Loadable(instruction) = &commands.entries[1] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "B<A>");
-    let CafCommandEntry::Instruction(instruction) = &commands.entries[2] else { unreachable!() };
+    let CafCommandEntry::Loadable(instruction) = &commands.entries[2] else { unreachable!() };
     assert_eq!(instruction.id.to_canonical(None), "C<D>");
 }
 

@@ -5,12 +5,12 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Commands are parsed as instructions.
+/// Commands are parsed as loadables.
 #[derive(Debug, Clone, PartialEq)]
 pub enum CafCommandEntry
 {
-    Instruction(CafInstruction),
-    InstructionMacroCall(CafInstructionMacroCall),
+    Loadable(CafLoadable),
+    LoadableMacroCall(CafLoadableMacroCall),
 }
 
 impl CafCommandEntry
@@ -18,10 +18,10 @@ impl CafCommandEntry
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Instruction(instruction) => {
-                instruction.write_to(writer)?;
+            Self::Loadable(loadable) => {
+                loadable.write_to(writer)?;
             }
-            Self::InstructionMacroCall(call) => {
+            Self::LoadableMacroCall(call) => {
                 call.write_to(writer)?;
             }
         }
@@ -31,8 +31,8 @@ impl CafCommandEntry
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let starts_newline = fill.ends_with_newline();
-        let fill = match CafInstruction::try_parse(fill, content)? {
-            (Some(instruction), next_fill, remaining) => {
+        let fill = match CafLoadable::try_parse(fill, content)? {
+            (Some(loadable), next_fill, remaining) => {
                 if !starts_newline {
                     tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
                     return Err(span_verify_error(content));
@@ -41,17 +41,17 @@ impl CafCommandEntry
                 // of traversing the structure. Allow errors to be detected downstream (e.g. when deserializing).
                 // TODO: re-evaluate if this is useful; the perf cost of traversing everything again is
                 // non-negligible
-                return Ok((Some(Self::Instruction(instruction)), next_fill, remaining));
+                return Ok((Some(Self::Loadable(loadable)), next_fill, remaining));
             }
             (None, fill, _) => fill,
         };
-        let fill = match CafInstructionMacroCall::try_parse(fill, content)? {
+        let fill = match CafLoadableMacroCall::try_parse(fill, content)? {
             (Some(call), next_fill, remaining) => {
                 if !starts_newline {
                     tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
                     return Err(span_verify_error(content));
                 }
-                return Ok((Some(Self::InstructionMacroCall(call)), next_fill, remaining));
+                return Ok((Some(Self::LoadableMacroCall(call)), next_fill, remaining));
             }
             (None, fill, _) => fill,
         };

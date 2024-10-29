@@ -3,7 +3,7 @@ use std::io::ErrorKind;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Result for the [`CafInstruction`] and [`CafValue`] serializer and deserialize seed.
+/// Result for the [`CafLoadable`] and [`CafValue`] serializer and deserialize seed.
 pub type CafResult<T> = Result<T, CafError>;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -39,17 +39,17 @@ pub enum CafError
     /// Some I/O error occurred while serializing or deserializing.
     Io(std::io::Error),
 
-    /// An instruction was not registered with bevy type reflection and failed to serialize.
-    InstructionNotRegistered,
-    /// Only structs and enums can be serialized as instructions.
-    NotAnInstruction,
+    /// An loadable was not registered with bevy type reflection and failed to serialize.
+    LoadableNotRegistered,
+    /// Only structs and enums can be serialized as loadables.
+    NotALoadable,
     /// A built-in type failed to serialize to [`CafBuiltin`].
     MalformedBuiltin,
-    /// Failed deserializing a newtype instruction or enum variant that is represented as a unit-like
+    /// Failed deserializing a newtype loadable or enum variant that is represented as a unit-like
     /// struct/variant.
     UnresolvedNewtypeStruct,
-    /// An instruction identifier failed to parse.
-    MalformedInstructionId,
+    /// An loadable identifier failed to parse.
+    MalformedLoadableId,
 }
 
 impl CafError
@@ -60,11 +60,11 @@ impl CafError
         match *self {
             Self::Message(_) => ErrorCategory::Data,
             Self::Io(_) => ErrorCategory::Io,
-            Self::InstructionNotRegistered
-            | Self::NotAnInstruction
+            Self::LoadableNotRegistered
+            | Self::NotALoadable
             | Self::MalformedBuiltin
             | Self::UnresolvedNewtypeStruct
-            | Self::MalformedInstructionId => ErrorCategory::Syntax,
+            | Self::MalformedLoadableId => ErrorCategory::Syntax,
         }
     }
 
@@ -146,18 +146,16 @@ impl Display for CafError
         match self {
             Self::Message(msg) => f.write_str(msg),
             Self::Io(err) => Display::fmt(err, f),
-            Self::InstructionNotRegistered => {
+            Self::LoadableNotRegistered => {
                 f.write_str("tried serializing a type that wasn't registered with bevy's type registry")
             }
-            Self::NotAnInstruction => {
-                f.write_str("tried serializing a type as CafInstruction that isn't a struct/enum")
-            }
+            Self::NotALoadable => f.write_str("tried serializing a type as CafLoadable that isn't a struct/enum"),
             Self::MalformedBuiltin => f.write_str("tried serializing a builtin type that is malformed"),
             Self::UnresolvedNewtypeStruct => f.write_str(
                 "failed deserializing a newtype struct or enum variant represented as a unit struct/variant",
             ),
-            Self::MalformedInstructionId => {
-                f.write_str("tried extracting an instruction id from a malformed short path")
+            Self::MalformedLoadableId => {
+                f.write_str("tried extracting an loadable id from a malformed short path")
             }
         }
     }

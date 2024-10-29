@@ -896,9 +896,9 @@ impl Plugin for StyleWrappersPlugin
                 DetectDisplayControl,
                 (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
             )
-            .register_reactive_loadable::<AbsoluteStyle>()
-            .register_reactive_loadable::<FlexStyle>()
-            .register_reactive_loadable::<DisplayControl>();
+            .register_reactive::<AbsoluteStyle>()
+            .register_reactive::<FlexStyle>()
+            .register_reactive::<DisplayControl>();
     }
 }
 

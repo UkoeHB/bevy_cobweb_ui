@@ -514,8 +514,8 @@ impl Plugin for ImageLoadPlugin
     {
         app.init_resource::<ImageMap>()
             .register_asset_tracker::<ImageMap>()
-            .register_command::<LoadImages>()
-            .register_command::<LoadLocalizedImages>()
+            .register_command_type::<LoadImages>()
+            .register_command_type::<LoadLocalizedImages>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .react(|rc| {
                 rc.on_persistent(

@@ -78,7 +78,7 @@ fn set_border_radius_bottom_right(
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BgColor(pub Color);
 
-impl ApplyLoadable for BgColor
+impl Instruction for BgColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -106,7 +106,7 @@ impl AnimatableAttribute for BgColor {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrColor(pub Color);
 
-impl ApplyLoadable for BrColor
+impl Instruction for BrColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -137,7 +137,7 @@ impl AnimatableAttribute for BrColor {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadius(pub Val);
 
-impl ApplyLoadable for BrRadius
+impl Instruction for BrRadius
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -167,7 +167,7 @@ impl AnimatableAttribute for BrRadius {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusTopLeft(pub Val);
 
-impl ApplyLoadable for BrRadiusTopLeft
+impl Instruction for BrRadiusTopLeft
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -195,7 +195,7 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusTopRight(pub Val);
 
-impl ApplyLoadable for BrRadiusTopRight
+impl Instruction for BrRadiusTopRight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -223,7 +223,7 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusBottomLeft(pub Val);
 
-impl ApplyLoadable for BrRadiusBottomLeft
+impl Instruction for BrRadiusBottomLeft
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -251,7 +251,7 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusBottomRight(pub Val);
 
-impl ApplyLoadable for BrRadiusBottomRight
+impl Instruction for BrRadiusBottomRight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -305,7 +305,7 @@ impl Lerp for NodeOutline
     }
 }
 
-impl ApplyLoadable for NodeOutline
+impl Instruction for NodeOutline
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -350,7 +350,7 @@ impl Into<FocusPolicy> for SetFocusPolicy
     }
 }
 
-impl ApplyLoadable for SetFocusPolicy
+impl Instruction for SetFocusPolicy
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -400,7 +400,7 @@ impl Into<ZIndex> for SetZIndex
     }
 }
 
-impl ApplyLoadable for SetZIndex
+impl Instruction for SetZIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

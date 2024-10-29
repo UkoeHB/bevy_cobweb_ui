@@ -513,8 +513,8 @@ impl Plugin for AudioLoadPlugin
     {
         app.init_resource::<AudioMap>()
             .register_asset_tracker::<AudioMap>()
-            .register_command::<LoadAudio>()
-            .register_command::<LoadLocalizedAudio>()
+            .register_command_type::<LoadAudio>()
+            .register_command_type::<LoadLocalizedAudio>()
             .react(|rc| rc.on_persistent(broadcast::<LanguagesNegotiated>(), handle_new_lang_list))
             .react(|rc| {
                 rc.on_persistent(

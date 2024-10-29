@@ -326,7 +326,7 @@ fn restore_opacity(
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PropagateOpacity(pub f32);
 
-impl ApplyLoadable for PropagateOpacity
+impl Instruction for PropagateOpacity
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
