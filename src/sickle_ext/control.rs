@@ -1,7 +1,9 @@
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
+use super::add_attribute;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -41,10 +43,48 @@ impl Instruction for ControlRoot
         // Add control map if missing.
         if !ec.contains::<ControlMap>() {
             ec.insert(ControlMap::default());
+
+            // If self has children or ControlLabel, then look for the nearest ancestor with ControlMap and
+            // force it to re-apply its attributes and labels, in case this new root needs to steal some.
+            if ec.contains::<Children>() || ec.contains::<ControlLabel>() {
+                let mut current = entity;
+                while let Some(parent) = world.get::<Parent>(current) {
+                    current = parent.get();
+                    let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
+                    let labels: Vec<_> = control_map.remove_all_labels().collect();
+                    let attrs = control_map.remove_all_attrs();
+
+                    // Labels
+                    for (label, label_entity) in labels {
+                        ControlLabel(label).apply(label_entity, world);
+                    }
+
+                    // Attrs
+                    for (origin, source, target, state, attribute) in attrs {
+                        world.syscall((origin, source, target, state, attribute), add_attribute);
+                    }
+                    break;
+                }
+            }
+        } else {
+            // Reapplying this instruction confirms we are not actually dying, just refreshing the control root.
+            ec.remove::<ControlMapDying>();
         }
 
         // Update control label.
         ControlLabel(self.0).apply(entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        // Set map to dying. If the control root is re-applied then the dying state will be cleared.
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        if emut.contains::<ControlMap>() {
+            emut.insert(ControlMapDying);
+        }
+
+        // Clean up the label.
+        ControlLabel::revert(entity, world);
     }
 }
 
@@ -115,6 +155,29 @@ impl Instruction for ControlLabel
         } else {
             ec.insert(self);
         }
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+
+        // Remove entry from nearest control map.
+        // - All still-existing attributes will be re-inserted when the entity reloads.
+        if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
+            control_map.remove(entity);
+        } else {
+            let mut current = entity;
+            while let Some(parent) = world.get::<Parent>(current) {
+                current = parent.get();
+                let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
+                control_map.remove(entity);
+                break;
+            }
+        }
+
+        // Remove label component.
+        let mut emut = world.entity_mut(entity);
+        emut.remove::<ControlLabel>();
     }
 }
 

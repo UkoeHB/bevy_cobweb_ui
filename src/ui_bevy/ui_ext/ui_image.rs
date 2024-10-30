@@ -132,7 +132,15 @@ impl Instruction for LoadedUiImage
     {
         world.syscall((entity, self), insert_ui_image);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(UiImage, UiImageSize, ContentSize, ImageScaleMode, TextureAtlas)>();
+        });
+    }
 }
+
 impl ThemedAttribute for LoadedUiImage
 {
     type Value = Self;
@@ -153,6 +161,11 @@ impl Instruction for UiImageColor
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), update_ui_image_color);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        Instruction::apply(Self(LoadedUiImage::default_color()), entity, world);
     }
 }
 
@@ -181,6 +194,11 @@ impl Instruction for UiImageIndex
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), update_ui_image_index);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        Instruction::apply(Self(0), entity, world);
     }
 }
 

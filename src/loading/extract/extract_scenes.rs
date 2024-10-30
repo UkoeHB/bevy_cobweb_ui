@@ -157,7 +157,8 @@ fn extract_scene_layer(
                     loadable,
                     name_shortcuts,
                 );
-                loadable_count += 1;
+                // Make sure this is accurate even if a loadable is skipped due to an error.
+                loadable_count = seen_shortnames.len();
             }
             // Do this one after we are done using the `seen_shortnames` buffer.
             CafSceneLayerEntry::Layer(_) => (),

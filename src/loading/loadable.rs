@@ -34,9 +34,8 @@ pub trait Instruction: Loadable
 
     /// Reverts the instruction on the entity.
     ///
-    /// This should clean up as many side effects of the instruction as possible.
-    // TODO: make this mandatory
-    fn revert(_entity: Entity, _world: &mut World) {}
+    /// This should clean up as many of the instruction's side effects as possible.
+    fn revert(entity: Entity, world: &mut World);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -82,6 +81,11 @@ impl<T: Instruction + TypePath + FromReflect + GetTypeRegistration> Instruction 
         for item in self.0.drain(..) {
             item.apply(entity, world);
         }
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        T::revert(entity, world);
     }
 }
 
@@ -131,6 +135,11 @@ where
     fn apply(self, entity: Entity, world: &mut World)
     {
         T::splat(self.0).apply(entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        T::revert(entity, world);
     }
 }
 

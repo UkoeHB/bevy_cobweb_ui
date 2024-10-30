@@ -25,6 +25,7 @@ pub struct UnitStruct;
 impl Instruction for UnitStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -38,6 +39,7 @@ pub struct PlainStruct
 impl Instruction for PlainStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -48,6 +50,7 @@ pub struct FloatStruct(pub f64);
 impl Instruction for FloatStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -58,6 +61,7 @@ pub struct StringStruct(pub String);
 impl Instruction for StringStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -68,6 +72,7 @@ pub struct SimpleTupleStruct(pub u32, pub u32);
 impl Instruction for SimpleTupleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -82,6 +87,7 @@ pub struct SimpleStruct
 impl Instruction for SimpleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -94,6 +100,7 @@ where
     T: TypePath + Loadable + Reflect + GetTypeRegistration,
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -104,6 +111,7 @@ pub struct WrapNewtypeStruct(pub NewtypeStruct<u32>);
 impl Instruction for WrapNewtypeStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -119,6 +127,7 @@ pub enum NewtypeEnum
 impl Instruction for NewtypeEnum
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -133,6 +142,7 @@ pub struct ContainsNewtypes
 impl Instruction for ContainsNewtypes
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -155,6 +165,7 @@ pub enum EnumStruct
 impl Instruction for EnumStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -177,6 +188,7 @@ pub struct AggregateStruct
 impl Instruction for AggregateStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -187,6 +199,7 @@ pub struct WrapArray(pub Vec<UnitStruct>);
 impl Instruction for WrapArray
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -197,6 +210,7 @@ pub struct TupleStruct(pub UnitStruct, pub PlainStruct, pub bool);
 impl Instruction for TupleStruct
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -216,6 +230,7 @@ where
     A: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -228,6 +243,7 @@ where
     A: TypePath + Loadable + Reflect + GetTypeRegistration,
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -254,6 +270,7 @@ where
     C: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -296,6 +313,7 @@ where
     A: Default + TypePath + std::fmt::Debug + Clone + PartialEq + Send + Sync + 'static,
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -306,6 +324,7 @@ pub struct BuiltinColor(pub Color);
 impl Instruction for BuiltinColor
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -326,6 +345,7 @@ pub struct BuiltinCollection
 impl Instruction for BuiltinCollection
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -342,6 +362,7 @@ pub struct ReflectDefaulted
 impl Instruction for ReflectDefaulted
 {
     fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------

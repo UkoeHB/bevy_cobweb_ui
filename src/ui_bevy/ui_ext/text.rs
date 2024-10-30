@@ -137,6 +137,13 @@ impl Instruction for TextLine
     {
         world.syscall((entity, self), insert_text_line);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(Text, TextLayoutInfo, TextFlags, ContentSize)>();
+        });
+    }
 }
 
 impl Default for TextLine
@@ -155,7 +162,7 @@ impl Default for TextLine
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable for setting the font size of a [`TextLine`] on an entity.
+/// Instruction for setting the font size of a [`TextLine`] on an entity.
 //todo: hook this up to TextLine or find a better abstraction
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineSize(pub f32);
@@ -174,6 +181,11 @@ impl Instruction for TextLineSize
             e.insert(self);
         });
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        Instruction::apply(Self(TextLine::default_font_size()), entity, world);
+    }
 }
 
 impl ThemedAttribute for TextLineSize
@@ -187,7 +199,7 @@ impl ThemedAttribute for TextLineSize
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable for setting the color of a [`TextLine`] on an entity.
+/// Instruction for setting the color of a [`TextLine`] on an entity.
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineColor(pub Color);
 
@@ -204,6 +216,11 @@ impl Instruction for TextLineColor
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        Instruction::apply(Self(TextLine::default_font_color()), entity, world);
     }
 }
 

@@ -149,6 +149,13 @@ impl Instruction for Interactive
             e.insert((Interaction::default(), TrackedInteraction::default()));
         });
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(Interaction, TrackedInteraction)>();
+        });
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

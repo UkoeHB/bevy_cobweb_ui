@@ -75,6 +75,15 @@ fn initialize_flex_style(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn remove_styles(entity: Entity, world: &mut World)
+{
+    world.get_entity_mut(entity).map(|mut e| {
+        e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+    });
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn apply_to_dims<T: ApplyToDims>(param: T, entity: Entity, world: &mut World)
 {
     let Some(mut ec) = world.get_entity_mut(entity) else { return };
@@ -155,7 +164,7 @@ fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut 
 
 /// Initializes [`AbsoluteStyle`] on an entity.
 ///
-/// Should be inserted before all other style field wrappers.
+/// This instruction should be inserted before all other style field wrappers.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithAbsoluteStyle;
 
@@ -164,6 +173,11 @@ impl Instruction for WithAbsoluteStyle
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall(entity, initialize_absolute_style);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 impl ThemedAttribute for WithAbsoluteStyle
@@ -179,7 +193,7 @@ impl ThemedAttribute for WithAbsoluteStyle
 
 /// Initializes [`FlexStyle`] on an entity.
 ///
-/// Should be inserted before all other style field wrappers.
+/// This instruction should be inserted before all other style field wrappers.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WithFlexStyle;
 
@@ -188,6 +202,11 @@ impl Instruction for WithFlexStyle
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall(entity, initialize_flex_style);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 impl ThemedAttribute for WithFlexStyle
@@ -201,7 +220,7 @@ impl ThemedAttribute for WithFlexStyle
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::width`], can be loaded as a style.
+/// Mirrors [`Dims::width`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Width(pub Val);
 
@@ -219,6 +238,11 @@ impl Instruction for Width
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for Width
@@ -234,7 +258,7 @@ impl AnimatableAttribute for Width {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::height`], can be loaded as a style.
+/// Mirrors [`Dims::height`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Height(pub Val);
 
@@ -252,6 +276,11 @@ impl Instruction for Height
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for Height
@@ -267,7 +296,7 @@ impl AnimatableAttribute for Height {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::min_width`], can be loaded as a style.
+/// Mirrors [`Dims::min_width`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MinWidth(pub Val);
 
@@ -285,6 +314,11 @@ impl Instruction for MinWidth
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for MinWidth
@@ -300,7 +334,7 @@ impl AnimatableAttribute for MinWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::min_height`], can be loaded as a style.
+/// Mirrors [`Dims::min_height`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MinHeight(pub Val);
 
@@ -318,6 +352,11 @@ impl Instruction for MinHeight
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for MinHeight
@@ -333,7 +372,7 @@ impl AnimatableAttribute for MinHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::max_width`], can be loaded as a style.
+/// Mirrors [`Dims::max_width`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MaxWidth(pub Val);
 
@@ -351,6 +390,11 @@ impl Instruction for MaxWidth
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for MaxWidth
@@ -366,7 +410,7 @@ impl AnimatableAttribute for MaxWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::max_height`], can be loaded as a style.
+/// Mirrors [`Dims::max_height`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MaxHeight(pub Val);
 
@@ -384,6 +428,11 @@ impl Instruction for MaxHeight
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for MaxHeight
@@ -399,7 +448,7 @@ impl AnimatableAttribute for MaxHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::aspect_ratio`], can be loaded as a style.
+/// Mirrors [`Dims::aspect_ratio`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AspectRatio(pub f32);
 
@@ -417,6 +466,11 @@ impl Instruction for AspectRatio
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for AspectRatio
@@ -432,7 +486,7 @@ impl AnimatableAttribute for AspectRatio {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::border`], can be loaded as a style.
+/// Mirrors [`Dims::border`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Border(pub StyleRect);
 
@@ -449,6 +503,11 @@ impl Instruction for Border
     fn apply(self, entity: Entity, world: &mut World)
     {
         apply_to_dims(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 
@@ -474,7 +533,7 @@ impl Splattable for Border
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::top`], can be loaded as a style.
+/// Mirrors [`Dims::top`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DimsTop(pub Val);
 
@@ -492,6 +551,11 @@ impl Instruction for DimsTop
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for DimsTop
@@ -507,7 +571,7 @@ impl AnimatableAttribute for DimsTop {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::bottom`], can be loaded as a style.
+/// Mirrors [`Dims::bottom`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DimsBottom(pub Val);
 
@@ -525,6 +589,11 @@ impl Instruction for DimsBottom
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for DimsBottom
@@ -540,7 +609,7 @@ impl AnimatableAttribute for DimsBottom {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::left`], can be loaded as a style.
+/// Mirrors [`Dims::left`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DimsLeft(pub Val);
 
@@ -558,6 +627,11 @@ impl Instruction for DimsLeft
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for DimsLeft
@@ -573,7 +647,7 @@ impl AnimatableAttribute for DimsLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Dims::right`], can be loaded as a style.
+/// Mirrors [`Dims::right`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DimsRight(pub Val);
 
@@ -591,6 +665,11 @@ impl Instruction for DimsRight
     {
         apply_to_dims(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for DimsRight
@@ -606,7 +685,7 @@ impl AnimatableAttribute for DimsRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::clipping`], can be loaded as a style.
+/// Mirrors [`ContentFlex::clipping`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetClipping(pub Clipping);
 
@@ -624,6 +703,11 @@ impl Instruction for SetClipping
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetClipping
@@ -638,7 +722,7 @@ impl ResponsiveAttribute for SetClipping {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::padding`], can be loaded as a style.
+/// Mirrors [`ContentFlex::padding`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Padding(pub StyleRect);
 
@@ -655,6 +739,11 @@ impl Instruction for Padding
     fn apply(self, entity: Entity, world: &mut World)
     {
         apply_to_content_flex(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 
@@ -680,7 +769,7 @@ impl Splattable for Padding
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::flex_direction`], can be loaded as a style.
+/// Mirrors [`ContentFlex::flex_direction`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetFlexDirection(pub FlexDirection);
 
@@ -698,6 +787,11 @@ impl Instruction for SetFlexDirection
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetFlexDirection
@@ -712,7 +806,7 @@ impl ResponsiveAttribute for SetFlexDirection {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::flex_wrap`], can be loaded as a style.
+/// Mirrors [`ContentFlex::flex_wrap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetFlexWrap(pub FlexWrap);
 
@@ -730,6 +824,11 @@ impl Instruction for SetFlexWrap
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetFlexWrap
@@ -744,7 +843,7 @@ impl ResponsiveAttribute for SetFlexWrap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_lines`], can be loaded as a style.
+/// Mirrors [`ContentFlex::justify_lines`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetJustifyLines(pub JustifyLines);
 
@@ -762,6 +861,11 @@ impl Instruction for SetJustifyLines
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetJustifyLines
@@ -776,7 +880,7 @@ impl ResponsiveAttribute for SetJustifyLines {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_main`], can be loaded as a style.
+/// Mirrors [`ContentFlex::justify_main`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetJustifyMain(pub JustifyMain);
 
@@ -794,6 +898,11 @@ impl Instruction for SetJustifyMain
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetJustifyMain
@@ -808,7 +917,7 @@ impl ResponsiveAttribute for SetJustifyMain {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_cross`], can be loaded as a style.
+/// Mirrors [`ContentFlex::justify_cross`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetJustifyCross(pub JustifyCross);
 
@@ -826,6 +935,11 @@ impl Instruction for SetJustifyCross
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetJustifyCross
@@ -840,7 +954,7 @@ impl ResponsiveAttribute for SetJustifyCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::text_direction`], can be loaded as a style.
+/// Mirrors [`ContentFlex::text_direction`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetTextDirection(pub Direction);
 
@@ -858,6 +972,11 @@ impl Instruction for SetTextDirection
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for SetTextDirection
@@ -872,7 +991,7 @@ impl ResponsiveAttribute for SetTextDirection {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::column_gap`], can be loaded as a style.
+/// Mirrors [`ContentFlex::column_gap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ColumnGap(pub Val);
 
@@ -890,6 +1009,11 @@ impl Instruction for ColumnGap
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for ColumnGap
@@ -905,7 +1029,7 @@ impl AnimatableAttribute for ColumnGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::row_gap`], can be loaded as a style.
+/// Mirrors [`ContentFlex::row_gap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RowGap(pub Val);
 
@@ -923,6 +1047,11 @@ impl Instruction for RowGap
     {
         apply_to_content_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for RowGap
@@ -938,7 +1067,7 @@ impl AnimatableAttribute for RowGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::margin`], can be loaded as a style.
+/// Mirrors [`SelfFlex::margin`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Margin(pub StyleRect);
 
@@ -955,6 +1084,11 @@ impl Instruction for Margin
     fn apply(self, entity: Entity, world: &mut World)
     {
         apply_to_self_flex(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 
@@ -980,7 +1114,7 @@ impl Splattable for Margin
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::flex_basis`], can be loaded as a style.
+/// Mirrors [`SelfFlex::flex_basis`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlexBasis(pub Val);
 
@@ -998,6 +1132,11 @@ impl Instruction for FlexBasis
     {
         apply_to_self_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for FlexBasis
@@ -1013,7 +1152,7 @@ impl AnimatableAttribute for FlexBasis {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::flex_grow`], can be loaded as a style.
+/// Mirrors [`SelfFlex::flex_grow`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlexGrow(pub f32);
 
@@ -1031,6 +1170,11 @@ impl Instruction for FlexGrow
     {
         apply_to_self_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for FlexGrow
@@ -1046,7 +1190,7 @@ impl AnimatableAttribute for FlexGrow {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::flex_shrink`], can be loaded as a style.
+/// Mirrors [`SelfFlex::flex_shrink`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FlexShrink(pub f32);
 
@@ -1064,6 +1208,11 @@ impl Instruction for FlexShrink
     {
         apply_to_self_flex(self, entity, world);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
+    }
 }
 
 impl ThemedAttribute for FlexShrink
@@ -1079,7 +1228,7 @@ impl AnimatableAttribute for FlexShrink {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::justify_self_cross`], can be loaded as a style.
+/// Mirrors [`SelfFlex::justify_self_cross`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetJustifySelfCross(pub JustifySelfCross);
 
@@ -1096,6 +1245,11 @@ impl Instruction for SetJustifySelfCross
     fn apply(self, entity: Entity, world: &mut World)
     {
         apply_to_self_flex(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_styles(entity, world);
     }
 }
 

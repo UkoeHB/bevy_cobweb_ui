@@ -333,6 +333,13 @@ impl Instruction for PropagateOpacity
         let Some(mut ec) = world.get_entity_mut(entity) else { return };
         ec.insert(self);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Self>();
+        });
+    }
 }
 
 impl ThemedAttribute for PropagateOpacity

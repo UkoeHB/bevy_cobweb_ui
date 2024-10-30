@@ -1,5 +1,6 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::{ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction};
 use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
 use sickle_ui::theme::pseudo_state::PseudoState;
@@ -8,6 +9,9 @@ use sickle_ui::ui_style::builder::StyleBuilder;
 use sickle_ui::ui_style::LogicalEq;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
+
+use super::*;
+use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -45,16 +49,24 @@ impl LogicalEq for CachedContextualAttribute
 struct EditablePseudoTheme
 {
     state: Option<SmallVec<[PseudoState; 3]>>,
-    style: SmallVec<[CachedContextualAttribute; 3]>,
+    /// [ (origin entity, attribute )]
+    /// - Origin entity is used for cleanup when an attribute is reverted.
+    style: SmallVec<[(Entity, CachedContextualAttribute); 3]>,
 }
 
 impl EditablePseudoTheme
 {
-    fn new(state: Option<SmallVec<[PseudoState; 3]>>, attribute: CachedContextualAttribute) -> Self
+    fn new(origin: Entity, state: Option<SmallVec<[PseudoState; 3]>>, attribute: CachedContextualAttribute)
+        -> Self
     {
         let mut style = SmallVec::new();
-        style.push(attribute);
+        style.push((origin, attribute));
         Self { state, style }
+    }
+
+    fn remove_origin(&mut self, origin: Entity)
+    {
+        self.style.retain(|(e, _)| *e != origin);
     }
 
     fn matches(&self, state: &Option<SmallVec<[PseudoState; 3]>>) -> bool
@@ -62,17 +74,17 @@ impl EditablePseudoTheme
         self.state == *state
     }
 
-    fn set_attribute(&mut self, attribute: CachedContextualAttribute)
+    fn set_attribute(&mut self, origin: Entity, attribute: CachedContextualAttribute)
     {
         // Merge attribute with existing list.
         if let Some(index) = self
             .style
             .iter()
-            .position(|attr| attr.logical_eq(&attribute))
+            .position(|(_, attr)| attr.logical_eq(&attribute))
         {
-            self.style[index] = attribute;
+            self.style[index] = (origin, attribute);
         } else {
-            self.style.push(attribute);
+            self.style.push((origin, attribute));
         }
     }
 
@@ -94,7 +106,7 @@ impl EditablePseudoTheme
     /// Adds all attributes to the style builder.
     fn build(&self, style_builder: &mut StyleBuilder)
     {
-        for CachedContextualAttribute { source, target, attribute } in self.style.iter() {
+        for (_, CachedContextualAttribute { source, target, attribute }) in self.style.iter() {
             // Set the placement.
             if let Some(source) = source {
                 style_builder.switch_placement_with(source.clone());
@@ -139,8 +151,20 @@ impl ControlMap
         self.entities[pos] = (label, entity);
     }
 
+    pub(crate) fn remove(&mut self, entity: Entity)
+    {
+        if let Some(pos) = self.entities.iter().position(|(_, e)| *e == entity) {
+            self.entities.remove(pos);
+        }
+
+        for pt in self.pseudo_themes.iter_mut() {
+            pt.remove_origin(entity);
+        }
+    }
+
     pub(crate) fn set_attribute(
         &mut self,
+        origin: Entity,
         mut state: Option<SmallVec<[PseudoState; 3]>>,
         source: Option<SmolStr>,
         target: Option<SmolStr>,
@@ -153,10 +177,10 @@ impl ControlMap
 
         let attribute = CachedContextualAttribute { source, target, attribute };
         match self.pseudo_themes.iter_mut().find(|t| t.matches(&state)) {
-            Some(pseudo_theme) => pseudo_theme.set_attribute(attribute),
+            Some(pseudo_theme) => pseudo_theme.set_attribute(origin, attribute),
             None => self
                 .pseudo_themes
-                .push(EditablePseudoTheme::new(state, attribute)),
+                .push(EditablePseudoTheme::new(origin, state, attribute)),
         }
     }
 
@@ -167,6 +191,41 @@ impl ControlMap
             .iter()
             .find(|(name, _)| *name == target)
             .map(|(_, entity)| *entity)
+    }
+
+    pub(crate) fn remove_all_labels(&mut self) -> impl Iterator<Item = (SmolStr, Entity)> + '_
+    {
+        self.entities.drain(..)
+    }
+
+    pub(crate) fn remove_all_attrs(
+        &mut self,
+    ) -> Vec<(
+        Entity,
+        Option<SmolStr>,
+        Option<SmolStr>,
+        Option<SmallVec<[PseudoState; 3]>>,
+        DynamicStyleAttribute,
+    )>
+    {
+        let res = self
+            .pseudo_themes
+            .iter_mut()
+            .flat_map(|pt| {
+                let pstates = pt.state.take();
+                pt.style.drain(..).map(move |(origin, ctx_attr)| {
+                    (
+                        origin,
+                        ctx_attr.source,
+                        ctx_attr.target,
+                        pstates.clone(),
+                        ctx_attr.attribute,
+                    )
+                })
+            })
+            .collect();
+        self.pseudo_themes.clear();
+        res
     }
 
     fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_
@@ -196,7 +255,31 @@ impl UiContext for ControlMap
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// We assume ControlMap and PseudoStates are never removed from an entity.
+/// Marker component for cleaning up control maps after the `ControlRoot` instruction is reverted.
+#[derive(Component)]
+pub(crate) struct ControlMapDying;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDying>>)
+{
+    // If any control map is dead, then remove it and reapply its contents.
+    // - Reapplied content should only 'move' to a lower control map in the hierarchy. If a higher control
+    // map was added that would steal attributes from the dead control map, then that map will auto-steal
+    // attributes on insert (which synchronizes with attribute loads from children). There should be no cases
+    // were stale attributes from this map overwrite correct attributes on other control maps.
+    // - We know if a map is 'dying' here then it's actually dead, because the only time a 'dying' flag can
+    // be unset is immediately after it is set (i.e. ControlRoot instruction reverted -> ControlRoot instruction
+    // re-applied).
+    for entity in dying.iter() {
+        c.entity(entity)
+            .add(RemoveDeadControlMap)
+            .remove::<ControlMapDying>();
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn refresh_controlled_styles(
     mut c: Commands,
     changed_with_states: Query<
@@ -215,6 +298,33 @@ fn refresh_controlled_styles(
         .chain(changed_without_states.iter())
     {
         c.entity(entity).add(RefreshControlledStyles);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Removes a dead [`ControlMap`] and reapplies all its labels and attributes so they can be relocated to another
+/// control map if possible.
+struct RemoveDeadControlMap;
+
+impl EntityCommand for RemoveDeadControlMap
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Some(mut old_control_map) = world
+            .get_entity_mut(entity)
+            .and_then(|mut emut| emut.take::<ControlMap>())
+        else {
+            return;
+        };
+
+        for (label, label_entity) in old_control_map.remove_all_labels() {
+            ControlLabel(label).apply(label_entity, world);
+        }
+
+        for (origin, source, target, state, attribute) in old_control_map.remove_all_attrs() {
+            world.syscall((origin, source, target, state, attribute), add_attribute);
+        }
     }
 }
 
@@ -375,8 +485,12 @@ impl Plugin for ControlMapPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<ControlRefreshCache>()
-            .add_systems(PostUpdate, refresh_controlled_styles.before(ThemeUpdate));
+        app.init_resource::<ControlRefreshCache>().add_systems(
+            PostUpdate,
+            (cleanup_control_maps, refresh_controlled_styles)
+                .chain()
+                .before(ThemeUpdate),
+        );
     }
 }
 

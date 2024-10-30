@@ -44,8 +44,8 @@ fn add_attribute_to_dynamic_style(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_attribute(
-    In((entity, source, target, state, attribute)): In<(
+pub(super) fn add_attribute(
+    In((origin, source, target, state, attribute)): In<(
         Entity,
         Option<SmolStr>,
         Option<SmolStr>,
@@ -60,54 +60,86 @@ fn add_attribute(
     mut dynamic_styles: Query<Option<&mut DynamicStyle>>,
 )
 {
-    if !entities.contains(entity) {
+    if !entities.contains(origin) {
         return;
     }
 
     // Get the current entity's control label.
-    let Ok(label) = labels.get(entity) else {
+    let Ok(label) = labels.get(origin) else {
         if let Some(state) = &state {
             if !state.is_empty() {
-                tracing::error!("failed adding attribute to {entity:?}, pseudo states are not supported for \
+                tracing::error!("failed adding attribute to {origin:?}, pseudo states are not supported for \
                     non-controlled dynamic sytle attributes (state: {:?})", state);
                 return;
             }
         }
 
         if let Some(source) = &source {
-            tracing::warn!("ignoring control source {source:?} for dynamic style attribute on {entity:?} that doesn't \
+            tracing::warn!("ignoring control source {source:?} for dynamic style attribute on {origin:?} that doesn't \
                 have a ControlLabel");
         }
 
         if let Some(target) = &target {
-            tracing::warn!("ignoring control target {target:?} for dynamic style attribute on {entity:?} that doesn't \
+            tracing::warn!("ignoring control target {target:?} for dynamic style attribute on {origin:?} that doesn't \
                 have a ControlLabel");
         }
 
         // Fall back to inserting as a plain dynamic style attribute.
-        tracing::debug!("{entity:?} is not controlled by a widget, inserting attribute to dynamic style instead");
-        add_attribute_to_dynamic_style(entity, attribute, &mut c, &mut dynamic_styles);
+        tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute to dynamic style instead");
+        add_attribute_to_dynamic_style(origin, attribute, &mut c, &mut dynamic_styles);
         return;
     };
 
     // Check if self has ControlMap.
+    if let Ok(mut control_map) = control_maps.get_mut(origin) {
+        // Target falls back to None, which is implicitly the root entity.
+        control_map.set_attribute(origin, state, source, target, attribute);
+        return;
+    }
+
+    // Find ancestor with ControlMap.
+    for ancestor in parents.iter_ancestors(origin) {
+        let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
+        // Target falls back to self.
+        let target = target.or_else(|| Some(label.deref().clone()));
+        control_map.set_attribute(origin, state, source, target, attribute);
+        return;
+    }
+
+    tracing::error!("failed adding controlled dynamic attribute to {origin:?} with {label:?}, \
+        no ancestor with ControlRoot");
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn revert_attributes(
+    In(entity): In<Entity>,
+    mut c: Commands,
+    parents: Query<&Parent>,
+    entities: &Entities,
+    mut control_maps: Query<&mut ControlMap>,
+)
+{
+    if !entities.contains(entity) {
+        return;
+    }
+
+    // Cleanup DynamicStyle
+    c.entity(entity).remove::<DynamicStyle>();
+
+    // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(entity) {
         // Target falls back to None, which is implicitly the root entity.
-        control_map.set_attribute(state, source, target, attribute);
+        control_map.remove(entity);
         return;
     }
 
     // Find ancestor with ControlMap.
     for ancestor in parents.iter_ancestors(entity) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
-        // Target falls back to self.
-        let target = target.or_else(|| Some(label.deref().clone()));
-        control_map.set_attribute(state, source, target, attribute);
+        control_map.remove(entity);
         return;
     }
-
-    tracing::error!("failed adding controlled dynamic attribute to {entity:?} with {label:?}, \
-        no ancestor with ControlRoot");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -233,6 +265,11 @@ where
 
         world.syscall((entity, None, self.target, self.state, attribute), add_attribute);
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.syscall(entity, revert_attributes);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -283,6 +320,11 @@ where
         ));
 
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.syscall(entity, revert_attributes);
     }
 }
 
@@ -339,6 +381,11 @@ where
         };
 
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.syscall(entity, revert_attributes);
     }
 }
 

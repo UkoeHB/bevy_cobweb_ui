@@ -74,7 +74,7 @@ fn set_border_radius_bottom_right(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BackgroundColor`], can be loaded as a style.
+/// Mirrors [`BackgroundColor`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BgColor(pub Color);
 
@@ -84,6 +84,13 @@ impl Instruction for BgColor
     {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BackgroundColor(self.0));
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BackgroundColor>();
         });
     }
 }
@@ -102,7 +109,7 @@ impl AnimatableAttribute for BgColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderColor`], can be loaded as a style.
+/// Mirrors [`BorderColor`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrColor(pub Color);
 
@@ -112,6 +119,13 @@ impl Instruction for BrColor
     {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BorderColor(self.0));
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderColor>();
         });
     }
 }
@@ -130,7 +144,7 @@ impl AnimatableAttribute for BrColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderRadius`] to set all corner radii to the same value, can be loaded as a style.
+/// Mirrors [`BorderRadius`] to set all corner radii to the same value, can be loaded as an instruction.
 ///
 /// See [`BrRadiusTopLeft`], [`BrRadiusTopRight`], [`BrRadiusBottomLeft`], [`BrRadiusBottomRight`] to set
 /// individual corners.
@@ -143,6 +157,13 @@ impl Instruction for BrRadius
     {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BorderRadius::all(self.0));
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderRadius>();
         });
     }
 }
@@ -161,7 +182,7 @@ impl AnimatableAttribute for BrRadius {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderRadius`] to set the top left corner radius, can be loaded as a style.
+/// Mirrors [`BorderRadius`] to set the top left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -172,6 +193,13 @@ impl Instruction for BrRadiusTopLeft
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), set_border_radius_top_left);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderRadius>();
+        });
     }
 }
 
@@ -189,7 +217,7 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderRadius`] to set the top right corner radius, can be loaded as a style.
+/// Mirrors [`BorderRadius`] to set the top right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -200,6 +228,13 @@ impl Instruction for BrRadiusTopRight
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), set_border_radius_top_right);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderRadius>();
+        });
     }
 }
 
@@ -217,7 +252,7 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderRadius`] to set the bottom left corner radius, can be loaded as a style.
+/// Mirrors [`BorderRadius`] to set the bottom left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -228,6 +263,13 @@ impl Instruction for BrRadiusBottomLeft
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), set_border_radius_bottom_left);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderRadius>();
+        });
     }
 }
 
@@ -245,7 +287,7 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderRadius`] to set the bottom right corner radius, can be loaded as a style.
+/// Mirrors [`BorderRadius`] to set the bottom right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -256,6 +298,13 @@ impl Instruction for BrRadiusBottomRight
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.syscall((entity, self.0), set_border_radius_bottom_right);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BorderRadius>();
+        });
     }
 }
 
@@ -273,7 +322,7 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Outline`], can be loaded as a style.
+/// Mirrors [`Outline`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeOutline
 {
@@ -314,6 +363,13 @@ impl Instruction for NodeOutline
             e.insert(outline);
         });
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Outline>();
+        });
+    }
 }
 
 impl ThemedAttribute for NodeOutline
@@ -330,7 +386,7 @@ impl AnimatableAttribute for NodeOutline {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`FocusPolicy`], can be loaded as a style.
+/// Mirrors [`FocusPolicy`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SetFocusPolicy
 {
@@ -359,6 +415,13 @@ impl Instruction for SetFocusPolicy
             e.insert(policy);
         });
     }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<FocusPolicy>();
+        });
+    }
 }
 
 impl ThemedAttribute for SetFocusPolicy
@@ -373,7 +436,7 @@ impl ResponsiveAttribute for SetFocusPolicy {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ZIndex`], can be loaded as a style.
+/// Mirrors [`ZIndex`], can be loaded as an instruction.
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SetZIndex
 {
@@ -407,6 +470,13 @@ impl Instruction for SetZIndex
         let z: ZIndex = self.into();
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(z);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<ZIndex>();
         });
     }
 }
