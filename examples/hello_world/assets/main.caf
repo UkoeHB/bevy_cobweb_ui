@@ -3,11 +3,6 @@
     FlexStyle{dims:{width:500px height:400px}}
     BgColor(#111111)
 
-    "next"
-        FlexStyle{dims:{width:300px height:200px border:{top:20px left:20px}}}
-        BgColor(#555555)
-        BrColor(#EEEEEE)
-
     "next2"
         FlexStyle{dims:{width:300px height:200px border:{top:20px left:20px}}}
         BgColor(#999999)

@@ -298,7 +298,7 @@ fn add_menu_option<'a>(
     l.edit_from_root(content_path, |l| {
         l.load_scene(file + page_scene, |l| {
             page_entity = l.id();
-            l.insert_reactive(DisplayControl::Hide);
+            l.apply(DisplayControl::Hide);
 
             // Add custom logic to the page.
             (page_content_fn)(l);
@@ -311,11 +311,10 @@ fn add_menu_option<'a>(
         .localized()
         .build(manager_entity, l.deref_mut())
         .on_select(move |mut c: Commands| {
-            c.entity(page_entity)
-                .insert_reactive(DisplayControl::Display);
+            c.entity(page_entity).apply(DisplayControl::Display);
         })
         .on_deselect(move |mut c: Commands| {
-            c.entity(page_entity).insert_reactive(DisplayControl::Hide);
+            c.entity(page_entity).apply(DisplayControl::Hide);
         })
         .id();
 

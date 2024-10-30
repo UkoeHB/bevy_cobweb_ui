@@ -729,6 +729,30 @@ impl Into<Style> for AbsoluteStyle
     }
 }
 
+impl Instruction for AbsoluteStyle
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        match emut.get_mut::<React<AbsoluteStyle>>() {
+            Some(mut component) => {
+                *component.get_noreact() = self;
+                React::<AbsoluteStyle>::trigger_mutation(entity, world);
+            }
+            None => {
+                world.react(|rc| rc.insert(entity, self));
+            }
+        }
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+        });
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// UI style for flexbox-controlled nodes.
@@ -761,6 +785,30 @@ impl Into<Style> for FlexStyle
     }
 }
 
+impl Instruction for FlexStyle
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        match emut.get_mut::<React<FlexStyle>>() {
+            Some(mut component) => {
+                *component.get_noreact() = self;
+                React::<FlexStyle>::trigger_mutation(entity, world);
+            }
+            None => {
+                world.react(|rc| rc.insert(entity, self));
+            }
+        }
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+        });
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive component that toggles the [`Style::display`] field.
@@ -782,6 +830,33 @@ impl Into<Display> for DisplayControl
             Self::Display => Display::Flex,
             Self::Hide => Display::None,
         }
+    }
+}
+
+impl Instruction for DisplayControl
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        match emut.get_mut::<React<DisplayControl>>() {
+            Some(mut component) => {
+                *component.get_noreact() = self;
+                React::<DisplayControl>::trigger_mutation(entity, world);
+            }
+            None => {
+                world.react(|rc| rc.insert(entity, self));
+            }
+        }
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<React<DisplayControl>>();
+            if let Some(mut style) = e.get_mut::<Style>() {
+                style.display = Self::Display.into();
+            }
+        });
     }
 }
 
@@ -875,30 +950,18 @@ impl Plugin for StyleWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_type::<StyleRect>()
-            .register_type::<Clipping>()
-            .register_type::<JustifyLines>()
-            .register_type::<JustifyMain>()
-            .register_type::<JustifyCross>()
-            .register_type::<JustifySelfCross>()
-            .register_type::<Dims>()
-            .register_type::<ContentFlex>()
-            .register_type::<SelfFlex>()
-            .register_type::<AbsoluteStyle>()
-            .register_type::<FlexStyle>()
-            .register_type::<DisplayControl>()
-            .add_world_reactor_with(
-                DetectAbsoluteStyle,
-                (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
-            )
-            .add_world_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
-            .add_world_reactor_with(
-                DetectDisplayControl,
-                (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
-            )
-            .register_reactive::<AbsoluteStyle>()
-            .register_reactive::<FlexStyle>()
-            .register_reactive::<DisplayControl>();
+        app.add_world_reactor_with(
+            DetectAbsoluteStyle,
+            (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
+        )
+        .add_world_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
+        .add_world_reactor_with(
+            DetectDisplayControl,
+            (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
+        )
+        .register_instruction_type::<AbsoluteStyle>()
+        .register_instruction_type::<FlexStyle>()
+        .register_instruction_type::<DisplayControl>();
     }
 }
 
