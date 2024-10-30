@@ -144,9 +144,9 @@ impl Instruction for LoadedUiImage
 impl ThemedAttribute for LoadedUiImage
 {
     type Value = Self;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        value.apply(entity, world);
+        value
     }
 }
 
@@ -172,9 +172,9 @@ impl Instruction for UiImageColor
 impl ThemedAttribute for UiImageColor
 {
     type Value = Color;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -205,9 +205,9 @@ impl Instruction for UiImageIndex
 impl ThemedAttribute for UiImageIndex
 {
     type Value = usize;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 

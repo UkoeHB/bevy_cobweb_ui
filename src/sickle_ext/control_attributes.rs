@@ -125,6 +125,7 @@ fn revert_attributes(
     }
 
     // Cleanup DynamicStyle
+    // TODO: in dynamic style system, remove DynamicStyleStopwatch if DynamicStyle is empty or non-existent
     c.entity(entity).remove::<DynamicStyle>();
 
     // Check if self has ControlMap.
@@ -147,7 +148,7 @@ fn revert_attributes(
 fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
 {
     move |entity: Entity, world: &mut World| {
-        T::update(entity, world, val.clone());
+        T::construct(val.clone()).apply(entity, world);
         world.flush();
     }
 }
@@ -163,7 +164,7 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
         let new_value = vals.to_value(state);
 
         // Apply the value to the entity.
-        T::update(entity, world, new_value);
+        T::construct(new_value).apply(entity, world);
         world.flush();
     }
 }
@@ -181,7 +182,7 @@ where
         let new_value = vals.to_value(&state);
 
         // Apply the value to the entity.
-        T::update(entity, world, new_value);
+        T::construct(new_value).apply(entity, world);
         world.flush();
     }
 }
@@ -189,13 +190,13 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that specify a value for a theme.
-pub trait ThemedAttribute: Loadable + TypePath
+pub trait ThemedAttribute: Instruction + TypePath
 {
     /// Specifies the value-type of the theme attribute.
     type Value: Loadable + TypePath;
 
-    /// Updates the entity with the themed attribute's value.
-    fn update(entity: Entity, world: &mut World, value: Self::Value);
+    /// Converts [`Self::Value`] into `Self`.
+    fn construct(value: Self::Value) -> Self;
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -216,12 +217,12 @@ pub trait AnimatableAttribute: Loadable + TypePath {}
 
 impl<T> ThemedAttribute for Splat<T>
 where
-    T: Instruction + Splattable + ThemedAttribute,
+    T: Instruction + Splattable + ThemedAttribute + GetTypeRegistration,
 {
     type Value = T::Splat;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        T::splat(value).apply(entity, world);
+        Self(value)
     }
 }
 impl<T> ResponsiveAttribute for Splat<T> where T: Splattable + ResponsiveAttribute {}
@@ -268,6 +269,10 @@ where
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // Revert instruction.
+        T::revert(entity, world);
+
+        // Revert attributes.
         world.syscall(entity, revert_attributes);
     }
 }
@@ -324,6 +329,10 @@ where
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // Revert instruction.
+        T::revert(entity, world);
+
+        // Revert attributes.
         world.syscall(entity, revert_attributes);
     }
 }
@@ -347,6 +356,7 @@ where
     /// The values that are end-targets for each animation.
     pub values: AnimatedVals<T::Value>,
     /// Settings that control how values are interpolated.
+    #[reflect(default)]
     pub settings: AnimationSettings,
 
     /// The [`ControlLabel`] of an entity in the current widget. Interactions on that entity will control this
@@ -385,6 +395,10 @@ where
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // Revert instruction.
+        T::revert(entity, world);
+
+        // Revert attributes.
         world.syscall(entity, revert_attributes);
     }
 }

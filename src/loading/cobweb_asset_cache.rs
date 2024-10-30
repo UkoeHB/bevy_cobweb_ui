@@ -822,7 +822,6 @@ impl CobwebAssetCache
             }
 
             for subscription in subscriptions {
-                // We revert on change or removal.
                 if res == InsertNodeResult::Changed {
                     self.needs_revert
                         .entry(subscription.entity)
@@ -858,6 +857,8 @@ impl CobwebAssetCache
                     .entry(subscription.entity)
                     .or_default()
                     .insert(removed.type_id);
+                self.needs_updates
+                    .insert(subscription.entity, (subscription.initializer, loadable_ref.clone()));
             }
         }
     }

@@ -191,9 +191,9 @@ impl Instruction for TextLineSize
 impl ThemedAttribute for TextLineSize
 {
     type Value = f32;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        TextLineSize(value).apply(entity, world);
+        TextLineSize(value)
     }
 }
 
@@ -227,9 +227,9 @@ impl Instruction for TextLineColor
 impl ThemedAttribute for TextLineColor
 {
     type Value = Color;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        TextLineColor(value).apply(entity, world);
+        TextLineColor(value)
     }
 }
 

@@ -183,9 +183,9 @@ impl Instruction for WithAbsoluteStyle
 impl ThemedAttribute for WithAbsoluteStyle
 {
     type Value = ();
-    fn update(entity: Entity, world: &mut World, _value: Self::Value)
+    fn construct(_: Self::Value) -> Self
     {
-        Self.apply(entity, world);
+        Self
     }
 }
 
@@ -212,9 +212,9 @@ impl Instruction for WithFlexStyle
 impl ThemedAttribute for WithFlexStyle
 {
     type Value = ();
-    fn update(entity: Entity, world: &mut World, _value: Self::Value)
+    fn construct(_: Self::Value) -> Self
     {
-        Self.apply(entity, world);
+        Self
     }
 }
 
@@ -248,9 +248,9 @@ impl Instruction for Width
 impl ThemedAttribute for Width
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for Width {}
@@ -286,9 +286,9 @@ impl Instruction for Height
 impl ThemedAttribute for Height
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for Height {}
@@ -324,9 +324,9 @@ impl Instruction for MinWidth
 impl ThemedAttribute for MinWidth
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for MinWidth {}
@@ -362,9 +362,9 @@ impl Instruction for MinHeight
 impl ThemedAttribute for MinHeight
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for MinHeight {}
@@ -400,9 +400,9 @@ impl Instruction for MaxWidth
 impl ThemedAttribute for MaxWidth
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for MaxWidth {}
@@ -438,9 +438,9 @@ impl Instruction for MaxHeight
 impl ThemedAttribute for MaxHeight
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for MaxHeight {}
@@ -476,9 +476,9 @@ impl Instruction for AspectRatio
 impl ThemedAttribute for AspectRatio
 {
     type Value = f32;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for AspectRatio {}
@@ -514,9 +514,9 @@ impl Instruction for Border
 impl ThemedAttribute for Border
 {
     type Value = StyleRect;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for Border {}
@@ -561,9 +561,9 @@ impl Instruction for DimsTop
 impl ThemedAttribute for DimsTop
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for DimsTop {}
@@ -599,9 +599,9 @@ impl Instruction for DimsBottom
 impl ThemedAttribute for DimsBottom
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for DimsBottom {}
@@ -637,9 +637,9 @@ impl Instruction for DimsLeft
 impl ThemedAttribute for DimsLeft
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for DimsLeft {}
@@ -675,9 +675,9 @@ impl Instruction for DimsRight
 impl ThemedAttribute for DimsRight
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for DimsRight {}
@@ -713,9 +713,9 @@ impl Instruction for SetClipping
 impl ThemedAttribute for SetClipping
 {
     type Value = Clipping;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetClipping {}
@@ -750,9 +750,9 @@ impl Instruction for Padding
 impl ThemedAttribute for Padding
 {
     type Value = StyleRect;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for Padding {}
@@ -797,9 +797,9 @@ impl Instruction for SetFlexDirection
 impl ThemedAttribute for SetFlexDirection
 {
     type Value = FlexDirection;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetFlexDirection {}
@@ -834,9 +834,9 @@ impl Instruction for SetFlexWrap
 impl ThemedAttribute for SetFlexWrap
 {
     type Value = FlexWrap;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetFlexWrap {}
@@ -871,9 +871,9 @@ impl Instruction for SetJustifyLines
 impl ThemedAttribute for SetJustifyLines
 {
     type Value = JustifyLines;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetJustifyLines {}
@@ -908,9 +908,9 @@ impl Instruction for SetJustifyMain
 impl ThemedAttribute for SetJustifyMain
 {
     type Value = JustifyMain;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetJustifyMain {}
@@ -945,9 +945,9 @@ impl Instruction for SetJustifyCross
 impl ThemedAttribute for SetJustifyCross
 {
     type Value = JustifyCross;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetJustifyCross {}
@@ -982,9 +982,9 @@ impl Instruction for SetTextDirection
 impl ThemedAttribute for SetTextDirection
 {
     type Value = Direction;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetTextDirection {}
@@ -1019,9 +1019,9 @@ impl Instruction for ColumnGap
 impl ThemedAttribute for ColumnGap
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for ColumnGap {}
@@ -1057,9 +1057,9 @@ impl Instruction for RowGap
 impl ThemedAttribute for RowGap
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for RowGap {}
@@ -1095,9 +1095,9 @@ impl Instruction for Margin
 impl ThemedAttribute for Margin
 {
     type Value = StyleRect;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for Margin {}
@@ -1142,9 +1142,9 @@ impl Instruction for FlexBasis
 impl ThemedAttribute for FlexBasis
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for FlexBasis {}
@@ -1180,9 +1180,9 @@ impl Instruction for FlexGrow
 impl ThemedAttribute for FlexGrow
 {
     type Value = f32;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for FlexGrow {}
@@ -1218,9 +1218,9 @@ impl Instruction for FlexShrink
 impl ThemedAttribute for FlexShrink
 {
     type Value = f32;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for FlexShrink {}
@@ -1256,9 +1256,9 @@ impl Instruction for SetJustifySelfCross
 impl ThemedAttribute for SetJustifySelfCross
 {
     type Value = JustifySelfCross;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for SetJustifySelfCross {}

@@ -1,7 +1,8 @@
 #scenes
 "scene"
     FlexStyle{dims:{width:500px height:400px}}
-    BgColor(#111111)
+    ControlRoot("a")
+    Animated<BgColor>{values:{idle:#111111 hover:#444444}}
 
     "next2"
         FlexStyle{dims:{width:300px height:200px border:{top:20px left:20px}}}

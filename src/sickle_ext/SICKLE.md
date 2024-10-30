@@ -19,19 +19,27 @@ pub struct BgColor(pub Color);
 
 impl Instruction for BgColor
 {
-    fn apply(self, ec: &mut EntityCommands)
+    fn apply(self, entity: Entity, world: &mut World)
     {
-        ec.try_insert(BackgroundColor(self.0));
+        world.get_entity_mut(entity).map(|mut e| {
+            e.insert(BackgroundColor(self.0));
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BackgroundColor>();
+        });
     }
 }
 
 impl ThemedAttribute for BgColor
 {
     type Value = Color;
-    fn update(ec: &mut EntityCommands, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        // Make a BgColor and then call Instruction::apply.
-        Self(value).apply(ec);
+        Self(value)
     }
 }
 

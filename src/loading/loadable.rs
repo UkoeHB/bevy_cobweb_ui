@@ -126,7 +126,7 @@ pub trait Splattable
 /// Note that `Splat<T>` must be manually registered with `register_instruction_type` or
 /// `register_command_type` for all `T` that want to use it.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Splat<T: Splattable>(T::Splat);
+pub struct Splat<T: Splattable>(pub T::Splat);
 
 impl<T> Instruction for Splat<T>
 where

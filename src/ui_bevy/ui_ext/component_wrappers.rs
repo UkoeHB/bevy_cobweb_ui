@@ -98,9 +98,9 @@ impl Instruction for BgColor
 impl ThemedAttribute for BgColor
 {
     type Value = Color;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -133,9 +133,9 @@ impl Instruction for BrColor
 impl ThemedAttribute for BrColor
 {
     type Value = Color;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -171,9 +171,9 @@ impl Instruction for BrRadius
 impl ThemedAttribute for BrRadius
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -206,9 +206,9 @@ impl Instruction for BrRadiusTopLeft
 impl ThemedAttribute for BrRadiusTopLeft
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -241,9 +241,9 @@ impl Instruction for BrRadiusTopRight
 impl ThemedAttribute for BrRadiusTopRight
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -276,9 +276,9 @@ impl Instruction for BrRadiusBottomLeft
 impl ThemedAttribute for BrRadiusBottomLeft
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -311,9 +311,9 @@ impl Instruction for BrRadiusBottomRight
 impl ThemedAttribute for BrRadiusBottomRight
 {
     type Value = Val;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 
@@ -375,9 +375,9 @@ impl Instruction for NodeOutline
 impl ThemedAttribute for NodeOutline
 {
     type Value = Self;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        value.apply(entity, world);
+        value
     }
 }
 
@@ -427,9 +427,9 @@ impl Instruction for SetFocusPolicy
 impl ThemedAttribute for SetFocusPolicy
 {
     type Value = Self;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        value.apply(entity, world);
+        value
     }
 }
 impl ResponsiveAttribute for SetFocusPolicy {}
@@ -484,9 +484,9 @@ impl Instruction for SetZIndex
 impl ThemedAttribute for SetZIndex
 {
     type Value = Self;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        value.apply(entity, world);
+        value
     }
 }
 impl ResponsiveAttribute for SetZIndex {}

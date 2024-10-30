@@ -345,9 +345,9 @@ impl Instruction for PropagateOpacity
 impl ThemedAttribute for PropagateOpacity
 {
     type Value = f32;
-    fn update(entity: Entity, world: &mut World, value: Self::Value)
+    fn construct(value: Self::Value) -> Self
     {
-        Self(value).apply(entity, world);
+        Self(value)
     }
 }
 impl ResponsiveAttribute for PropagateOpacity {}
