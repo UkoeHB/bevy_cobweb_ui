@@ -10,6 +10,7 @@ use crate::prelude::*;
 
 fn handle_loadable(
     id_scratch: String,
+    seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     caf_cache: &mut CobwebAssetCache,
     file: &CafFile,
@@ -21,11 +22,22 @@ fn handle_loadable(
 {
     // Get the loadable's longname.
     let id_scratch = loadable.id.to_canonical(Some(id_scratch));
-    let Some((_short_name, long_name, type_id, deserializer)) =
+    let Some((short_name, long_name, type_id, deserializer)) =
         get_loadable_meta(type_registry, file, current_path, id_scratch.as_str(), name_shortcuts)
     else {
         return id_scratch;
     };
+
+    // Check for duplicate.
+    if seen_shortnames[..loadable_index]
+        .iter()
+        .any(|other| *other == short_name)
+    {
+        tracing::warn!("ignoring duplicate loadable {} at {:?} in {:?}", short_name, current_path, file);
+        return id_scratch;
+    }
+
+    seen_shortnames.push(short_name);
 
     // Get the loadable's value.
     let loadable_value = get_loadable_value(deserializer, loadable);
@@ -49,6 +61,7 @@ fn handle_loadable(
 
 fn handle_scene_node(
     id_scratch: String,
+    seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
@@ -87,6 +100,7 @@ fn handle_scene_node(
     // Parse the child layer of this node.
     extract_scene_layer(
         id_scratch,
+        seen_shortnames,
         type_registry,
         c,
         caf_cache,
@@ -103,6 +117,7 @@ fn handle_scene_node(
 
 fn extract_scene_layer(
     mut id_scratch: String,
+    seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
@@ -121,12 +136,16 @@ fn extract_scene_layer(
     // Begin layer update.
     scene_layer.start_update(caf_layer.entries.len());
 
+    // Add loadables.
     let mut loadable_count = 0;
+    seen_shortnames.clear();
+
     for entry in caf_layer.entries.iter() {
         match entry {
             CafSceneLayerEntry::Loadable(loadable) => {
                 id_scratch = handle_loadable(
                     id_scratch,
+                    seen_shortnames,
                     type_registry,
                     caf_cache,
                     scene
@@ -140,20 +159,8 @@ fn extract_scene_layer(
                 );
                 loadable_count += 1;
             }
-            CafSceneLayerEntry::Layer(next_caf_layer) => {
-                id_scratch = handle_scene_node(
-                    id_scratch,
-                    type_registry,
-                    c,
-                    caf_cache,
-                    scene_loader,
-                    scene_layer,
-                    scene,
-                    current_path,
-                    next_caf_layer,
-                    name_shortcuts,
-                );
-            }
+            // Do this one after we are done using the `seen_shortnames` buffer.
+            CafSceneLayerEntry::Layer(_) => (),
             CafSceneLayerEntry::LoadableMacroCall(_) => {
                 tracing::warn!("ignoring loadable macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
@@ -168,6 +175,28 @@ fn extract_scene_layer(
 
     #[cfg(feature = "hot_reload")]
     caf_cache.end_loadable_insertion(&scene_location, loadable_count);
+
+    // Add layers.
+    for entry in caf_layer.entries.iter() {
+        match entry {
+            CafSceneLayerEntry::Layer(next_caf_layer) => {
+                id_scratch = handle_scene_node(
+                    id_scratch,
+                    seen_shortnames,
+                    type_registry,
+                    c,
+                    caf_cache,
+                    scene_loader,
+                    scene_layer,
+                    scene,
+                    current_path,
+                    next_caf_layer,
+                    name_shortcuts,
+                );
+            }
+            _ => (),
+        }
+    }
 
     // End layer update and handle removed nodes.
     for SceneLayerData { id, .. } in scene_layer.end_update() {
@@ -201,6 +230,7 @@ pub(super) fn extract_scenes(
 {
     let mut scene_registry = scene_loader.take_scene_registry();
     let mut id_scratch = String::default();
+    let mut seen_shortnames = vec![];
 
     for caf_layer in section.scenes.iter() {
         // Get this scene for editing.
@@ -215,6 +245,7 @@ pub(super) fn extract_scenes(
         // Parse the scene.
         id_scratch = extract_scene_layer(
             id_scratch,
+            &mut seen_shortnames,
             type_registry,
             c,
             caf_cache,

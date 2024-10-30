@@ -14,6 +14,12 @@ impl InstructionExt for UiBuilder<'_, Entity>
         self.entity_commands().apply(instruction);
         self
     }
+
+    fn revert<T: Instruction>(&mut self) -> &mut Self
+    {
+        self.entity_commands().revert::<T>();
+        self
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

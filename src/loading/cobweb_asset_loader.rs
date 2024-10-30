@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use bevy::asset::io::{AssetSourceId, Reader};
 use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
 use thiserror::Error;
 
 use crate::prelude::*;

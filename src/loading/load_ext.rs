@@ -1,6 +1,5 @@
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::Command;
@@ -12,11 +11,11 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn register_command_loadable<T: 'static>(app: &mut App)
+fn register_command_loadable<T: Command + Loadable>(app: &mut App)
 {
     let mut loaders = app
-        .resource_mut::<LoaderCallbacks>()
-        .unwrap();
+        .world_mut()
+        .get_resource_or_insert_with::<LoaderCallbacks>(|| Default::default());
 
     let entry = loaders.command_callbacks.entry(TypeId::of::<T>());
     if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
@@ -30,14 +29,14 @@ fn register_command_loadable<T: 'static>(app: &mut App)
 
 fn register_node_loadable<T: 'static>(
     app: &mut App,
-    callback: fn(&mut World, Entity, ReflectedLoadable, LoadableRef),
-    reverter: fn(Entity, &mut World),
+    callback: fn(&mut World, Entity, ReflectedLoadable, SceneRef),
+    _reverter: fn(Entity, &mut World),
     register_type: &'static str,
 )
 {
     let mut loaders = app
-        .resource_mut::<LoaderCallbacks>()
-        .unwrap();
+        .world_mut()
+        .get_resource_or_insert_with::<LoaderCallbacks>(|| Default::default());
 
     // Applier callback.
     let entry = loaders.node_callbacks.entry(TypeId::of::<T>());
@@ -48,13 +47,17 @@ fn register_node_loadable<T: 'static>(
     entry.or_insert(callback);
 
     // Reverter callback.
-    loaders.revert_callbacks.entry(TypeId::of::<T>()).or_insert(reverter);
+    #[cfg(feature = "hot_reload")]
+    loaders
+        .revert_callbacks
+        .entry(TypeId::of::<T>())
+        .or_insert(_reverter);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Applies a loadable command of type `T`.
-fn command_loader<T: Command + Loadable>(w: &mut World, loadable: ReflectedLoadable, loadable_ref: LoadableRef)
+fn command_loader<T: Command + Loadable>(w: &mut World, loadable: ReflectedLoadable, loadable_ref: SceneRef)
 {
     let Some(command) = loadable.get_value::<T>(&loadable_ref) else { return };
     command.apply(w);
@@ -67,10 +70,10 @@ fn bundle_loader<T: Bundle + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: LoadableRef
+    loadable_ref: SceneRef,
 )
 {
-    let Some(mut ec) = world.get_entity_mut(entity) else { return };
+    let Some(mut ec) = w.get_entity_mut(entity) else { return };
     let Some(bundle) = loadable.get_value::<T>(&loadable_ref) else { return };
     ec.insert(bundle);
 }
@@ -82,10 +85,10 @@ fn reactive_loader<T: ReactComponent + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: LoadableRef
+    loadable_ref: SceneRef,
 )
 {
-    let Some(emut) = w.get_entity_mut(entity) else { return };
+    let Some(mut emut) = w.get_entity_mut(entity) else { return };
     let Some(new_val) = loadable.get_value(&loadable_ref) else { return };
     match emut.get_mut::<React<T>>() {
         Some(mut component) => {
@@ -105,12 +108,14 @@ fn instruction_loader<T: Instruction + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: LoadableRef
+    loadable_ref: SceneRef,
 )
 {
-    let Some(emut) = w.get_entity_mut(entity) else { return };
+    if !w.entities().contains(entity) {
+        return;
+    }
     let Some(value) = loadable.get_value::<T>(&loadable_ref) else { return };
-    value.apply(entity, world);
+    value.apply(entity, w);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -136,7 +141,7 @@ fn load_from_ref(
 // TODO (bevy v0.15): need to use `remove_with_requires`
 fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 {
-    let Some(emut) = world.get_entity_mut(entity) else { return };
+    let Some(mut emut) = world.get_entity_mut(entity) else { return };
     emut.remove::<T>();
 }
 
@@ -144,7 +149,7 @@ fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 
 fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 {
-    let Some(emut) = world.get_entity_mut(entity) else { return };
+    let Some(mut emut) = world.get_entity_mut(entity) else { return };
     emut.remove::<React<T>>();
 }
 
@@ -153,23 +158,28 @@ fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 #[derive(Resource, Default)]
 pub(crate) struct LoaderCallbacks
 {
-    command_callbacks: HashMap<TypeId, fn(&mut World, ReflectedLoadable, LoadableRef)>,
-    node_callbacks: HashMap<TypeId, fn(&mut World, Entity, ReflectedLoadable, LoadableRef)>,
+    command_callbacks: HashMap<TypeId, fn(&mut World, ReflectedLoadable, SceneRef)>,
+    node_callbacks: HashMap<TypeId, fn(&mut World, Entity, ReflectedLoadable, SceneRef)>,
+    #[cfg(feature = "hot_reload")]
     revert_callbacks: HashMap<TypeId, fn(Entity, &mut World)>,
 }
 
 impl LoaderCallbacks
 {
-    pub(crate) fn get_for_command(&self, type_id: TypeId) -> Option<fn(&mut World, ReflectedLoadable, LoadableRef)>
+    pub(crate) fn get_for_command(&self, type_id: TypeId) -> Option<fn(&mut World, ReflectedLoadable, SceneRef)>
     {
         self.command_callbacks.get(&type_id).cloned()
     }
 
-    pub(crate) fn get_for_node(&self, type_id: TypeId) -> Option<fn(&mut World, Entity, ReflectedLoadable, LoadableRef)>
+    pub(crate) fn get_for_node(
+        &self,
+        type_id: TypeId,
+    ) -> Option<fn(&mut World, Entity, ReflectedLoadable, SceneRef)>
     {
         self.node_callbacks.get(&type_id).cloned()
     }
 
+    #[cfg(feature = "hot_reload")]
     pub(crate) fn get_for_revert(&self, type_id: TypeId) -> Option<fn(Entity, &mut World)>
     {
         self.revert_callbacks.get(&type_id).cloned()
@@ -217,7 +227,7 @@ impl CobwebAssetRegistrationAppExt for App
 {
     fn register_command<T: Command + Loadable>(&mut self) -> &mut Self
     {
-        register_command_loadable(self);
+        register_command_loadable::<T>(self);
         self
     }
 
@@ -274,17 +284,19 @@ pub trait CafLoadingEntityCommandsExt
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self;
+    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands))
+        -> &mut Self;
 }
 
 impl CafLoadingEntityCommandsExt for EntityCommands<'_>
 {
     fn load(&mut self, loadable_ref: SceneRef) -> &mut Self
     {
-        self.load_with_initializer(loadable_ref, |_, _| {})
+        self.load_with_initializer(loadable_ref, |_| {})
     }
 
-    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self
+    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands))
+        -> &mut Self
     {
         self.insert(HasLoadables);
 
