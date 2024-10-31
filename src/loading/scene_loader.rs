@@ -4,6 +4,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
+use bevy_cobweb::prelude::*;
+#[cfg(feature = "hot_reload")]
 use smallvec::SmallVec;
 
 use crate::prelude::*;
@@ -226,7 +228,7 @@ pub(crate) struct SceneInstance
     /// Root entity.
     entity: Entity,
     /// Prep function for new nodes.
-    new_node_prep_fn: fn(&mut EntityCommands),
+    new_node_prep_fn: NodeInitializer,
     // [ scene node path : scene node entity ]
     nodes: HashMap<ScenePath, Entity>,
 }
@@ -244,7 +246,7 @@ impl SceneInstance
     {
         self.loadable_ref = loadable_ref;
         self.entity = entity;
-        self.new_node_prep_fn = new_node_prep_fn;
+        self.new_node_prep_fn = NodeInitializer { initializer: new_node_prep_fn };
         self.nodes.clear();
         self.nodes.reserve(node_count);
     }
@@ -282,7 +284,7 @@ impl SceneInstance
 
     /// Returns the function that should be used to initialize new nodes.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn node_prep_fn(&self) -> fn(&mut EntityCommands)
+    pub(crate) fn node_prep_fn(&self) -> NodeInitializer
     {
         self.new_node_prep_fn
     }
@@ -307,7 +309,7 @@ impl Default for SceneInstance
         Self {
             loadable_ref: SceneRef::default(),
             entity: Entity::PLACEHOLDER,
-            new_node_prep_fn: |_| {},
+            new_node_prep_fn: NodeInitializer { initializer: |_| {} },
             nodes: HashMap::default(),
         }
     }
@@ -421,13 +423,14 @@ impl SceneLoader
                 ec.insert_children(position, &[node_entity]);
             });
 
-            // Prep the node entity.
-            let mut ec = c.entity(node_entity);
-            (scene_instance.node_prep_fn())(&mut ec);
-
             // Load the scene node to the entity.
+            // - We load this 'queued' so side effects will be synchronized with other edits to the scene
+            //   hierarchy.
             let node_ref = SceneRef { file: scene.file.clone(), path: inserted.clone() };
-            ec.load(node_ref);
+            c.syscall(
+                (node_entity, node_ref, scene_instance.node_prep_fn()),
+                load_queued_from_ref,
+            );
 
             // Save the entity.
             scene_instance.insert(inserted.clone(), node_entity);
@@ -519,7 +522,7 @@ impl SceneLoader
     /// Despawns existing scene instances.
     ///
     /// Used to clean up hierarchies after a scene deletion is hot reloaded.
-    //todo: how to detect these?
+    //todo: how to detect these? maybe iterate base layer to check if existing scene instances don't match?
     #[cfg(feature = "hot_reload")]
     pub(crate) fn _cleanup_deleted_scene(&mut self, c: &mut Commands, scene: &SceneRef)
     {
@@ -612,8 +615,7 @@ impl SceneLoader
 
         // Load the root entity.
         let mut root_ec = c.entity(root_entity);
-        T::initialize_scene_node(&mut root_ec);
-        root_ec.load(scene_ref.clone());
+        root_ec.load_with_initializer(scene_ref.clone(), T::initialize_scene_node);
 
         // Spawn hierarchy, loading all child paths.
         // - Hierarchy spawn order matches the order in caf files.
@@ -646,11 +648,10 @@ impl SceneLoader
             // Spawn entity.
             let mut ec = c.spawn_empty();
             ec.set_parent(*parent_stack.last().unwrap());
-            T::initialize_scene_node(&mut ec);
 
             // Load the scene node to the entity.
             let node_ref = SceneRef { file: scene_ref.file.clone(), path: scene_node_path.clone() };
-            ec.load(node_ref.clone());
+            ec.load_with_initializer(node_ref.clone(), T::initialize_scene_node);
 
             // Save the entity.
             let node_entity = ec.id();

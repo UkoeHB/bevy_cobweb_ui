@@ -1,10 +1,35 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_ui::prelude::DynamicStyle;
+use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
 use smol_str::SmolStr;
 
 use super::add_attribute;
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[cfg(feature = "hot_reload")]
+fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<Entity>)
+{
+    // Terminate at control maps.
+    if world.get::<ControlMap>(child).is_some() {
+        return;
+    }
+
+    // Collect dangling label.
+    if world.get::<ControlLabel>(child).is_some() {
+        dangling.push(child);
+    }
+
+    // Iterate into children.
+    if let Some(children) = world.get::<Children>(child) {
+        for child in children.iter() {
+            collect_dangling_controlled(*child, world, dangling);
+        }
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -38,15 +63,22 @@ impl Instruction for ControlRoot
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut ec) = world.get_entity_mut(entity) else { return };
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add control map if missing.
-        if !ec.contains::<ControlMap>() {
-            ec.insert(ControlMap::default());
+        if !emut.contains::<ControlMap>() {
+            emut.insert(ControlMap::default());
 
-            // If self has children or ControlLabel, then look for the nearest ancestor with ControlMap and
-            // force it to re-apply its attributes and labels, in case this new root needs to steal some.
-            if ec.contains::<Children>() || ec.contains::<ControlLabel>() {
+            // Cold path when applying a root to an existing scene.
+            #[cfg(feature = "hot_reload")]
+            if emut.contains::<Children>() {
+                // Look for the nearest ancestor with ControlMap and
+                // force it to re-apply its attributes and labels, in case this new root needs to steal some.
+                // - Note: we don't check for ControlLabel here since any pre-existing ControlLabel was likely
+                //   removed
+                // when it was switched to ControlRoot. When a ControlLabel is removed, the entity will be removed
+                // from the associated ControlMap, which should ensure no stale attributes related
+                // to this entity will linger in other maps.
                 let mut current = entity;
                 while let Some(parent) = world.get::<Parent>(current) {
                     current = parent.get();
@@ -65,10 +97,22 @@ impl Instruction for ControlRoot
                     }
                     break;
                 }
+
+                // Iterate children (stopping at control maps) to identify children with ControlLabel. Refresh
+                // those nodes in case they have attributes that are 'dangling'.
+                let mut dangling = vec![];
+                for child in world.get::<Children>(entity).unwrap().iter() {
+                    collect_dangling_controlled(*child, world, &mut dangling);
+                }
+
+                let mut caf_cache = world.resource_mut::<CobwebAssetCache>();
+                for controlled_entity in dangling {
+                    caf_cache.request_reload(controlled_entity);
+                }
             }
         } else {
-            // Reapplying this instruction confirms we are not actually dying, just refreshing the control root.
-            ec.remove::<ControlMapDying>();
+            // We are not actually dying, just refreshing the control root, so this can be removed.
+            emut.remove::<ControlMapDying>();
         }
 
         // Update control label.
@@ -122,10 +166,10 @@ impl Instruction for ControlLabel
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut ec) = world.get_entity_mut(entity) else { return };
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add entry to nearest control map.
-        if let Some(mut control_map) = ec.get_mut::<ControlMap>() {
+        if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
             control_map.insert(self.0.as_str(), entity);
         } else {
             let mut current = entity;
@@ -139,27 +183,30 @@ impl Instruction for ControlLabel
             }
 
             if !found {
-                tracing::error!("failed inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
+                tracing::error!("error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
                     (see ControlRoot)", self.0);
-                return;
             }
         }
 
         // Insert or update control label.
-        let mut ec = world.entity_mut(entity);
-        if let Some(mut existing_label) = ec.get_mut::<ControlLabel>() {
+        let mut emut = world.entity_mut(entity);
+        if let Some(mut existing_label) = emut.get_mut::<ControlLabel>() {
             if *existing_label != self {
                 tracing::warn!("updating control label on {entity:?} from {existing_label:?} to {self:?}");
                 *existing_label = self;
             }
         } else {
-            ec.insert(self);
+            emut.insert(self);
         }
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
+
+        // Clean up dynamic style.
+        // TODO: in dynamic style system, remove DynamicStyleStopwatch if DynamicStyle is empty or non-existent
+        emut.remove::<(DynamicStyle, DynamicStyleStopwatch)>();
 
         // Remove entry from nearest control map.
         // - All still-existing attributes will be re-inserted when the entity reloads.

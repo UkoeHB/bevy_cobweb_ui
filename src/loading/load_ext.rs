@@ -155,6 +155,24 @@ fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Same as `load_from_ref` except loads are queued instead of immediately executed.
+#[cfg(feature = "hot_reload")]
+pub(crate) fn load_queued_from_ref(
+    In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
+    load_state: Res<State<LoadState>>,
+)
+{
+    if *load_state.get() != LoadState::Done {
+        tracing::error!("failed loading scene node {loadable_ref:?} into {id:?}, app state is not LoadState::Done");
+        return;
+    }
+
+    caf_cache.track_entity_queued(id, loadable_ref, initializer);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Resource, Default)]
 pub(crate) struct LoaderCallbacks
 {

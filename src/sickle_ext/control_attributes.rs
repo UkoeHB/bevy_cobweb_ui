@@ -114,7 +114,6 @@ pub(super) fn add_attribute(
 
 fn revert_attributes(
     In(entity): In<Entity>,
-    mut c: Commands,
     parents: Query<&Parent>,
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
@@ -123,10 +122,6 @@ fn revert_attributes(
     if !entities.contains(entity) {
         return;
     }
-
-    // Cleanup DynamicStyle
-    // TODO: in dynamic style system, remove DynamicStyleStopwatch if DynamicStyle is empty or non-existent
-    c.entity(entity).remove::<DynamicStyle>();
 
     // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(entity) {

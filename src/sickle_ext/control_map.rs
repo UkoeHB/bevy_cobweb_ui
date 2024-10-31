@@ -2,6 +2,7 @@ use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use sickle_ui::prelude::{ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction};
+use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
 use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
 use sickle_ui::theme::pseudo_state::PseudoState;
 use sickle_ui::theme::{ThemeUpdate, UiContext};
@@ -315,10 +316,20 @@ impl EntityCommand for RemoveDeadControlMap
             .get_entity_mut(entity)
             .and_then(|mut emut| emut.take::<ControlMap>())
         else {
+            tracing::error!("failed removing ControlMap");
             return;
         };
+        if world.entity(entity).contains::<ControlMap>() {
+            tracing::error!("still has ControlMap");
+        }
 
         for (label, label_entity) in old_control_map.remove_all_labels() {
+            // Clean up dynamic style on all label entities in case they were targets for placement.
+            // - We expect there aren't any stale labels in this map, so removing DynamicStyle is safe here.
+            world.get_entity_mut(label_entity).map(|mut e| {
+                e.remove::<(DynamicStyle, DynamicStyleStopwatch)>();
+            });
+
             ControlLabel(label).apply(label_entity, world);
         }
 

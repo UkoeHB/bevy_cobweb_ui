@@ -6,8 +6,6 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
-#[cfg(feature = "hot_reload")]
-use bevy::utils::EntityHashMap;
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 
@@ -329,6 +327,56 @@ struct ErasedLoadable
     loadable: ReflectedLoadable,
 }
 
+#[cfg(feature = "hot_reload")]
+#[derive(Debug, Default)]
+struct RefreshCtx
+{
+    /// type ids of loadables that need to be reverted on specific entities.
+    needs_revert: Vec<(Entity, HashSet<TypeId>)>,
+    /// Records entities that need loadable updates.
+    needs_updates: Vec<(Entity, NodeInitializer, SceneRef)>,
+}
+
+impl RefreshCtx
+{
+    fn add_revert(&mut self, subscription: SubscriptionRef, type_id: TypeId)
+    {
+        match self
+            .needs_revert
+            .iter()
+            .position(|(e, _)| *e == subscription.entity)
+        {
+            Some(pos) => {
+                self.needs_revert[pos].1.insert(type_id);
+            }
+            None => self
+                .needs_revert
+                .push((subscription.entity, HashSet::from_iter([type_id]))),
+        }
+    }
+    fn add_update(&mut self, subscription: SubscriptionRef, loadable_ref: SceneRef)
+    {
+        if self
+            .needs_updates
+            .iter()
+            .any(|(e, _, _)| *e == subscription.entity)
+        {
+            return;
+        };
+        self.needs_updates
+            .push((subscription.entity, subscription.initializer, loadable_ref.clone()));
+    }
+
+    fn reverts(&mut self) -> impl Iterator<Item = (Entity, HashSet<TypeId>)> + '_
+    {
+        self.needs_revert.drain(..)
+    }
+    fn updates(&mut self) -> impl Iterator<Item = (Entity, NodeInitializer, SceneRef)> + '_
+    {
+        self.needs_updates.drain(..)
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
@@ -434,18 +482,15 @@ pub struct CobwebAssetCache
     /// Tracks subscriptions to scene paths.
     #[cfg(feature = "hot_reload")]
     subscriptions: HashMap<SceneRef, SmallVec<[SubscriptionRef; 1]>>,
-    /// Tracks entities for cleanup.
+    /// Tracks entities for cleanup and enables manual reloads.
     #[cfg(feature = "hot_reload")]
-    subscriptions_rev: HashMap<Entity, SmallVec<[SceneRef; 1]>>,
+    subscriptions_rev: HashMap<Entity, (SceneRef, NodeInitializer)>,
 
     /// Records commands that need to be applied.
     commands_need_updates: Vec<(ErasedLoadable, SceneRef)>,
-    /// Records type ids of loadables that need to be reverted on specific entities.
+    /// Records loadables that need to be reverted/updated.
     #[cfg(feature = "hot_reload")]
-    needs_revert: EntityHashMap<Entity, HashSet<TypeId>>,
-    /// Records entities that need loadable updates.
-    #[cfg(feature = "hot_reload")]
-    needs_updates: EntityHashMap<Entity, (NodeInitializer, SceneRef)>,
+    refresh_ctx: RefreshCtx,
 }
 
 impl CobwebAssetCache
@@ -823,13 +868,10 @@ impl CobwebAssetCache
 
             for subscription in subscriptions {
                 if res == InsertNodeResult::Changed {
-                    self.needs_revert
-                        .entry(subscription.entity)
-                        .or_default()
-                        .insert(type_id);
+                    self.refresh_ctx.add_revert(*subscription, type_id);
                 }
-                self.needs_updates
-                    .insert(subscription.entity, (subscription.initializer, loadable_ref.clone()));
+                self.refresh_ctx
+                    .add_update(*subscription, loadable_ref.clone());
             }
         }
     }
@@ -853,12 +895,9 @@ impl CobwebAssetCache
             .flat_map(|l| l.drain(count..))
         {
             for subscription in subscriptions {
-                self.needs_revert
-                    .entry(subscription.entity)
-                    .or_default()
-                    .insert(removed.type_id);
-                self.needs_updates
-                    .insert(subscription.entity, (subscription.initializer, loadable_ref.clone()));
+                self.refresh_ctx.add_revert(*subscription, removed.type_id);
+                self.refresh_ctx
+                    .add_update(*subscription, loadable_ref.clone());
             }
         }
     }
@@ -929,14 +968,66 @@ impl CobwebAssetCache
                 .entry(loadable_ref.clone())
                 .or_default()
                 .push(subscription);
+            if let Some((prev_loadable_ref, _)) = self.subscriptions_rev.get(&entity) {
+                // Prints if multiple scene nodes are loaded to the same entity.
+                tracing::warn!("overwriting scene node tracking for entity {:?}; prev: {:?}, new {:?}",
+                    entity, prev_loadable_ref, loadable_ref);
+            }
             self.subscriptions_rev
-                .entry(entity)
-                .or_default()
-                .push(loadable_ref.clone());
+                .insert(entity, (loadable_ref.clone(), initializer));
         }
 
         // Load the entity immediately.
         self.load_entity(subscription, loadable_ref, callbacks, c);
+    }
+
+    /// Adds an entity to the tracking context.
+    ///
+    /// Queues the entity to be loaded. This allows synchronizing a new entity (e.g. a new scene entity) with
+    /// other refresh-edits to ancestors in the scene hierarchy (those edits are also queeud - if we did
+    /// .load_entity() immediately then it would happen *before* ancestors are updated).
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn track_entity_queued(
+        &mut self,
+        entity: Entity,
+        mut loadable_ref: SceneRef,
+        initializer: NodeInitializer,
+    )
+    {
+        // Replace manifest key in the requested loadable.
+        self.manifest_map().swap_for_file(&mut loadable_ref.file);
+
+        // Add to subscriptions.
+        let subscription = SubscriptionRef { entity, initializer };
+        self.subscriptions
+            .entry(loadable_ref.clone())
+            .or_default()
+            .push(subscription);
+        if let Some((prev_loadable_ref, _)) = self.subscriptions_rev.get(&entity) {
+            // Prints if multiple scene nodes are loaded to the same entity.
+            tracing::warn!("overwriting scene node tracking for entity {:?}; prev: {:?}, new {:?}",
+                entity, prev_loadable_ref, loadable_ref);
+        }
+        self.subscriptions_rev
+            .insert(entity, (loadable_ref.clone(), initializer));
+
+        // Queue the entity to be loaded.
+        self.refresh_ctx
+            .add_update(subscription, loadable_ref.clone());
+    }
+
+    /// Requests that the scene node an entity is subscribed to be reloaded on that entity.
+    #[cfg(feature = "hot_reload")]
+    pub fn request_reload(&mut self, entity: Entity)
+    {
+        let Some((loadable_ref, initializer)) = self.subscriptions_rev.get(&entity) else {
+            tracing::warn!("requested reload of entity {entity:?} that is not subscribed to any loadables");
+            return;
+        };
+        self.refresh_ctx.add_update(
+            SubscriptionRef { entity, initializer: *initializer },
+            loadable_ref.clone(),
+        );
     }
 
     /// Schedules all pending commands to be processed.
@@ -961,7 +1052,8 @@ impl CobwebAssetCache
     fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
     {
         // Revert loadables as needed.
-        for (entity, type_ids) in self.needs_revert.drain() {
+        // - Note: we currently assume the order of reverts doesn't matter.
+        for (entity, type_ids) in self.refresh_ctx.reverts() {
             for type_id in type_ids {
                 let Some(reverter) = callbacks.get_for_revert(type_id) else { continue };
                 c.add(RevertCommand { entity, reverter });
@@ -969,27 +1061,25 @@ impl CobwebAssetCache
         }
 
         // Reload entities.
-        let mut needs_updates = std::mem::take(&mut self.needs_updates);
-        for (entity, (initializer, loadable_ref)) in needs_updates.drain() {
+        let needs_updates = self.refresh_ctx.updates().collect::<Vec<_>>();
+        for (entity, initializer, loadable_ref) in needs_updates {
             self.load_entity(SubscriptionRef { entity, initializer }, loadable_ref, callbacks, c);
         }
-        self.needs_updates = needs_updates;
     }
 
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
     fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
     {
-        let Some(loadable_refs) = self.subscriptions_rev.remove(&dead_entity) else { return };
-        for loadable_ref in loadable_refs {
-            // Clean up scenes.
-            scene_loader.cleanup_dead_entity(&loadable_ref, dead_entity);
+        let Some((loadable_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
 
-            // Clean up subscription.
-            let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { continue };
-            let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { continue };
-            subscribed.swap_remove(dead);
-        }
+        // Clean up scenes.
+        scene_loader.cleanup_dead_entity(&loadable_ref, dead_entity);
+
+        // Clean up subscription.
+        let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { return };
+        let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { return };
+        subscribed.swap_remove(dead);
     }
 }
 
