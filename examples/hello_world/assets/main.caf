@@ -2,24 +2,22 @@
 "scene"
     ControlRoot("a")
     FlexStyle{dims:{width:500px height:400px}}
-    // bug 1: source "a" means "d" doesn't respond, any other source works
-    // bug 2: 'target' is defaulting to 'source' instead of self
-    Responsive<BgColor>{values:{idle:#111100 hover:#440000} source:"b"}
+    BgColor(#111100)
 
     "b"
         ControlLabel("b")
         FlexStyle{dims:{width:200px height:150px}}
-        Responsive<BgColor>{values:{idle:#004400 hover:#008800} source:"b"}
+        Responsive<BgColor>{values:{idle:#004400 hover:#008800} source:"c"}
 
-        // "c"
-        //     ControlLabel("c")
-        //     FlexStyle{dims:{width:150px height:100px}}
-        //     Responsive<BgColor>{values:{idle:#009999 hover:#BBBBBB} source:"c"}
+        "c"
+            ControlLabel("c")
+            FlexStyle{dims:{width:150px height:100px}}
+            Responsive<BgColor>{values:{idle:#009999 hover:#BBBBBB}}
 
-    "d"
-        ControlLabel("d")
-        FlexStyle{dims:{width:50px height:10px}}
-        Responsive<BgColor>{values:{idle:#1100FF hover:#5500AA}}
+            "d"
+                ControlLabel("d")
+                FlexStyle{dims:{width:50px height:10px}}
+                Responsive<BgColor>{values:{idle:#1100FF hover:#5500AA} source:"c"}
 
 
 

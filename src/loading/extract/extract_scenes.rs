@@ -15,7 +15,6 @@ fn handle_loadable(
     caf_cache: &mut CobwebAssetCache,
     file: &CafFile,
     current_path: &ScenePath,
-    loadable_index: usize,
     loadable: &CafLoadable,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> String
@@ -29,14 +28,13 @@ fn handle_loadable(
     };
 
     // Check for duplicate.
-    if seen_shortnames[..loadable_index]
-        .iter()
-        .any(|other| *other == short_name)
-    {
-        tracing::warn!("ignoring duplicate loadable {} at {:?} in {:?}", short_name, current_path, file);
+    if seen_shortnames.iter().any(|other| *other == short_name) {
+        tracing::warn!("ignoring duplicate loadable {} at {:?} in {:?}; use Multi<{}> instead",
+            short_name, current_path, file, short_name);
         return id_scratch;
     }
 
+    let loadable_index = seen_shortnames.len();
     seen_shortnames.push(short_name);
 
     // Get the loadable's value.
@@ -137,7 +135,6 @@ fn extract_scene_layer(
     scene_layer.start_update(caf_layer.entries.len());
 
     // Add loadables.
-    let mut loadable_count = 0;
     seen_shortnames.clear();
 
     for entry in caf_layer.entries.iter() {
@@ -153,12 +150,9 @@ fn extract_scene_layer(
                         .file()
                         .expect("all SceneFile should contain CafFile in scene extraction"),
                     current_path,
-                    loadable_count,
                     loadable,
                     name_shortcuts,
                 );
-                // Make sure this is accurate even if a loadable is skipped due to an error.
-                loadable_count = seen_shortnames.len();
             }
             // Do this one after we are done using the `seen_shortnames` buffer.
             CafSceneLayerEntry::Layer(_) => (),
@@ -175,7 +169,7 @@ fn extract_scene_layer(
     }
 
     #[cfg(feature = "hot_reload")]
-    caf_cache.end_loadable_insertion(&scene_location, loadable_count);
+    caf_cache.end_loadable_insertion(&scene_location, seen_shortnames.len());
 
     // Add layers.
     for entry in caf_layer.entries.iter() {

@@ -337,6 +337,7 @@ struct RefreshCtx
     needs_updates: Vec<(Entity, NodeInitializer, SceneRef)>,
 }
 
+#[cfg(feature = "hot_reload")]
 impl RefreshCtx
 {
     fn add_revert(&mut self, subscription: SubscriptionRef, type_id: TypeId)

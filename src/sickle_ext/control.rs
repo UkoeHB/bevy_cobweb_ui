@@ -1,11 +1,11 @@
 use bevy::prelude::*;
+#[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_ui::prelude::DynamicStyle;
 use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
 use smol_str::SmolStr;
 
-use super::add_attribute;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ impl Instruction for ControlRoot
 
                     // Attrs
                     for (origin, source, target, state, attribute) in attrs {
-                        world.syscall((origin, source, target, state, attribute), add_attribute);
+                        world.syscall((origin, source, target, state, attribute), super::add_attribute);
                     }
                     break;
                 }
