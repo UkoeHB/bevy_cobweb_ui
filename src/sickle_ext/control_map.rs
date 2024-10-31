@@ -1,3 +1,4 @@
+use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
@@ -126,6 +127,11 @@ impl EditablePseudoTheme
             style_builder.add(attribute.clone());
         }
     }
+
+    fn cleanup_references(&mut self, entities: &Entities)
+    {
+        self.style.retain(|(e, _)| entities.contains(*e));
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -229,6 +235,14 @@ impl ControlMap
         res
     }
 
+    fn cleanup_references(&mut self, entities: &Entities)
+    {
+        self.entities.retain(|(_, e)| entities.contains(*e));
+        for pt in self.pseudo_themes.iter_mut() {
+            pt.cleanup_references(entities);
+        }
+    }
+
     fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_
     {
         self.entities.iter()
@@ -282,22 +296,25 @@ fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDyi
 //-------------------------------------------------------------------------------------------------------------------
 
 fn refresh_controlled_styles(
+    entities: &Entities,
     mut c: Commands,
-    changed_with_states: Query<
-        Entity,
-        (
-            With<ControlMap>,
-            With<PseudoStates>,
-            Or<(Changed<ControlMap>, Changed<PseudoStates>)>,
-        ),
+    mut changed_with_states: Query<
+        (Entity, &mut ControlMap),
+        (With<PseudoStates>, Or<(Changed<ControlMap>, Changed<PseudoStates>)>),
     >,
-    changed_without_states: Query<Entity, (Changed<ControlMap>, Without<PseudoStates>)>,
+    mut changed_without_states: Query<(Entity, &mut ControlMap), (Changed<ControlMap>, Without<PseudoStates>)>,
 )
 {
-    for entity in changed_with_states
-        .iter()
-        .chain(changed_without_states.iter())
+    for (entity, mut map) in changed_with_states
+        .iter_mut()
+        .chain(changed_without_states.iter_mut())
     {
+        // Cleanup dead references.
+        // - We do this here instead of as an OnRemove hook for ControlLabel to avoid excess hierarchy traversals
+        // when despawning large scenes.
+        map.cleanup_references(&entities);
+
+        // Queue styles update.
         c.entity(entity).add(RefreshControlledStyles);
     }
 }

@@ -30,11 +30,15 @@ impl<T> Loadable for T where
 pub trait Instruction: Loadable
 {
     /// Applies the instruction to the entity.
+    ///
+    /// Assume the entity might not exist. This should not panic unless necessary.
     fn apply(self, entity: Entity, world: &mut World);
 
     /// Reverts the instruction on the entity.
     ///
     /// This should clean up as many of the instruction's side effects as possible.
+    ///
+    /// Assume the entity might not exist. This should not panic unless necessary.
     fn revert(entity: Entity, world: &mut World);
 }
 
