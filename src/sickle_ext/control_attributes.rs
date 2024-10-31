@@ -45,7 +45,7 @@ fn add_attribute_to_dynamic_style(
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(super) fn add_attribute(
-    In((origin, source, target, state, attribute)): In<(
+    In((origin, mut source, mut target, state, attribute)): In<(
         Entity,
         Option<SmolStr>,
         Option<SmolStr>,
@@ -92,7 +92,22 @@ pub(super) fn add_attribute(
 
     // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(origin) {
-        // Target falls back to None, which is implicitly the root entity.
+        // Fixup source/target based on assumed user intention.
+        if let Some(src) = &source {
+            if *src == **label {
+                // Clear source if it points to self.
+                // TODO: why is this necessary? Something weird in sickle_ui means if the root node sources itself
+                // then child nodes' attributes won't properly respond to interactions on the root.
+                source = None;
+            } else {
+                // Target self if the source is not self.
+                // TODO: without this, the target is set to be the source by sickle_ui.
+                if target.is_none() {
+                    target = Some((**label).clone());
+                }
+            }
+        }
+
         control_map.set_attribute(origin, state, source, target, attribute);
         return;
     }
@@ -101,7 +116,7 @@ pub(super) fn add_attribute(
     for ancestor in parents.iter_ancestors(origin) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
         // Target falls back to self.
-        let target = target.or_else(|| Some(label.deref().clone()));
+        target = target.or_else(|| Some(label.deref().clone()));
         control_map.set_attribute(origin, state, source, target, attribute);
         return;
     }
