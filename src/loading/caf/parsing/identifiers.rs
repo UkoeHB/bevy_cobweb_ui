@@ -40,6 +40,21 @@ pub(crate) fn snake_identifier(input: Span) -> IResult<Span, Span>
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Parses a snake-case identifier from the input.
+///
+/// The identifier must contain only lower-case letters, numbers, and underscores, and must start with a letter or
+/// number.
+pub(crate) fn numerical_snake_identifier(input: Span) -> IResult<Span, Span>
+{
+    recognize(tuple((
+        alt((lowercase_alpha1, digit1)),
+        many0_count(alt((lowercase_alpha1, digit1, recognize(char('_'))))),
+    )))
+    .parse(input)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Parses a camel-case identifier from the input.
 ///
 /// The identifier must contain only upper-case and lower-case letters and numbers, and must start with an

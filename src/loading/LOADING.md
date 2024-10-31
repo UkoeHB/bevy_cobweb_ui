@@ -1,5 +1,7 @@
 ## Cobweb asset format
 
+**TODO: These docs are out of date! We now have a custom format CAF instead of JSON.**
+
 Cobweb assets are written as JSON files with the extension `.caf.json`.
 
 

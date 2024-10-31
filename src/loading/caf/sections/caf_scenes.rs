@@ -27,10 +27,12 @@ impl CafSceneNodeName
     pub fn try_parse(content: Span) -> Result<(Option<Self>, Span), SpanError>
     {
         let Ok((remaining, _)) = char::<_, ()>('\"').parse(content) else { return Ok((None, content)) };
-        // Allows snake identifiers and empty identifiers.
-        let Ok((remaining, name)) =
-            terminated(alt((map(snake_identifier, |i| *i.fragment()), success(""))), tag("\"")).parse(remaining)
-        else {
+        // Allows snake identifiers that may start with numbers and empty identifiers.
+        let Ok((remaining, name)) = terminated(
+            alt((map(numerical_snake_identifier, |i| *i.fragment()), success(""))),
+            tag("\""),
+        )
+        .parse(remaining) else {
             tracing::warn!("failed parsing scene node name at {}; name is not snake-case (e.g. a_b_c)",
                 get_location(content).as_str());
             return Err(span_verify_error(content));

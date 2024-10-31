@@ -478,6 +478,9 @@ pub struct CobwebAssetCache
     /// Tracks loadable commands from all loaded files.
     command_loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks loadables from all loaded files.
+    /// - Note: If a scene node is hot-removed, then this map will *not* be updated. However, the scene's loader
+    /// will correctly update, so new scene spawns won't include dead nodes (and existing scenes will be
+    /// repaired).
     loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
 
     /// Tracks subscriptions to scene paths.

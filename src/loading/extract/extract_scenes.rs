@@ -58,7 +58,7 @@ fn handle_loadable(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn handle_scene_node(
-    id_scratch: String,
+    mut id_scratch: String,
     seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     c: &mut Commands,
@@ -69,11 +69,22 @@ fn handle_scene_node(
     parent_path: &ScenePath,
     caf_layer: &CafSceneLayer,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    anonymous_count: &mut usize,
 ) -> String
 {
-    let Some(node_path) = parent_path.extend_single(&*caf_layer.name) else {
+    // If node is anonymous, give it a unique name.
+    let layer_name = if caf_layer.name.as_str() == "" {
+        id_scratch.clear();
+        let _ = write!(&mut id_scratch, "_{}", *anonymous_count);
+        *anonymous_count += 1;
+        id_scratch.as_str()
+    } else {
+        caf_layer.name.as_str()
+    };
+
+    let Some(node_path) = parent_path.extend_single(layer_name) else {
         tracing::error!("failed parsing scene node {:?} at {:?} in {:?}, node ID is a multi-segment path, only \
-            single-segment node ids are allowed in scene definitions", *caf_layer.name, parent_path, scene.file);
+            single-segment node ids are allowed in scene definitions", layer_name, parent_path, scene.file);
         return id_scratch;
     };
 
@@ -172,6 +183,7 @@ fn extract_scene_layer(
     caf_cache.end_loadable_insertion(&scene_location, seen_shortnames.len());
 
     // Add layers.
+    let mut anonymous_count = 0;
     for entry in caf_layer.entries.iter() {
         match entry {
             CafSceneLayerEntry::Layer(next_caf_layer) => {
@@ -187,6 +199,7 @@ fn extract_scene_layer(
                     current_path,
                     next_caf_layer,
                     name_shortcuts,
+                    &mut anonymous_count,
                 );
             }
             _ => (),
