@@ -5,7 +5,7 @@ use serde_json::Value;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-use super::CafImportAlias;
+use crate::prelude::CafImportAlias;
 
 //-------------------------------------------------------------------------------------------------------------------
 

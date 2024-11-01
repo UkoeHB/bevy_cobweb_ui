@@ -14,7 +14,8 @@ impl Plugin for LoadingPlugin
             .add_plugins(LoadExtPlugin)
             .add_plugins(CobwebAssetLoaderPlugin)
             .add_plugins(CobwebAssetCachePlugin)
-            .add_plugins(SceneLoaderPlugin);
+            .add_plugins(SceneLoaderPlugin) // Must be after the CAF cache plugin.
+            ;
     }
 }
 

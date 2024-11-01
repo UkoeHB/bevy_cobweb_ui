@@ -557,7 +557,7 @@ impl SceneLoader
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
     pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
     where
-        T: crate::loading::load_scene_ext::scene_traits::SceneNodeLoader,
+        T: crate::loading::scene::load_scene_ext::scene_traits::SceneNodeLoader,
     {
         // Reject non-root nodes.
         if scene_ref.path.len() != 1 {
@@ -708,9 +708,13 @@ pub(crate) struct SceneLoaderPlugin;
 
 impl Plugin for SceneLoaderPlugin
 {
-    fn build(&self, _app: &mut App)
+    fn build(&self, app: &mut App)
     {
-        // NOTE: SceneLoader is inserted in `CobwebAssetCachePlugin`
+        let manifest_map = app
+            .world()
+            .resource::<CobwebAssetCache>()
+            .manifest_map_clone();
+        app.insert_resource(SceneLoader::new(manifest_map));
     }
 }
 

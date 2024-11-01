@@ -1,4 +1,4 @@
-use std::any::{type_name, TypeId};
+use std::any::TypeId;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -6,104 +6,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
+#[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 
 use crate::prelude::*;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn preprocess_cobweb_asset_files(
-    mut manifest_buffer: Local<HashMap<CafFile, ManifestKey>>,
-    asset_server: Res<AssetServer>,
-    mut events: EventReader<AssetEvent<CobwebAssetFile>>,
-    mut caf_files: ResMut<LoadedCobwebAssetFiles>,
-    mut assets: ResMut<Assets<CobwebAssetFile>>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
-)
-{
-    for event in events.read() {
-        let id = match event {
-            AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
-            _ => {
-                tracing::debug!("ignoring CobwebAssetCache asset event {:?}", event);
-                continue;
-            }
-        };
-
-        let Some(handle) = caf_files.get_handle(*id) else {
-            tracing::warn!("encountered CobwebAssetCache asset event {:?} for an untracked asset", id);
-            continue;
-        };
-
-        let Some(asset) = assets.remove(&handle) else {
-            tracing::error!("failed to remove CobwebAssetCache asset {:?}", handle);
-            continue;
-        };
-
-        preprocess_caf_file(
-            &mut manifest_buffer,
-            &asset_server,
-            &mut caf_files,
-            &mut caf_cache,
-            asset.0,
-        );
-    }
-
-    // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
-    // catastrophic.
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn process_cobweb_asset_files(
-    types: Res<AppTypeRegistry>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
-    mut c: Commands,
-    mut scene_loader: ResMut<SceneLoader>,
-)
-{
-    let type_registry = types.read();
-
-    if caf_cache.process_cobweb_asset_files(&type_registry, &mut c, &mut scene_loader) {
-        c.react().broadcast(CafCacheUpdated);
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn apply_pending_commands(mut c: Commands, mut caf_cache: ResMut<CobwebAssetCache>, loaders: Res<LoaderCallbacks>)
-{
-    caf_cache.apply_pending_commands(&mut c, &loaders);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Only enabled for hot_reload because normally entities are loaded only once, the first time they subscribe
-/// to a loadable ref.
-#[cfg(feature = "hot_reload")]
-fn apply_pending_node_updates(
-    mut c: Commands,
-    mut caf_cache: ResMut<CobwebAssetCache>,
-    loaders: Res<LoaderCallbacks>,
-)
-{
-    caf_cache.apply_pending_node_updates(&mut c, &loaders);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[cfg(feature = "hot_reload")]
-fn cleanup_cobweb_asset_cache(
-    mut caf_cache: ResMut<CobwebAssetCache>,
-    mut scene_loader: ResMut<SceneLoader>,
-    mut removed: RemovedComponents<HasLoadables>,
-)
-{
-    for removed in removed.read() {
-        caf_cache.remove_entity(&mut scene_loader, removed);
-    }
-}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -327,6 +234,8 @@ struct ErasedLoadable
     loadable: ReflectedLoadable,
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+
 #[cfg(feature = "hot_reload")]
 #[derive(Debug, Default)]
 struct RefreshCtx
@@ -381,68 +290,10 @@ impl RefreshCtx
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct SubscriptionRef
+struct SubscriptionRef
 {
-    pub(crate) entity: Entity,
-    pub(crate) initializer: NodeInitializer,
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Clone, Debug)]
-pub(crate) enum ReflectedLoadable
-{
-    Value(Arc<Box<dyn Reflect + 'static>>),
-    DeserializationFailed(Arc<CafError>),
-}
-
-impl ReflectedLoadable
-{
-    pub(crate) fn equals(&self, other: &ReflectedLoadable) -> Option<bool>
-    {
-        let (Self::Value(this), Self::Value(other)) = (self, other) else {
-            return Some(false);
-        };
-
-        this.reflect_partial_eq(other.as_reflect())
-    }
-
-    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &SceneRef) -> Option<T>
-    {
-        match self {
-            ReflectedLoadable::Value(loadable) => {
-                let Some(new_value) = T::from_reflect(loadable.as_reflect()) else {
-                    let hint = Self::make_hint::<T>();
-                    tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
-                        serialization hint: {}",
-                        type_name::<T>(), loadable_ref.path.path, loadable_ref.file, hint.as_str());
-                    return None;
-                };
-                Some(new_value)
-            }
-            ReflectedLoadable::DeserializationFailed(err) => {
-                let hint = Self::make_hint::<T>();
-                tracing::error!("failed deserializing loadable {:?} at path {:?} in file {:?}, {:?}\n\
-                    serialization hint: {}",
-                    type_name::<T>(), loadable_ref.path.path, loadable_ref.file, **err, hint.as_str());
-                None
-            }
-        }
-    }
-
-    fn make_hint<T: Loadable>() -> String
-    {
-        let temp = T::default();
-        match CafValue::extract(&temp) {
-            Ok(value) => {
-                let mut buff = Vec::<u8>::default();
-                let mut serializer = DefaultRawSerializer::new(&mut buff);
-                value.write_to(&mut serializer).unwrap();
-                String::from_utf8(buff).unwrap()
-            }
-            Err(err) => format!("! hint serialization failed: {:?}", err),
-        }
-    }
+    entity: Entity,
+    initializer: NodeInitializer,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -499,9 +350,14 @@ pub struct CobwebAssetCache
 
 impl CobwebAssetCache
 {
-    fn new(manifest_map: Arc<Mutex<ManifestMap>>) -> Self
+    pub(super) fn new(manifest_map: Arc<Mutex<ManifestMap>>) -> Self
     {
         Self { manifest_map, ..default() }
+    }
+
+    pub(crate) fn manifest_map_clone(&self) -> Arc<Mutex<ManifestMap>>
+    {
+        self.manifest_map.clone()
     }
 
     fn manifest_map(&mut self) -> MutexGuard<ManifestMap>
@@ -520,7 +376,7 @@ impl CobwebAssetCache
     }
 
     /// Gets the number of files waiting to be processed.
-    fn num_preprocessed_pending(&self) -> usize
+    pub(super) fn num_preprocessed_pending(&self) -> usize
     {
         self.preprocessed.len()
     }
@@ -736,7 +592,7 @@ impl CobwebAssetCache
     /// Converts preprocessed files to processed files.
     ///
     /// Returns `true` if at least one file was processed.
-    fn process_cobweb_asset_files(
+    pub(super) fn process_cobweb_asset_files(
         &mut self,
         type_registry: &TypeRegistry,
         c: &mut Commands,
@@ -1035,7 +891,7 @@ impl CobwebAssetCache
     }
 
     /// Schedules all pending commands to be processed.
-    fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
     {
         for (loadable, loadable_ref) in self.commands_need_updates.drain(..) {
             let Some(callback) = callbacks.get_for_command(loadable.type_id) else {
@@ -1053,7 +909,7 @@ impl CobwebAssetCache
     }
 
     #[cfg(feature = "hot_reload")]
-    fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    pub(super) fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
     {
         // Revert loadables as needed.
         // - Note: we currently assume the order of reverts doesn't matter.
@@ -1073,7 +929,7 @@ impl CobwebAssetCache
 
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
-    fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
+    pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
     {
         let Some((loadable_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
 
@@ -1097,48 +953,6 @@ impl AssetLoadProgress for CobwebAssetCache
     fn total_assets(&self) -> usize
     {
         self.loading_progress().1
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Reactive event broadcasted when the [`CobwebAssetCache`] has been updated with CAF asset data.
-pub struct CafCacheUpdated;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// System set in [`First`] where files are processed.
-#[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
-pub struct FileProcessingSet;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Plugin that enables loading.
-pub(crate) struct CobwebAssetCachePlugin;
-
-impl Plugin for CobwebAssetCachePlugin
-{
-    fn build(&self, app: &mut App)
-    {
-        let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
-        app.insert_resource(CobwebAssetCache::new(manifest_map.clone()))
-            .insert_resource(SceneLoader::new(manifest_map))
-            .register_asset_tracker::<CobwebAssetCache>()
-            .add_systems(
-                First,
-                (
-                    preprocess_cobweb_asset_files,
-                    process_cobweb_asset_files.run_if(|s: Res<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
-                    apply_pending_commands,
-                    #[cfg(feature = "hot_reload")]
-                    apply_pending_node_updates,
-                )
-                    .chain()
-                    .in_set(FileProcessingSet),
-            );
-
-        #[cfg(feature = "hot_reload")]
-        app.add_systems(Last, cleanup_cobweb_asset_cache);
     }
 }
 
