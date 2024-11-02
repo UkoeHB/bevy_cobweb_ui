@@ -187,7 +187,11 @@ We need to add `:0` here because the comment is a map entry, which means it need
 
 Scene nodes must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can add a `#commands` section with types that implement [`Command`](bevy::ecs::world::Command).
 
-We do not guarantee anything about the order that commands will be applied, even for commands from the same file.
+Commands are globally ordered by:
+1. Files manually registered to an app with [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
+2. Commands in a file's `#commands` section(s).
+3. Files loaded recursively via CAF manifests. Commands in file A will be applied before any commands in 
+manifest files in file A.
 
 ```json
 {

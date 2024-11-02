@@ -298,12 +298,17 @@ struct SubscriptionRef
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Resource that manages content loaded from cobweb asset files (`.caf.json` files).
+/// Resource that manages content extracted from cobweb asset files (`.caf` files).
 ///
 /// Can be used to load scenes with [`LoadSceneExt::load_scene`], or load individual scene nodes with
 /// [`CafLoadingEntityCommandsExt::load`].
 ///
-/// Note that command loadables in caf files are automatically applied to the world.
+/// Note that command loadables in caf files are automatically applied to the world. Commands are globally
+/// ordered by:
+/// 1) Files manually registered to an app with [`LoadedCobwebAssetFilesAppExt::load`].
+/// 2) Commands in a file's `#commands` section(s).
+/// 3) Files loaded recursively via CAF manifests. Commands in file A will be applied before any commands in
+/// manifest files in file A.
 #[derive(Resource, Default, Debug)]
 pub struct CobwebAssetCache
 {

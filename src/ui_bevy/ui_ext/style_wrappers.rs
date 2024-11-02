@@ -242,6 +242,8 @@ impl Into<JustifyContent> for JustifyMain
 
 /// Sets the default cross-axis alignment of children within each wrapping line.
 ///
+/// Can be overwridden on individual items with [`JustifySelfCross`].
+///
 /// Mirrors [`AlignItems`].
 /// Excludes [`AlignItems::Baseline`] which is too confusing to use easily.
 /// Excludes [`AlignItems::Default`] which is usually [`Self::Stretch`] but sometimes [`Self::FlexStart`].

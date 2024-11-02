@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::sync::Arc;
 
 use bevy::asset::AssetPath;
@@ -71,6 +72,14 @@ impl Default for CafFile
     fn default() -> Self
     {
         Self(Arc::from(""))
+    }
+}
+
+impl Borrow<str> for CafFile
+{
+    fn borrow(&self) -> &str
+    {
+        &*self
     }
 }
 
