@@ -1,4 +1,4 @@
-use crate::prelude::DynamicStyle;
+use crate::sickle::prelude::DynamicStyle;
 use crate::sickle::theme::dynamic_style::DynamicStyleStopwatch;
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
