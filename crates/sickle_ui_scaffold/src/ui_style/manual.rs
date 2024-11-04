@@ -6,7 +6,6 @@ use bevy::ui::widget::TextFlags;
 use super::generated::*;
 use super::{LockableStyleAttribute, LockedStyleAttributes, UiStyle, UiStyleUnchecked};
 use crate::flux_interaction::FluxInteraction;
-use crate::theme::icons::IconData;
 
 // Special style-related components needing manual implementation
 macro_rules! check_lock {
@@ -531,58 +530,6 @@ impl SetAbsolutePositionUncheckedExt for UiStyleUnchecked<'_>
     }
 }
 
-impl EntityCommand for SetIcon
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        // TODO: Rework once text/font is in better shape
-        match self.icon {
-            IconData::None => {
-                if self.check_lock {
-                    check_lock!(world, entity, "icon", LockableStyleAttribute::Image);
-                    // TODO: Check lock on text / font once it is available
-                }
-
-                world.entity_mut(entity).remove::<Text>();
-                world.entity_mut(entity).remove::<UiImage>();
-            }
-            IconData::Image(path, color) => {
-                SetImage { source: ImageSource::Path(path), check_lock: self.check_lock }.apply(entity, world);
-                SetImageTint { image_tint: color, check_lock: self.check_lock }.apply(entity, world);
-            }
-            IconData::FontCodepoint(font, codepoint, color, font_size) => {
-                // TODO: Check lock on text / font once it is available
-
-                world
-                    .entity_mut(entity)
-                    .insert(BackgroundColor(Color::NONE));
-
-                world.entity_mut(entity).remove::<UiImage>();
-                let font = world.resource::<AssetServer>().load(font);
-
-                if let Some(mut text) = world.get_mut::<Text>(entity) {
-                    text.sections = vec![TextSection::new(
-                        codepoint,
-                        TextStyle {
-                            font,
-                            font_size,
-                            color,
-                        },
-                    )];
-                } else {
-                    world.entity_mut(entity).insert((
-                        Text::from_section(codepoint, TextStyle { font, font_size, color })
-                            .with_justify(JustifyText::Center)
-                            .with_no_wrap(),
-                        TextLayoutInfo::default(),
-                        TextFlags::default(),
-                    ));
-                }
-            }
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum FontSource
 {
@@ -666,54 +613,6 @@ impl EntityCommand for SetFontSize
     }
 }
 
-impl EntityCommand for SetSizedFont
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let font = world.resource::<AssetServer>().load(self.sized_font.font);
-
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
-            warn!(
-                "Failed to set sized font on entity {}: No Text component found!",
-                entity
-            );
-            return;
-        };
-
-        text.sections = text
-            .sections
-            .iter_mut()
-            .map(|section| {
-                section.style.font = font.clone();
-                section.style.font_size = self.sized_font.size;
-                section.clone()
-            })
-            .collect();
-    }
-}
-
-impl EntityCommand for SetFontColor
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
-            warn!(
-                "Failed to set font on entity {}: No Text component found!",
-                entity
-            );
-            return;
-        };
-
-        text.sections = text
-            .sections
-            .iter_mut()
-            .map(|section| {
-                section.style.color = self.font_color;
-                section.clone()
-            })
-            .collect();
-    }
-}
 
 struct SetLockedAttribute
 {

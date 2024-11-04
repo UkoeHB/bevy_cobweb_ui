@@ -1,13 +1,8 @@
 pub mod dynamic_style;
 pub mod dynamic_style_attribute;
-pub mod icons;
 pub mod pseudo_state;
 pub mod style_animation;
-pub mod theme_colors;
 pub mod theme_data;
-pub mod theme_spacing;
-pub mod typography;
-
 use std::any::{type_name, TypeId};
 use std::collections::HashSet;
 use std::marker::PhantomData;
@@ -16,8 +11,6 @@ use bevy::prelude::*;
 use bevy::ui::UiSystem;
 use dynamic_style::{DynamicStyle, DynamicStylePlugin};
 use pseudo_state::{AutoPseudoStatePlugin, PseudoState, PseudoStates};
-use theme_colors::loader::ThemeColorsLoader;
-use theme_colors::ThemeColors;
 use theme_data::ThemeData;
 
 use crate::prelude::UiBuilder;
@@ -30,16 +23,13 @@ pub mod prelude
         ContextStyleAttribute, DynamicStyle, DynamicStyleEnterState, DynamicStylePostUpdate,
     };
     pub use super::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
-    pub use super::icons::IconData;
     pub use super::pseudo_state::{
         FlexDirectionToPseudoState, HierarchyToPseudoState, PseudoState, PseudoStates, VisibilityToPseudoState,
     };
     pub use super::style_animation::{
         AnimationLoop, AnimationSettings, AnimationState, InteractionStyle, LoopedAnimationConfig,
     };
-    pub use super::theme_colors::{Accent, Container, OnColor, Surface};
     pub use super::theme_data::{Contrast, Scheme, ThemeData};
-    pub use super::typography::{FontScale, FontStyle, FontType, SizedFont};
     pub use super::{
         ComponentThemePlugin, CustomThemeUpdate, DefaultTheme, DynamicStyleBuilder, PseudoTheme, Theme,
         ThemeUpdate, UiContext,
@@ -58,8 +48,6 @@ impl Plugin for ThemePlugin
         )
         .init_resource::<ThemeData>()
         .init_resource::<ThemeRegistry>()
-        .init_asset::<ThemeColors>()
-        .init_asset_loader::<ThemeColorsLoader>()
         .add_plugins((AutoPseudoStatePlugin, DynamicStylePlugin));
     }
 }

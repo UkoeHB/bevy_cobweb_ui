@@ -250,12 +250,6 @@ enum _StyleAttributes
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
-    Icon
-    {
-        icon: IconData
-    },
-    #[skip_lockable_enum]
-    #[skip_enity_command]
     Font
     {
         font: FontSource
@@ -266,19 +260,6 @@ enum _StyleAttributes
     FontSize
     {
         font_size: f32
-    },
-    #[skip_lockable_enum]
-    #[skip_enity_command]
-    SizedFont
-    {
-        sized_font: SizedFont
-    },
-    #[skip_lockable_enum]
-    #[skip_enity_command]
-    #[animatable]
-    FontColor
-    {
-        font_color: Color
     },
     #[skip_enity_command]
     #[animatable]

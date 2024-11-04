@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use sickle_math::ease::Ease;
 
-use super::icons::Icons;
 use super::style_animation::AnimationSettings;
-use super::theme_colors::{SchemeColors, ThemeColors};
-use super::theme_spacing::ThemeSpacing;
-use super::typography::ThemeTypography;
 use crate::ui_style::builder::StyleBuilder;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
@@ -49,10 +45,6 @@ impl Scheme
 pub struct ThemeData
 {
     pub active_scheme: Scheme,
-    pub colors: ThemeColors,
-    pub spacing: ThemeSpacing,
-    pub text: ThemeTypography,
-    pub icons: Icons,
     pub interaction_animation: AnimationSettings,
     pub delayed_interaction_animation: AnimationSettings,
     pub enter_animation: AnimationSettings,
@@ -81,10 +73,6 @@ impl Default for ThemeData
 
         Self {
             active_scheme: Default::default(),
-            colors: Default::default(),
-            spacing: Default::default(),
-            text: Default::default(),
-            icons: Default::default(),
             interaction_animation,
             delayed_interaction_animation,
             enter_animation,
@@ -101,14 +89,5 @@ impl ThemeData
         builder(&mut style_builder, &theme_data);
 
         style_builder
-    }
-
-    /// Returns the scheme colors of the current active scheme / contrast
-    pub fn colors(&self) -> SchemeColors
-    {
-        match self.active_scheme {
-            Scheme::Light(contrast) => self.colors.schemes.light_contrast(contrast),
-            Scheme::Dark(contrast) => self.colors.schemes.dark_contrast(contrast),
-        }
     }
 }
