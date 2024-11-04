@@ -1,17 +1,13 @@
 use bevy::utils::default;
 
-use crate::{
-    flux_interaction::FluxInteraction,
-    ui_style::{
-        generated::{AnimatedStyleAttribute, InteractiveStyleAttribute, StaticStyleAttribute},
-        LogicalEq,
-    },
-};
-
 use super::style_animation::{AnimationSettings, AnimationState, InteractionStyle};
+use crate::flux_interaction::FluxInteraction;
+use crate::ui_style::generated::{AnimatedStyleAttribute, InteractiveStyleAttribute, StaticStyleAttribute};
+use crate::ui_style::LogicalEq;
 
 #[derive(Clone, Debug)]
-pub enum DynamicStyleAttribute {
+pub enum DynamicStyleAttribute
+{
     // Remove on apply
     Static(StaticStyleAttribute),
 
@@ -21,81 +17,58 @@ pub enum DynamicStyleAttribute {
     // Needs stopwatch
     // None animations are effectively Pop
     // Only Lerp properties
-    Animated {
+    Animated
+    {
         attribute: AnimatedStyleAttribute,
         controller: DynamicStyleController,
     },
 }
 
-impl LogicalEq for DynamicStyleAttribute {
-    fn logical_eq(&self, other: &Self) -> bool {
+impl LogicalEq for DynamicStyleAttribute
+{
+    fn logical_eq(&self, other: &Self) -> bool
+    {
         match (self, other) {
             (Self::Static(l0), Self::Static(r0)) => l0.logical_eq(r0),
             (Self::Static(l0), Self::Interactive(r0)) => l0.logical_eq(r0),
-            (
-                Self::Static(l0),
-                Self::Animated {
-                    attribute: r_attribute,
-                    ..
-                },
-            ) => l0.logical_eq(r_attribute),
+            (Self::Static(l0), Self::Animated { attribute: r_attribute, .. }) => l0.logical_eq(r_attribute),
             (Self::Interactive(l0), Self::Interactive(r0)) => l0.logical_eq(r0),
             (Self::Interactive(l0), Self::Static(r0)) => l0.logical_eq(r0),
-            (
-                Self::Interactive(l0),
-                Self::Animated {
-                    attribute: r_attribute,
-                    ..
-                },
-            ) => l0.logical_eq(r_attribute),
-            (
-                Self::Animated {
-                    attribute: l_attribute,
-                    ..
-                },
-                Self::Animated {
-                    attribute: r_attribute,
-                    ..
-                },
-            ) => l_attribute.logical_eq(r_attribute),
-            (
-                Self::Animated {
-                    attribute: l_attribute,
-                    ..
-                },
-                Self::Static(r0),
-            ) => l_attribute.logical_eq(r0),
-            (
-                Self::Animated {
-                    attribute: l_attribute,
-                    ..
-                },
-                Self::Interactive(r0),
-            ) => l_attribute.logical_eq(r0),
+            (Self::Interactive(l0), Self::Animated { attribute: r_attribute, .. }) => l0.logical_eq(r_attribute),
+            (Self::Animated { attribute: l_attribute, .. }, Self::Animated { attribute: r_attribute, .. }) => {
+                l_attribute.logical_eq(r_attribute)
+            }
+            (Self::Animated { attribute: l_attribute, .. }, Self::Static(r0)) => l_attribute.logical_eq(r0),
+            (Self::Animated { attribute: l_attribute, .. }, Self::Interactive(r0)) => l_attribute.logical_eq(r0),
         }
     }
 }
 
-impl DynamicStyleAttribute {
-    pub fn is_static(&self) -> bool {
+impl DynamicStyleAttribute
+{
+    pub fn is_static(&self) -> bool
+    {
         match self {
             DynamicStyleAttribute::Static(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_interactive(&self) -> bool {
+    pub fn is_interactive(&self) -> bool
+    {
         match self {
             DynamicStyleAttribute::Interactive(_) => true,
             _ => false,
         }
     }
 
-    pub fn is_animated(&self) -> bool {
+    pub fn is_animated(&self) -> bool
+    {
         matches!(self, DynamicStyleAttribute::Animated { .. })
     }
 
-    pub fn controller(&self) -> Result<&DynamicStyleController, &'static str> {
+    pub fn controller(&self) -> Result<&DynamicStyleController, &'static str>
+    {
         let DynamicStyleAttribute::Animated { ref controller, .. } = self else {
             return Err("DynamicStyleAttribute isn't animated!");
         };
@@ -103,11 +76,9 @@ impl DynamicStyleAttribute {
         Ok(controller)
     }
 
-    pub fn controller_mut(&mut self) -> Result<&mut DynamicStyleController, &'static str> {
-        let DynamicStyleAttribute::Animated {
-            ref mut controller, ..
-        } = self
-        else {
+    pub fn controller_mut(&mut self) -> Result<&mut DynamicStyleController, &'static str>
+    {
+        let DynamicStyleAttribute::Animated { ref mut controller, .. } = self else {
             return Err("DynamicStyleAttribute isn't animated!");
         };
 
@@ -116,15 +87,18 @@ impl DynamicStyleAttribute {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DynamicStyleController {
+pub struct DynamicStyleController
+{
     pub animation: AnimationSettings,
     current_state: AnimationState,
     dirty: bool,
     entering: bool,
 }
 
-impl Default for DynamicStyleController {
-    fn default() -> Self {
+impl Default for DynamicStyleController
+{
+    fn default() -> Self
+    {
         Self {
             animation: Default::default(),
             current_state: Default::default(),
@@ -134,16 +108,15 @@ impl Default for DynamicStyleController {
     }
 }
 
-impl DynamicStyleController {
-    pub fn new(animation: AnimationSettings, starting_state: AnimationState) -> Self {
-        Self {
-            animation,
-            current_state: starting_state,
-            ..default()
-        }
+impl DynamicStyleController
+{
+    pub fn new(animation: AnimationSettings, starting_state: AnimationState) -> Self
+    {
+        Self { animation, current_state: starting_state, ..default() }
     }
 
-    pub fn update(&mut self, flux_interaction: &FluxInteraction, mut elapsed: f32) {
+    pub fn update(&mut self, flux_interaction: &FluxInteraction, mut elapsed: f32)
+    {
         // TODO: `enter` animation is currently played when a style animation different from
         // the previous one is requested. This means that playing the enter animation is *contextual*
         // and cannot be directly controlled by the developer. Figure out a way to factor out these
@@ -203,19 +176,23 @@ impl DynamicStyleController {
         }
     }
 
-    pub fn current_state(&self) -> &AnimationState {
+    pub fn current_state(&self) -> &AnimationState
+    {
         &self.current_state
     }
 
-    pub fn dirty(&self) -> bool {
+    pub fn dirty(&self) -> bool
+    {
         self.dirty
     }
 
-    pub fn entering(&self) -> bool {
+    pub fn entering(&self) -> bool
+    {
         self.entering
     }
 
-    pub fn copy_state_from(&mut self, other: &DynamicStyleController) {
+    pub fn copy_state_from(&mut self, other: &DynamicStyleController)
+    {
         self.current_state = other.current_state().clone();
         self.entering = other.entering;
         self.dirty = other.dirty;

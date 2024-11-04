@@ -1,16 +1,18 @@
-use crate::sickle::ease::Ease;
-use crate::sickle::theme::pseudo_state::PseudoState;
-use crate::sickle::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 use bevy::prelude::*;
 
 use crate::prelude::*;
+use crate::sickle::ease::Ease;
+use crate::sickle::theme::pseudo_state::PseudoState;
+use crate::sickle::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(crate) struct SickleExtPlugin;
 
-impl Plugin for SickleExtPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SickleExtPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.register_type::<Ease>()
             .register_type::<PseudoState>()
             .register_type::<AnimationSettings>()

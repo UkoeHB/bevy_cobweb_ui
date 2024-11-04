@@ -3,40 +3,44 @@ pub mod builder;
 pub mod generated;
 pub mod manual;
 
-use bevy::{ecs::system::EntityCommands, prelude::*, utils::HashSet};
-
+use attribute::AnimatedVals;
+use bevy::ecs::system::EntityCommands;
+use bevy::prelude::*;
+use bevy::utils::HashSet;
+use generated::LockableStyleAttribute;
 use sickle_math::lerp::Lerp;
 
-use attribute::AnimatedVals;
-use generated::LockableStyleAttribute;
-
-pub mod prelude {
-    pub use super::{
-        attribute::{AnimatedVals, InteractiveVals},
-        builder::StyleBuilder,
-        generated::*,
-        manual::*,
-        *,
-    };
+pub mod prelude
+{
+    pub use super::attribute::{AnimatedVals, InteractiveVals};
+    pub use super::builder::StyleBuilder;
+    pub use super::generated::*;
+    pub use super::manual::*;
+    pub use super::*;
 }
 
-pub struct UiStyle<'a> {
+pub struct UiStyle<'a>
+{
     commands: EntityCommands<'a>,
 }
 
-impl UiStyle<'_> {
+impl UiStyle<'_>
+{
     /// Returns the Entity that is the target of all styling commands
-    pub fn id(&self) -> Entity {
+    pub fn id(&self) -> Entity
+    {
         self.commands.id()
     }
 
     /// Returns the underlying EntityCommands via reborrow
-    pub fn entity_commands(&mut self) -> EntityCommands {
+    pub fn entity_commands(&mut self) -> EntityCommands
+    {
         self.commands.reborrow()
     }
 }
 
-pub trait UiStyleExt {
+pub trait UiStyleExt
+{
     /// Styling commands for UI Nodes
     ///
     /// `sickle_ui` exposes functions for all standard bevy styleable attributes.
@@ -62,47 +66,54 @@ pub trait UiStyleExt {
     fn style(&mut self, entity: Entity) -> UiStyle;
 }
 
-impl UiStyleExt for Commands<'_, '_> {
-    fn style(&mut self, entity: Entity) -> UiStyle {
-        UiStyle {
-            commands: self.entity(entity),
-        }
+impl UiStyleExt for Commands<'_, '_>
+{
+    fn style(&mut self, entity: Entity) -> UiStyle
+    {
+        UiStyle { commands: self.entity(entity) }
     }
 }
 
-pub struct UiStyleUnchecked<'a> {
+pub struct UiStyleUnchecked<'a>
+{
     commands: EntityCommands<'a>,
 }
 
-impl UiStyleUnchecked<'_> {
+impl UiStyleUnchecked<'_>
+{
     /// Returns the Entity that is the target of all styling commands
-    pub fn id(&self) -> Entity {
+    pub fn id(&self) -> Entity
+    {
         self.commands.id()
     }
 
     /// Returns the underlying EntityCommands via reborrow
-    pub fn entity_commands(&mut self) -> EntityCommands {
+    pub fn entity_commands(&mut self) -> EntityCommands
+    {
         self.commands.reborrow()
     }
 }
 
-pub trait UiStyleUncheckedExt {
+pub trait UiStyleUncheckedExt
+{
     /// Same as [`UiStyleExt::style`], except styling calls will bypass attribute locks
     fn style_unchecked(&mut self, entity: Entity) -> UiStyleUnchecked;
 }
 
-impl UiStyleUncheckedExt for Commands<'_, '_> {
-    fn style_unchecked(&mut self, entity: Entity) -> UiStyleUnchecked {
-        UiStyleUnchecked {
-            commands: self.entity(entity),
-        }
+impl UiStyleUncheckedExt for Commands<'_, '_>
+{
+    fn style_unchecked(&mut self, entity: Entity) -> UiStyleUnchecked
+    {
+        UiStyleUnchecked { commands: self.entity(entity) }
     }
 }
 
-pub trait LogicalEq<Rhs: ?Sized = Self> {
+pub trait LogicalEq<Rhs: ?Sized = Self>
+{
     fn logical_eq(&self, other: &Rhs) -> bool;
 
-    fn logical_ne(&self, other: &Rhs) -> bool {
+    fn logical_ne(&self, other: &Rhs) -> bool
+    {
         !self.logical_eq(other)
     }
 }
@@ -113,19 +124,23 @@ pub trait LogicalEq<Rhs: ?Sized = Self> {
 #[derive(Component, Debug, Default, Reflect)]
 pub struct LockedStyleAttributes(HashSet<LockableStyleAttribute>);
 
-impl LockedStyleAttributes {
+impl LockedStyleAttributes
+{
     /// Creates a new empty set
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    {
         Self(HashSet::<LockableStyleAttribute>::new())
     }
 
     /// Creates a new set from the provided set of [`LockableStyleAttribute`]s
-    pub fn lock(attributes: impl Into<HashSet<LockableStyleAttribute>>) -> Self {
+    pub fn lock(attributes: impl Into<HashSet<LockableStyleAttribute>>) -> Self
+    {
         Self(attributes.into())
     }
 
     /// Creates a new set from the provided list of [`LockableStyleAttribute`]s
-    pub fn from_vec(attributes: Vec<LockableStyleAttribute>) -> Self {
+    pub fn from_vec(attributes: Vec<LockableStyleAttribute>) -> Self
+    {
         let mut set = HashSet::<LockableStyleAttribute>::with_capacity(attributes.len());
         for attribute in attributes.iter() {
             if !set.contains(attribute) {
@@ -137,13 +152,16 @@ impl LockedStyleAttributes {
     }
 
     /// Checks whether the set contains the attribute
-    pub fn contains(&self, attr: LockableStyleAttribute) -> bool {
+    pub fn contains(&self, attr: LockableStyleAttribute) -> bool
+    {
         self.0.contains(&attr)
     }
 }
 
-impl From<LockableStyleAttribute> for HashSet<LockableStyleAttribute> {
-    fn from(value: LockableStyleAttribute) -> Self {
+impl From<LockableStyleAttribute> for HashSet<LockableStyleAttribute>
+{
+    fn from(value: LockableStyleAttribute) -> Self
+    {
         let mut set = HashSet::<LockableStyleAttribute>::new();
         set.insert(value);
         set
@@ -154,7 +172,8 @@ impl From<LockableStyleAttribute> for HashSet<LockableStyleAttribute> {
 ///
 /// This can be used in animated themes to provide discretized states to interop with logic
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
-pub enum TrackedStyleState {
+pub enum TrackedStyleState
+{
     #[default]
     None,
     Transitioning,
@@ -166,8 +185,10 @@ pub enum TrackedStyleState {
     Canceled,
 }
 
-impl Lerp for TrackedStyleState {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for TrackedStyleState
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         if t == 0. {
             *self
         } else if t == 1. {
@@ -178,8 +199,10 @@ impl Lerp for TrackedStyleState {
     }
 }
 
-impl TrackedStyleState {
-    pub fn default_vals() -> AnimatedVals<Self> {
+impl TrackedStyleState
+{
+    pub fn default_vals() -> AnimatedVals<Self>
+    {
         AnimatedVals {
             idle: Self::Idle,
             hover: Self::Hover.into(),

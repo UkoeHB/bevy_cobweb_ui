@@ -1,25 +1,21 @@
-use bevy::{
-    ecs::world::Command,
-    prelude::*,
-    ui::{FocusPolicy, RelativeCursorPosition},
-};
-
+use bevy::ecs::world::Command;
+use bevy::prelude::*;
+use bevy::ui::{FocusPolicy, RelativeCursorPosition};
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
-use super::{
-    floating_panel::FloatingPanelTitle,
-    sized_zone::{
-        SizedZone, SizedZoneConfig, SizedZonePreUpdate, SizedZoneResizeHandleContainer,
-        UiSizedZoneExt,
-    },
-    tab_container::{TabBar, TabContainer, UiTabContainerExt, UiTabContainerSubExt},
+use super::floating_panel::FloatingPanelTitle;
+use super::sized_zone::{
+    SizedZone, SizedZoneConfig, SizedZonePreUpdate, SizedZoneResizeHandleContainer, UiSizedZoneExt,
 };
+use super::tab_container::{TabBar, TabContainer, UiTabContainerExt, UiTabContainerSubExt};
 
 pub struct DockingZonePlugin;
 
-impl Plugin for DockingZonePlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for DockingZonePlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(Update, DockingZoneUpdate.after(DroppableUpdate))
             .add_plugins(ComponentThemePlugin::<DockingZoneHighlight>::default())
             .add_systems(
@@ -41,10 +37,7 @@ impl Plugin for DockingZonePlugin {
             )
             .add_systems(
                 Update,
-                (
-                    update_docking_zone_resize_handles,
-                    handle_docking_zone_drop_zone_change,
-                )
+                (update_docking_zone_resize_handles, handle_docking_zone_drop_zone_change)
                     .in_set(DockingZoneUpdate),
             );
     }
@@ -56,7 +49,8 @@ pub struct DockingZoneUpdate;
 fn cleanup_empty_docking_zones(
     q_tab_containers: Query<(&TabContainer, &RemoveEmptyDockingZone), Changed<TabContainer>>,
     mut commands: Commands,
-) {
+)
+{
     for (tab_container, zone_ref) in &q_tab_containers {
         if tab_container.tab_count() > 0 {
             continue;
@@ -68,7 +62,8 @@ fn cleanup_empty_docking_zones(
 
 fn should_cleanup_lingering_docking_zone_splits(
     q_zone_splits: Query<Entity, (With<DockingZoneSplitContainer>, Changed<Children>)>,
-) -> bool {
+) -> bool
+{
     // A split should be removed if:
     // - it has no sized zone child (custom content is removed, it is not supported in DockingZoneSplitContainer)
     //   - spread size proportionally among sized zone siblings
@@ -99,8 +94,10 @@ fn cleanup_empty_docking_zone_splits(
     q_children: Query<&Children>,
     mut q_sized_zone: Query<&mut SizedZone>,
     mut commands: Commands,
-) {
-    // Find zones that have no sized zone children (custom content is removed, it is not supported in DockingZoneSplitContainer)
+)
+{
+    // Find zones that have no sized zone children (custom content is removed, it is not supported in
+    // DockingZoneSplitContainer)
     //   - spread size equally among sized zone siblings
     //   - it's a leaf node and should be just despawn_recursive'd:
     //   - [DockingZoneSplitContainer]
@@ -128,9 +125,7 @@ fn cleanup_empty_docking_zone_splits(
             let other_branches = q_children.get(ancestor).unwrap();
             let sibling_count = other_branches
                 .iter()
-                .filter(|branch| {
-                    **branch != topmost_empty_split && q_sized_zone.get(**branch).is_ok()
-                })
+                .filter(|branch| **branch != topmost_empty_split && q_sized_zone.get(**branch).is_ok())
                 .count();
 
             if sibling_count > 0 {
@@ -182,17 +177,16 @@ fn cleanup_empty_docking_zone_splits(
 }
 
 fn cleanup_shell_docking_zone_splits(
-    q_zone_splits: Query<
-        (Entity, &Children, &Parent),
-        (With<DockingZoneSplitContainer>, With<SizedZone>),
-    >,
+    q_zone_splits: Query<(Entity, &Children, &Parent), (With<DockingZoneSplitContainer>, With<SizedZone>)>,
     q_zone_split: Query<&DockingZoneSplitContainer, With<SizedZone>>,
     q_parent: Query<&Parent>,
     q_children: Query<&Children>,
     mut q_sized_zone: Query<&mut SizedZone>,
     mut commands: Commands,
-) {
-    // Find zone splits that are a child of a split and have more than one sized zone children and no sized zone siblings
+)
+{
+    // Find zone splits that are a child of a split and have more than one sized zone children and no sized zone
+    // siblings
     //   - update the child's size to the parent's
     //   - replace parent with the single zone child, depsawn parent and self (refresh new parent's children):
     //   - [DockingZoneSplitContainer:Column]            ->   [SizedZone:Column]
@@ -204,8 +198,9 @@ fn cleanup_shell_docking_zone_splits(
     //   - if it has multiple sized zone childs, move them to the parent, but spread the size amongst them
 
     // At this point, there should be no empty docking zone splits, but check anyway
-    // Don't traverse the tree upwards to find cleanup opportunities, these should be rare enough to be dealt with in multiple frames if needed
-    // Keep track of entities that were moved or deleted, as we don't know the processing order
+    // Don't traverse the tree upwards to find cleanup opportunities, these should be rare enough to be dealt with
+    // in multiple frames if needed Keep track of entities that were moved or deleted, as we don't know the
+    // processing order
     let mut entities_to_skip: Vec<Entity> = Vec::with_capacity(q_sized_zone.iter().count());
     for (zone_split_id, children, parent) in &q_zone_splits {
         if entities_to_skip.contains(&zone_split_id) {
@@ -292,17 +287,16 @@ fn cleanup_shell_docking_zone_splits(
 }
 
 fn cleanup_leftover_docking_zone_splits(
-    q_zone_splits: Query<
-        (Entity, &Children, &Parent),
-        (With<DockingZoneSplitContainer>, With<SizedZone>),
-    >,
+    q_zone_splits: Query<(Entity, &Children, &Parent), (With<DockingZoneSplitContainer>, With<SizedZone>)>,
     q_docking_zone: Query<&DockingZone, With<SizedZone>>,
     q_children: Query<&Children>,
     mut q_sized_zone: Query<&mut SizedZone>,
     mut commands: Commands,
-) {
+)
+{
     // This is a special case when a DockingZone is the sole remaining child of a docking zone split.
-    // The DockingZone cannot have a SizedZone as a direct descedant (not supported), so the direction change can be cleaned up.
+    // The DockingZone cannot have a SizedZone as a direct descedant (not supported), so the direction change can
+    // be cleaned up.
     //   - [DockingZoneSplitContainer:Column]            ->   [DockingZone:Column]
     //     - [DockingZone:Row]                                  - [TabContainer]
     //       - [TabContainer]                                   - [SizedZoneResizeHandleContainer]
@@ -359,7 +353,8 @@ fn update_docking_zone_resize_handles(
     q_accepted_types: Query<&Draggable, (With<FloatingPanelTitle>, Changed<Draggable>)>,
     q_handle_containers: Query<Entity, With<SizedZoneResizeHandleContainer>>,
     mut commands: Commands,
-) {
+)
+{
     if q_accepted_types
         .iter()
         .all(|draggable| draggable.state == DragState::Inactive)
@@ -367,9 +362,9 @@ fn update_docking_zone_resize_handles(
         return;
     }
 
-    let dragging = q_accepted_types.iter().any(|draggable| {
-        draggable.state == DragState::DragStart || draggable.state == DragState::Dragging
-    });
+    let dragging = q_accepted_types
+        .iter()
+        .any(|draggable| draggable.state == DragState::DragStart || draggable.state == DragState::Dragging);
 
     for container in &q_handle_containers {
         commands.style(container).render(!dragging);
@@ -377,15 +372,13 @@ fn update_docking_zone_resize_handles(
 }
 
 fn handle_docking_zone_drop_zone_change(
-    q_docking_zones: Query<
-        (Entity, &DockingZone, &DropZone, &Node, &GlobalTransform),
-        Changed<DropZone>,
-    >,
+    q_docking_zones: Query<(Entity, &DockingZone, &DropZone, &Node, &GlobalTransform), Changed<DropZone>>,
     q_accepted_query: Query<&FloatingPanelTitle>,
     q_tab_container: Query<&TabContainer>,
     q_tab_bar: Query<(&Node, &Interaction), With<TabBar>>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, docking_zone, drop_zone, node, transform) in &q_docking_zones {
         let Ok(tab_container) = q_tab_container.get(docking_zone.tab_container) else {
             warn!("Docking zone {} missing its tab container!", entity);
@@ -484,7 +477,8 @@ fn handle_docking_zone_drop_zone_change(
     }
 }
 
-fn calculate_drop_area(position: Vec2, center: Vec2, size: Vec2) -> DropArea {
+fn calculate_drop_area(position: Vec2, center: Vec2, size: Vec2) -> DropArea
+{
     let sixth_width = size.x / 6.;
     let sixth_height = size.y / 6.;
 
@@ -502,21 +496,25 @@ fn calculate_drop_area(position: Vec2, center: Vec2, size: Vec2) -> DropArea {
 }
 
 #[derive(PartialEq, Eq)]
-enum DockingZoneSplitDirection {
+enum DockingZoneSplitDirection
+{
     VerticallyBefore,
     VerticallyAfter,
     HorizontallyBefore,
     HorizontallyAfter,
 }
 
-struct DockingZoneSplit {
+struct DockingZoneSplit
+{
     docking_zone: Entity,
     direction: DockingZoneSplitDirection,
     panel_to_dock: Option<Entity>,
 }
 
-impl Command for DockingZoneSplit {
-    fn apply(self, world: &mut World) {
+impl Command for DockingZoneSplit
+{
+    fn apply(self, world: &mut World)
+    {
         let Ok((docking_zone, parent, sized_zone)) = world
             .query::<(&DockingZone, &Parent, &SizedZone)>()
             .get(world, self.docking_zone)
@@ -592,11 +590,7 @@ impl Command for DockingZoneSplit {
             let new_parent_id = commands
                 .ui_builder(parent_id)
                 .docking_zone_split(
-                    SizedZoneConfig {
-                        size: current_size,
-                        min_size: current_min_size,
-                        ..default()
-                    },
+                    SizedZoneConfig { size: current_size, min_size: current_min_size, ..default() },
                     |_| {},
                 )
                 .id();
@@ -648,7 +642,8 @@ impl Command for DockingZoneSplit {
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
-enum DropArea {
+enum DropArea
+{
     #[default]
     None,
     Center,
@@ -664,13 +659,16 @@ pub struct DockingZoneSplitContainer;
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct DockingZone {
+pub struct DockingZone
+{
     tab_container: Entity,
     zone_highlight: Entity,
 }
 
-impl Default for DockingZone {
-    fn default() -> Self {
+impl Default for DockingZone
+{
+    fn default() -> Self
+    {
         Self {
             tab_container: Entity::PLACEHOLDER,
             zone_highlight: Entity::PLACEHOLDER,
@@ -680,50 +678,52 @@ impl Default for DockingZone {
 
 #[derive(Component, Debug, Reflect, UiContext)]
 #[reflect(Component)]
-pub struct DockingZoneHighlight {
+pub struct DockingZoneHighlight
+{
     zone: Entity,
 }
 
-impl Default for DockingZoneHighlight {
-    fn default() -> Self {
-        Self {
-            zone: Entity::PLACEHOLDER,
-        }
+impl Default for DockingZoneHighlight
+{
+    fn default() -> Self
+    {
+        Self { zone: Entity::PLACEHOLDER }
     }
 }
 
-impl DefaultTheme for DockingZoneHighlight {
-    fn default_theme() -> Option<Theme<DockingZoneHighlight>> {
+impl DefaultTheme for DockingZoneHighlight
+{
+    fn default_theme() -> Option<Theme<DockingZoneHighlight>>
+    {
         DockingZoneHighlight::theme().into()
     }
 }
 
-impl DockingZoneHighlight {
-    pub fn theme() -> Theme<DockingZoneHighlight> {
+impl DockingZoneHighlight
+{
+    pub fn theme() -> Theme<DockingZoneHighlight>
+    {
         let base_theme = PseudoTheme::deferred(None, DockingZoneHighlight::primary_style);
-        let visible_theme = PseudoTheme::deferred(
-            vec![PseudoState::Visible],
-            DockingZoneHighlight::visible_style,
-        );
+        let visible_theme = PseudoTheme::deferred(vec![PseudoState::Visible], DockingZoneHighlight::visible_style);
         Theme::new(vec![base_theme, visible_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, _: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, _: &ThemeData)
+    {
         style_builder.z_index(ZIndex::Local(100));
     }
 
-    fn visible_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn visible_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         style_builder.background_color(theme_data.colors().accent(Accent::Outline).with_alpha(0.2));
     }
 
-    fn bundle(zone: Entity) -> impl Bundle {
+    fn bundle(zone: Entity) -> impl Bundle
+    {
         (
             Name::new("Zone Highlight"),
             NodeBundle {
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    ..default()
-                },
+                style: Style { position_type: PositionType::Absolute, ..default() },
                 focus_policy: FocusPolicy::Pass,
                 visibility: Visibility::Hidden,
                 ..default()
@@ -748,19 +748,21 @@ impl DockingZoneHighlight {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct RemoveEmptyDockingZone {
+pub struct RemoveEmptyDockingZone
+{
     zone: Entity,
 }
 
-impl Default for RemoveEmptyDockingZone {
-    fn default() -> Self {
-        Self {
-            zone: Entity::PLACEHOLDER,
-        }
+impl Default for RemoveEmptyDockingZone
+{
+    fn default() -> Self
+    {
+        Self { zone: Entity::PLACEHOLDER }
     }
 }
 
-pub trait UiDockingZoneExt {
+pub trait UiDockingZoneExt
+{
     fn docking_zone(
         &mut self,
         config: SizedZoneConfig,
@@ -775,7 +777,8 @@ pub trait UiDockingZoneExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl UiDockingZoneExt for UiBuilder<'_, Entity> {
+impl UiDockingZoneExt for UiBuilder<'_, Entity>
+{
     /// A flexible docking zone, able to receive `FloatingPanels` and dock them in its `TabContainer`
     ///
     /// ### PseudoState usage
@@ -785,7 +788,8 @@ impl UiDockingZoneExt for UiBuilder<'_, Entity> {
         config: SizedZoneConfig,
         remove_empty: bool,
         spawn_children: impl FnOnce(&mut UiBuilder<(Entity, TabContainer)>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let mut tab_container = Entity::PLACEHOLDER;
         let mut zone_highlight = Entity::PLACEHOLDER;
 
@@ -803,10 +807,7 @@ impl UiDockingZoneExt for UiBuilder<'_, Entity> {
 
         docking_zone.insert((
             Name::new("Docking Zone"),
-            DockingZone {
-                tab_container,
-                zone_highlight,
-            },
+            DockingZone { tab_container, zone_highlight },
             Interaction::default(),
             DropZone::default(),
             RelativeCursorPosition::default(),
@@ -822,7 +823,8 @@ impl UiDockingZoneExt for UiBuilder<'_, Entity> {
         &mut self,
         config: SizedZoneConfig,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let new_id = self
             .sized_zone(config, spawn_children)
             .insert((Name::new("Docking Zone Split"), DockingZoneSplitContainer))

@@ -1,19 +1,18 @@
 use bevy::prelude::*;
-
 use sickle_ui_scaffold::prelude::*;
 
-use super::{
-    context_menu::{ContextMenu, UiContextMenuExt},
-    menu::{Menu, UiMenuSubExt},
-    menu_item::{MenuItem, MenuItemConfig, MenuItemUpdate},
-    shortcut::Shortcut,
-    submenu::{Submenu, UiSubmenuSubExt},
-};
+use super::context_menu::{ContextMenu, UiContextMenuExt};
+use super::menu::{Menu, UiMenuSubExt};
+use super::menu_item::{MenuItem, MenuItemConfig, MenuItemUpdate};
+use super::shortcut::Shortcut;
+use super::submenu::{Submenu, UiSubmenuSubExt};
 
 pub struct ToggleMenuItemPlugin;
 
-impl Plugin for ToggleMenuItemPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ToggleMenuItemPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             ToggleMenuItemUpdate
@@ -39,7 +38,8 @@ pub struct ToggleMenuItemUpdate;
 
 fn update_toggle_menu_item_value(
     mut q_menu_items: Query<(&mut ToggleMenuItem, &FluxInteraction), Changed<FluxInteraction>>,
-) {
+)
+{
     for (mut toggle, interaction) in &mut q_menu_items {
         if interaction.is_pressed() {
             toggle.checked = !toggle.checked;
@@ -49,7 +49,8 @@ fn update_toggle_menu_item_value(
 
 fn update_toggle_menu_item_on_shortcut_press(
     mut q_menu_items: Query<(&mut ToggleMenuItem, &Shortcut), Changed<Shortcut>>,
-) {
+)
+{
     for (mut toggle, shortcut) in &mut q_menu_items {
         if shortcut.pressed() {
             toggle.checked = !toggle.checked;
@@ -60,7 +61,8 @@ fn update_toggle_menu_item_on_shortcut_press(
 fn update_toggle_menu_checkmark(
     q_menu_items: Query<(Entity, &ToggleMenuItem), Changed<ToggleMenuItem>>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, toggle) in &q_menu_items {
         if toggle.checked {
             commands
@@ -75,7 +77,8 @@ fn update_toggle_menu_checkmark(
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct ToggleMenuItemConfig {
+pub struct ToggleMenuItemConfig
+{
     pub name: String,
     pub trailing_icon: IconData,
     pub alt_code: Option<KeyCode>,
@@ -83,8 +86,10 @@ pub struct ToggleMenuItemConfig {
     pub initially_checked: bool,
 }
 
-impl Into<MenuItemConfig> for ToggleMenuItemConfig {
-    fn into(self) -> MenuItemConfig {
+impl Into<MenuItemConfig> for ToggleMenuItemConfig
+{
+    fn into(self) -> MenuItemConfig
+    {
         MenuItemConfig {
             name: self.name,
             alt_code: self.alt_code,
@@ -97,7 +102,8 @@ impl Into<MenuItemConfig> for ToggleMenuItemConfig {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ToggleMenuItem {
+pub struct ToggleMenuItem
+{
     pub checked: bool,
     leading: Entity,
     label: Entity,
@@ -108,8 +114,10 @@ pub struct ToggleMenuItem {
     alt_code: Option<KeyCode>,
 }
 
-impl Default for ToggleMenuItem {
-    fn default() -> Self {
+impl Default for ToggleMenuItem
+{
+    fn default() -> Self
+    {
         Self {
             checked: Default::default(),
             leading: Entity::PLACEHOLDER,
@@ -123,8 +131,10 @@ impl Default for ToggleMenuItem {
     }
 }
 
-impl Into<ToggleMenuItem> for MenuItem {
-    fn into(self) -> ToggleMenuItem {
+impl Into<ToggleMenuItem> for MenuItem
+{
+    fn into(self) -> ToggleMenuItem
+    {
         ToggleMenuItem {
             checked: false,
             label: self.label(),
@@ -138,14 +148,18 @@ impl Into<ToggleMenuItem> for MenuItem {
     }
 }
 
-impl DefaultTheme for ToggleMenuItem {
-    fn default_theme() -> Option<Theme<ToggleMenuItem>> {
+impl DefaultTheme for ToggleMenuItem
+{
+    fn default_theme() -> Option<Theme<ToggleMenuItem>>
+    {
         ToggleMenuItem::theme().into()
     }
 }
 
-impl UiContext for ToggleMenuItem {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for ToggleMenuItem
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             MenuItem::LEADING_ICON => Ok(self.leading),
             MenuItem::LABEL => Ok(self.label),
@@ -160,7 +174,8 @@ impl UiContext for ToggleMenuItem {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             MenuItem::LEADING_ICON,
             MenuItem::LABEL,
@@ -172,19 +187,17 @@ impl UiContext for ToggleMenuItem {
     }
 }
 
-impl ToggleMenuItem {
-    pub fn theme() -> Theme<ToggleMenuItem> {
+impl ToggleMenuItem
+{
+    pub fn theme() -> Theme<ToggleMenuItem>
+    {
         let base_theme = PseudoTheme::deferred_context(None, ToggleMenuItem::primary_style);
-        let checked_theme =
-            PseudoTheme::deferred(vec![PseudoState::Checked], ToggleMenuItem::checked_style);
+        let checked_theme = PseudoTheme::deferred(vec![PseudoState::Checked], ToggleMenuItem::checked_style);
         Theme::new(vec![base_theme, checked_theme])
     }
 
-    fn primary_style(
-        style_builder: &mut StyleBuilder,
-        menu_item: &ToggleMenuItem,
-        theme_data: &ThemeData,
-    ) {
+    fn primary_style(style_builder: &mut StyleBuilder, menu_item: &ToggleMenuItem, theme_data: &ThemeData)
+    {
         let leading_icon = theme_data.icons.checkmark.clone();
         let trailing_icon = menu_item.trailing_icon.clone();
 
@@ -195,14 +208,16 @@ impl ToggleMenuItem {
             .visibility(Visibility::Hidden);
     }
 
-    fn checked_style(style_builder: &mut StyleBuilder, _: &ThemeData) {
+    fn checked_style(style_builder: &mut StyleBuilder, _: &ThemeData)
+    {
         style_builder
             .switch_target(MenuItem::LEADING_ICON)
             .visibility(Visibility::Inherited);
     }
 }
 
-pub trait UiToggleMenuItemExt {
+pub trait UiToggleMenuItemExt
+{
     /// A toggle menu item in a menu, context menu, or submenu
     ///
     /// ### PseudoState usage
@@ -210,23 +225,24 @@ pub trait UiToggleMenuItemExt {
     fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity>;
 }
 
-impl UiToggleMenuItemExt for UiBuilder<'_, Entity> {
-    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity> {
+impl UiToggleMenuItemExt for UiBuilder<'_, Entity>
+{
+    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity>
+    {
         let item_config = config.into();
         let checked = item_config.initially_checked;
         let (id, menu_item) = MenuItem::scaffold(self, item_config);
-        let toggle_item = ToggleMenuItem {
-            checked,
-            ..menu_item.into()
-        };
+        let toggle_item = ToggleMenuItem { checked, ..menu_item.into() };
 
         self.commands().ui_builder(id).insert(toggle_item);
         self.commands().ui_builder(id)
     }
 }
 
-impl UiToggleMenuItemExt for UiBuilder<'_, Menu> {
-    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity> {
+impl UiToggleMenuItemExt for UiBuilder<'_, Menu>
+{
+    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -238,8 +254,10 @@ impl UiToggleMenuItemExt for UiBuilder<'_, Menu> {
     }
 }
 
-impl UiToggleMenuItemExt for UiBuilder<'_, Submenu> {
-    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity> {
+impl UiToggleMenuItemExt for UiBuilder<'_, Submenu>
+{
+    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -251,8 +269,10 @@ impl UiToggleMenuItemExt for UiBuilder<'_, Submenu> {
     }
 }
 
-impl UiToggleMenuItemExt for UiBuilder<'_, ContextMenu> {
-    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity> {
+impl UiToggleMenuItemExt for UiBuilder<'_, ContextMenu>
+{
+    fn toggle_menu_item(&mut self, config: impl Into<ToggleMenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()

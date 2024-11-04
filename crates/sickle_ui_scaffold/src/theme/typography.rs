@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
-pub enum FontStyle {
+pub enum FontStyle
+{
     Display,
     Headline,
     Title,
@@ -10,14 +11,16 @@ pub enum FontStyle {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum FontScale {
+pub enum FontScale
+{
     Small,
     Medium,
     Large,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum FontType {
+pub enum FontType
+{
     Regular,
     Bold,
     Italic,
@@ -25,13 +28,15 @@ pub enum FontType {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct SizedFont {
+pub struct SizedFont
+{
     pub font: String,
     pub size: f32,
 }
 
 #[derive(Clone, Debug, Default, Reflect)]
-pub struct FontSet {
+pub struct FontSet
+{
     pub regular: String,
     pub bold: String,
     pub italic: String,
@@ -39,7 +44,8 @@ pub struct FontSet {
 }
 
 #[derive(Clone, Debug, Default, Reflect)]
-pub struct FontConfig {
+pub struct FontConfig
+{
     pub font: FontSet,
     // Unusued until proper text handling exists
     pub weight: f32,
@@ -52,8 +58,10 @@ pub struct FontConfig {
     pub line_height: f32,
 }
 
-impl FontConfig {
-    pub fn get(&self, font_type: FontType) -> SizedFont {
+impl FontConfig
+{
+    pub fn get(&self, font_type: FontType) -> SizedFont
+    {
         match font_type {
             FontType::Regular => SizedFont { font: self.font.regular.clone(), size: self.size },
             FontType::Bold => SizedFont { font: self.font.bold.clone(), size: self.size },
@@ -64,14 +72,17 @@ impl FontConfig {
 }
 
 #[derive(Clone, Debug, Default, Reflect)]
-pub struct StyleScales {
+pub struct StyleScales
+{
     pub small: FontConfig,
     pub medium: FontConfig,
     pub large: FontConfig,
 }
 
-impl StyleScales {
-    pub fn get(&self, scale: FontScale) -> &FontConfig {
+impl StyleScales
+{
+    pub fn get(&self, scale: FontScale) -> &FontConfig
+    {
         match scale {
             FontScale::Small => &self.small,
             FontScale::Medium => &self.medium,
@@ -81,7 +92,8 @@ impl StyleScales {
 }
 
 #[derive(Clone, Debug, Reflect)]
-pub struct ThemeTypography {
+pub struct ThemeTypography
+{
     pub display: StyleScales,
     pub headline: StyleScales,
     pub title: StyleScales,
@@ -89,8 +101,10 @@ pub struct ThemeTypography {
     pub label: StyleScales,
 }
 
-impl ThemeTypography {
-    pub fn get(&self, style: FontStyle, scale: FontScale, font_type: FontType) -> SizedFont {
+impl ThemeTypography
+{
+    pub fn get(&self, style: FontStyle, scale: FontScale, font_type: FontType) -> SizedFont
+    {
         match style {
             FontStyle::Display => self.display.get(scale).get(font_type),
             FontStyle::Headline => self.headline.get(scale).get(font_type),
@@ -101,8 +115,10 @@ impl ThemeTypography {
     }
 }
 
-impl Default for ThemeTypography {
-    fn default() -> Self {
+impl Default for ThemeTypography
+{
+    fn default() -> Self
+    {
         let regular_set = FontSet {
             regular: "embedded://bevy_cobweb_ui/fonts/FiraSans-Regular.ttf".into(),
             bold: "embedded://bevy_cobweb_ui/fonts/FiraSans-Bold.ttf".into(),

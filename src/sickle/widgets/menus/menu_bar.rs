@@ -1,12 +1,13 @@
 use bevy::prelude::*;
-
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
 pub struct MenuBarPlugin;
 
-impl Plugin for MenuBarPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for MenuBarPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins(ComponentThemePlugin::<MenuBar>::default());
     }
 }
@@ -15,19 +16,24 @@ impl Plugin for MenuBarPlugin {
 #[reflect(Component)]
 pub struct MenuBar;
 
-impl DefaultTheme for MenuBar {
-    fn default_theme() -> Option<Theme<MenuBar>> {
+impl DefaultTheme for MenuBar
+{
+    fn default_theme() -> Option<Theme<MenuBar>>
+    {
         MenuBar::theme().into()
     }
 }
 
-impl MenuBar {
-    pub fn theme() -> Theme<MenuBar> {
+impl MenuBar
+{
+    pub fn theme() -> Theme<MenuBar>
+    {
         let base_theme = PseudoTheme::deferred(None, MenuBar::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -40,14 +46,12 @@ impl MenuBar {
             .padding(UiRect::all(Val::Px(theme_spacing.gaps.small)));
     }
 
-    fn frame() -> impl Bundle {
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Menu Bar"),
             NodeBundle {
-                style: Style {
-                    overflow: Overflow::visible(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::visible(), ..default() },
                 ..default()
             },
             LockedStyleAttributes::lock(LockableStyleAttribute::Overflow),
@@ -55,18 +59,15 @@ impl MenuBar {
     }
 }
 
-pub trait UiMenuBarExt {
-    fn menu_bar(
-        &mut self,
-        spawn_children: impl FnOnce(&mut UiBuilder<(Entity, MenuBar)>),
-    ) -> UiBuilder<Entity>;
+pub trait UiMenuBarExt
+{
+    fn menu_bar(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<(Entity, MenuBar)>)) -> UiBuilder<Entity>;
 }
 
-impl UiMenuBarExt for UiBuilder<'_, Entity> {
-    fn menu_bar(
-        &mut self,
-        spawn_children: impl FnOnce(&mut UiBuilder<(Entity, MenuBar)>),
-    ) -> UiBuilder<Entity> {
+impl UiMenuBarExt for UiBuilder<'_, Entity>
+{
+    fn menu_bar(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<(Entity, MenuBar)>)) -> UiBuilder<Entity>
+    {
         let id = self.spawn((MenuBar::frame(), MenuBar)).id();
 
         let mut builder = self.commands().ui_builder((id, MenuBar));

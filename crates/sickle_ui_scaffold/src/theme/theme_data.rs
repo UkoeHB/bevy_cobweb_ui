@@ -1,18 +1,16 @@
 use bevy::prelude::*;
 use sickle_math::ease::Ease;
 
+use super::icons::Icons;
+use super::style_animation::AnimationSettings;
+use super::theme_colors::{SchemeColors, ThemeColors};
+use super::theme_spacing::ThemeSpacing;
+use super::typography::ThemeTypography;
 use crate::ui_style::builder::StyleBuilder;
 
-use super::{
-    icons::Icons,
-    style_animation::AnimationSettings,
-    theme_colors::{SchemeColors, ThemeColors},
-    theme_spacing::ThemeSpacing,
-    typography::ThemeTypography,
-};
-
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Reflect)]
-pub enum Contrast {
+pub enum Contrast
+{
     #[default]
     Standard,
     Medium,
@@ -20,29 +18,36 @@ pub enum Contrast {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Reflect)]
-pub enum Scheme {
+pub enum Scheme
+{
     Light(Contrast),
     Dark(Contrast),
 }
 
-impl Default for Scheme {
-    fn default() -> Self {
+impl Default for Scheme
+{
+    fn default() -> Self
+    {
         Self::Dark(Default::default())
     }
 }
 
-impl Scheme {
-    pub fn is_light(&self) -> bool {
+impl Scheme
+{
+    pub fn is_light(&self) -> bool
+    {
         matches!(self, Scheme::Light(_))
     }
 
-    pub fn is_dark(&self) -> bool {
+    pub fn is_dark(&self) -> bool
+    {
         matches!(self, Scheme::Dark(_))
     }
 }
 
 #[derive(Resource, Clone, Debug, Reflect)]
-pub struct ThemeData {
+pub struct ThemeData
+{
     pub active_scheme: Scheme,
     pub colors: ThemeColors,
     pub spacing: ThemeSpacing,
@@ -53,8 +58,10 @@ pub struct ThemeData {
     pub enter_animation: AnimationSettings,
 }
 
-impl Default for ThemeData {
-    fn default() -> Self {
+impl Default for ThemeData
+{
+    fn default() -> Self
+    {
         let mut interaction_animation = AnimationSettings::new();
         interaction_animation
             .pointer_enter(0.1, Ease::OutExpo, None)
@@ -85,8 +92,10 @@ impl Default for ThemeData {
     }
 }
 
-impl ThemeData {
-    pub fn with_default(builder: fn(&mut StyleBuilder, &ThemeData)) -> StyleBuilder {
+impl ThemeData
+{
+    pub fn with_default(builder: fn(&mut StyleBuilder, &ThemeData)) -> StyleBuilder
+    {
         let theme_data = ThemeData::default();
         let mut style_builder = StyleBuilder::new();
         builder(&mut style_builder, &theme_data);
@@ -95,7 +104,8 @@ impl ThemeData {
     }
 
     /// Returns the scheme colors of the current active scheme / contrast
-    pub fn colors(&self) -> SchemeColors {
+    pub fn colors(&self) -> SchemeColors
+    {
         match self.active_scheme {
             Scheme::Light(contrast) => self.colors.schemes.light_contrast(contrast),
             Scheme::Dark(contrast) => self.colors.schemes.dark_contrast(contrast),

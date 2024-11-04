@@ -4,8 +4,10 @@ use crate::sickle::input_extension::SymmetricKeysExt;
 
 pub struct ShortcutPlugin;
 
-impl Plugin for ShortcutPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ShortcutPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(PreUpdate, ShortcutPreUpdate)
             .add_systems(
                 PreUpdate,
@@ -19,7 +21,8 @@ impl Plugin for ShortcutPlugin {
 #[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
 pub struct ShortcutPreUpdate;
 
-fn reset_pressed_shortcuts(mut q_shortcuts: Query<&mut Shortcut>) {
+fn reset_pressed_shortcuts(mut q_shortcuts: Query<&mut Shortcut>)
+{
     for mut shortcut in &mut q_shortcuts {
         if shortcut.pressed {
             shortcut.bypass_change_detection().pressed = false;
@@ -27,7 +30,8 @@ fn reset_pressed_shortcuts(mut q_shortcuts: Query<&mut Shortcut>) {
     }
 }
 
-fn update_shortcut_on_key_press(mut q_shortcuts: Query<&mut Shortcut>, r_keys: Res<ButtonInput<KeyCode>>) {
+fn update_shortcut_on_key_press(mut q_shortcuts: Query<&mut Shortcut>, r_keys: Res<ButtonInput<KeyCode>>)
+{
     if !r_keys.is_changed() {
         return;
     }
@@ -58,17 +62,21 @@ fn update_shortcut_on_key_press(mut q_shortcuts: Query<&mut Shortcut>, r_keys: R
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct Shortcut {
+pub struct Shortcut
+{
     code: Vec<KeyCode>,
     pressed: bool,
 }
 
-impl Shortcut {
-    pub fn new(code: Vec<KeyCode>) -> Self {
+impl Shortcut
+{
+    pub fn new(code: Vec<KeyCode>) -> Self
+    {
         Self { code, pressed: false }
     }
 
-    pub fn pressed(&self) -> bool {
+    pub fn pressed(&self) -> bool
+    {
         self.pressed
     }
 }

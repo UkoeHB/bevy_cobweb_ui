@@ -1,28 +1,30 @@
 use std::collections::VecDeque;
 
-use bevy::{prelude::*, ui::FocusPolicy};
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
+use sickle_ui_scaffold::prelude::*;
+use sickle_ui_scaffold::ui_commands::UpdateTextExt;
 
-use sickle_ui_scaffold::{prelude::*, ui_commands::UpdateTextExt};
-
-use crate::sickle::widgets::layout::{
-    container::UiContainerExt,
-    label::{LabelConfig, UiLabelExt},
-    panel::UiPanelExt,
-    scroll_view::{ScrollView, ScrollViewLayoutUpdate, UiScrollViewExt},
-};
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, UiLabelExt};
+use crate::sickle::widgets::layout::panel::UiPanelExt;
+use crate::sickle::widgets::layout::scroll_view::{ScrollView, ScrollViewLayoutUpdate, UiScrollViewExt};
 
 const DROPDOWN_PANEL_Z_INDEX: usize = 11000;
 
 #[cfg(feature = "observable")]
 #[derive(Event, Copy, Clone, Debug)]
-pub struct DropdownChanged {
+pub struct DropdownChanged
+{
     pub value: Option<usize>,
 }
 
 pub struct DropdownPlugin;
 
-impl Plugin for DropdownPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for DropdownPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins((
             ComponentThemePlugin::<Dropdown>::default(),
             ComponentThemePlugin::<DropdownOption>::default(),
@@ -49,7 +51,8 @@ impl Plugin for DropdownPlugin {
 fn update_dropdown_label(
     mut q_dropdowns: Query<(&mut Dropdown, &DropdownOptions), Changed<Dropdown>>,
     mut commands: Commands,
-) {
+)
+{
     for (mut dropdown, options) in &mut q_dropdowns {
         if let Some(value) = dropdown.value {
             if value >= options.0.len() {
@@ -71,7 +74,8 @@ fn handle_click_or_touch(
     r_mouse: Res<ButtonInput<MouseButton>>,
     r_touches: Res<Touches>,
     mut q_dropdowns: Query<(Entity, &mut Dropdown, &FluxInteraction)>,
-) {
+)
+{
     if r_mouse.any_just_released([MouseButton::Left, MouseButton::Middle, MouseButton::Right])
         || r_touches.any_just_released()
     {
@@ -101,7 +105,8 @@ fn handle_option_press(
     q_options: Query<(&DropdownOption, &FluxInteraction), Changed<FluxInteraction>>,
     mut q_dropdown: Query<&mut Dropdown>,
     mut commands: Commands,
-) {
+)
+{
     for (option, interaction) in &q_options {
         if *interaction == FluxInteraction::Released {
             let Ok(mut dropdown) = q_dropdown.get_mut(option.dropdown) else {
@@ -119,7 +124,8 @@ fn handle_option_press(
 fn update_drowdown_pseudo_state(
     q_panels: Query<(&DropdownPanel, &PseudoStates), Changed<PseudoStates>>,
     mut commands: Commands,
-) {
+)
+{
     for (panel, states) in &q_panels {
         if states.has(&PseudoState::Visible) {
             commands
@@ -137,7 +143,8 @@ fn update_dropdown_panel_visibility(
     q_dropdowns: Query<&Dropdown, Changed<Dropdown>>,
     mut q_scroll_view: Query<&mut ScrollView>,
     mut commands: Commands,
-) {
+)
+{
     for dropdown in &q_dropdowns {
         if dropdown.is_open {
             commands
@@ -161,7 +168,8 @@ fn update_dropdown_panel_visibility(
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum DropdownPanelAnchor {
+pub enum DropdownPanelAnchor
+{
     TopLeft,
     TopRight,
     #[default]
@@ -170,7 +178,8 @@ pub enum DropdownPanelAnchor {
 }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct DropdownPanelPlacement {
+pub struct DropdownPanelPlacement
+{
     pub anchor: DropdownPanelAnchor,
     pub top: Val,
     pub right: Val,
@@ -187,22 +196,27 @@ pub struct DropdownPanelPlacement {
 #[reflect(Component)]
 pub struct DropdownOptions(Vec<String>);
 
-impl DropdownOptions {
-    pub fn labels(&self) -> &Vec<String> {
+impl DropdownOptions
+{
+    pub fn labels(&self) -> &Vec<String>
+    {
         &self.0
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct DropdownOption {
+pub struct DropdownOption
+{
     dropdown: Entity,
     label: Entity,
     option: usize,
 }
 
-impl Default for DropdownOption {
-    fn default() -> Self {
+impl Default for DropdownOption
+{
+    fn default() -> Self
+    {
         Self {
             dropdown: Entity::PLACEHOLDER,
             label: Entity::PLACEHOLDER,
@@ -211,8 +225,10 @@ impl Default for DropdownOption {
     }
 }
 
-impl UiContext for DropdownOption {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for DropdownOption
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             DropdownOption::LABEL => Ok(self.label),
             _ => Err(format!(
@@ -223,35 +239,43 @@ impl UiContext for DropdownOption {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [DropdownOption::LABEL].into_iter()
     }
 }
 
-impl DefaultTheme for DropdownOption {
-    fn default_theme() -> Option<Theme<DropdownOption>> {
+impl DefaultTheme for DropdownOption
+{
+    fn default_theme() -> Option<Theme<DropdownOption>>
+    {
         DropdownOption::theme().into()
     }
 }
 
-impl DropdownOption {
+impl DropdownOption
+{
     pub const LABEL: &'static str = "Label";
 
-    pub fn dropdown(&self) -> Entity {
+    pub fn dropdown(&self) -> Entity
+    {
         self.dropdown
     }
 
-    pub fn option(&self) -> usize {
+    pub fn option(&self) -> usize
+    {
         self.option
     }
 
-    pub fn theme() -> Theme<DropdownOption> {
+    pub fn theme() -> Theme<DropdownOption>
+    {
         let base_theme = PseudoTheme::deferred(None, DropdownOption::primary_style);
 
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -289,19 +313,23 @@ impl DropdownOption {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct DropdownPanel {
+pub struct DropdownPanel
+{
     dropdown: Entity,
 }
 
-impl Default for DropdownPanel {
-    fn default() -> Self {
+impl Default for DropdownPanel
+{
+    fn default() -> Self
+    {
         Self { dropdown: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Dropdown {
+pub struct Dropdown
+{
     value: Option<usize>,
     label: Entity,
     icon: Entity,
@@ -311,8 +339,10 @@ pub struct Dropdown {
     is_open: bool,
 }
 
-impl Default for Dropdown {
-    fn default() -> Self {
+impl Default for Dropdown
+{
+    fn default() -> Self
+    {
         Self {
             value: Default::default(),
             label: Entity::PLACEHOLDER,
@@ -325,8 +355,10 @@ impl Default for Dropdown {
     }
 }
 
-impl UiContext for Dropdown {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Dropdown
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Dropdown::LABEL => Ok(self.label),
             Dropdown::ICON => Ok(self.icon),
@@ -341,7 +373,8 @@ impl UiContext for Dropdown {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             Dropdown::LABEL,
             Dropdown::ICON,
@@ -353,42 +386,50 @@ impl UiContext for Dropdown {
     }
 }
 
-impl DefaultTheme for Dropdown {
-    fn default_theme() -> Option<Theme<Dropdown>> {
+impl DefaultTheme for Dropdown
+{
+    fn default_theme() -> Option<Theme<Dropdown>>
+    {
         Dropdown::theme().into()
     }
 }
 
-impl Dropdown {
+impl Dropdown
+{
     pub const LABEL: &'static str = "Label";
     pub const ICON: &'static str = "Icon";
     pub const PANEL: &'static str = "Panel";
     pub const SCROLL_VIEW: &'static str = "ScrollView";
     pub const SCROLL_VIEW_CONTENT: &'static str = "ScrollViewContent";
 
-    pub fn value(&self) -> Option<usize> {
+    pub fn value(&self) -> Option<usize>
+    {
         self.value
     }
 
-    pub fn set_value(&mut self, value: impl Into<Option<usize>>) {
+    pub fn set_value(&mut self, value: impl Into<Option<usize>>)
+    {
         let value = value.into();
         if self.value != value {
             self.value = value;
         }
     }
 
-    pub fn options_container(&self) -> Entity {
+    pub fn options_container(&self) -> Entity
+    {
         self.scroll_view_content
     }
 
-    pub fn theme() -> Theme<Dropdown> {
+    pub fn theme() -> Theme<Dropdown>
+    {
         let base_theme = PseudoTheme::deferred(None, Dropdown::primary_style);
         let open_theme = PseudoTheme::deferred_world(vec![PseudoState::Open], Dropdown::open_style);
 
         Theme::new(vec![base_theme, open_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -465,7 +506,8 @@ impl Dropdown {
             ));
     }
 
-    fn open_style(style_builder: &mut StyleBuilder, entity: Entity, _: &Dropdown, world: &World) {
+    fn open_style(style_builder: &mut StyleBuilder, entity: Entity, _: &Dropdown, world: &World)
+    {
         let placement = match Dropdown::panel_placement_for(entity, world) {
             Ok(placement) => placement,
             Err(msg) => {
@@ -618,7 +660,8 @@ impl Dropdown {
             .copy_from(enter_animation);
     }
 
-    pub fn panel_placement_for(entity: Entity, world: &World) -> Result<DropdownPanelPlacement, String> {
+    pub fn panel_placement_for(entity: Entity, world: &World) -> Result<DropdownPanelPlacement, String>
+    {
         let Some(dropdown) = world.get::<Dropdown>(entity) else {
             return Err("Entity has no Dropdown component".into());
         };
@@ -737,7 +780,8 @@ impl Dropdown {
         })
     }
 
-    fn button(options: Vec<String>) -> impl Bundle {
+    fn button(options: Vec<String>) -> impl Bundle
+    {
         (
             Name::new("Dropdown"),
             ButtonBundle {
@@ -757,7 +801,8 @@ impl Dropdown {
         )
     }
 
-    fn button_icon() -> impl Bundle {
+    fn button_icon() -> impl Bundle
+    {
         (
             Name::new("Dropdown Icon"),
             ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -766,7 +811,8 @@ impl Dropdown {
         )
     }
 
-    fn option_bundle(option: usize) -> impl Bundle {
+    fn option_bundle(option: usize) -> impl Bundle
+    {
         (
             Name::new(format!("Option {}", option)),
             ButtonBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -776,16 +822,19 @@ impl Dropdown {
     }
 }
 
-pub trait UiDropdownExt {
+pub trait UiDropdownExt
+{
     fn dropdown(&mut self, options: Vec<impl Into<String>>, value: impl Into<Option<usize>>) -> UiBuilder<Entity>;
 }
 
-impl UiDropdownExt for UiBuilder<'_, Entity> {
+impl UiDropdownExt for UiBuilder<'_, Entity>
+{
     /// A simple dropdown with options.
     ///
     /// ### PseudoState usage
     /// - `PseudoState::Open`, when the options panel should be visible
-    fn dropdown(&mut self, options: Vec<impl Into<String>>, value: impl Into<Option<usize>>) -> UiBuilder<Entity> {
+    fn dropdown(&mut self, options: Vec<impl Into<String>>, value: impl Into<Option<usize>>) -> UiBuilder<Entity>
+    {
         let mut label_id = Entity::PLACEHOLDER;
         let mut icon_id = Entity::PLACEHOLDER;
         let mut panel_id = Entity::PLACEHOLDER;

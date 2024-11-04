@@ -1,26 +1,21 @@
-use bevy::{prelude::*, ui::FocusPolicy};
-
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::sickle::{
-    input_extension::ShortcutTextExt,
-    widgets::layout::{
-        container::UiContainerExt,
-        label::{LabelConfig, UiLabelExt},
-    },
-};
-
-use super::{
-    context_menu::{ContextMenu, ContextMenuUpdate, UiContextMenuExt},
-    menu::{Menu, MenuUpdate, UiMenuSubExt},
-    shortcut::Shortcut,
-    submenu::{Submenu, SubmenuUpdate, UiSubmenuSubExt},
-};
+use super::context_menu::{ContextMenu, ContextMenuUpdate, UiContextMenuExt};
+use super::menu::{Menu, MenuUpdate, UiMenuSubExt};
+use super::shortcut::Shortcut;
+use super::submenu::{Submenu, SubmenuUpdate, UiSubmenuSubExt};
+use crate::sickle::input_extension::ShortcutTextExt;
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, UiLabelExt};
 
 pub struct MenuItemPlugin;
 
-impl Plugin for MenuItemPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for MenuItemPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             MenuItemUpdate
@@ -46,7 +41,8 @@ impl Plugin for MenuItemPlugin {
 #[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
 pub struct MenuItemUpdate;
 
-fn update_menu_item_on_change(mut q_menu_items: Query<&mut MenuItem, Changed<MenuItem>>) {
+fn update_menu_item_on_change(mut q_menu_items: Query<&mut MenuItem, Changed<MenuItem>>)
+{
     for mut item in &mut q_menu_items {
         if item.interacted {
             item.bypass_change_detection().interacted = false;
@@ -56,7 +52,8 @@ fn update_menu_item_on_change(mut q_menu_items: Query<&mut MenuItem, Changed<Men
 
 fn update_menu_item_on_pressed(
     mut q_menu_items: Query<(&mut MenuItem, &FluxInteraction), Changed<FluxInteraction>>,
-) {
+)
+{
     for (mut item, interaction) in &mut q_menu_items {
         if *interaction == FluxInteraction::Released {
             item.interacted = true;
@@ -64,7 +61,8 @@ fn update_menu_item_on_pressed(
     }
 }
 
-fn update_menu_item_on_shortcut_press(mut q_menu_items: Query<(&mut MenuItem, &Shortcut), Changed<Shortcut>>) {
+fn update_menu_item_on_shortcut_press(mut q_menu_items: Query<(&mut MenuItem, &Shortcut), Changed<Shortcut>>)
+{
     for (mut item, shortcut) in &mut q_menu_items {
         if shortcut.pressed() && !item.interacted {
             item.interacted = true;
@@ -73,7 +71,8 @@ fn update_menu_item_on_shortcut_press(mut q_menu_items: Query<(&mut MenuItem, &S
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct MenuItemConfig {
+pub struct MenuItemConfig
+{
     pub name: String,
     pub leading_icon: IconData,
     pub trailing_icon: IconData,
@@ -83,7 +82,8 @@ pub struct MenuItemConfig {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct MenuItem {
+pub struct MenuItem
+{
     interacted: bool,
     leading: Entity,
     label: Entity,
@@ -95,8 +95,10 @@ pub struct MenuItem {
     alt_code: Option<KeyCode>,
 }
 
-impl Default for MenuItem {
-    fn default() -> Self {
+impl Default for MenuItem
+{
+    fn default() -> Self
+    {
         Self {
             interacted: Default::default(),
             leading: Entity::PLACEHOLDER,
@@ -111,14 +113,18 @@ impl Default for MenuItem {
     }
 }
 
-impl DefaultTheme for MenuItem {
-    fn default_theme() -> Option<Theme<MenuItem>> {
+impl DefaultTheme for MenuItem
+{
+    fn default_theme() -> Option<Theme<MenuItem>>
+    {
         MenuItem::theme().into()
     }
 }
 
-impl UiContext for MenuItem {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for MenuItem
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             MenuItem::LEADING_ICON => Ok(self.leading),
             MenuItem::LABEL => Ok(self.label),
@@ -133,7 +139,8 @@ impl UiContext for MenuItem {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             MenuItem::LEADING_ICON,
             MenuItem::LABEL,
@@ -145,55 +152,67 @@ impl UiContext for MenuItem {
     }
 }
 
-impl MenuItem {
+impl MenuItem
+{
     pub const LEADING_ICON: &'static str = "LeadingIcon";
     pub const LABEL: &'static str = "Label";
     pub const SHORTCUT_CONTAINER: &'static str = "ShortcutContainer";
     pub const SHORTCUT: &'static str = "Shortcut";
     pub const TRAILING_ICON: &'static str = "TrailingIcon";
 
-    pub fn interacted(&self) -> bool {
+    pub fn interacted(&self) -> bool
+    {
         self.interacted
     }
 
-    pub fn alt_code(&self) -> Option<KeyCode> {
+    pub fn alt_code(&self) -> Option<KeyCode>
+    {
         self.alt_code
     }
 
-    pub fn leading(&self) -> Entity {
+    pub fn leading(&self) -> Entity
+    {
         self.leading
     }
 
-    pub fn label(&self) -> Entity {
+    pub fn label(&self) -> Entity
+    {
         self.label
     }
 
-    pub fn shortcut_container(&self) -> Entity {
+    pub fn shortcut_container(&self) -> Entity
+    {
         self.shortcut_container
     }
 
-    pub fn shortcut(&self) -> Entity {
+    pub fn shortcut(&self) -> Entity
+    {
         self.shortcut
     }
 
-    pub fn trailing(&self) -> Entity {
+    pub fn trailing(&self) -> Entity
+    {
         self.trailing
     }
 
-    pub fn leading_icon(&self) -> IconData {
+    pub fn leading_icon(&self) -> IconData
+    {
         self.leading_icon.clone()
     }
 
-    pub fn trailing_icon(&self) -> IconData {
+    pub fn trailing_icon(&self) -> IconData
+    {
         self.trailing_icon.clone()
     }
 
-    pub fn theme() -> Theme<MenuItem> {
+    pub fn theme() -> Theme<MenuItem>
+    {
         let base_theme = PseudoTheme::deferred_context(None, MenuItem::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, menu_item: &MenuItem, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, menu_item: &MenuItem, theme_data: &ThemeData)
+    {
         let leading_icon = menu_item.leading_icon.clone();
         let trailing_icon = menu_item.trailing_icon.clone();
 
@@ -205,7 +224,8 @@ impl MenuItem {
         theme_data: &ThemeData,
         leading_icon: IconData,
         trailing_icon: IconData,
-    ) {
+    )
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -266,7 +286,8 @@ impl MenuItem {
             .icon(trailing_icon);
     }
 
-    fn button(name: String) -> impl Bundle {
+    fn button(name: String) -> impl Bundle
+    {
         (
             Name::new(name),
             ButtonBundle {
@@ -282,11 +303,13 @@ impl MenuItem {
         )
     }
 
-    fn shortcut_container_bundle() -> impl Bundle {
+    fn shortcut_container_bundle() -> impl Bundle
+    {
         (Name::new("Shortcut"), NodeBundle::default())
     }
 
-    fn leading_icon_bundle() -> impl Bundle {
+    fn leading_icon_bundle() -> impl Bundle
+    {
         (
             Name::new("Leading Icon"),
             ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -295,7 +318,8 @@ impl MenuItem {
         )
     }
 
-    fn trailing_icon_bundle() -> impl Bundle {
+    fn trailing_icon_bundle() -> impl Bundle
+    {
         (
             Name::new("Trailing Icon"),
             ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -307,7 +331,8 @@ impl MenuItem {
     pub(crate) fn scaffold(
         builder: &mut UiBuilder<Entity>,
         config: impl Into<MenuItemConfig>,
-    ) -> (Entity, MenuItem) {
+    ) -> (Entity, MenuItem)
+    {
         let config = config.into();
         let mut menu_item = MenuItem {
             leading_icon: config.leading_icon,
@@ -346,12 +371,15 @@ impl MenuItem {
     }
 }
 
-pub trait UiMenuItemExt {
+pub trait UiMenuItemExt
+{
     fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity>;
 }
 
-impl UiMenuItemExt for UiBuilder<'_, Entity> {
-    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity> {
+impl UiMenuItemExt for UiBuilder<'_, Entity>
+{
+    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity>
+    {
         let (id, menu_item) = MenuItem::scaffold(self, config);
 
         self.commands().ui_builder(id).insert(menu_item);
@@ -359,8 +387,10 @@ impl UiMenuItemExt for UiBuilder<'_, Entity> {
     }
 }
 
-impl UiMenuItemExt for UiBuilder<'_, Menu> {
-    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity> {
+impl UiMenuItemExt for UiBuilder<'_, Menu>
+{
+    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -372,8 +402,10 @@ impl UiMenuItemExt for UiBuilder<'_, Menu> {
     }
 }
 
-impl UiMenuItemExt for UiBuilder<'_, Submenu> {
-    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity> {
+impl UiMenuItemExt for UiBuilder<'_, Submenu>
+{
+    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -385,8 +417,10 @@ impl UiMenuItemExt for UiBuilder<'_, Submenu> {
     }
 }
 
-impl UiMenuItemExt for UiBuilder<'_, ContextMenu> {
-    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity> {
+impl UiMenuItemExt for UiBuilder<'_, ContextMenu>
+{
+    fn menu_item(&mut self, config: impl Into<MenuItemConfig>) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()

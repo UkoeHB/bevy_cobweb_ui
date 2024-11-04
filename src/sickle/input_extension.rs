@@ -1,17 +1,19 @@
-use bevy::input::{keyboard::KeyCode, ButtonInput};
+use bevy::input::keyboard::KeyCode;
+use bevy::input::ButtonInput;
 
-pub trait SymmetricKeysExt {
+pub trait SymmetricKeysExt
+{
     fn symmetry_pressed(&self, input: KeyCode) -> bool;
     fn symmetry_just_pressed(&self, input: KeyCode) -> bool;
     fn symmetry_just_released(&self, input: KeyCode) -> bool;
 }
 
-impl SymmetricKeysExt for ButtonInput<KeyCode> {
-    fn symmetry_pressed(&self, keycode: KeyCode) -> bool {
+impl SymmetricKeysExt for ButtonInput<KeyCode>
+{
+    fn symmetry_pressed(&self, keycode: KeyCode) -> bool
+    {
         match keycode {
-            KeyCode::AltLeft | KeyCode::AltRight => {
-                self.any_pressed([KeyCode::AltLeft, KeyCode::AltRight])
-            }
+            KeyCode::AltLeft | KeyCode::AltRight => self.any_pressed([KeyCode::AltLeft, KeyCode::AltRight]),
             KeyCode::ControlLeft | KeyCode::ControlRight => {
                 self.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
             }
@@ -25,11 +27,10 @@ impl SymmetricKeysExt for ButtonInput<KeyCode> {
         }
     }
 
-    fn symmetry_just_pressed(&self, keycode: KeyCode) -> bool {
+    fn symmetry_just_pressed(&self, keycode: KeyCode) -> bool
+    {
         match keycode {
-            KeyCode::AltLeft | KeyCode::AltRight => {
-                self.any_just_pressed([KeyCode::AltLeft, KeyCode::AltRight])
-            }
+            KeyCode::AltLeft | KeyCode::AltRight => self.any_just_pressed([KeyCode::AltLeft, KeyCode::AltRight]),
             KeyCode::ControlLeft | KeyCode::ControlRight => {
                 self.any_just_pressed([KeyCode::ControlLeft, KeyCode::ControlRight])
             }
@@ -43,11 +44,10 @@ impl SymmetricKeysExt for ButtonInput<KeyCode> {
         }
     }
 
-    fn symmetry_just_released(&self, keycode: KeyCode) -> bool {
+    fn symmetry_just_released(&self, keycode: KeyCode) -> bool
+    {
         match keycode {
-            KeyCode::AltLeft | KeyCode::AltRight => {
-                self.any_just_released([KeyCode::AltLeft, KeyCode::AltRight])
-            }
+            KeyCode::AltLeft | KeyCode::AltRight => self.any_just_released([KeyCode::AltLeft, KeyCode::AltRight]),
             KeyCode::ControlLeft | KeyCode::ControlRight => {
                 self.any_just_released([KeyCode::ControlLeft, KeyCode::ControlRight])
             }
@@ -62,12 +62,15 @@ impl SymmetricKeysExt for ButtonInput<KeyCode> {
     }
 }
 
-pub trait KeyCodeToStringExt {
+pub trait KeyCodeToStringExt
+{
     fn to_string(&self) -> String;
 }
 
-impl KeyCodeToStringExt for KeyCode {
-    fn to_string(&self) -> String {
+impl KeyCodeToStringExt for KeyCode
+{
+    fn to_string(&self) -> String
+    {
         let formatted = format!("{:?}", self);
         let formatted_str = formatted.as_str();
 
@@ -116,12 +119,15 @@ impl KeyCodeToStringExt for KeyCode {
     }
 }
 
-pub trait ShortcutTextExt {
+pub trait ShortcutTextExt
+{
     fn shortcut_text(&self) -> String;
 }
 
-impl ShortcutTextExt for Vec<KeyCode> {
-    fn shortcut_text(&self) -> String {
+impl ShortcutTextExt for Vec<KeyCode>
+{
+    fn shortcut_text(&self) -> String
+    {
         self.iter()
             .map(|keycode| keycode.to_string())
             .collect::<Vec<String>>()

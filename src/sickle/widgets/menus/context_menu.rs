@@ -1,5 +1,7 @@
-use bevy::{ecs::world::CommandQueue, prelude::*, ui::FocusPolicy, window::PrimaryWindow};
-
+use bevy::ecs::world::CommandQueue;
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
+use bevy::window::PrimaryWindow;
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
@@ -10,8 +12,10 @@ const MENU_CONTAINER_Z_INDEX: i32 = 100002;
 // TODO: Implement scroll container and up/down arrows when content larger than screen
 pub struct ContextMenuPlugin;
 
-impl Plugin for ContextMenuPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ContextMenuPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(Update, ContextMenuUpdate.after(FluxInteractionUpdate))
             .add_plugins(ComponentThemePlugin::<ContextMenu>::default())
             .add_systems(
@@ -36,7 +40,8 @@ fn handle_click_or_touch(
     q_context_menu: Query<&Interaction, (With<ContextMenu>, Changed<Interaction>)>,
     mut q_interacted: Query<(Entity, &Interaction, &mut GenerateContextMenu)>,
     mut commands: Commands,
-) {
+)
+{
     let mut close_all = false;
 
     if r_mouse.just_pressed(MouseButton::Right) {
@@ -91,7 +96,8 @@ fn handle_click_or_touch(
 fn delete_closed_context_menu(
     mut q_gen_menus: Query<&mut GenerateContextMenu, Changed<GenerateContextMenu>>,
     mut commands: Commands,
-) {
+)
+{
     for mut gen_menu in &mut q_gen_menus {
         if !gen_menu.is_open {
             let Some(container) = gen_menu.container else {
@@ -104,7 +110,8 @@ fn delete_closed_context_menu(
     }
 }
 
-fn generate_context_menu(world: &mut World) {
+fn generate_context_menu(world: &mut World)
+{
     let mut q_gen_menus =
         world.query_filtered::<(Entity, &mut GenerateContextMenu), Changed<GenerateContextMenu>>();
 
@@ -166,8 +173,7 @@ fn generate_context_menu(world: &mut World) {
                 .reflect(entity_ref)
                 .unwrap();
 
-            let actual_generator: &dyn ContextMenuGenerator =
-                reflect_generator.get(&*component).unwrap();
+            let actual_generator: &dyn ContextMenuGenerator = reflect_generator.get(&*component).unwrap();
             actual_generator
         })
         .collect();
@@ -200,10 +206,7 @@ fn generate_context_menu(world: &mut World) {
         .spawn(ContextMenu::frame(name))
         .id();
 
-    let context_menu = ContextMenu {
-        context: entity,
-        container: container_id,
-    };
+    let context_menu = ContextMenu { context: entity, container: container_id };
 
     commands.entity(container_id).insert(context_menu);
 
@@ -234,7 +237,8 @@ fn position_added_context_menu(
     q_window: Query<&Window, With<PrimaryWindow>>,
     //r_touches: Res<Touches>,
     mut commands: Commands,
-) {
+)
+{
     let Ok(window) = q_window.get_single() else {
         return;
     };
@@ -257,12 +261,10 @@ fn position_added_context_menu(
 }
 
 fn update_context_menu_vertical_position(
-    mut q_node_style: Query<
-        (&Node, &Transform, &mut Style, &mut Visibility),
-        (With<ContextMenu>, Changed<Node>),
-    >,
+    mut q_node_style: Query<(&Node, &Transform, &mut Style, &mut Visibility), (With<ContextMenu>, Changed<Node>)>,
     q_window: Query<&Window, With<PrimaryWindow>>,
-) {
+)
+{
     let Ok(window) = q_window.get_single() else {
         return;
     };
@@ -284,10 +286,8 @@ fn update_context_menu_vertical_position(
     }
 }
 
-fn delete_orphaned_context_menus(
-    q_context_menus: Query<(Entity, &ContextMenu)>,
-    mut commands: Commands,
-) {
+fn delete_orphaned_context_menus(q_context_menus: Query<(Entity, &ContextMenu)>, mut commands: Commands)
+{
     for (entity, context_menu) in &q_context_menus {
         if commands.get_entity(context_menu.context).is_none() {
             commands.entity(entity).despawn_recursive();
@@ -299,57 +299,67 @@ fn delete_orphaned_context_menus(
 pub struct ContextMenuUpdate;
 
 #[reflect_trait]
-pub trait ContextMenuGenerator {
+pub trait ContextMenuGenerator
+{
     fn build_context_menu(&self, context: Entity, container: &mut UiBuilder<ContextMenu>);
     fn placement_index(&self) -> usize;
 }
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct GenerateContextMenu {
+pub struct GenerateContextMenu
+{
     is_open: bool,
     container: Option<Entity>,
 }
 
-impl GenerateContextMenu {
-    pub fn is_open(&self) -> bool {
+impl GenerateContextMenu
+{
+    pub fn is_open(&self) -> bool
+    {
         self.is_open
     }
 }
 
 #[derive(Component, Clone, Copy, Debug, Reflect, UiContext)]
 #[reflect(Component)]
-pub struct ContextMenu {
+pub struct ContextMenu
+{
     context: Entity,
     container: Entity,
 }
 
-impl Default for ContextMenu {
-    fn default() -> Self {
-        Self {
-            context: Entity::PLACEHOLDER,
-            container: Entity::PLACEHOLDER,
-        }
+impl Default for ContextMenu
+{
+    fn default() -> Self
+    {
+        Self { context: Entity::PLACEHOLDER, container: Entity::PLACEHOLDER }
     }
 }
 
-impl DefaultTheme for ContextMenu {
-    fn default_theme() -> Option<Theme<ContextMenu>> {
+impl DefaultTheme for ContextMenu
+{
+    fn default_theme() -> Option<Theme<ContextMenu>>
+    {
         ContextMenu::theme().into()
     }
 }
 
-impl ContextMenu {
-    pub fn context(&self) -> Entity {
+impl ContextMenu
+{
+    pub fn context(&self) -> Entity
+    {
         self.context
     }
 
-    pub fn theme() -> Theme<ContextMenu> {
+    pub fn theme() -> Theme<ContextMenu>
+    {
         let base_theme = PseudoTheme::deferred(None, ContextMenu::container);
         Theme::new(vec![base_theme])
     }
 
-    fn container(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn container(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -362,20 +372,16 @@ impl ContextMenu {
             .z_index(ZIndex::Global(MENU_CONTAINER_Z_INDEX))
             .background_color(colors.container(Container::SurfaceMid))
             .border_color(colors.accent(Accent::Shadow))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )))
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)))
             .visibility(Visibility::Hidden);
     }
 
-    fn frame(name: String) -> impl Bundle {
+    fn frame(name: String) -> impl Bundle
+    {
         (
             Name::new(name),
             NodeBundle {
-                style: Style {
-                    overflow: Overflow::visible(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::visible(), ..default() },
                 focus_policy: FocusPolicy::Block,
                 ..default()
             },
@@ -388,12 +394,15 @@ impl ContextMenu {
     }
 }
 
-pub trait UiContextMenuExt {
+pub trait UiContextMenuExt
+{
     fn container(&self) -> Entity;
 }
 
-impl UiContextMenuExt for UiBuilder<'_, ContextMenu> {
-    fn container(&self) -> Entity {
+impl UiContextMenuExt for UiBuilder<'_, ContextMenu>
+{
+    fn container(&self) -> Entity
+    {
         self.context().container
     }
 }

@@ -1,12 +1,10 @@
-use bevy::{prelude::*, ui::FocusPolicy};
-
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::prelude::*;
 
-use super::{
-    context_menu::{ContextMenu, ContextMenuUpdate, UiContextMenuExt},
-    menu::{Menu, MenuUpdate, UiMenuSubExt},
-    menu_item::{MenuItem, MenuItemConfig},
-};
+use super::context_menu::{ContextMenu, ContextMenuUpdate, UiContextMenuExt};
+use super::menu::{Menu, MenuUpdate, UiMenuSubExt};
+use super::menu_item::{MenuItem, MenuItemConfig};
 
 const MENU_CONTAINER_FADE_TIMEOUT: f32 = 1.;
 const MENU_CONTAINER_SWITCH_TIMEOUT: f32 = 0.3;
@@ -15,8 +13,10 @@ const MENU_CONTAINER_SWITCH_TIMEOUT: f32 = 0.3;
 // TODO: Best effort position submenu within window bounds
 pub struct SubmenuPlugin;
 
-impl Plugin for SubmenuPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SubmenuPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             SubmenuUpdate
@@ -48,7 +48,8 @@ pub struct SubmenuUpdate;
 fn unlock_submenu_container_on_menu_interaction(
     q_external_interaction: Query<Ref<Interaction>>,
     mut q_containers: Query<(&SubmenuContainer, &mut SubmenuContainerState)>,
-) {
+)
+{
     for (container, mut state) in &mut q_containers {
         if !container.is_open || !state.is_locked {
             continue;
@@ -66,12 +67,9 @@ fn unlock_submenu_container_on_menu_interaction(
 
 fn update_submenu_timeout(
     r_time: Res<Time>,
-    mut q_submenus: Query<(
-        &mut SubmenuContainer,
-        &mut SubmenuContainerState,
-        &FluxInteraction,
-    )>,
-) {
+    mut q_submenus: Query<(&mut SubmenuContainer, &mut SubmenuContainerState, &FluxInteraction)>,
+)
+{
     for (mut container, mut state, interaction) in &mut q_submenus {
         if *interaction == FluxInteraction::PointerEnter {
             state.is_locked = true;
@@ -86,19 +84,14 @@ fn update_submenu_timeout(
 }
 
 fn open_submenu_on_hover(
-    q_submenus: Query<(
-        Entity,
-        &Submenu,
-        &FluxInteraction,
-        &FluxInteractionStopwatch,
-    )>,
+    q_submenus: Query<(Entity, &Submenu, &FluxInteraction, &FluxInteractionStopwatch)>,
     mut q_containers: Query<(Entity, &mut SubmenuContainer, &mut SubmenuContainerState)>,
-) {
+)
+{
     let mut opened: Option<(Entity, Entity)> = None;
     for (entity, submenu, interaction, stopwatch) in &q_submenus {
         if *interaction == FluxInteraction::PointerEnter {
-            let Ok((entity, mut container, mut state)) = q_containers.get_mut(submenu.container)
-            else {
+            let Ok((entity, mut container, mut state)) = q_containers.get_mut(submenu.container) else {
                 warn!("Submenu {} is missing its container", entity);
                 continue;
             };
@@ -135,7 +128,8 @@ fn open_submenu_on_hover(
 fn close_submenus_on_menu_change(
     q_menus: Query<Entity, Changed<Menu>>,
     mut q_submenus: Query<(&mut SubmenuContainer, &mut SubmenuContainerState)>,
-) {
+)
+{
     let any_changed = q_menus.iter().count() > 0;
     if any_changed {
         for (mut container, mut state) in &mut q_submenus {
@@ -146,15 +140,13 @@ fn close_submenus_on_menu_change(
     }
 }
 
-fn update_open_submenu_containers(world: &mut World) {
+fn update_open_submenu_containers(world: &mut World)
+{
     let mut q_all_containers = world.query::<(Entity, &mut SubmenuContainer)>();
-    let mut q_changed =
-        world.query_filtered::<(Entity, &SubmenuContainer), Changed<SubmenuContainer>>();
+    let mut q_changed = world.query_filtered::<(Entity, &SubmenuContainer), Changed<SubmenuContainer>>();
 
-    let mut containers_closed: Vec<Entity> =
-        Vec::with_capacity(q_all_containers.iter(&world).count());
-    let mut sibling_containers: Vec<Entity> =
-        Vec::with_capacity(q_all_containers.iter(&world).count());
+    let mut containers_closed: Vec<Entity> = Vec::with_capacity(q_all_containers.iter(&world).count());
+    let mut sibling_containers: Vec<Entity> = Vec::with_capacity(q_all_containers.iter(&world).count());
     let mut open_container: Option<Entity> = None;
     let mut open_external: Option<Entity> = None;
 
@@ -188,7 +180,8 @@ fn update_open_submenu_containers(world: &mut World) {
 fn update_submenu_state(
     mut q_submenus: Query<&mut Submenu>,
     q_submenu_containers: Query<&SubmenuContainer, Changed<SubmenuContainer>>,
-) {
+)
+{
     for mut submenu in &mut q_submenus {
         if let Ok(container) = q_submenu_containers.get(submenu.container) {
             if submenu.is_open != container.is_open {
@@ -198,10 +191,8 @@ fn update_submenu_state(
     }
 }
 
-fn update_submenu_style(
-    q_submenus: Query<(Entity, &Submenu), Changed<Submenu>>,
-    mut commands: Commands,
-) {
+fn update_submenu_style(q_submenus: Query<(Entity, &Submenu), Changed<Submenu>>, mut commands: Commands)
+{
     for (entity, submenu) in &q_submenus {
         if submenu.is_open {
             commands.entity(entity).add_pseudo_state(PseudoState::Open);
@@ -213,10 +204,10 @@ fn update_submenu_style(
     }
 }
 
-fn close_containers_of(world: &mut World, external: Entity) {
+fn close_containers_of(world: &mut World, external: Entity)
+{
     let mut q_all_containers = world.query::<(Entity, &mut SubmenuContainer)>();
-    let mut containers_closed: Vec<Entity> =
-        Vec::with_capacity(q_all_containers.iter(&world).count());
+    let mut containers_closed: Vec<Entity> = Vec::with_capacity(q_all_containers.iter(&world).count());
 
     for (entity, mut container) in q_all_containers.iter_mut(world) {
         if container.external_container == external.into() && container.is_open {
@@ -232,20 +223,24 @@ fn close_containers_of(world: &mut World, external: Entity) {
 
 #[derive(Component, Clone, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct SubmenuContainerState {
+pub struct SubmenuContainerState
+{
     timeout: f32,
     is_locked: bool,
 }
 
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SubmenuContainer {
+pub struct SubmenuContainer
+{
     is_open: bool,
     external_container: Entity,
 }
 
-impl Default for SubmenuContainer {
-    fn default() -> Self {
+impl Default for SubmenuContainer
+{
+    fn default() -> Self
+    {
         Self {
             is_open: Default::default(),
             external_container: Entity::PLACEHOLDER,
@@ -254,14 +249,17 @@ impl Default for SubmenuContainer {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct SubmenuConfig {
+pub struct SubmenuConfig
+{
     pub name: String,
     pub alt_code: Option<KeyCode>,
     pub leading_icon: IconData,
 }
 
-impl Into<MenuItemConfig> for SubmenuConfig {
-    fn into(self) -> MenuItemConfig {
+impl Into<MenuItemConfig> for SubmenuConfig
+{
+    fn into(self) -> MenuItemConfig
+    {
         MenuItemConfig {
             name: self.name,
             alt_code: self.alt_code,
@@ -273,7 +271,8 @@ impl Into<MenuItemConfig> for SubmenuConfig {
 
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Submenu {
+pub struct Submenu
+{
     is_open: bool,
     is_focused: bool,
     container: Entity,
@@ -287,8 +286,10 @@ pub struct Submenu {
     alt_code: Option<KeyCode>,
 }
 
-impl Default for Submenu {
-    fn default() -> Self {
+impl Default for Submenu
+{
+    fn default() -> Self
+    {
         Self {
             is_open: false,
             is_focused: false,
@@ -305,8 +306,10 @@ impl Default for Submenu {
     }
 }
 
-impl Into<Submenu> for MenuItem {
-    fn into(self) -> Submenu {
+impl Into<Submenu> for MenuItem
+{
+    fn into(self) -> Submenu
+    {
         Submenu {
             is_open: false,
             is_focused: false,
@@ -323,14 +326,18 @@ impl Into<Submenu> for MenuItem {
     }
 }
 
-impl DefaultTheme for Submenu {
-    fn default_theme() -> Option<Theme<Submenu>> {
+impl DefaultTheme for Submenu
+{
+    fn default_theme() -> Option<Theme<Submenu>>
+    {
         Submenu::theme().into()
     }
 }
 
-impl UiContext for Submenu {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Submenu
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             MenuItem::LEADING_ICON => Ok(self.leading),
             MenuItem::LABEL => Ok(self.label),
@@ -346,7 +353,8 @@ impl UiContext for Submenu {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             MenuItem::LEADING_ICON,
             MenuItem::LABEL,
@@ -359,21 +367,20 @@ impl UiContext for Submenu {
     }
 }
 
-impl Submenu {
+impl Submenu
+{
     pub const MENU_CONTAINER: &'static str = "MenuContainer";
 
-    pub fn theme() -> Theme<Submenu> {
+    pub fn theme() -> Theme<Submenu>
+    {
         let base_theme = PseudoTheme::deferred_context(None, Submenu::primary_style);
         let open_theme = PseudoTheme::deferred_world(vec![PseudoState::Open], Submenu::open_style);
 
         Theme::new(vec![base_theme, open_theme])
     }
 
-    fn primary_style(
-        style_builder: &mut StyleBuilder,
-        menu_item: &Submenu,
-        theme_data: &ThemeData,
-    ) {
+    fn primary_style(style_builder: &mut StyleBuilder, menu_item: &Submenu, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let leading_icon = menu_item.leading_icon.clone();
@@ -391,14 +398,13 @@ impl Submenu {
             .z_index(ZIndex::Local(1))
             .background_color(colors.container(Container::SurfaceMid))
             .border_color(colors.accent(Accent::Shadow))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )))
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)))
             .display(Display::None)
             .visibility(Visibility::Hidden);
     }
 
-    fn open_style(style_builder: &mut StyleBuilder, entity: Entity, _: &Submenu, world: &World) {
+    fn open_style(style_builder: &mut StyleBuilder, entity: Entity, _: &Submenu, world: &World)
+    {
         let theme_data = world.resource::<ThemeData>().clone();
         let colors = theme_data.colors();
 
@@ -414,14 +420,12 @@ impl Submenu {
             .visibility(Visibility::Inherited);
     }
 
-    fn container_bundle(external_container: Entity) -> impl Bundle {
+    fn container_bundle(external_container: Entity) -> impl Bundle
+    {
         (
             Name::new("Submenu Container"),
             NodeBundle {
-                style: Style {
-                    overflow: Overflow::visible(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::visible(), ..default() },
                 focus_policy: FocusPolicy::Block,
                 ..default()
             },
@@ -432,25 +436,26 @@ impl Submenu {
             Interaction::default(),
             TrackedInteraction::default(),
             SubmenuContainerState::default(),
-            SubmenuContainer {
-                external_container,
-                ..default()
-            },
+            SubmenuContainer { external_container, ..default() },
         )
     }
 }
 
-pub trait UiSubmenuSubExt {
+pub trait UiSubmenuSubExt
+{
     fn container(&self) -> Entity;
 }
 
-impl UiSubmenuSubExt for UiBuilder<'_, Submenu> {
-    fn container(&self) -> Entity {
+impl UiSubmenuSubExt for UiBuilder<'_, Submenu>
+{
+    fn container(&self) -> Entity
+    {
         self.context().container
     }
 }
 
-pub trait UiSubmenuExt {
+pub trait UiSubmenuExt
+{
     /// A submenu in a menu, context menu, or submenu
     ///
     /// ### PseudoState usage
@@ -462,12 +467,14 @@ pub trait UiSubmenuExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl UiSubmenuExt for UiBuilder<'_, Entity> {
+impl UiSubmenuExt for UiBuilder<'_, Entity>
+{
     fn submenu(
         &mut self,
         config: impl Into<SubmenuConfig>,
         spawn_items: impl FnOnce(&mut UiBuilder<Submenu>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let config = config.into();
         let external_container = self.id();
         let (id, menu_item) = MenuItem::scaffold(self, config);
@@ -477,11 +484,7 @@ impl UiSubmenuExt for UiBuilder<'_, Entity> {
             .spawn(Submenu::container_bundle(external_container))
             .id();
 
-        let submenu = Submenu {
-            container,
-            external_container,
-            ..menu_item.into()
-        };
+        let submenu = Submenu { container, external_container, ..menu_item.into() };
 
         let mut content_builder = self.commands().ui_builder(submenu.clone());
         spawn_items(&mut content_builder);
@@ -491,12 +494,14 @@ impl UiSubmenuExt for UiBuilder<'_, Entity> {
     }
 }
 
-impl UiSubmenuExt for UiBuilder<'_, Menu> {
+impl UiSubmenuExt for UiBuilder<'_, Menu>
+{
     fn submenu(
         &mut self,
         config: impl Into<SubmenuConfig>,
         spawn_items: impl FnOnce(&mut UiBuilder<Submenu>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -508,12 +513,14 @@ impl UiSubmenuExt for UiBuilder<'_, Menu> {
     }
 }
 
-impl UiSubmenuExt for UiBuilder<'_, Submenu> {
+impl UiSubmenuExt for UiBuilder<'_, Submenu>
+{
     fn submenu(
         &mut self,
         config: impl Into<SubmenuConfig>,
         spawn_items: impl FnOnce(&mut UiBuilder<Submenu>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()
@@ -525,12 +532,14 @@ impl UiSubmenuExt for UiBuilder<'_, Submenu> {
     }
 }
 
-impl UiSubmenuExt for UiBuilder<'_, ContextMenu> {
+impl UiSubmenuExt for UiBuilder<'_, ContextMenu>
+{
     fn submenu(
         &mut self,
         config: impl Into<SubmenuConfig>,
         spawn_items: impl FnOnce(&mut UiBuilder<Submenu>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let container_id = self.container();
         let id = self
             .commands()

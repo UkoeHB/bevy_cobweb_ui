@@ -1,5 +1,3 @@
-use crate::sickle::prelude::DynamicStyle;
-use crate::sickle::theme::dynamic_style::DynamicStyleStopwatch;
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
@@ -7,11 +5,14 @@ use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
+use crate::sickle::prelude::DynamicStyle;
+use crate::sickle::theme::dynamic_style::DynamicStyleStopwatch;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
-fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<Entity>) {
+fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<Entity>)
+{
     // Terminate at control maps.
     if world.get::<ControlMap>(child).is_some() {
         return;
@@ -41,21 +42,27 @@ fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<
 #[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ControlRoot(pub SmolStr);
 
-impl ControlRoot {
+impl ControlRoot
+{
     /// Makes a control root from a static string.
-    pub fn new(label: &'static str) -> Self {
+    pub fn new(label: &'static str) -> Self
+    {
         Self(SmolStr::new_static(label))
     }
 }
 
-impl<T: Into<SmolStr>> From<T> for ControlRoot {
-    fn from(string: T) -> Self {
+impl<T: Into<SmolStr>> From<T> for ControlRoot
+{
+    fn from(string: T) -> Self
+    {
         Self(string.into())
     }
 }
 
-impl Instruction for ControlRoot {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for ControlRoot
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add control map if missing.
@@ -112,7 +119,8 @@ impl Instruction for ControlRoot {
         ControlLabel(self.0).apply(entity, world);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         // Set map to dying. If the control root is re-applied then the dying state will be cleared.
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
         if emut.contains::<ControlMap>() {
@@ -137,21 +145,27 @@ impl Instruction for ControlRoot {
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ControlLabel(pub SmolStr);
 
-impl ControlLabel {
+impl ControlLabel
+{
     /// Makes a label from a static string.
-    pub fn new(label: &'static str) -> Self {
+    pub fn new(label: &'static str) -> Self
+    {
         Self(SmolStr::new_static(label))
     }
 }
 
-impl<T: Into<SmolStr>> From<T> for ControlLabel {
-    fn from(string: T) -> Self {
+impl<T: Into<SmolStr>> From<T> for ControlLabel
+{
+    fn from(string: T) -> Self
+    {
         Self(string.into())
     }
 }
 
-impl Instruction for ControlLabel {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for ControlLabel
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add entry to nearest control map.
@@ -189,7 +203,8 @@ impl Instruction for ControlLabel {
         }
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Clean up dynamic style.
@@ -220,8 +235,10 @@ impl Instruction for ControlLabel {
 
 pub(crate) struct ControlPlugin;
 
-impl Plugin for ControlPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ControlPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.register_instruction_type::<ControlRoot>()
             .register_instruction_type::<ControlLabel>();
     }

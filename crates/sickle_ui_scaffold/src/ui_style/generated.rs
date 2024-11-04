@@ -1,315 +1,381 @@
-use bevy::{ecs::system::EntityCommand, prelude::*, ui::FocusPolicy};
-
+use bevy::ecs::system::EntityCommand;
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_macros::StyleCommands;
 
-use crate::{flux_interaction::FluxInteraction, theme::prelude::*};
-
-use super::{
-    attribute::{
-        ApplyCustomAnimatadStyleAttribute, ApplyCustomInteractiveStyleAttribute,
-        ApplyCustomStaticStyleAttribute, CustomAnimatedStyleAttribute,
-        CustomInteractiveStyleAttribute, CustomStaticStyleAttribute, InteractiveVals,
-    },
-    builder::{AnimatedStyleBuilder, InteractiveStyleBuilder, StyleBuilder},
-    manual::{FontSource, ImageSource, SetAbsolutePositionExt, SetFluxInteractionExt, SetImageExt},
-    AnimatedVals, LockedStyleAttributes, LogicalEq, TrackedStyleState, UiStyle, UiStyleUnchecked,
+use super::attribute::{
+    ApplyCustomAnimatadStyleAttribute, ApplyCustomInteractiveStyleAttribute, ApplyCustomStaticStyleAttribute,
+    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute, InteractiveVals,
 };
+use super::builder::{AnimatedStyleBuilder, InteractiveStyleBuilder, StyleBuilder};
+use super::manual::{FontSource, ImageSource, SetAbsolutePositionExt, SetFluxInteractionExt, SetImageExt};
+use super::{AnimatedVals, LockedStyleAttributes, LogicalEq, TrackedStyleState, UiStyle, UiStyleUnchecked};
+use crate::flux_interaction::FluxInteraction;
+use crate::theme::prelude::*;
 
 /// Derive leaves the original struct, ignore it.
 /// (derive macros have a better style overall)
 #[derive(StyleCommands)]
-enum _StyleAttributes {
-    Display {
-        display: Display,
+enum _StyleAttributes
+{
+    Display
+    {
+        display: Display
     },
-    PositionType {
-        position_type: PositionType,
+    PositionType
+    {
+        position_type: PositionType
     },
-    Overflow {
-        overflow: Overflow,
+    Overflow
+    {
+        overflow: Overflow
     },
-    Direction {
-        direction: Direction,
-    },
-    #[animatable]
-    Left {
-        left: Val,
-    },
-    #[animatable]
-    Right {
-        right: Val,
+    Direction
+    {
+        direction: Direction
     },
     #[animatable]
-    Top {
-        top: Val,
+    Left
+    {
+        left: Val
     },
     #[animatable]
-    Bottom {
-        bottom: Val,
+    Right
+    {
+        right: Val
     },
     #[animatable]
-    Width {
-        width: Val,
+    Top
+    {
+        top: Val
     },
     #[animatable]
-    Height {
-        height: Val,
+    Bottom
+    {
+        bottom: Val
     },
     #[animatable]
-    MinWidth {
-        min_width: Val,
+    Width
+    {
+        width: Val
     },
     #[animatable]
-    MinHeight {
-        min_height: Val,
+    Height
+    {
+        height: Val
     },
     #[animatable]
-    MaxWidth {
-        max_width: Val,
+    MinWidth
+    {
+        min_width: Val
     },
     #[animatable]
-    MaxHeight {
-        max_height: Val,
-    },
-    AspectRatio {
-        aspect_ratio: Option<f32>,
-    },
-    AlignItems {
-        align_items: AlignItems,
-    },
-    JustifyItems {
-        justify_items: JustifyItems,
-    },
-    AlignSelf {
-        align_self: AlignSelf,
-    },
-    JustifySelf {
-        justify_self: JustifySelf,
-    },
-    AlignContent {
-        align_content: AlignContent,
-    },
-    JustifyContent {
-        justify_content: JustifyContent,
+    MinHeight
+    {
+        min_height: Val
     },
     #[animatable]
-    Margin {
-        margin: UiRect,
+    MaxWidth
+    {
+        max_width: Val
     },
     #[animatable]
-    Padding {
-        padding: UiRect,
+    MaxHeight
+    {
+        max_height: Val
+    },
+    AspectRatio
+    {
+        aspect_ratio: Option<f32>
+    },
+    AlignItems
+    {
+        align_items: AlignItems
+    },
+    JustifyItems
+    {
+        justify_items: JustifyItems
+    },
+    AlignSelf
+    {
+        align_self: AlignSelf
+    },
+    JustifySelf
+    {
+        justify_self: JustifySelf
+    },
+    AlignContent
+    {
+        align_content: AlignContent
+    },
+    JustifyContent
+    {
+        justify_content: JustifyContent
     },
     #[animatable]
-    Border {
-        border: UiRect,
-    },
-    FlexDirection {
-        flex_direction: FlexDirection,
-    },
-    FlexWrap {
-        flex_wrap: FlexWrap,
+    Margin
+    {
+        margin: UiRect
     },
     #[animatable]
-    FlexGrow {
-        flex_grow: f32,
+    Padding
+    {
+        padding: UiRect
     },
     #[animatable]
-    FlexShrink {
-        flex_shrink: f32,
+    Border
+    {
+        border: UiRect
+    },
+    FlexDirection
+    {
+        flex_direction: FlexDirection
+    },
+    FlexWrap
+    {
+        flex_wrap: FlexWrap
     },
     #[animatable]
-    FlexBasis {
-        flex_basis: Val,
+    FlexGrow
+    {
+        flex_grow: f32
     },
     #[animatable]
-    RowGap {
-        row_gap: Val,
+    FlexShrink
+    {
+        flex_shrink: f32
     },
     #[animatable]
-    ColumnGap {
-        column_gap: Val,
+    FlexBasis
+    {
+        flex_basis: Val
     },
-    GridAutoFlow {
-        grid_auto_flow: GridAutoFlow,
+    #[animatable]
+    RowGap
+    {
+        row_gap: Val
     },
-    GridTemplateRows {
-        grid_template_rows: Vec<RepeatedGridTrack>,
+    #[animatable]
+    ColumnGap
+    {
+        column_gap: Val
     },
-    GridTemplateColumns {
-        grid_template_columns: Vec<RepeatedGridTrack>,
+    GridAutoFlow
+    {
+        grid_auto_flow: GridAutoFlow
     },
-    GridAutoRows {
-        grid_auto_rows: Vec<GridTrack>,
+    GridTemplateRows
+    {
+        grid_template_rows: Vec<RepeatedGridTrack>
     },
-    GridAutoColumns {
-        grid_auto_columns: Vec<GridTrack>,
+    GridTemplateColumns
+    {
+        grid_template_columns: Vec<RepeatedGridTrack>
     },
-    GridRow {
-        grid_row: GridPlacement,
+    GridAutoRows
+    {
+        grid_auto_rows: Vec<GridTrack>
     },
-    GridColumn {
-        grid_column: GridPlacement,
+    GridAutoColumns
+    {
+        grid_auto_columns: Vec<GridTrack>
+    },
+    GridRow
+    {
+        grid_row: GridPlacement
+    },
+    GridColumn
+    {
+        grid_column: GridPlacement
     },
     #[target_tupl(BackgroundColor)]
     #[animatable]
-    BackgroundColor {
-        background_color: Color,
+    BackgroundColor
+    {
+        background_color: Color
     },
     #[target_tupl(BorderColor)]
     #[animatable]
-    BorderColor {
-        border_color: Color,
+    BorderColor
+    {
+        border_color: Color
     },
     #[target_enum]
-    FocusPolicy {
-        focus_policy: FocusPolicy,
+    FocusPolicy
+    {
+        focus_policy: FocusPolicy
     },
     #[target_enum]
-    Visibility {
-        visibility: Visibility,
+    Visibility
+    {
+        visibility: Visibility
     },
     #[skip_enity_command]
-    ZIndex {
-        z_index: ZIndex,
+    ZIndex
+    {
+        z_index: ZIndex
     },
     #[skip_ui_style_ext]
-    Image {
-        image: ImageSource,
+    Image
+    {
+        image: ImageSource
     },
     #[skip_enity_command]
     #[animatable]
-    ImageTint {
-        image_tint: Color,
+    ImageTint
+    {
+        image_tint: Color
     },
     #[skip_enity_command]
-    ImageFlip {
-        image_flip: BVec2,
+    ImageFlip
+    {
+        image_flip: BVec2
     },
     #[skip_enity_command]
-    ImageScaleMode {
-        image_scale_mode: Option<ImageScaleMode>,
+    ImageScaleMode
+    {
+        image_scale_mode: Option<ImageScaleMode>
     },
     #[static_style_only]
     #[skip_ui_style_ext]
-    FluxInteraction {
-        flux_interaction_enabled: bool,
+    FluxInteraction
+    {
+        flux_interaction_enabled: bool
     },
     #[skip_lockable_enum]
     #[skip_ui_style_ext]
-    AbsolutePosition {
-        absolute_position: Vec2,
+    AbsolutePosition
+    {
+        absolute_position: Vec2
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
-    Icon {
-        icon: IconData,
+    Icon
+    {
+        icon: IconData
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
-    Font {
-        font: FontSource,
-    },
-    #[skip_lockable_enum]
-    #[skip_enity_command]
-    #[animatable]
-    FontSize {
-        font_size: f32,
-    },
-    #[skip_lockable_enum]
-    #[skip_enity_command]
-    SizedFont {
-        sized_font: SizedFont,
+    Font
+    {
+        font: FontSource
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
     #[animatable]
-    FontColor {
-        font_color: Color,
+    FontSize
+    {
+        font_size: f32
+    },
+    #[skip_lockable_enum]
+    #[skip_enity_command]
+    SizedFont
+    {
+        sized_font: SizedFont
+    },
+    #[skip_lockable_enum]
+    #[skip_enity_command]
+    #[animatable]
+    FontColor
+    {
+        font_color: Color
     },
     #[skip_enity_command]
     #[animatable]
-    Scale {
-        scale: f32,
+    Scale
+    {
+        scale: f32
     },
     #[target_enum]
     #[skip_lockable_enum]
     #[animatable]
-    TrackedStyleState {
-        tracked_style_state: TrackedStyleState,
+    TrackedStyleState
+    {
+        tracked_style_state: TrackedStyleState
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
     #[animatable]
-    Size {
-        size: Val,
+    Size
+    {
+        size: Val
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[animatable]
-    BorderRadius {
-        border_radius: BorderRadius,
+    BorderRadius
+    {
+        border_radius: BorderRadius
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(top_right)]
     #[animatable]
-    BorderTRRadius {
-        border_tr_radius: Val,
+    BorderTRRadius
+    {
+        border_tr_radius: Val
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(bottom_right)]
     #[animatable]
-    BorderBRRadius {
-        border_br_radius: Val,
+    BorderBRRadius
+    {
+        border_br_radius: Val
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(bottom_left)]
     #[animatable]
-    BorderBLRadius {
-        border_bl_radius: Val,
+    BorderBLRadius
+    {
+        border_bl_radius: Val
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(top_left)]
     #[animatable]
-    BorderTLRadius {
-        border_tl_radius: Val,
+    BorderTLRadius
+    {
+        border_tl_radius: Val
     },
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[animatable]
-    Outline {
-        outline: Outline,
+    Outline
+    {
+        outline: Outline
     },
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(width)]
     #[animatable]
-    OutlineWidth {
-        outline_width: Val,
+    OutlineWidth
+    {
+        outline_width: Val
     },
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(offset)]
     #[animatable]
-    OutlineOffset {
-        outline_offset: Val,
+    OutlineOffset
+    {
+        outline_offset: Val
     },
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(color)]
     #[animatable]
-    OutlineColor {
-        outline_color: Color,
+    OutlineColor
+    {
+        outline_color: Color
     },
     #[skip_lockable_enum]
     #[target_component(TextureAtlas)]
     #[target_component_attr(index)]
     #[animatable]
-    TextureAtlasIndex {
-        atlas_index: usize,
+    TextureAtlasIndex
+    {
+        atlas_index: usize
     },
 }

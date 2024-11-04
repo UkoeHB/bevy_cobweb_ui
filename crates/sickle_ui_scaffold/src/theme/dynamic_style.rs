@@ -1,16 +1,18 @@
-use bevy::{prelude::*, time::Stopwatch, ui::UiSystem};
+use bevy::prelude::*;
+use bevy::time::Stopwatch;
+use bevy::ui::UiSystem;
 
-use crate::{
-    flux_interaction::{FluxInteraction, StopwatchLock},
-    ui_style::{LogicalEq, UiStyleExt},
-};
-
-use super::{dynamic_style_attribute::DynamicStyleAttribute, CustomThemeUpdate};
+use super::dynamic_style_attribute::DynamicStyleAttribute;
+use super::CustomThemeUpdate;
+use crate::flux_interaction::{FluxInteraction, StopwatchLock};
+use crate::ui_style::{LogicalEq, UiStyleExt};
 
 pub struct DynamicStylePlugin;
 
-impl Plugin for DynamicStylePlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for DynamicStylePlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             PostUpdate,
             DynamicStylePostUpdate
@@ -40,7 +42,8 @@ pub struct DynamicStylePostUpdate;
 fn update_dynamic_style_static_attributes(
     mut q_styles: Query<(Entity, &mut DynamicStyle), Changed<DynamicStyle>>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, mut style) in &mut q_styles {
         let mut had_static = false;
         for context_attribute in &style.attributes {
@@ -79,7 +82,8 @@ fn update_dynamic_style_on_flux_change(
         Or<(Changed<DynamicStyle>, Changed<FluxInteraction>)>,
     >,
     mut commands: Commands,
-) {
+)
+{
     for (entity, style, interaction, stopwatch) in &mut q_styles {
         let mut lock_needed = StopwatchLock::None;
         let mut keep_stop_watch = false;
@@ -125,10 +129,8 @@ fn update_dynamic_style_on_flux_change(
     }
 }
 
-fn tick_dynamic_style_stopwatch(
-    time: Res<Time<Real>>,
-    mut q_stopwatches: Query<&mut DynamicStyleStopwatch>,
-) {
+fn tick_dynamic_style_stopwatch(time: Res<Time<Real>>, mut q_stopwatches: Query<&mut DynamicStyleStopwatch>)
+{
     for mut style_stopwatch in &mut q_stopwatches {
         style_stopwatch.0.tick(time.delta());
     }
@@ -150,7 +152,8 @@ fn update_dynamic_style_on_stopwatch_change(
         )>,
     >,
     par_commands: ParallelCommands,
-) {
+)
+{
     q_styles
         .par_iter_mut()
         .for_each(|(entity, mut style, interaction, stopwatch, enter_state)| {
@@ -161,11 +164,7 @@ fn update_dynamic_style_on_stopwatch_change(
 
             for context_attribute in &mut style.attributes {
                 let ContextStyleAttribute {
-                    attribute:
-                        DynamicStyleAttribute::Animated {
-                            attribute,
-                            ref mut controller,
-                        },
+                    attribute: DynamicStyleAttribute::Animated { attribute, ref mut controller },
                     ..
                 } = context_attribute
                 else {
@@ -229,7 +228,8 @@ fn update_dynamic_style_on_stopwatch_change(
 fn cleanup_dynamic_style_stopwatch(
     mut q_stopwatches: Query<(Entity, &DynamicStyleStopwatch)>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, style_stopwatch) in &mut q_stopwatches {
         let remove_stopwatch = match style_stopwatch.1 {
             StopwatchLock::None => true,
@@ -248,34 +248,39 @@ fn cleanup_dynamic_style_stopwatch(
 pub struct DynamicStyleStopwatch(pub Stopwatch, pub StopwatchLock);
 
 #[derive(Component, Clone, Copy, Debug, Default, Reflect)]
-pub struct DynamicStyleEnterState {
+pub struct DynamicStyleEnterState
+{
     completed: bool,
 }
 
-impl DynamicStyleEnterState {
-    pub fn completed(&self) -> bool {
+impl DynamicStyleEnterState
+{
+    pub fn completed(&self) -> bool
+    {
         self.completed
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct ContextStyleAttribute {
+pub struct ContextStyleAttribute
+{
     target: Option<Entity>,
     attribute: DynamicStyleAttribute,
 }
 
-impl LogicalEq for ContextStyleAttribute {
-    fn logical_eq(&self, other: &Self) -> bool {
+impl LogicalEq for ContextStyleAttribute
+{
+    fn logical_eq(&self, other: &Self) -> bool
+    {
         self.target == other.target && self.attribute.logical_eq(&other.attribute)
     }
 }
 
-impl ContextStyleAttribute {
-    pub fn new(context: impl Into<Option<Entity>>, attribute: DynamicStyleAttribute) -> Self {
-        Self {
-            target: context.into(),
-            attribute,
-        }
+impl ContextStyleAttribute
+{
+    pub fn new(context: impl Into<Option<Entity>>, attribute: DynamicStyleAttribute) -> Self
+    {
+        Self { target: context.into(), attribute }
     }
 }
 
@@ -284,46 +289,44 @@ impl ContextStyleAttribute {
 // Measure impact
 //#[component(storage = "SparseSet")]
 #[derive(Component, Clone, Debug, Default)]
-pub struct DynamicStyle {
+pub struct DynamicStyle
+{
     attributes: Vec<ContextStyleAttribute>,
     enter_completed: bool,
 }
 
-impl DynamicStyle {
-    pub fn new(attributes: Vec<DynamicStyleAttribute>) -> Self {
+impl DynamicStyle
+{
+    pub fn new(attributes: Vec<DynamicStyleAttribute>) -> Self
+    {
         Self {
             attributes: attributes
                 .iter()
-                .map(|attribute| ContextStyleAttribute {
-                    target: None,
-                    attribute: attribute.clone(),
-                })
+                .map(|attribute| ContextStyleAttribute { target: None, attribute: attribute.clone() })
                 .collect(),
             enter_completed: false,
         }
     }
 
-    pub fn copy_from(attributes: Vec<ContextStyleAttribute>) -> Self {
-        Self {
-            attributes,
-            enter_completed: false,
-        }
+    pub fn copy_from(attributes: Vec<ContextStyleAttribute>) -> Self
+    {
+        Self { attributes, enter_completed: false }
     }
 
-    pub fn merge(mut self, mut other: DynamicStyle) -> Self {
+    pub fn merge(mut self, mut other: DynamicStyle) -> Self
+    {
         self.merge_in_place(&mut other);
         self
     }
 
-    pub fn merge_in_place(&mut self, other: &mut DynamicStyle) {
+    pub fn merge_in_place(&mut self, other: &mut DynamicStyle)
+    {
         self.merge_in_place_from_iter(other.attributes.drain(..));
         other.enter_completed = false;
     }
 
-    pub fn merge_in_place_from_iter(
-        &mut self,
-        other_attrs: impl Iterator<Item = ContextStyleAttribute>,
-    ) {
+    pub fn merge_in_place_from_iter(&mut self, other_attrs: impl Iterator<Item = ContextStyleAttribute>)
+    {
         for attribute in other_attrs {
             if !self.attributes.iter().any(|csa| csa.logical_eq(&attribute)) {
                 self.attributes.push(attribute);
@@ -341,7 +344,8 @@ impl DynamicStyle {
         self.enter_completed = false;
     }
 
-    pub fn copy_controllers(&mut self, other: &DynamicStyle) {
+    pub fn copy_controllers(&mut self, other: &DynamicStyle)
+    {
         for context_attribute in self.attributes.iter_mut() {
             if !context_attribute.attribute.is_animated() {
                 continue;
@@ -355,20 +359,14 @@ impl DynamicStyle {
                 continue;
             };
 
-            let DynamicStyleAttribute::Animated {
-                controller: old_controller,
-                attribute: old_attribute,
-            } = &old_attribute.attribute
+            let DynamicStyleAttribute::Animated { controller: old_controller, attribute: old_attribute } =
+                &old_attribute.attribute
             else {
                 continue;
             };
 
             let ContextStyleAttribute {
-                attribute:
-                    DynamicStyleAttribute::Animated {
-                        ref mut controller,
-                        attribute,
-                    },
+                attribute: DynamicStyleAttribute::Animated { ref mut controller, attribute },
                 ..
             } = context_attribute
             else {
@@ -381,13 +379,15 @@ impl DynamicStyle {
         }
     }
 
-    pub fn is_interactive(&self) -> bool {
+    pub fn is_interactive(&self) -> bool
+    {
         self.attributes
             .iter()
             .any(|csa| csa.attribute.is_interactive())
     }
 
-    pub fn is_animated(&self) -> bool {
+    pub fn is_animated(&self) -> bool
+    {
         self.attributes
             .iter()
             .any(|csa| csa.attribute.is_animated())
@@ -396,7 +396,8 @@ impl DynamicStyle {
     /// Extracts the inner attribute buffer.
     ///
     /// Allows re-using the buffer via [`Self::copy_from`]. See [`StyleBuilder::convert_to_iter_with_buffers`].
-    pub fn take_inner(self) -> Vec<ContextStyleAttribute> {
+    pub fn take_inner(self) -> Vec<ContextStyleAttribute>
+    {
         self.attributes
     }
 }

@@ -1,11 +1,14 @@
-use bevy::{prelude::*, ui::RelativeCursorPosition};
+use bevy::prelude::*;
+use bevy::ui::RelativeCursorPosition;
 
 use crate::drag_interaction::{DragState, Draggable, DraggableUpdate};
 
 pub struct DropInteractionPlugin;
 
-impl Plugin for DropInteractionPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for DropInteractionPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(Update, DroppableUpdate.after(DraggableUpdate))
             .add_systems(
                 Update,
@@ -22,7 +25,8 @@ impl Plugin for DropInteractionPlugin {
 #[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
 pub struct DroppableUpdate;
 
-fn update_drop_zone_single_frame_state(mut q_drop_zones: Query<&mut DropZone, Changed<DropZone>>) {
+fn update_drop_zone_single_frame_state(mut q_drop_zones: Query<&mut DropZone, Changed<DropZone>>)
+{
     for mut drop_zone in &mut q_drop_zones {
         if drop_zone.drop_phase == DropPhase::DroppableLeft
             || drop_zone.drop_phase == DropPhase::DropCanceled
@@ -37,19 +41,19 @@ fn update_drop_zone_single_frame_state(mut q_drop_zones: Query<&mut DropZone, Ch
     }
 }
 
-fn should_update_drop_zones(
-    q_droppables: Query<&Draggable, (With<Droppable>, Changed<Draggable>)>,
-) -> bool {
-    q_droppables.iter().any(|Draggable { state, .. }| {
-        *state != DragState::Inactive && *state != DragState::MaybeDragged
-    })
+fn should_update_drop_zones(q_droppables: Query<&Draggable, (With<Droppable>, Changed<Draggable>)>) -> bool
+{
+    q_droppables
+        .iter()
+        .any(|Draggable { state, .. }| *state != DragState::Inactive && *state != DragState::MaybeDragged)
 }
 
 fn update_drop_zones(
     q_droppables: Query<(Entity, &Draggable), (With<Droppable>, Changed<Draggable>)>,
     q_drop_zone_data: Query<(Entity, &Interaction, &Node, &RelativeCursorPosition), With<DropZone>>,
     mut q_drop_zones: Query<(Entity, &mut DropZone)>,
-) {
+)
+{
     // Run condition makes sure we are dragging a droppable.
     // We have no information if the interaction is from the same source,
     // check if cursor is over any.
@@ -59,9 +63,7 @@ fn update_drop_zones(
     // drag interactions only track main pointers.
     let mut hovered_to_stack_index: Vec<(Entity, u32)> = q_drop_zone_data
         .iter()
-        .filter(|(_, interaction, _, rel_pos)| {
-            **interaction == Interaction::Hovered && rel_pos.mouse_over()
-        })
+        .filter(|(_, interaction, _, rel_pos)| **interaction == Interaction::Hovered && rel_pos.mouse_over())
         .map(|(entity, _, node, _)| (entity, node.stack_index()))
         .collect();
 
@@ -128,7 +130,8 @@ fn update_drop_zones(
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Reflect)]
 #[reflect]
-pub enum DropPhase {
+pub enum DropPhase
+{
     #[default]
     Inactive,
     DroppableEntered,
@@ -142,22 +145,27 @@ pub enum DropPhase {
 pub struct Droppable;
 
 #[derive(Component, Debug, Default, Reflect)]
-pub struct DropZone {
+pub struct DropZone
+{
     drop_phase: DropPhase,
     incoming_droppable: Option<Entity>,
     position: Option<Vec2>,
 }
 
-impl DropZone {
-    pub fn drop_phase(&self) -> DropPhase {
+impl DropZone
+{
+    pub fn drop_phase(&self) -> DropPhase
+    {
         self.drop_phase
     }
 
-    pub fn incoming_droppable(&self) -> Option<Entity> {
+    pub fn incoming_droppable(&self) -> Option<Entity>
+    {
         self.incoming_droppable
     }
 
-    pub fn position(&self) -> Option<Vec2> {
+    pub fn position(&self) -> Option<Vec2>
+    {
         self.position
     }
 }

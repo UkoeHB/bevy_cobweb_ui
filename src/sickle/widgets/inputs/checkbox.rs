@@ -1,22 +1,23 @@
-use bevy::{prelude::*, ui::FocusPolicy};
-
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::sickle::widgets::layout::{
-    container::UiContainerExt,
-    label::{LabelConfig, UiLabelExt},
-};
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, UiLabelExt};
 
 #[cfg(feature = "observable")]
 #[derive(Event, Copy, Clone, Debug)]
-pub struct CheckboxChanged {
+pub struct CheckboxChanged
+{
     pub value: bool,
 }
 
 pub struct CheckboxPlugin;
 
-impl Plugin for CheckboxPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for CheckboxPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins(ComponentThemePlugin::<Checkbox>::default())
             .add_systems(
                 Update,
@@ -33,7 +34,8 @@ impl Plugin for CheckboxPlugin {
 fn toggle_checkbox(
     mut q_checkboxes: Query<(Entity, &mut Checkbox, &FluxInteraction), Changed<FluxInteraction>>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, mut checkbox, interaction) in &mut q_checkboxes {
         if *interaction == FluxInteraction::Released {
             checkbox.checked = !checkbox.checked;
@@ -44,7 +46,8 @@ fn toggle_checkbox(
     }
 }
 
-fn update_checkbox(q_checkboxes: Query<(Entity, &Checkbox), Changed<Checkbox>>, mut commands: Commands) {
+fn update_checkbox(q_checkboxes: Query<(Entity, &Checkbox), Changed<Checkbox>>, mut commands: Commands)
+{
     for (entity, checkbox) in &q_checkboxes {
         commands
             .style_unchecked(checkbox.checkmark)
@@ -66,15 +69,18 @@ fn update_checkbox(q_checkboxes: Query<(Entity, &Checkbox), Changed<Checkbox>>, 
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Checkbox {
+pub struct Checkbox
+{
     pub checked: bool,
     checkmark_background: Entity,
     checkmark: Entity,
     label: Entity,
 }
 
-impl Default for Checkbox {
-    fn default() -> Self {
+impl Default for Checkbox
+{
+    fn default() -> Self
+    {
         Self {
             checked: false,
             checkmark_background: Entity::PLACEHOLDER,
@@ -84,8 +90,10 @@ impl Default for Checkbox {
     }
 }
 
-impl UiContext for Checkbox {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Checkbox
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Checkbox::CHECKMARK_BACKGROUND => Ok(self.checkmark_background),
             Checkbox::CHECKMARK => Ok(self.checkmark),
@@ -98,29 +106,35 @@ impl UiContext for Checkbox {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [Checkbox::CHECKMARK_BACKGROUND, Checkbox::CHECKMARK, Checkbox::LABEL].into_iter()
     }
 }
 
-impl DefaultTheme for Checkbox {
-    fn default_theme() -> Option<Theme<Checkbox>> {
+impl DefaultTheme for Checkbox
+{
+    fn default_theme() -> Option<Theme<Checkbox>>
+    {
         Checkbox::theme().into()
     }
 }
 
-impl Checkbox {
+impl Checkbox
+{
     pub const CHECKMARK_BACKGROUND: &'static str = "CheckmarkBackground";
     pub const CHECKMARK: &'static str = "Checkmark";
     pub const LABEL: &'static str = "Label";
 
-    pub fn theme() -> Theme<Checkbox> {
+    pub fn theme() -> Theme<Checkbox>
+    {
         let base_theme = PseudoTheme::deferred(None, Checkbox::primary_style);
         let checked_theme = PseudoTheme::deferred(vec![PseudoState::Checked], Checkbox::checked_style);
         Theme::new(vec![base_theme, checked_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -183,7 +197,8 @@ impl Checkbox {
             .copy_from(theme_data.interaction_animation);
     }
 
-    fn checked_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn checked_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -224,11 +239,13 @@ impl Checkbox {
             .copy_from(theme_data.enter_animation);
     }
 
-    fn checkbox_container(name: String) -> impl Bundle {
+    fn checkbox_container(name: String) -> impl Bundle
+    {
         (Name::new(name), ButtonBundle::default(), TrackedInteraction::default())
     }
 
-    fn checkmark_background() -> impl Bundle {
+    fn checkmark_background() -> impl Bundle
+    {
         (
             Name::new("Checkmark Background"),
             NodeBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -236,7 +253,8 @@ impl Checkbox {
         )
     }
 
-    fn checkmark() -> impl Bundle {
+    fn checkmark() -> impl Bundle
+    {
         (
             Name::new("Checkmark"),
             ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -249,16 +267,19 @@ impl Checkbox {
     }
 }
 
-pub trait UiCheckboxExt {
+pub trait UiCheckboxExt
+{
     fn checkbox(&mut self, label: impl Into<Option<String>>, checked: bool) -> UiBuilder<Entity>;
 }
 
-impl UiCheckboxExt for UiBuilder<'_, Entity> {
+impl UiCheckboxExt for UiBuilder<'_, Entity>
+{
     /// A simple checkbox with an optional label.
     ///
     /// ### PseudoState usage
     /// - `PseudoState::Checked`, when the checkbox is in a checked state
-    fn checkbox(&mut self, label: impl Into<Option<String>>, checked: bool) -> UiBuilder<Entity> {
+    fn checkbox(&mut self, label: impl Into<Option<String>>, checked: bool) -> UiBuilder<Entity>
+    {
         let mut checkbox = Checkbox { checked, ..default() };
 
         let label = match label.into() {

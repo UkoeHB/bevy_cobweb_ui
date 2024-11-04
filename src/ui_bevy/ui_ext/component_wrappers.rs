@@ -1,10 +1,10 @@
-use crate::sickle::lerp::Lerp;
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::sickle::lerp::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -12,7 +12,8 @@ fn set_border_radius_top_left(
     In((entity, radius)): In<(Entity, Val)>,
     mut c: Commands,
     mut q: Query<Option<&mut BorderRadius>>,
-) {
+)
+{
     let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
     let Some(mut border_radius) = maybe_border_radius else {
         c.entity(entity).try_insert(BorderRadius::top_left(radius));
@@ -27,7 +28,8 @@ fn set_border_radius_top_right(
     In((entity, radius)): In<(Entity, Val)>,
     mut c: Commands,
     mut q: Query<Option<&mut BorderRadius>>,
-) {
+)
+{
     let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
     let Some(mut border_radius) = maybe_border_radius else {
         c.entity(entity).try_insert(BorderRadius::top_right(radius));
@@ -42,7 +44,8 @@ fn set_border_radius_bottom_left(
     In((entity, radius)): In<(Entity, Val)>,
     mut c: Commands,
     mut q: Query<Option<&mut BorderRadius>>,
-) {
+)
+{
     let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
     let Some(mut border_radius) = maybe_border_radius else {
         c.entity(entity)
@@ -58,7 +61,8 @@ fn set_border_radius_bottom_right(
     In((entity, radius)): In<(Entity, Val)>,
     mut c: Commands,
     mut q: Query<Option<&mut BorderRadius>>,
-) {
+)
+{
     let Ok(maybe_border_radius) = q.get_mut(entity) else { return };
     let Some(mut border_radius) = maybe_border_radius else {
         c.entity(entity)
@@ -74,23 +78,28 @@ fn set_border_radius_bottom_right(
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BgColor(pub Color);
 
-impl Instruction for BgColor {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BgColor
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BackgroundColor(self.0));
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BackgroundColor>();
         });
     }
 }
 
-impl ThemedAttribute for BgColor {
+impl ThemedAttribute for BgColor
+{
     type Value = Color;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -104,23 +113,28 @@ impl AnimatableAttribute for BgColor {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrColor(pub Color);
 
-impl Instruction for BrColor {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrColor
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BorderColor(self.0));
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderColor>();
         });
     }
 }
 
-impl ThemedAttribute for BrColor {
+impl ThemedAttribute for BrColor
+{
     type Value = Color;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -137,23 +151,28 @@ impl AnimatableAttribute for BrColor {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadius(pub Val);
 
-impl Instruction for BrRadius {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrRadius
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(BorderRadius::all(self.0));
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
 }
 
-impl ThemedAttribute for BrRadius {
+impl ThemedAttribute for BrRadius
+{
     type Value = Val;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -169,21 +188,26 @@ impl AnimatableAttribute for BrRadius {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusTopLeft(pub Val);
 
-impl Instruction for BrRadiusTopLeft {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrRadiusTopLeft
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall((entity, self.0), set_border_radius_top_left);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
 }
 
-impl ThemedAttribute for BrRadiusTopLeft {
+impl ThemedAttribute for BrRadiusTopLeft
+{
     type Value = Val;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -199,21 +223,26 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusTopRight(pub Val);
 
-impl Instruction for BrRadiusTopRight {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrRadiusTopRight
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall((entity, self.0), set_border_radius_top_right);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
 }
 
-impl ThemedAttribute for BrRadiusTopRight {
+impl ThemedAttribute for BrRadiusTopRight
+{
     type Value = Val;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -229,21 +258,26 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusBottomLeft(pub Val);
 
-impl Instruction for BrRadiusBottomLeft {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrRadiusBottomLeft
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall((entity, self.0), set_border_radius_bottom_left);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
 }
 
-impl ThemedAttribute for BrRadiusBottomLeft {
+impl ThemedAttribute for BrRadiusBottomLeft
+{
     type Value = Val;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -259,21 +293,26 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BrRadiusBottomRight(pub Val);
 
-impl Instruction for BrRadiusBottomRight {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for BrRadiusBottomRight
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall((entity, self.0), set_border_radius_bottom_right);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
 }
 
-impl ThemedAttribute for BrRadiusBottomRight {
+impl ThemedAttribute for BrRadiusBottomRight
+{
     type Value = Val;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -285,7 +324,8 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 
 /// Mirrors [`Outline`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct NodeOutline {
+pub struct NodeOutline
+{
     pub width: Val,
     /// Space added between the outline and the node's border edge.
     #[reflect(default)]
@@ -293,15 +333,19 @@ pub struct NodeOutline {
     pub color: Color,
 }
 
-impl Into<Outline> for NodeOutline {
-    fn into(self) -> Outline {
+impl Into<Outline> for NodeOutline
+{
+    fn into(self) -> Outline
+    {
         Outline { width: self.width, offset: self.offset, color: self.color }
     }
 }
 
 //todo: consider separate lerps for each of the outline fields
-impl Lerp for NodeOutline {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for NodeOutline
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         Self {
             width: self.width.lerp(to.width, t),
             offset: self.offset.lerp(to.offset, t),
@@ -310,24 +354,29 @@ impl Lerp for NodeOutline {
     }
 }
 
-impl Instruction for NodeOutline {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for NodeOutline
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let outline: Outline = self.into();
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(outline);
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Outline>();
         });
     }
 }
 
-impl ThemedAttribute for NodeOutline {
+impl ThemedAttribute for NodeOutline
+{
     type Value = Self;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         value
     }
 }
@@ -339,14 +388,17 @@ impl AnimatableAttribute for NodeOutline {}
 
 /// Mirrors [`FocusPolicy`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetFocusPolicy {
+pub enum SetFocusPolicy
+{
     Block,
     #[default]
     Pass,
 }
 
-impl Into<FocusPolicy> for SetFocusPolicy {
-    fn into(self) -> FocusPolicy {
+impl Into<FocusPolicy> for SetFocusPolicy
+{
+    fn into(self) -> FocusPolicy
+    {
         match self {
             Self::Block => FocusPolicy::Block,
             Self::Pass => FocusPolicy::Pass,
@@ -354,24 +406,29 @@ impl Into<FocusPolicy> for SetFocusPolicy {
     }
 }
 
-impl Instruction for SetFocusPolicy {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for SetFocusPolicy
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let policy: FocusPolicy = self.into();
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(policy);
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<FocusPolicy>();
         });
     }
 }
 
-impl ThemedAttribute for SetFocusPolicy {
+impl ThemedAttribute for SetFocusPolicy
+{
     type Value = Self;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         value
     }
 }
@@ -381,19 +438,24 @@ impl ResponsiveAttribute for SetFocusPolicy {}
 
 /// Mirrors [`ZIndex`], can be loaded as an instruction.
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetZIndex {
+pub enum SetZIndex
+{
     Local(i32),
     Global(i32),
 }
 
-impl Default for SetZIndex {
-    fn default() -> Self {
+impl Default for SetZIndex
+{
+    fn default() -> Self
+    {
         Self::Local(0)
     }
 }
 
-impl Into<ZIndex> for SetZIndex {
-    fn into(self) -> ZIndex {
+impl Into<ZIndex> for SetZIndex
+{
+    fn into(self) -> ZIndex
+    {
         match self {
             Self::Local(i) => ZIndex::Local(i),
             Self::Global(i) => ZIndex::Global(i),
@@ -401,24 +463,29 @@ impl Into<ZIndex> for SetZIndex {
     }
 }
 
-impl Instruction for SetZIndex {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for SetZIndex
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let z: ZIndex = self.into();
         world.get_entity_mut(entity).map(|mut e| {
             e.insert(z);
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<ZIndex>();
         });
     }
 }
 
-impl ThemedAttribute for SetZIndex {
+impl ThemedAttribute for SetZIndex
+{
     type Value = Self;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         value
     }
 }
@@ -428,8 +495,10 @@ impl ResponsiveAttribute for SetZIndex {}
 
 pub(crate) struct UiComponentWrappersPlugin;
 
-impl Plugin for UiComponentWrappersPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for UiComponentWrappersPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.register_animatable::<BgColor>()
             .register_animatable::<BrColor>()
             .register_animatable::<BrRadius>()

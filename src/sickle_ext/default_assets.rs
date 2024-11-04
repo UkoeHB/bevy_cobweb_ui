@@ -4,7 +4,8 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_sickle_ui_default_fonts(mut c: Commands) {
+fn load_sickle_ui_default_fonts(mut c: Commands)
+{
     c.add(RegisterFontFamilies(vec![
         RegisterFontFamily {
             family: "Fira Sans".into(),
@@ -89,8 +90,10 @@ fn load_sickle_ui_default_fonts(mut c: Commands) {
 
 pub(crate) struct SickleUiDefaultAssetsPlugin;
 
-impl Plugin for SickleUiDefaultAssetsPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SickleUiDefaultAssetsPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_systems(Startup, load_sickle_ui_default_fonts);
     }
 }

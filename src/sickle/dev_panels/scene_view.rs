@@ -1,32 +1,24 @@
-use bevy::{
-    prelude::*,
-    render::{
-        camera::RenderTarget,
-        render_resource::{
-            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
-        },
-    },
-    ui::widget::UiImageSize,
-    utils::HashMap,
-};
-
+use bevy::prelude::*;
+use bevy::render::camera::RenderTarget;
+use bevy::render::render_resource::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
+use bevy::ui::widget::UiImageSize;
+use bevy::utils::HashMap;
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::{
-    inputs::{
-        checkbox::{Checkbox, UiCheckboxExt},
-        radio_group::{RadioGroup, UiRadioGroupExt},
-        slider::{Slider, SliderAxis, SliderConfig, UiSliderExt},
-    },
-    layout::{column::UiColumnExt, row::UiRowExt},
-    WidgetLibraryUpdate,
-};
+use crate::widgets::inputs::checkbox::{Checkbox, UiCheckboxExt};
+use crate::widgets::inputs::radio_group::{RadioGroup, UiRadioGroupExt};
+use crate::widgets::inputs::slider::{Slider, SliderAxis, SliderConfig, UiSliderExt};
+use crate::widgets::layout::column::UiColumnExt;
+use crate::widgets::layout::row::UiRowExt;
+use crate::widgets::WidgetLibraryUpdate;
 
 pub struct SceneViewPlugin;
 
-impl Plugin for SceneViewPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SceneViewPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.init_resource::<ActiveSceneViews>()
             .configure_sets(Update, SpawnSceneViewUpdate.after(WidgetLibraryUpdate))
             .add_plugins(ComponentThemePlugin::<SceneControls>::default())
@@ -61,13 +53,10 @@ fn spawn_scene_view(
     mut active_scene_views: ResMut<ActiveSceneViews>,
     mut images: ResMut<Assets<Image>>,
     mut commands: Commands,
-) {
+)
+{
     for (container, spawn_scene_view) in &q_spanw_scene_view {
-        let size = Extent3d {
-            width: 512,
-            height: 512,
-            ..default()
-        };
+        let size = Extent3d { width: 512, height: 512, ..default() };
 
         // This is the texture that will be rendered to.
         let mut image = Image {
@@ -78,9 +67,7 @@ fn spawn_scene_view(
                 format: TextureFormat::Bgra8UnormSrgb,
                 mip_level_count: 1,
                 sample_count: 1,
-                usage: TextureUsages::TEXTURE_BINDING
-                    | TextureUsages::COPY_DST
-                    | TextureUsages::RENDER_ATTACHMENT,
+                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
             },
             ..default()
@@ -94,30 +81,23 @@ fn spawn_scene_view(
             .spawn((
                 Camera3dBundle {
                     camera: Camera {
-                        clear_color: ClearColorConfig::Custom(
-                            bevy::color::palettes::css::DARK_GRAY.into(),
-                        ),
+                        clear_color: ClearColorConfig::Custom(bevy::color::palettes::css::DARK_GRAY.into()),
                         order: 0,
                         target: image_handle.clone().into(),
                         ..default()
                     },
-                    transform: Transform::from_xyz(0., 2., -3.)
-                        .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+                    transform: Transform::from_xyz(0., 2., -3.).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
                     ..default()
                 },
                 FogSettings {
                     color: Color::srgb(0.25, 0.25, 0.25),
-                    falloff: FogFalloff::Linear {
-                        start: 7.0,
-                        end: 12.0,
-                    },
+                    falloff: FogFalloff::Linear { start: 7.0, end: 12.0 },
                     ..default()
                 },
             ))
             .id();
 
-        let transform =
-            Transform::from_xyz(0., 10., 3.).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
+        let transform = Transform::from_xyz(0., 10., 3.).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y);
         let scene_light = commands
             .spawn((DirectionalLightBundle {
                 directional_light: DirectionalLight {
@@ -137,10 +117,7 @@ fn spawn_scene_view(
         let scene_asset = commands
             .spawn((TransformBundle::default(), VisibilityBundle::default()))
             .with_children(|scene| {
-                scene.spawn((SceneBundle {
-                    scene: asset_server.load(asset),
-                    ..default()
-                },));
+                scene.spawn((SceneBundle { scene: asset_server.load(asset), ..default() },));
             })
             .id();
 
@@ -164,17 +141,13 @@ fn spawn_scene_view(
             });
 
             scene_controls.insert((
-                SceneControls {
-                    scene_view: container,
-                },
+                SceneControls { scene_view: container },
                 Theme::<RadioGroup>::new(vec![radio_group_theme]),
             ));
 
             scene_controls
                 .checkbox(String::from("Rotate Scene"), false)
-                .insert(SceneRotationControl {
-                    scene_view: container,
-                });
+                .insert(SceneRotationControl { scene_view: container });
             scene_controls
                 .slider(SliderConfig::new(
                     String::from("Rotation Speed"),
@@ -184,17 +157,13 @@ fn spawn_scene_view(
                     true,
                     SliderAxis::Horizontal,
                 ))
-                .insert(SceneRotationSpeedControl {
-                    scene_view: container,
-                })
+                .insert(SceneRotationSpeedControl { scene_view: container })
                 .style()
                 .min_width(Val::Px(250.));
             scene_controls
                 .row(|row| {
                     row.radio_group(vec!["Natural", "Dim", "Night"], 1, false)
-                        .insert(SceneLightControl {
-                            scene_view: container,
-                        });
+                        .insert(SceneLightControl { scene_view: container });
                 })
                 .style()
                 .min_width(Val::Px(150.));
@@ -215,7 +184,8 @@ fn cleanup_despawned_scene_views(
     mut q_removed_scene_views: RemovedComponents<SceneView>,
     mut active_scene_views: ResMut<ActiveSceneViews>,
     mut commands: Commands,
-) {
+)
+{
     for entity in q_removed_scene_views.read() {
         let Some(data) = active_scene_views.scene_views.remove(&entity) else {
             error!("Tried to clean up untracked scene view {}", entity);
@@ -232,7 +202,8 @@ fn set_scene_view_cam_viewport(
     q_scene_views: Query<(&SceneView, &Node), Changed<GlobalTransform>>,
     mut images: ResMut<Assets<Image>>,
     mut q_camera: Query<&mut Camera>,
-) {
+)
+{
     for (scene_view, node) in &q_scene_views {
         let Ok(mut camera) = q_camera.get_mut(scene_view.camera()) else {
             continue;
@@ -252,11 +223,7 @@ fn set_scene_view_cam_viewport(
                 continue;
             };
 
-            let size = Extent3d {
-                width: size.x as u32,
-                height: size.y as u32,
-                ..default()
-            };
+            let size = Extent3d { width: size.x as u32, height: size.y as u32, ..default() };
 
             texture.resize(size);
         }
@@ -268,7 +235,8 @@ fn update_scene_view_controls(
     mut q_rotation_controls: Query<(&mut Checkbox, &SceneRotationControl)>,
     mut q_rotation_speed_controls: Query<(&mut Slider, &SceneRotationSpeedControl)>,
     mut q_light_controls: Query<(&mut RadioGroup, &SceneLightControl)>,
-) {
+)
+{
     for (mut checkbox, control) in &mut q_rotation_controls {
         let Ok(settings) = q_scene_view_settings.get(control.scene_view) else {
             continue;
@@ -305,7 +273,8 @@ fn process_scene_view_controls(
     q_rotation_controls: Query<(&Checkbox, &SceneRotationControl), Changed<Checkbox>>,
     q_rotation_speed_controls: Query<(&Slider, &SceneRotationSpeedControl), Changed<Slider>>,
     q_light_controls: Query<(&RadioGroup, &SceneLightControl), Changed<RadioGroup>>,
-) {
+)
+{
     for (checkbox, control) in &q_rotation_controls {
         let Ok(mut settings) = q_scene_view_settings.get_mut(control.scene_view) else {
             continue;
@@ -347,7 +316,8 @@ fn update_scene_views(
     mut q_directional_light: Query<&mut DirectionalLight>,
     mut q_fog_settings: Query<&mut FogSettings>,
     mut q_transform: Query<&mut Transform>,
-) {
+)
+{
     for (scene_view, settings) in &q_scene_views {
         let Ok(mut transform) = q_transform.get_mut(scene_view.camera()) else {
             continue;
@@ -378,28 +348,19 @@ fn update_scene_views(
                     light.color = Color::srgb(1., 0.953, 0.886);
                     light.illuminance = 13500.;
                     ambient_light.brightness = 500.;
-                    fog.falloff = FogFalloff::Linear {
-                        start: 7.0,
-                        end: 12.0,
-                    };
+                    fog.falloff = FogFalloff::Linear { start: 7.0, end: 12.0 };
                 }
                 1 => {
                     light.color = Color::srgb(0.78, 0.76, 0.745);
                     light.illuminance = 9000.;
                     ambient_light.brightness = 300.;
-                    fog.falloff = FogFalloff::Linear {
-                        start: 6.0,
-                        end: 15.0,
-                    };
+                    fog.falloff = FogFalloff::Linear { start: 6.0, end: 15.0 };
                 }
                 2 => {
                     light.color = Color::srgb(0.73, 0.90, 0.95); // Color::rgb(0.53, 0.8, 0.92);
                     light.illuminance = 300.;
                     ambient_light.brightness = 5.;
-                    fog.falloff = FogFalloff::Linear {
-                        start: 5.0,
-                        end: 20.0,
-                    };
+                    fog.falloff = FogFalloff::Linear { start: 5.0, end: 20.0 };
                 }
                 _ => (),
             };
@@ -409,45 +370,52 @@ fn update_scene_views(
 
 #[derive(Resource, Debug, Reflect)]
 #[reflect(Resource)]
-struct ActiveSceneViews {
+struct ActiveSceneViews
+{
     scene_views: HashMap<Entity, SceneView>,
 }
 
-impl Default for ActiveSceneViews {
-    fn default() -> Self {
-        Self {
-            scene_views: HashMap::new(),
-        }
+impl Default for ActiveSceneViews
+{
+    fn default() -> Self
+    {
+        Self { scene_views: HashMap::new() }
     }
 }
 
 #[derive(Component, Debug, Reflect, UiContext)]
 #[reflect(Component)]
-struct SceneControls {
+struct SceneControls
+{
     scene_view: Entity,
 }
 
-impl Default for SceneControls {
-    fn default() -> Self {
-        Self {
-            scene_view: Entity::PLACEHOLDER,
-        }
+impl Default for SceneControls
+{
+    fn default() -> Self
+    {
+        Self { scene_view: Entity::PLACEHOLDER }
     }
 }
 
-impl DefaultTheme for SceneControls {
-    fn default_theme() -> Option<Theme<SceneControls>> {
+impl DefaultTheme for SceneControls
+{
+    fn default_theme() -> Option<Theme<SceneControls>>
+    {
         SceneControls::theme().into()
     }
 }
 
-impl SceneControls {
-    pub fn theme() -> Theme<SceneControls> {
+impl SceneControls
+{
+    pub fn theme() -> Theme<SceneControls>
+    {
         let base_theme = PseudoTheme::deferred(None, SceneControls::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -462,39 +430,46 @@ impl SceneControls {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-struct SceneRotationControl {
+struct SceneRotationControl
+{
     scene_view: Entity,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-struct SceneRotationSpeedControl {
+struct SceneRotationSpeedControl
+{
     scene_view: Entity,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-struct SceneLightControl {
+struct SceneLightControl
+{
     scene_view: Entity,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 #[component(storage = "SparseSet")]
-struct SpawnSceneView {
+struct SpawnSceneView
+{
     asset_path: String,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SceneView {
+pub struct SceneView
+{
     camera: Entity,
     light: Entity,
     asset_root: Entity,
 }
 
-impl Default for SceneView {
-    fn default() -> Self {
+impl Default for SceneView
+{
+    fn default() -> Self
+    {
         Self {
             camera: Entity::PLACEHOLDER,
             light: Entity::PLACEHOLDER,
@@ -505,50 +480,51 @@ impl Default for SceneView {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-struct SceneViewSettings {
+struct SceneViewSettings
+{
     do_rotate: bool,
     rotation_speed: f32,
     light: usize,
 }
 
-impl Default for SceneViewSettings {
-    fn default() -> Self {
-        Self {
-            do_rotate: false,
-            rotation_speed: 0.1,
-            light: 1,
-        }
+impl Default for SceneViewSettings
+{
+    fn default() -> Self
+    {
+        Self { do_rotate: false, rotation_speed: 0.1, light: 1 }
     }
 }
 
-impl SceneView {
-    pub fn camera(&self) -> Entity {
+impl SceneView
+{
+    pub fn camera(&self) -> Entity
+    {
         self.camera
     }
 
-    pub fn light(&self) -> Entity {
+    pub fn light(&self) -> Entity
+    {
         self.light
     }
 
-    pub fn asset_root(&self) -> Entity {
+    pub fn asset_root(&self) -> Entity
+    {
         self.asset_root
     }
 }
 
-pub trait UiSceneViewExt {
+pub trait UiSceneViewExt
+{
     fn scene_view(&mut self, asset: impl Into<String>) -> UiBuilder<Entity>;
 }
 
-impl UiSceneViewExt for UiBuilder<'_, Entity> {
-    fn scene_view(&mut self, asset: impl Into<String>) -> UiBuilder<Entity> {
+impl UiSceneViewExt for UiBuilder<'_, Entity>
+{
+    fn scene_view(&mut self, asset: impl Into<String>) -> UiBuilder<Entity>
+    {
         let column = self
             .column(|_| {})
-            .insert((
-                Name::new("Scene View"),
-                SpawnSceneView {
-                    asset_path: asset.into(),
-                },
-            ))
+            .insert((Name::new("Scene View"), SpawnSceneView { asset_path: asset.into() }))
             .style() // Needed until UiImage stops depending on background color
             .background_color(Color::WHITE)
             .width(Val::Percent(100.))

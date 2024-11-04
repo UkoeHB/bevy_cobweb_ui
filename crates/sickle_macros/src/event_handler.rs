@@ -3,7 +3,8 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::{self, Ident};
 
-pub(crate) fn derive_event_handler_macro(ast: &syn::DeriveInput) -> TokenStream {
+pub(crate) fn derive_event_handler_macro(ast: &syn::DeriveInput) -> TokenStream
+{
     let name = &ast.ident;
     let handler_name = name.to_string().clone() + "Handler";
     let handler_ident = Ident::new(handler_name.as_str(), Span::call_site());

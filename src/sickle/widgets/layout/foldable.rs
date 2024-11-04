@@ -1,19 +1,19 @@
-use bevy::{prelude::*, ui::FocusPolicy};
-
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::sickle::widgets::{menus::menu_item::MenuItemUpdate, WidgetLibraryUpdate};
-
-use super::{
-    container::UiContainerExt,
-    label::{LabelConfig, UiLabelExt},
-    panel::UiPanelExt,
-};
+use super::container::UiContainerExt;
+use super::label::{LabelConfig, UiLabelExt};
+use super::panel::UiPanelExt;
+use crate::sickle::widgets::menus::menu_item::MenuItemUpdate;
+use crate::sickle::widgets::WidgetLibraryUpdate;
 
 pub struct FoldablePlugin;
 
-impl Plugin for FoldablePlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for FoldablePlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             FoldableUpdate
@@ -36,7 +36,8 @@ pub struct FoldableUpdate;
 
 fn handle_foldable_button_press(
     mut q_foldables: Query<(&mut Foldable, &FluxInteraction), Changed<FluxInteraction>>,
-) {
+)
+{
     for (mut foldable, interaction) in &mut q_foldables {
         if interaction.is_released() {
             foldable.open = !foldable.open;
@@ -47,7 +48,8 @@ fn handle_foldable_button_press(
     }
 }
 
-fn update_foldable_container(q_foldables: Query<(Entity, &Foldable), Changed<Foldable>>, mut commands: Commands) {
+fn update_foldable_container(q_foldables: Query<(Entity, &Foldable), Changed<Foldable>>, mut commands: Commands)
+{
     for (entity, foldable) in &q_foldables {
         if foldable.empty {
             commands
@@ -76,7 +78,8 @@ fn update_foldable_container(q_foldables: Query<(Entity, &Foldable), Changed<Fol
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Foldable {
+pub struct Foldable
+{
     pub open: bool,
     pub empty: bool,
     icon: Entity,
@@ -84,8 +87,10 @@ pub struct Foldable {
     container: Entity,
 }
 
-impl Default for Foldable {
-    fn default() -> Self {
+impl Default for Foldable
+{
+    fn default() -> Self
+    {
         Self {
             open: Default::default(),
             empty: Default::default(),
@@ -96,8 +101,10 @@ impl Default for Foldable {
     }
 }
 
-impl UiContext for Foldable {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Foldable
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Foldable::BUTTON_ICON => Ok(self.icon),
             Foldable::BUTTON_LABEL => Ok(self.label),
@@ -110,23 +117,28 @@ impl UiContext for Foldable {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [Foldable::BUTTON_ICON, Foldable::BUTTON_LABEL, Foldable::CONTAINER].into_iter()
     }
 }
 
-impl DefaultTheme for Foldable {
-    fn default_theme() -> Option<Theme<Foldable>> {
+impl DefaultTheme for Foldable
+{
+    fn default_theme() -> Option<Theme<Foldable>>
+    {
         Foldable::theme().into()
     }
 }
 
-impl Foldable {
+impl Foldable
+{
     pub const BUTTON_ICON: &'static str = "ButtonIcon";
     pub const BUTTON_LABEL: &'static str = "ButtonLabel";
     pub const CONTAINER: &'static str = "Container";
 
-    pub fn theme() -> Theme<Foldable> {
+    pub fn theme() -> Theme<Foldable>
+    {
         let base_theme = PseudoTheme::deferred(None, Foldable::primary_style);
         let folded_theme = PseudoTheme::deferred(vec![PseudoState::Folded], Foldable::folded_style);
         let empty_theme = PseudoTheme::deferred(vec![PseudoState::Empty], Foldable::empty_style);
@@ -134,7 +146,8 @@ impl Foldable {
         Theme::new(vec![base_theme, folded_theme, empty_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -179,7 +192,8 @@ impl Foldable {
             .visibility(Visibility::Inherited);
     }
 
-    fn folded_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn folded_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -196,7 +210,8 @@ impl Foldable {
             .visibility(Visibility::Hidden);
     }
 
-    fn empty_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn empty_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -213,11 +228,13 @@ impl Foldable {
             .visibility(Visibility::Hidden);
     }
 
-    pub fn container(&self) -> Entity {
+    pub fn container(&self) -> Entity
+    {
         self.container
     }
 
-    fn button(name: String) -> impl Bundle {
+    fn button(name: String) -> impl Bundle
+    {
         (
             Name::new(format!("Foldable [{}] - Button", name)),
             ButtonBundle { focus_policy: FocusPolicy::Pass, ..default() },
@@ -225,12 +242,14 @@ impl Foldable {
         )
     }
 
-    fn button_icon() -> impl Bundle {
+    fn button_icon() -> impl Bundle
+    {
         (Name::new("Fold Icon"), ImageBundle::default())
     }
 }
 
-pub trait UiFoldableExt {
+pub trait UiFoldableExt
+{
     fn foldable(
         &mut self,
         name: impl Into<String>,
@@ -240,7 +259,8 @@ pub trait UiFoldableExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl UiFoldableExt for UiBuilder<'_, Entity> {
+impl UiFoldableExt for UiBuilder<'_, Entity>
+{
     /// A simple foldable panel.
     ///
     /// ### PseudoState usage
@@ -252,7 +272,8 @@ impl UiFoldableExt for UiBuilder<'_, Entity> {
         open: bool,
         empty: bool,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let name = name.into();
 
         let mut foldable = Foldable { open, empty, ..default() };

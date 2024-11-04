@@ -91,11 +91,10 @@ use syn::DeriveInput;
 ///     }
 ///   }
 /// }
-///
 /// ```
-///
 #[proc_macro_derive(EventHandler)]
-pub fn event_handler_macro_derive(input: TokenStream) -> TokenStream {
+pub fn event_handler_macro_derive(input: TokenStream) -> TokenStream
+{
     let ast = syn::parse(input).unwrap();
     event_handler::derive_event_handler_macro(&ast)
 }
@@ -114,19 +113,22 @@ pub fn event_handler_macro_derive(input: TokenStream) -> TokenStream {
         target_component_attr,
     )
 )]
-pub fn style_commands_macro_derive(input: TokenStream) -> TokenStream {
+pub fn style_commands_macro_derive(input: TokenStream) -> TokenStream
+{
     let ast: DeriveInput = syn::parse(input.clone()).unwrap();
     style_commands::derive_style_commands_macro(&ast)
 }
 
 #[proc_macro_derive(UiContext)]
-pub fn ui_context_macro_derive(input: TokenStream) -> TokenStream {
+pub fn ui_context_macro_derive(input: TokenStream) -> TokenStream
+{
     let ast: DeriveInput = syn::parse(input.clone()).unwrap();
     ui_context::derive_ui_context_macro(&ast)
 }
 
 #[proc_macro_derive(DefaultTheme)]
-pub fn default_theme_macro_derive(input: TokenStream) -> TokenStream {
+pub fn default_theme_macro_derive(input: TokenStream) -> TokenStream
+{
     let ast: DeriveInput = syn::parse(input.clone()).unwrap();
     default_theme::derive_default_theme_macro(&ast)
 }

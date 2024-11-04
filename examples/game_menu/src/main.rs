@@ -12,7 +12,8 @@ use bevy_cobweb_ui::sickle::prelude::*;
 
 struct SliderChanged;
 
-fn detect_silder_change(mut c: Commands, query: Query<Entity, Changed<Slider>>) {
+fn detect_silder_change(mut c: Commands, query: Query<Entity, Changed<Slider>>)
+{
     for slider in query.iter() {
         c.react().entity_event(slider, SliderChanged);
     }
@@ -22,7 +23,8 @@ fn detect_silder_change(mut c: Commands, query: Query<Entity, Changed<Slider>>) 
 
 struct DropdownChanged;
 
-fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown>>) {
+fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown>>)
+{
     for slider in query.iter() {
         c.react().entity_event(slider, DropdownChanged);
     }
@@ -31,7 +33,8 @@ fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Style override for the `sickle_ui` `Slider` widget.
-fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData) {
+fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData)
+{
     // This is styling for a horizontal slider.
     {
         style_builder
@@ -146,7 +149,8 @@ fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, them
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn adjust_sickle_slider_theme(ui: &mut EntityCommands) {
+fn adjust_sickle_slider_theme(ui: &mut EntityCommands)
+{
     let adjusted_theme = PseudoTheme::deferred_context(None, adjusted_slider_style);
     ui.insert(Theme::new(vec![adjusted_theme]));
 }
@@ -161,7 +165,8 @@ fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {
+fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
+{
     l.edit("audio::slider", |l| {
         // Slider: sickle_ui built-in widget.
         let mut ui = l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 100.0, true));
@@ -284,7 +289,8 @@ fn add_menu_option<'a>(
     page_scene: &str,
     page_content_fn: impl for<'b> FnOnce(&mut LoadedScene<'b, '_, UiBuilder<'b, Entity>>),
     start_selected: bool,
-) {
+)
+{
     let manager_entity = l.id();
 
     // Load content page for this section.
@@ -320,7 +326,8 @@ fn add_menu_option<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>) {
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+{
     let file = &SceneFile::new("main.caf.json");
     let scene = file + "menu_scene";
 
@@ -360,7 +367,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands)
+{
     commands.spawn(Camera2dBundle {
         transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
         ..default()
@@ -369,7 +377,8 @@ fn setup(mut commands: Commands) {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn main() {
+fn main()
+{
     App::new()
         .add_plugins(bevy::DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),

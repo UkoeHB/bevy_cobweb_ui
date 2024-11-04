@@ -1,13 +1,14 @@
-use crate::sickle::lerp::Lerp;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 
 use crate::prelude::*;
+use crate::sickle::lerp::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper methods for registering controlled instructions.
-pub trait ControlRegistrationExt {
+pub trait ControlRegistrationExt
+{
     fn register_themed<T: GetTypeRegistration + Instruction + ThemedAttribute>(&mut self) -> &mut Self
     where
         <T as ThemedAttribute>::Value: GetTypeRegistration;
@@ -25,7 +26,8 @@ pub trait ControlRegistrationExt {
         <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration;
 }
 
-impl ControlRegistrationExt for App {
+impl ControlRegistrationExt for App
+{
     fn register_themed<T: GetTypeRegistration + Instruction + ThemedAttribute>(&mut self) -> &mut Self
     where
         <T as ThemedAttribute>::Value: GetTypeRegistration,

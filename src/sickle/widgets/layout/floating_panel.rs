@@ -1,22 +1,17 @@
 use std::ops::DerefMut;
 
-use bevy::{
-    prelude::*,
-    ui::{ContentSize, FocusPolicy, RelativeCursorPosition},
-    window::{PrimaryWindow, WindowResized},
-};
-
-use sickle_ui_scaffold::{prelude::*, ui_commands::RefreshThemeExt};
-
-use crate::sickle::widgets::layout::{
-    container::UiContainerExt,
-    label::{LabelConfig, SetLabelTextExt, UiLabelExt},
-    panel::UiPanelExt,
-    resize_handles::{ResizeDirection, ResizeHandle, UiResizeHandlesExt},
-    scroll_view::UiScrollViewExt,
-};
+use bevy::prelude::*;
+use bevy::ui::{ContentSize, FocusPolicy, RelativeCursorPosition};
+use bevy::window::{PrimaryWindow, WindowResized};
+use sickle_ui_scaffold::prelude::*;
+use sickle_ui_scaffold::ui_commands::RefreshThemeExt;
 
 use super::column::UiColumnExt;
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, SetLabelTextExt, UiLabelExt};
+use crate::sickle::widgets::layout::panel::UiPanelExt;
+use crate::sickle::widgets::layout::resize_handles::{ResizeDirection, ResizeHandle, UiResizeHandlesExt};
+use crate::sickle::widgets::layout::scroll_view::UiScrollViewExt;
 
 const MIN_PANEL_SIZE: Vec2 = Vec2 { x: 150., y: 100. };
 const MIN_FLOATING_PANEL_Z_INDEX: usize = 1000;
@@ -25,8 +20,10 @@ const WINDOW_RESIZE_PADDING: f32 = 20.;
 
 pub struct FloatingPanelPlugin;
 
-impl Plugin for FloatingPanelPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for FloatingPanelPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             FloatingPanelUpdate
@@ -66,7 +63,8 @@ fn update_floating_panel_panel_id(
         Added<UpdateFloatingPanelPanelId>,
     >,
     mut commands: Commands,
-) {
+)
+{
     for (entity, mut floating_panel, update_ref) in &mut q_floating_panels {
         commands
             .entity(entity)
@@ -92,11 +90,13 @@ fn update_floating_panel_panel_id(
     }
 }
 
-fn panel_added(q_panels: Query<Entity, Added<FloatingPanel>>) -> bool {
+fn panel_added(q_panels: Query<Entity, Added<FloatingPanel>>) -> bool
+{
     q_panels.iter().count() > 0
 }
 
-fn index_floating_panels(mut q_panels: Query<&mut FloatingPanel>) {
+fn index_floating_panels(mut q_panels: Query<&mut FloatingPanel>)
+{
     let max = if let Some(Some(m)) = q_panels.iter().map(|p| p.z_index).max() {
         m
     } else {
@@ -115,7 +115,8 @@ fn index_floating_panels(mut q_panels: Query<&mut FloatingPanel>) {
 fn process_panel_close_pressed(
     q_buttons: Query<(&FloatingPanelCloseButton, &FluxInteraction), Changed<FluxInteraction>>,
     mut commands: Commands,
-) {
+)
+{
     for (button, interaction) in &q_buttons {
         if *interaction == FluxInteraction::Released {
             commands.entity(button.panel).despawn_recursive();
@@ -126,7 +127,8 @@ fn process_panel_close_pressed(
 fn process_panel_fold_pressed(
     q_buttons: Query<(Entity, &FloatingPanelFoldButton, &FluxInteraction), Changed<FluxInteraction>>,
     mut q_panel_configs: Query<&mut FloatingPanelConfig>,
-) {
+)
+{
     for (entity, button, interaction) in &q_buttons {
         if *interaction == FluxInteraction::Released {
             let Ok(mut config) = q_panel_configs.get_mut(button.panel) else {
@@ -142,7 +144,8 @@ fn process_panel_fold_pressed(
 fn update_panel_size_on_resize(
     q_draggable: Query<(&Draggable, &ResizeHandle, &FloatingPanelResizeHandle), Changed<Draggable>>,
     mut q_panels: Query<&mut FloatingPanel>,
-) {
+)
+{
     if let Some(_) = q_panels.iter().find(|p| p.priority) {
         return;
     }
@@ -208,7 +211,8 @@ fn update_panel_size_on_resize(
     }
 }
 
-fn clip_position_change(diff: f32, min: f32, old_size: f32, new_size: f32) -> f32 {
+fn clip_position_change(diff: f32, min: f32, old_size: f32, new_size: f32) -> f32
+{
     let mut new_diff = diff;
     if old_size <= min && new_size <= min {
         new_diff = 0.;
@@ -224,7 +228,8 @@ fn clip_position_change(diff: f32, min: f32, old_size: f32, new_size: f32) -> f3
 fn update_panel_on_title_drag(
     q_draggable: Query<(&Draggable, AnyOf<(&FloatingPanelTitle, &FloatingPanelDragHandle)>), Changed<Draggable>>,
     mut q_panels: Query<(Entity, &mut FloatingPanel)>,
-) {
+)
+{
     if let Some(_) = q_panels.iter().find(|(_, p)| p.priority) {
         return;
     }
@@ -291,7 +296,8 @@ fn update_panel_on_title_drag(
     }
 }
 
-fn window_resized(e_resized: EventReader<WindowResized>) -> bool {
+fn window_resized(e_resized: EventReader<WindowResized>) -> bool
+{
     e_resized.len() > 0
 }
 
@@ -299,7 +305,8 @@ fn window_resized(e_resized: EventReader<WindowResized>) -> bool {
 fn handle_window_resize(
     q_window: Query<&Window, With<PrimaryWindow>>,
     mut q_panels: Query<(&mut FloatingPanel, &Node, &GlobalTransform)>,
-) {
+)
+{
     let Ok(window) = q_window.get_single() else {
         return;
     };
@@ -331,7 +338,8 @@ fn update_panel_layout(
         Or<(Changed<FloatingPanel>, Changed<FloatingPanelConfig>)>,
     >,
     mut commands: Commands,
-) {
+)
+{
     for (entity, panel, config) in &q_panels {
         if config.is_changed() {
             commands
@@ -417,7 +425,8 @@ fn update_panel_layout(
 
 // New floating panels don't have node sizes calculated which prevents resize handles to be placed properly
 // This is a crude way of re-triggering systems that are based on Changed<FloatingPanel>s
-fn touch_new_floating_panels(mut q_panels: Query<&mut FloatingPanel, Added<FloatingPanel>>) {
+fn touch_new_floating_panels(mut q_panels: Query<&mut FloatingPanel, Added<FloatingPanel>>)
+{
     for mut panel in &mut q_panels {
         panel.deref_mut();
     }
@@ -425,72 +434,90 @@ fn touch_new_floating_panels(mut q_panels: Query<&mut FloatingPanel, Added<Float
 
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanelResizeHandle {
+pub struct FloatingPanelResizeHandle
+{
     panel: Entity,
 }
 
-impl Default for FloatingPanelResizeHandle {
-    fn default() -> Self {
+impl Default for FloatingPanelResizeHandle
+{
+    fn default() -> Self
+    {
         Self { panel: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanelTitle {
+pub struct FloatingPanelTitle
+{
     panel: Entity,
 }
 
-impl Default for FloatingPanelTitle {
-    fn default() -> Self {
+impl Default for FloatingPanelTitle
+{
+    fn default() -> Self
+    {
         Self { panel: Entity::PLACEHOLDER }
     }
 }
 
-impl FloatingPanelTitle {
-    pub fn panel(&self) -> Entity {
+impl FloatingPanelTitle
+{
+    pub fn panel(&self) -> Entity
+    {
         self.panel
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanelDragHandle {
+pub struct FloatingPanelDragHandle
+{
     panel: Entity,
 }
 
-impl Default for FloatingPanelDragHandle {
-    fn default() -> Self {
+impl Default for FloatingPanelDragHandle
+{
+    fn default() -> Self
+    {
         Self { panel: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanelFoldButton {
+pub struct FloatingPanelFoldButton
+{
     panel: Entity,
 }
 
-impl Default for FloatingPanelFoldButton {
-    fn default() -> Self {
+impl Default for FloatingPanelFoldButton
+{
+    fn default() -> Self
+    {
         Self { panel: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanelCloseButton {
+pub struct FloatingPanelCloseButton
+{
     panel: Entity,
 }
 
-impl Default for FloatingPanelCloseButton {
-    fn default() -> Self {
+impl Default for FloatingPanelCloseButton
+{
+    fn default() -> Self
+    {
         Self { panel: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Clone, Debug, Reflect)]
-pub struct FloatingPanelConfig {
+pub struct FloatingPanelConfig
+{
     pub title: Option<String>,
     pub draggable: bool,
     pub resizable: bool,
@@ -500,8 +527,10 @@ pub struct FloatingPanelConfig {
     pub restrict_scroll: Option<ScrollAxis>,
 }
 
-impl Default for FloatingPanelConfig {
-    fn default() -> Self {
+impl Default for FloatingPanelConfig
+{
+    fn default() -> Self
+    {
         Self {
             title: None,
             draggable: true,
@@ -514,15 +543,18 @@ impl Default for FloatingPanelConfig {
     }
 }
 
-impl FloatingPanelConfig {
-    pub fn title(&self) -> Option<String> {
+impl FloatingPanelConfig
+{
+    pub fn title(&self) -> Option<String>
+    {
         self.title.clone()
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct FloatingPanel {
+pub struct FloatingPanel
+{
     size: Vec2,
     position: Vec2,
     z_index: Option<usize>,
@@ -541,8 +573,10 @@ pub struct FloatingPanel {
     pub priority: bool,
 }
 
-impl Default for FloatingPanel {
-    fn default() -> Self {
+impl Default for FloatingPanel
+{
+    fn default() -> Self
+    {
         Self {
             size: Default::default(),
             position: Default::default(),
@@ -564,8 +598,10 @@ impl Default for FloatingPanel {
     }
 }
 
-impl UiContext for FloatingPanel {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for FloatingPanel
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             FloatingPanel::DRAG_HANDLE => Ok(self.drag_handle),
             FloatingPanel::TITLE_CONTAINER => Ok(self.title_container),
@@ -582,7 +618,8 @@ impl UiContext for FloatingPanel {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             FloatingPanel::DRAG_HANDLE,
             FloatingPanel::TITLE_CONTAINER,
@@ -596,13 +633,16 @@ impl UiContext for FloatingPanel {
     }
 }
 
-impl DefaultTheme for FloatingPanel {
-    fn default_theme() -> Option<Theme<FloatingPanel>> {
+impl DefaultTheme for FloatingPanel
+{
+    fn default_theme() -> Option<Theme<FloatingPanel>>
+    {
         FloatingPanel::theme().into()
     }
 }
 
-impl FloatingPanel {
+impl FloatingPanel
+{
     pub const DRAG_HANDLE: &'static str = "DragHandle";
     pub const TITLE_CONTAINER: &'static str = "TitleContainer";
     pub const TITLE: &'static str = "Title";
@@ -611,14 +651,16 @@ impl FloatingPanel {
     pub const CLOSE_BUTTON: &'static str = "CloseButton";
     pub const CONTENT_VIEW: &'static str = "ContentView";
 
-    pub fn theme() -> Theme<FloatingPanel> {
+    pub fn theme() -> Theme<FloatingPanel>
+    {
         let base_theme = PseudoTheme::deferred_context(None, FloatingPanel::primary_style);
         let folded_theme = PseudoTheme::deferred_context(vec![PseudoState::Folded], FloatingPanel::folded_style);
 
         Theme::new(vec![base_theme, folded_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -734,7 +776,8 @@ impl FloatingPanel {
             .copy_from(theme_data.interaction_animation);
     }
 
-    fn folded_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData) {
+    fn folded_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -768,19 +811,23 @@ impl FloatingPanel {
             );
     }
 
-    pub fn content_panel_container(&self) -> Entity {
+    pub fn content_panel_container(&self) -> Entity
+    {
         self.content_panel_container
     }
 
-    pub fn content_panel_id(&self) -> Entity {
+    pub fn content_panel_id(&self) -> Entity
+    {
         self.content_panel
     }
 
-    pub fn title_container_id(&self) -> Entity {
+    pub fn title_container_id(&self) -> Entity
+    {
         self.title_container
     }
 
-    fn frame(title: String) -> impl Bundle {
+    fn frame(title: String) -> impl Bundle
+    {
         (
             Name::new(format!("Floating Panel [{}]", title)),
             NodeBundle {
@@ -803,7 +850,8 @@ impl FloatingPanel {
         )
     }
 
-    fn title_container(panel: Entity) -> impl Bundle {
+    fn title_container(panel: Entity) -> impl Bundle
+    {
         (
             Name::new("Title Container"),
             ButtonBundle::default(),
@@ -814,7 +862,8 @@ impl FloatingPanel {
         )
     }
 
-    fn fold_button(panel: Entity) -> impl Bundle {
+    fn fold_button(panel: Entity) -> impl Bundle
+    {
         (
             Name::new("Fold Button"),
             ButtonBundle::default(),
@@ -824,7 +873,8 @@ impl FloatingPanel {
         )
     }
 
-    fn drag_handle() -> impl Bundle {
+    fn drag_handle() -> impl Bundle
+    {
         (
             Name::new("Drag Handle"),
             ButtonBundle::default(),
@@ -834,7 +884,8 @@ impl FloatingPanel {
         )
     }
 
-    fn close_button_container() -> impl Bundle {
+    fn close_button_container() -> impl Bundle
+    {
         (
             Name::new("Close Button Container"),
             NodeBundle {
@@ -849,7 +900,8 @@ impl FloatingPanel {
         )
     }
 
-    fn close_button(panel: Entity) -> impl Bundle {
+    fn close_button(panel: Entity) -> impl Bundle
+    {
         (
             Name::new("Close Button"),
             ButtonBundle::default(),
@@ -861,14 +913,17 @@ impl FloatingPanel {
 }
 
 #[derive(Debug)]
-pub struct FloatingPanelLayout {
+pub struct FloatingPanelLayout
+{
     pub size: Vec2,
     pub position: Option<Vec2>,
     pub droppable: bool,
 }
 
-impl Default for FloatingPanelLayout {
-    fn default() -> Self {
+impl Default for FloatingPanelLayout
+{
+    fn default() -> Self
+    {
         Self {
             size: Vec2 { x: 300., y: 500. },
             position: Default::default(),
@@ -877,19 +932,23 @@ impl Default for FloatingPanelLayout {
     }
 }
 
-impl FloatingPanelLayout {
-    pub fn min() -> Self {
+impl FloatingPanelLayout
+{
+    pub fn min() -> Self
+    {
         Self { size: MIN_PANEL_SIZE, ..default() }
     }
 }
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-pub struct UpdateFloatingPanelPanelId {
+pub struct UpdateFloatingPanelPanelId
+{
     pub panel_id: Entity,
 }
 
-pub trait UiFloatingPanelExt {
+pub trait UiFloatingPanelExt
+{
     fn floating_panel<'a>(
         &'a mut self,
         config: FloatingPanelConfig,
@@ -898,7 +957,8 @@ pub trait UiFloatingPanelExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl<T: UiContainerExt> UiFloatingPanelExt for T {
+impl<T: UiContainerExt> UiFloatingPanelExt for T
+{
     /// A floating panel that can be optionally dragable, foldable, and closable.
     ///
     /// ### PseudoState usage
@@ -909,7 +969,8 @@ impl<T: UiContainerExt> UiFloatingPanelExt for T {
         config: FloatingPanelConfig,
         layout: FloatingPanelLayout,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let restrict_to = config.restrict_scroll;
         let title_text = if let Some(text) = config.title.clone() {
             text

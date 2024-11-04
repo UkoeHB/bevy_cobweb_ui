@@ -6,8 +6,10 @@ use crate::flux_interaction::{FluxInteraction, FluxInteractionUpdate};
 
 pub struct DragInteractionPlugin;
 
-impl Plugin for DragInteractionPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for DragInteractionPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(Update, DraggableUpdate.after(FluxInteractionUpdate))
             .add_systems(
                 Update,
@@ -27,7 +29,8 @@ pub struct DraggableUpdate;
 
 #[derive(Component, Clone, Copy, Default, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Draggable {
+pub struct Draggable
+{
     pub state: DragState,
     pub origin: Option<Vec2>,
     pub position: Option<Vec2>,
@@ -35,8 +38,10 @@ pub struct Draggable {
     pub source: DragSource,
 }
 
-impl Draggable {
-    fn clear(&mut self) {
+impl Draggable
+{
+    fn clear(&mut self)
+    {
         self.origin = None;
         self.position = None;
         self.diff = Vec2::default().into();
@@ -45,7 +50,8 @@ impl Draggable {
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Reflect)]
 #[reflect]
-pub enum DragState {
+pub enum DragState
+{
     #[default]
     Inactive,
     MaybeDragged,
@@ -57,21 +63,24 @@ pub enum DragState {
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Reflect)]
 #[reflect]
-pub enum DragSource {
+pub enum DragSource
+{
     #[default]
     Mouse,
     Touch(u64),
 }
 
 /// Returns `cfg!(target_os = "windows")`
-fn is_windows_os() -> bool {
+fn is_windows_os() -> bool
+{
     cfg!(target_os = "windows")
 }
 
 fn update_cursor_confinement_from_drag(
     q_draggable: Query<&Draggable, Changed<Draggable>>,
     mut q_window: Query<&mut Window, With<PrimaryWindow>>,
-) {
+)
+{
     let Ok(mut window) = q_window.get_single_mut() else {
         return;
     };
@@ -81,9 +90,10 @@ fn update_cursor_confinement_from_drag(
         .find(|&draggable| draggable.state == DragState::DragStart)
     {
         window.cursor.grab_mode = CursorGrabMode::Confined;
-    } else if let Some(_) = q_draggable.iter().find(|&draggable| {
-        draggable.state == DragState::DragEnd || draggable.state == DragState::DragCanceled
-    }) {
+    } else if let Some(_) = q_draggable
+        .iter()
+        .find(|&draggable| draggable.state == DragState::DragEnd || draggable.state == DragState::DragCanceled)
+    {
         window.cursor.grab_mode = CursorGrabMode::None;
     }
 }
@@ -99,7 +109,8 @@ fn update_drag_progress(
     )>,
     r_touches: Res<Touches>,
     r_keys: Res<ButtonInput<KeyCode>>,
-) {
+)
+{
     for (mut draggable, flux_interaction, relcurpos, node, global_trans) in &mut q_draggable {
         if draggable.state == DragState::DragEnd {
             draggable.state = DragState::Inactive;
@@ -139,8 +150,7 @@ fn update_drag_progress(
                 },
             };
 
-            if let (Some(old_position), Some(updated_position)) = (draggable.position, new_position)
-            {
+            if let (Some(old_position), Some(updated_position)) = (draggable.position, new_position) {
                 let diff = updated_position - old_position;
 
                 // No tolerance threshold, just move
@@ -169,11 +179,10 @@ fn update_drag_state(
         Changed<FluxInteraction>,
     >,
     r_touches: Res<Touches>,
-) {
+)
+{
     for (mut draggable, flux_interaction, relcurpos, node, global_trans) in &mut q_draggable {
-        if *flux_interaction == FluxInteraction::Pressed
-            && draggable.state != DragState::MaybeDragged
-        {
+        if *flux_interaction == FluxInteraction::Pressed && draggable.state != DragState::MaybeDragged {
             let mut drag_source = DragSource::Mouse;
 
             // No window method: Cursor is at the Node's top left screenspace rect.min,

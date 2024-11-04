@@ -1,17 +1,17 @@
 use bevy::prelude::*;
-
 use sickle_ui_scaffold::ui_builder::{UiBuilder, UiBuilderExt};
 
-use crate::sickle::widgets::layout::container::UiContainerExt;
-
 use super::menu_bar::MenuBar;
+use crate::sickle::widgets::layout::container::UiContainerExt;
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct ExtraMenu;
 
-impl ExtraMenu {
-    fn frame() -> impl Bundle {
+impl ExtraMenu
+{
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Extra Menu"),
             NodeBundle {
@@ -27,12 +27,15 @@ impl ExtraMenu {
     }
 }
 
-pub trait UiExtraMenuExt {
+pub trait UiExtraMenuExt
+{
     fn extra_menu(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>;
 }
 
-impl UiExtraMenuExt for UiBuilder<'_, (Entity, MenuBar)> {
-    fn extra_menu(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity> {
+impl UiExtraMenuExt for UiBuilder<'_, (Entity, MenuBar)>
+{
+    fn extra_menu(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>
+    {
         let own_id = self.id();
         let id = self
             .commands()

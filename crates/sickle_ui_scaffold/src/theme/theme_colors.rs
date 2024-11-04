@@ -5,13 +5,12 @@ use super::theme_data::Contrast;
 
 /// Custom serialization and deserialization functions necessary for the loading and saving of
 /// [`Color`] structs to their hex string representation.
-mod serialize_color {
+mod serialize_color
+{
 
     use bevy::color::{Color, Srgba};
-    use serde::{
-        de::{Error, Visitor},
-        Deserializer, Serializer,
-    };
+    use serde::de::{Error, Visitor};
+    use serde::{Deserializer, Serializer};
 
     pub(super) fn serialize<S, T>(color: &T, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -37,10 +36,12 @@ mod serialize_color {
 
     struct ColorVisitor;
 
-    impl<'de> Visitor<'de> for ColorVisitor {
+    impl<'de> Visitor<'de> for ColorVisitor
+    {
         type Value = Color;
 
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result
+        {
             formatter.write_str("valid color hex string")
         }
 
@@ -55,15 +56,18 @@ mod serialize_color {
     }
 }
 
-pub mod loader {
-    use bevy::asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext};
+pub mod loader
+{
+    use bevy::asset::io::Reader;
+    use bevy::asset::{AssetLoader, AsyncReadExt, LoadContext};
 
     use super::ThemeColors;
 
     #[derive(Default)]
     pub(crate) struct ThemeColorsLoader;
 
-    impl AssetLoader for ThemeColorsLoader {
+    impl AssetLoader for ThemeColorsLoader
+    {
         type Asset = ThemeColors;
         type Settings = ();
         type Error = std::io::Error;
@@ -73,7 +77,8 @@ pub mod loader {
             reader: &'a mut Reader<'_>,
             _settings: &'a Self::Settings,
             _load_context: &'a mut LoadContext<'_>,
-        ) -> Result<Self::Asset, Self::Error> {
+        ) -> Result<Self::Asset, Self::Error>
+        {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
             let theme_colors_asset = serde_json::from_slice(&bytes)?;
@@ -83,7 +88,8 @@ pub mod loader {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Surface {
+pub enum Surface
+{
     Background,
     Surface,
     SurfaceVariant,
@@ -93,7 +99,8 @@ pub enum Surface {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Accent {
+pub enum Accent
+{
     Primary,
     PrimaryFixed,
     PrimaryFixedDim,
@@ -112,7 +119,8 @@ pub enum Accent {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Container {
+pub enum Container
+{
     Primary,
     Secondary,
     Tertiary,
@@ -125,7 +133,8 @@ pub enum Container {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum OnColor {
+pub enum OnColor
+{
     Primary,
     PrimaryContainer,
     PrimaryFixed,
@@ -147,7 +156,8 @@ pub enum OnColor {
 }
 
 #[derive(Clone, Debug, Default, Reflect, Serialize, Deserialize)]
-pub struct ExtendedColor {
+pub struct ExtendedColor
+{
     pub name: String,
     #[serde(with = "serialize_color")]
     pub color: Color,
@@ -156,7 +166,8 @@ pub struct ExtendedColor {
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
-pub struct CoreColors {
+pub struct CoreColors
+{
     #[serde(with = "serialize_color")]
     pub primary: Color,
 
@@ -193,7 +204,8 @@ pub struct CoreColors {
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SchemeColors {
+pub struct SchemeColors
+{
     #[serde(with = "serialize_color")]
     pub primary: Color,
 
@@ -339,8 +351,10 @@ pub struct SchemeColors {
     pub surface_container_highest: Color,
 }
 
-impl SchemeColors {
-    pub fn surface(&self, surface: Surface) -> Color {
+impl SchemeColors
+{
+    pub fn surface(&self, surface: Surface) -> Color
+    {
         match surface {
             Surface::Background => self.background,
             Surface::Surface => self.surface,
@@ -351,7 +365,8 @@ impl SchemeColors {
         }
     }
 
-    pub fn accent(&self, accent: Accent) -> Color {
+    pub fn accent(&self, accent: Accent) -> Color
+    {
         match accent {
             Accent::Primary => self.primary,
             Accent::PrimaryFixed => self.primary_fixed,
@@ -371,7 +386,8 @@ impl SchemeColors {
         }
     }
 
-    pub fn container(&self, container: Container) -> Color {
+    pub fn container(&self, container: Container) -> Color
+    {
         match container {
             Container::Primary => self.primary_container,
             Container::Secondary => self.secondary_container,
@@ -385,7 +401,8 @@ impl SchemeColors {
         }
     }
 
-    pub fn on(&self, on: OnColor) -> Color {
+    pub fn on(&self, on: OnColor) -> Color
+    {
         match on {
             OnColor::Primary => self.on_primary,
             OnColor::PrimaryContainer => self.on_primary_container,
@@ -411,7 +428,8 @@ impl SchemeColors {
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ColorSchemes {
+pub struct ColorSchemes
+{
     pub light: SchemeColors,
     pub light_medium_contrast: SchemeColors,
     pub light_high_contrast: SchemeColors,
@@ -420,8 +438,10 @@ pub struct ColorSchemes {
     pub dark_high_contrast: SchemeColors,
 }
 
-impl ColorSchemes {
-    pub fn light_contrast(&self, contrast: Contrast) -> SchemeColors {
+impl ColorSchemes
+{
+    pub fn light_contrast(&self, contrast: Contrast) -> SchemeColors
+    {
         match contrast {
             Contrast::Standard => self.light,
             Contrast::Medium => self.light_medium_contrast,
@@ -429,7 +449,8 @@ impl ColorSchemes {
         }
     }
 
-    pub fn dark_contrast(&self, contrast: Contrast) -> SchemeColors {
+    pub fn dark_contrast(&self, contrast: Contrast) -> SchemeColors
+    {
         match contrast {
             Contrast::Standard => self.dark,
             Contrast::Medium => self.dark_medium_contrast,
@@ -439,7 +460,8 @@ impl ColorSchemes {
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
-pub struct ColorPalette {
+pub struct ColorPalette
+{
     #[serde(rename = "0", with = "serialize_color")]
     pub p_0: Color,
 
@@ -497,7 +519,8 @@ pub struct ColorPalette {
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct ColorPalettes {
+pub struct ColorPalettes
+{
     pub primary: ColorPalette,
     pub secondary: ColorPalette,
     pub tertiary: ColorPalette,
@@ -509,7 +532,8 @@ pub struct ColorPalettes {
 /// [Material Theme Builder](https://material-foundation.github.io/material-theme-builder/).
 #[derive(Asset, Clone, Debug, Reflect, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ThemeColors {
+pub struct ThemeColors
+{
     pub description: String,
     // TODO: Generate colors from seed & core colors?
     #[serde(with = "serialize_color")]
@@ -520,8 +544,10 @@ pub struct ThemeColors {
     pub palettes: ColorPalettes,
 }
 
-impl Default for ThemeColors {
-    fn default() -> Self {
+impl Default for ThemeColors
+{
+    fn default() -> Self
+    {
         Self {
             description: "Sickle UI Theme".into(),
             seed: Color::Srgba(Srgba::hex("037E90").unwrap()),

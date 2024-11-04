@@ -1,49 +1,48 @@
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
-use crate::{prelude::FluxInteraction, theme::prelude::*};
-
-use super::{
-    attribute::{
-        CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-    },
-    generated::*,
-    LogicalEq,
+use super::attribute::{
+    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
 };
+use super::generated::*;
+use super::LogicalEq;
+use crate::prelude::FluxInteraction;
+use crate::theme::prelude::*;
 
-pub struct InteractiveStyleBuilder<'a> {
+pub struct InteractiveStyleBuilder<'a>
+{
     pub style_builder: &'a mut StyleBuilder,
 }
 
-impl<'a> InteractiveStyleBuilder<'a> {
+impl<'a> InteractiveStyleBuilder<'a>
+{
     pub fn custom(
         &mut self,
         callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static,
-    ) -> &mut Self {
-        self.style_builder.add(DynamicStyleAttribute::Interactive(
-            InteractiveStyleAttribute::Custom(CustomInteractiveStyleAttribute::new(callback)),
-        ));
+    ) -> &mut Self
+    {
+        self.style_builder
+            .add(DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
+                CustomInteractiveStyleAttribute::new(callback),
+            )));
 
         self
     }
 }
 
-pub struct AnimatedStyleBuilder<'a> {
+pub struct AnimatedStyleBuilder<'a>
+{
     pub style_builder: &'a mut StyleBuilder,
 }
 
-impl AnimatedStyleBuilder<'_> {
-    pub fn add_and_extract_animation(
-        &mut self,
-        attribute: DynamicStyleAttribute,
-    ) -> &mut AnimationSettings {
+impl AnimatedStyleBuilder<'_>
+{
+    pub fn add_and_extract_animation(&mut self, attribute: DynamicStyleAttribute) -> &mut AnimationSettings
+    {
         let index = self.style_builder.add(attribute.clone());
 
         let DynamicStyleAttribute::Animated {
-            controller: DynamicStyleController {
-                ref mut animation, ..
-            },
-            ..
+            controller: DynamicStyleController { ref mut animation, .. }, ..
         } = self.style_builder.attributes[index].attribute
         else {
             unreachable!();
@@ -55,7 +54,8 @@ impl AnimatedStyleBuilder<'_> {
     pub fn custom(
         &mut self,
         callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static,
-    ) -> &mut AnimationSettings {
+    ) -> &mut AnimationSettings
+    {
         let attribute = DynamicStyleAttribute::Animated {
             attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(callback)),
             controller: DynamicStyleController::default(),
@@ -66,14 +66,17 @@ impl AnimatedStyleBuilder<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub struct ContextStyleAttributeConfig {
+pub struct ContextStyleAttributeConfig
+{
     placement: Option<SmolStr>,
     target: Option<SmolStr>,
     attribute: DynamicStyleAttribute,
 }
 
-impl LogicalEq for ContextStyleAttributeConfig {
-    fn logical_eq(&self, other: &Self) -> bool {
+impl LogicalEq for ContextStyleAttributeConfig
+{
+    fn logical_eq(&self, other: &Self) -> bool
+    {
         self.placement == other.placement
             && self.target == other.target
             && self.attribute.logical_eq(&other.attribute)
@@ -81,14 +84,17 @@ impl LogicalEq for ContextStyleAttributeConfig {
 }
 
 #[derive(Default, Debug)]
-pub struct StyleBuilder {
+pub struct StyleBuilder
+{
     placement: Option<SmolStr>,
     target: Option<SmolStr>,
     attributes: Vec<ContextStyleAttributeConfig>,
 }
 
-impl From<StyleBuilder> for DynamicStyle {
-    fn from(value: StyleBuilder) -> Self {
+impl From<StyleBuilder> for DynamicStyle
+{
+    fn from(value: StyleBuilder) -> Self
+    {
         value.attributes.iter().for_each(|attr| {
             if attr.placement.is_some() || attr.target.is_some() {
                 warn!(
@@ -111,12 +117,15 @@ impl From<StyleBuilder> for DynamicStyle {
     }
 }
 
-impl StyleBuilder {
-    pub fn new() -> Self {
+impl StyleBuilder
+{
+    pub fn new() -> Self
+    {
         Self::default()
     }
 
-    pub fn new_with_capacity(num_attributes: usize) -> Self {
+    pub fn new_with_capacity(num_attributes: usize) -> Self
+    {
         Self {
             placement: None,
             target: None,
@@ -124,11 +133,10 @@ impl StyleBuilder {
         }
     }
 
-    pub fn add(&mut self, attribute: DynamicStyleAttribute) -> usize {
+    pub fn add(&mut self, attribute: DynamicStyleAttribute) -> usize
+    {
         let index = self.attributes.iter().position(|csac| {
-            csac.placement == self.placement
-                && csac.target == self.target
-                && csac.attribute.logical_eq(&attribute)
+            csac.placement == self.placement && csac.target == self.target && csac.attribute.logical_eq(&attribute)
         });
 
         match index {
@@ -152,10 +160,8 @@ impl StyleBuilder {
         }
     }
 
-    pub fn custom(
-        &mut self,
-        callback: impl Fn(Entity, &mut World) + Send + Sync + 'static,
-    ) -> &mut Self {
+    pub fn custom(&mut self, callback: impl Fn(Entity, &mut World) + Send + Sync + 'static) -> &mut Self
+    {
         self.add(DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
             CustomStaticStyleAttribute::new(callback),
         )));
@@ -163,26 +169,25 @@ impl StyleBuilder {
         self
     }
 
-    pub fn interactive(&mut self) -> InteractiveStyleBuilder {
-        InteractiveStyleBuilder {
-            style_builder: self,
-        }
+    pub fn interactive(&mut self) -> InteractiveStyleBuilder
+    {
+        InteractiveStyleBuilder { style_builder: self }
     }
 
-    pub fn animated(&mut self) -> AnimatedStyleBuilder {
-        AnimatedStyleBuilder {
-            style_builder: self,
-        }
+    pub fn animated(&mut self) -> AnimatedStyleBuilder
+    {
+        AnimatedStyleBuilder { style_builder: self }
     }
 
-    /// Switch context of styling by changing the placement of the DynamicStyle and the target of interaction styling.
-    /// Values are mapped to the UiContext of the themed component. `None` placement refers to the main entity.
-    /// `None` target refers to the current placement entity.
+    /// Switch context of styling by changing the placement of the DynamicStyle and the target of interaction
+    /// styling. Values are mapped to the UiContext of the themed component. `None` placement refers to the
+    /// main entity. `None` target refers to the current placement entity.
     pub fn switch_context(
         &mut self,
         placement: impl Into<Option<&'static str>>,
         target: impl Into<Option<&'static str>>,
-    ) -> &mut Self {
+    ) -> &mut Self
+    {
         self.placement = placement.into().map(|p| SmolStr::new_static(p));
         self.target = target.into().map(|p| SmolStr::new_static(p));
 
@@ -190,20 +195,23 @@ impl StyleBuilder {
     }
 
     /// Resets both placement and target to the main entity.
-    pub fn reset_context(&mut self) -> &mut Self {
+    pub fn reset_context(&mut self) -> &mut Self
+    {
         self.placement = None;
         self.target = None;
         self
     }
 
     /// Revert StyleBuilder to place style on the main entity.
-    pub fn reset_placement(&mut self) -> &mut Self {
+    pub fn reset_placement(&mut self) -> &mut Self
+    {
         self.placement = None;
         self
     }
 
     /// Revert StyleBuilder to target the main entity for styling.
-    pub fn reset_target(&mut self) -> &mut Self {
+    pub fn reset_target(&mut self) -> &mut Self
+    {
         self.target = None;
         self
     }
@@ -212,12 +220,14 @@ impl StyleBuilder {
     /// NOTE: The DynamicStyle will be placed on the selected sub-component and interactions will be
     /// detected on it. This allows styling sub-components directly. It also allows detecting interactions
     /// on a sub-component and proxying it to the main entity or other sub-components.
-    pub fn switch_placement(&mut self, placement: &'static str) -> &mut Self {
+    pub fn switch_placement(&mut self, placement: &'static str) -> &mut Self
+    {
         self.switch_placement_with(SmolStr::new_static(placement))
     }
 
     /// See [`Self::switch_placement`].
-    pub fn switch_placement_with(&mut self, placement: SmolStr) -> &mut Self {
+    pub fn switch_placement_with(&mut self, placement: SmolStr) -> &mut Self
+    {
         self.placement = Some(placement);
         self
     }
@@ -225,17 +235,20 @@ impl StyleBuilder {
     /// All subsequent calls to the StyleBuilder will target styling to the selected sub-component.
     /// NOTE: The DynamicStyle will still be set on the main entity and interactions will be
     /// detected on it. This allows styling sub-components by proxy from the current placement.
-    pub fn switch_target(&mut self, target: &'static str) -> &mut Self {
+    pub fn switch_target(&mut self, target: &'static str) -> &mut Self
+    {
         self.switch_target_with(SmolStr::new_static(target))
     }
 
     /// See [`Self::switch_target`].
-    pub fn switch_target_with(&mut self, target: SmolStr) -> &mut Self {
+    pub fn switch_target_with(&mut self, target: SmolStr) -> &mut Self
+    {
         self.target = Some(target);
         self
     }
 
-    pub fn convert_with(mut self, context: &impl UiContext) -> Vec<(Option<Entity>, DynamicStyle)> {
+    pub fn convert_with(mut self, context: &impl UiContext) -> Vec<(Option<Entity>, DynamicStyle)>
+    {
         self.attributes
             .sort_unstable_by(|a, b| a.placement.cmp(&b.placement));
         let count = self
@@ -251,7 +264,8 @@ impl StyleBuilder {
     pub fn convert_to_iter<'a>(
         &'a mut self,
         context: &'a impl UiContext,
-    ) -> impl Iterator<Item = (Option<Entity>, DynamicStyle)> + 'a {
+    ) -> impl Iterator<Item = (Option<Entity>, DynamicStyle)> + 'a
+    {
         self.convert_to_iter_with_buffers(context, Vec::default)
     }
 
@@ -263,7 +277,8 @@ impl StyleBuilder {
         &'a mut self,
         context: &'a impl UiContext,
         buffer_source: impl FnMut() -> Vec<ContextStyleAttribute> + 'a,
-    ) -> impl Iterator<Item = (Option<Entity>, DynamicStyle)> + 'a {
+    ) -> impl Iterator<Item = (Option<Entity>, DynamicStyle)> + 'a
+    {
         self.attributes
             .sort_unstable_by(|a, b| a.placement.cmp(&b.placement));
 
@@ -300,26 +315,24 @@ impl StyleBuilder {
 
                 Some((start, end, placement_entity))
             })
-            .scan(
-                buffer_source,
-                |buffer_source, (start, end, placement_entity)| {
-                    let mut attributes = (buffer_source)();
-                    attributes.clear();
-                    Some((
-                        placement_entity,
-                        DynamicStyle::copy_from(self.attributes[start..end].iter().fold(
-                            attributes,
-                            |acc: Vec<ContextStyleAttribute>, csac| {
-                                StyleBuilder::fold_context_style_attributes(acc, csac, context)
-                            },
-                        )),
-                    ))
-                },
-            )
+            .scan(buffer_source, |buffer_source, (start, end, placement_entity)| {
+                let mut attributes = (buffer_source)();
+                attributes.clear();
+                Some((
+                    placement_entity,
+                    DynamicStyle::copy_from(self.attributes[start..end].iter().fold(
+                        attributes,
+                        |acc: Vec<ContextStyleAttribute>, csac| {
+                            StyleBuilder::fold_context_style_attributes(acc, csac, context)
+                        },
+                    )),
+                ))
+            })
     }
 
     /// Clears the builder without deallocating.
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self)
+    {
         self.target = None;
         self.placement = None;
         self.attributes.clear();
@@ -329,7 +342,8 @@ impl StyleBuilder {
         mut acc: Vec<ContextStyleAttribute>,
         csac: &ContextStyleAttributeConfig,
         context: &impl UiContext,
-    ) -> Vec<ContextStyleAttribute> {
+    ) -> Vec<ContextStyleAttribute>
+    {
         let new_entry: ContextStyleAttribute = match &csac.target {
             Some(target) => match context.get(target) {
                 Ok(target_entity) => match target_entity == Entity::PLACEHOLDER {
@@ -339,9 +353,7 @@ impl StyleBuilder {
 
                         return acc;
                     }
-                    false => {
-                        ContextStyleAttribute::new(target_entity, csac.attribute.clone()).into()
-                    }
+                    false => ContextStyleAttribute::new(target_entity, csac.attribute.clone()).into(),
                 },
                 Err(msg) => {
                     warn!("{}", msg);

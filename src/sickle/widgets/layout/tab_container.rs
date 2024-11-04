@@ -1,31 +1,29 @@
-use bevy::{ecs::world::Command, prelude::*, ui::RelativeCursorPosition};
-
+use bevy::ecs::world::Command;
+use bevy::prelude::*;
+use bevy::ui::RelativeCursorPosition;
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::sickle::widgets::menus::{
-    context_menu::{
-        ContextMenu, ContextMenuGenerator, ContextMenuUpdate, GenerateContextMenu, ReflectContextMenuGenerator,
-    },
-    menu_item::{MenuItem, MenuItemConfig, MenuItemUpdate, UiMenuItemExt},
+use super::container::UiContainerExt;
+use super::floating_panel::{
+    FloatingPanel, FloatingPanelConfig, FloatingPanelLayout, FloatingPanelUpdate, UiFloatingPanelExt,
+    UpdateFloatingPanelPanelId,
 };
-
-use super::{
-    container::UiContainerExt,
-    floating_panel::{
-        FloatingPanel, FloatingPanelConfig, FloatingPanelLayout, FloatingPanelUpdate, UiFloatingPanelExt,
-        UpdateFloatingPanelPanelId,
-    },
-    label::{LabelConfig, UiLabelExt},
-    panel::{Panel, UiPanelExt},
-    scroll_view::UiScrollViewExt,
-    sized_zone::{SizedZonePreUpdate, SizedZoneResizeHandleContainer},
+use super::label::{LabelConfig, UiLabelExt};
+use super::panel::{Panel, UiPanelExt};
+use super::scroll_view::UiScrollViewExt;
+use super::sized_zone::{SizedZonePreUpdate, SizedZoneResizeHandleContainer};
+use crate::sickle::widgets::menus::context_menu::{
+    ContextMenu, ContextMenuGenerator, ContextMenuUpdate, GenerateContextMenu, ReflectContextMenuGenerator,
 };
+use crate::sickle::widgets::menus::menu_item::{MenuItem, MenuItemConfig, MenuItemUpdate, UiMenuItemExt};
 
 pub struct TabContainerPlugin;
 
-impl Plugin for TabContainerPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for TabContainerPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             Update,
             TabContainerUpdate
@@ -69,7 +67,8 @@ fn dock_panel_in_tab_container(
     q_floating_panel: Query<&FloatingPanel>,
     q_panel: Query<&Panel>,
     mut commands: Commands,
-) {
+)
+{
     for (container_id, mut tab_container, dock_ref) in &mut q_docking_panels {
         commands.entity(container_id).remove::<DockFloatingPanel>();
 
@@ -129,7 +128,8 @@ fn popout_panel_from_tab(
     q_ui_context_root: Query<&UiContextRoot>,
     mut q_tab_container: Query<&mut TabContainer>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, tab, popout_ref) in &q_popout {
         commands
             .entity(entity)
@@ -197,7 +197,8 @@ fn close_tab_on_context_menu_press(
     q_tab: Query<&Tab>,
     mut q_tab_container: Query<&mut TabContainer>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, context_menu, menu_item) in &q_menu_items {
         if menu_item.interacted() {
             let Ok(tab_data) = q_tab.get(context_menu.tab) else {
@@ -229,7 +230,8 @@ fn popout_tab_on_context_menu_press(
     q_tab: Query<(&Tab, &GlobalTransform)>,
     q_node: Query<&Node>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, tab_ref, menu_item) in &q_menu_items {
         if menu_item.interacted() {
             let Ok((tab, transform)) = q_tab.get(tab_ref.tab) else {
@@ -262,7 +264,8 @@ fn update_tab_container_on_tab_press(
     q_tab: Query<Entity, With<Tab>>,
     q_children: Query<&Children>,
     mut q_tab_container: Query<&mut TabContainer>,
-) {
+)
+{
     for (tab_entity, tab, interaction) in &q_tabs {
         if *interaction == Interaction::Pressed {
             let Ok(mut tab_container) = q_tab_container.get_mut(tab.container) else {
@@ -289,7 +292,8 @@ fn update_tab_container_on_change(
     q_tab: Query<Entity, With<Tab>>,
     q_children: Query<&Children>,
     mut commands: Commands,
-) {
+)
+{
     for tab_container in &q_tab_containers {
         let Ok(tabs) = q_children.get(tab_container.bar) else {
             continue;
@@ -316,7 +320,8 @@ fn update_sized_zone_resize_handles_on_tab_drag(
     q_accepted_types: Query<&Draggable, (With<Tab>, Changed<Draggable>)>,
     q_handle_containers: Query<Entity, With<SizedZoneResizeHandleContainer>>,
     mut commands: Commands,
-) {
+)
+{
     if q_accepted_types
         .iter()
         .all(|draggable| draggable.state == DragState::Inactive)
@@ -341,7 +346,8 @@ fn handle_tab_dragging(
     q_transform: Query<(&GlobalTransform, &Interaction)>,
     mut q_tab: Query<&mut Tab>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, draggable, node, transform) in &q_tabs {
         let tab = q_tab.get(entity).unwrap();
 
@@ -554,31 +560,38 @@ fn handle_tab_dragging(
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct CloseTabContextMenu {
+pub struct CloseTabContextMenu
+{
     tab: Entity,
 }
 
-impl Default for CloseTabContextMenu {
-    fn default() -> Self {
+impl Default for CloseTabContextMenu
+{
+    fn default() -> Self
+    {
         Self { tab: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct PopoutTabContextMenu {
+pub struct PopoutTabContextMenu
+{
     tab: Entity,
 }
 
-impl Default for PopoutTabContextMenu {
-    fn default() -> Self {
+impl Default for PopoutTabContextMenu
+{
+    fn default() -> Self
+    {
         Self { tab: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Clone, Debug, Reflect)]
 #[reflect(Component, ContextMenuGenerator)]
-pub struct Tab {
+pub struct Tab
+{
     container: Entity,
     bar: Entity,
     panel: Entity,
@@ -588,8 +601,10 @@ pub struct Tab {
     original_index: Option<usize>,
 }
 
-impl Default for Tab {
-    fn default() -> Self {
+impl Default for Tab
+{
+    fn default() -> Self
+    {
         Self {
             container: Entity::PLACEHOLDER,
             bar: Entity::PLACEHOLDER,
@@ -602,8 +617,10 @@ impl Default for Tab {
     }
 }
 
-impl ContextMenuGenerator for Tab {
-    fn build_context_menu(&self, context: Entity, container: &mut UiBuilder<ContextMenu>) {
+impl ContextMenuGenerator for Tab
+{
+    fn build_context_menu(&self, context: Entity, container: &mut UiBuilder<ContextMenu>)
+    {
         let icons = ThemeData::default().icons;
 
         container
@@ -622,13 +639,16 @@ impl ContextMenuGenerator for Tab {
             .insert(PopoutTabContextMenu { tab: context });
     }
 
-    fn placement_index(&self) -> usize {
+    fn placement_index(&self) -> usize
+    {
         0
     }
 }
 
-impl UiContext for Tab {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Tab
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Tab::LABEL_CONTAINER => Ok(self.label_container),
             Tab::LABEL => Ok(self.label),
@@ -641,29 +661,35 @@ impl UiContext for Tab {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [Tab::LABEL_CONTAINER, Tab::LABEL, Tab::PANEL].into_iter()
     }
 }
 
-impl DefaultTheme for Tab {
-    fn default_theme() -> Option<Theme<Tab>> {
+impl DefaultTheme for Tab
+{
+    fn default_theme() -> Option<Theme<Tab>>
+    {
         Tab::theme().into()
     }
 }
 
-impl Tab {
+impl Tab
+{
     pub const LABEL_CONTAINER: &'static str = "LabelContainer";
     pub const LABEL: &'static str = "Label";
     pub const PANEL: &'static str = "Panel";
 
-    pub fn theme() -> Theme<Tab> {
+    pub fn theme() -> Theme<Tab>
+    {
         let base_theme = PseudoTheme::deferred(None, Tab::primary_style);
         let selected_theme = PseudoTheme::deferred(vec![PseudoState::Selected], Tab::selected_style);
         Theme::new(vec![base_theme, selected_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -707,7 +733,8 @@ impl Tab {
             .visibility(Visibility::Hidden);
     }
 
-    fn selected_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn selected_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -746,7 +773,8 @@ impl Tab {
             .visibility(Visibility::Inherited);
     }
 
-    fn frame(name: String) -> impl Bundle {
+    fn frame(name: String) -> impl Bundle
+    {
         (
             Name::new(name),
             NodeBundle::default(),
@@ -766,17 +794,21 @@ impl Tab {
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-struct PopoutPanelFromTabContainer {
+struct PopoutPanelFromTabContainer
+{
     size: Vec2,
     position: Vec2,
 }
 
-struct IncrementTabCount {
+struct IncrementTabCount
+{
     container: Entity,
 }
 
-impl Command for IncrementTabCount {
-    fn apply(self, world: &mut World) {
+impl Command for IncrementTabCount
+{
+    fn apply(self, world: &mut World)
+    {
         let Some(mut container) = world.get_mut::<TabContainer>(self.container) else {
             warn!(
                 "Failed to increment tab count: {} is not a TabContainer!",
@@ -791,59 +823,74 @@ impl Command for IncrementTabCount {
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-struct DockFloatingPanel {
+struct DockFloatingPanel
+{
     floating_panel: Entity,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct TabBar {
+pub struct TabBar
+{
     container: Entity,
 }
 
-impl Default for TabBar {
-    fn default() -> Self {
+impl Default for TabBar
+{
+    fn default() -> Self
+    {
         Self { container: Entity::PLACEHOLDER }
     }
 }
 
-impl TabBar {
-    pub fn container_id(&self) -> Entity {
+impl TabBar
+{
+    pub fn container_id(&self) -> Entity
+    {
         self.container
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct TabViewport {
+pub struct TabViewport
+{
     container: Entity,
 }
 
-impl Default for TabViewport {
-    fn default() -> Self {
+impl Default for TabViewport
+{
+    fn default() -> Self
+    {
         Self { container: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Clone, Debug, Default, Reflect, UiContext)]
 #[reflect(Component)]
-pub struct TabPlaceholder {
+pub struct TabPlaceholder
+{
     width: f32,
 }
 
-impl DefaultTheme for TabPlaceholder {
-    fn default_theme() -> Option<Theme<TabPlaceholder>> {
+impl DefaultTheme for TabPlaceholder
+{
+    fn default_theme() -> Option<Theme<TabPlaceholder>>
+    {
         TabPlaceholder::theme().into()
     }
 }
 
-impl TabPlaceholder {
-    pub fn theme() -> Theme<TabPlaceholder> {
+impl TabPlaceholder
+{
+    pub fn theme() -> Theme<TabPlaceholder>
+    {
         let base_theme = PseudoTheme::deferred_context(None, TabPlaceholder::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, context: &TabPlaceholder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, context: &TabPlaceholder, theme_data: &ThemeData)
+    {
         let colors = theme_data.colors();
 
         style_builder
@@ -857,7 +904,8 @@ impl TabPlaceholder {
             .copy_from(theme_data.enter_animation);
     }
 
-    fn frame(width: f32) -> impl Bundle {
+    fn frame(width: f32) -> impl Bundle
+    {
         (
             Name::new("Tab Placeholder"),
             NodeBundle {
@@ -873,27 +921,33 @@ impl TabPlaceholder {
     }
 }
 
-pub trait UiTabPlaceholderExt {
+pub trait UiTabPlaceholderExt
+{
     fn tab_placeholder(&mut self, width: f32) -> UiBuilder<Entity>;
 }
 
-impl UiTabPlaceholderExt for UiBuilder<'_, Entity> {
-    fn tab_placeholder(&mut self, width: f32) -> UiBuilder<Entity> {
+impl UiTabPlaceholderExt for UiBuilder<'_, Entity>
+{
+    fn tab_placeholder(&mut self, width: f32) -> UiBuilder<Entity>
+    {
         self.spawn((TabPlaceholder::frame(width), TabPlaceholder { width }))
     }
 }
 
 #[derive(Component, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
-pub struct TabContainer {
+pub struct TabContainer
+{
     active: usize,
     bar: Entity,
     viewport: Entity,
     tab_count: usize,
 }
 
-impl Default for TabContainer {
-    fn default() -> Self {
+impl Default for TabContainer
+{
+    fn default() -> Self
+    {
         Self {
             active: 0,
             tab_count: 0,
@@ -903,14 +957,18 @@ impl Default for TabContainer {
     }
 }
 
-impl DefaultTheme for TabContainer {
-    fn default_theme() -> Option<Theme<TabContainer>> {
+impl DefaultTheme for TabContainer
+{
+    fn default_theme() -> Option<Theme<TabContainer>>
+    {
         TabContainer::theme().into()
     }
 }
 
-impl UiContext for TabContainer {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for TabContainer
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             TabContainer::TAB_BAR => Ok(self.bar),
             _ => Err(format!(
@@ -921,32 +979,39 @@ impl UiContext for TabContainer {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [TabContainer::TAB_BAR].into_iter()
     }
 }
 
-impl TabContainer {
+impl TabContainer
+{
     pub const TAB_BAR: &'static str = "TabBar";
 
-    pub fn bar_id(&self) -> Entity {
+    pub fn bar_id(&self) -> Entity
+    {
         self.bar
     }
 
-    pub fn tab_count(&self) -> usize {
+    pub fn tab_count(&self) -> usize
+    {
         self.tab_count
     }
 
-    pub fn set_active(&mut self, active: usize) {
+    pub fn set_active(&mut self, active: usize)
+    {
         self.active = active;
     }
 
-    pub fn theme() -> Theme<TabContainer> {
+    pub fn theme() -> Theme<TabContainer>
+    {
         let base_theme = PseudoTheme::deferred(None, TabContainer::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -966,8 +1031,10 @@ impl TabContainer {
     }
 }
 
-impl TabContainer {
-    fn frame() -> impl Bundle {
+impl TabContainer
+{
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Tab Container"),
             NodeBundle::default(),
@@ -975,7 +1042,8 @@ impl TabContainer {
         )
     }
 
-    fn bar() -> impl Bundle {
+    fn bar() -> impl Bundle
+    {
         (
             Name::new("Tab Bar"),
             NodeBundle {
@@ -988,19 +1056,22 @@ impl TabContainer {
     }
 }
 
-pub trait UiTabContainerExt {
+pub trait UiTabContainerExt
+{
     fn tab_container(
         &mut self,
         spawn_children: impl FnOnce(&mut UiBuilder<(Entity, TabContainer)>),
     ) -> UiBuilder<Entity>;
 }
 
-impl UiTabContainerExt for UiBuilder<'_, Entity> {
+impl UiTabContainerExt for UiBuilder<'_, Entity>
+{
     /// A simple tab container.
     fn tab_container(
         &mut self,
         spawn_children: impl FnOnce(&mut UiBuilder<(Entity, TabContainer)>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let mut tab_container = TabContainer { ..default() };
 
         let mut container = self.container(TabContainer::frame(), |container| {
@@ -1027,7 +1098,8 @@ impl UiTabContainerExt for UiBuilder<'_, Entity> {
     }
 }
 
-pub trait UiTabContainerSubExt {
+pub trait UiTabContainerSubExt
+{
     fn id(&self) -> Entity;
 
     fn add_tab(
@@ -1039,8 +1111,10 @@ pub trait UiTabContainerSubExt {
     fn dock_panel(&mut self, floating_panel: Entity) -> UiBuilder<(Entity, TabContainer)>;
 }
 
-impl UiTabContainerSubExt for UiBuilder<'_, (Entity, TabContainer)> {
-    fn id(&self) -> Entity {
+impl UiTabContainerSubExt for UiBuilder<'_, (Entity, TabContainer)>
+{
+    fn id(&self) -> Entity
+    {
         self.context().0
     }
 
@@ -1052,7 +1126,8 @@ impl UiTabContainerSubExt for UiBuilder<'_, (Entity, TabContainer)> {
         &mut self,
         title: String,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<(Entity, TabContainer)> {
+    ) -> UiBuilder<(Entity, TabContainer)>
+    {
         let context = self.context().clone();
         let container_id = context.0;
         let bar_id = context.1.bar;
@@ -1083,7 +1158,8 @@ impl UiTabContainerSubExt for UiBuilder<'_, (Entity, TabContainer)> {
         self.commands().ui_builder(context)
     }
 
-    fn dock_panel(&mut self, floating_panel: Entity) -> UiBuilder<(Entity, TabContainer)> {
+    fn dock_panel(&mut self, floating_panel: Entity) -> UiBuilder<(Entity, TabContainer)>
+    {
         let context = self.context().clone();
         let entity = self.id();
 

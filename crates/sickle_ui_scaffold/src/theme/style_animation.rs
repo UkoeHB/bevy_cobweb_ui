@@ -1,20 +1,17 @@
-use std::{time::Duration, vec};
+use std::time::Duration;
+use std::vec;
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_math::ease::{Ease, ValueEasing};
+use sickle_math::lerp::Lerp;
 
-use sickle_math::{
-    ease::{Ease, ValueEasing},
-    lerp::Lerp,
-};
-
-use crate::{
-    flux_interaction::{FluxInteraction, StopwatchLock},
-    ui_style::attribute::AnimatedVals,
-};
+use crate::flux_interaction::{FluxInteraction, StopwatchLock};
+use crate::ui_style::attribute::AnimatedVals;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum InteractionStyle {
+pub enum InteractionStyle
+{
     #[default]
     Enter,
     Idle,
@@ -26,8 +23,10 @@ pub enum InteractionStyle {
     PressAlt,
 }
 
-impl From<FluxInteraction> for InteractionStyle {
-    fn from(value: FluxInteraction) -> Self {
+impl From<FluxInteraction> for InteractionStyle
+{
+    fn from(value: FluxInteraction) -> Self
+    {
         match value {
             FluxInteraction::None => Self::Idle,
             FluxInteraction::PointerEnter => Self::Hover,
@@ -40,14 +39,18 @@ impl From<FluxInteraction> for InteractionStyle {
     }
 }
 
-impl From<&FluxInteraction> for InteractionStyle {
-    fn from(value: &FluxInteraction) -> Self {
+impl From<&FluxInteraction> for InteractionStyle
+{
+    fn from(value: &FluxInteraction) -> Self
+    {
         Self::from(*value)
     }
 }
 
-impl InteractionStyle {
-    fn alt(&self) -> Option<InteractionStyle> {
+impl InteractionStyle
+{
+    fn alt(&self) -> Option<InteractionStyle>
+    {
         match self {
             InteractionStyle::Idle => InteractionStyle::IdleAlt.into(),
             InteractionStyle::Hover => InteractionStyle::HoverAlt.into(),
@@ -62,28 +65,35 @@ impl InteractionStyle {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum AnimationResult {
+pub enum AnimationResult
+{
     Hold(InteractionStyle),
-    Interpolate {
+    Interpolate
+    {
         from: InteractionStyle,
         to: InteractionStyle,
         t: f32,
         offset: f32,
     },
-    TransitionBetween {
+    TransitionBetween
+    {
         origin: InteractionStyle,
         points: Vec<(InteractionStyle, f32)>,
     },
 }
 
-impl Default for AnimationResult {
-    fn default() -> Self {
+impl Default for AnimationResult
+{
+    fn default() -> Self
+    {
         Self::Hold(Default::default())
     }
 }
 
-impl AnimationResult {
-    pub fn extract<T: Lerp + Default + Clone + PartialEq>(&self, bundle: &AnimatedVals<T>) -> T {
+impl AnimationResult
+{
+    pub fn extract<T: Lerp + Default + Clone + PartialEq>(&self, bundle: &AnimatedVals<T>) -> T
+    {
         match self {
             AnimationResult::Hold(style) => bundle.interaction_style(*style),
             AnimationResult::Interpolate { from, to, t, .. } => bundle
@@ -102,7 +112,8 @@ impl AnimationResult {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Reflect, Serialize, Deserialize)]
-pub enum AnimationLoop {
+pub enum AnimationLoop
+{
     #[default]
     None,
     Continous,
@@ -114,7 +125,8 @@ pub enum AnimationLoop {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
-pub struct AnimationConfig {
+pub struct AnimationConfig
+{
     pub duration: f32,
     #[reflect(default)]
     pub easing: Option<Ease>,
@@ -122,27 +134,23 @@ pub struct AnimationConfig {
     pub delay: Option<f32>,
 }
 
-impl AnimationConfig {
-    pub fn new(
-        duration: f32,
-        easing: impl Into<Option<Ease>>,
-        delay: impl Into<Option<f32>>,
-    ) -> AnimationConfig {
-        AnimationConfig {
-            duration,
-            easing: easing.into(),
-            delay: delay.into(),
-        }
+impl AnimationConfig
+{
+    pub fn new(duration: f32, easing: impl Into<Option<Ease>>, delay: impl Into<Option<f32>>) -> AnimationConfig
+    {
+        AnimationConfig { duration, easing: easing.into(), delay: delay.into() }
     }
 
-    pub fn delay(&self) -> f32 {
+    pub fn delay(&self) -> f32
+    {
         match self.delay {
             Some(delay) => delay,
             None => 0.,
         }
     }
 
-    pub fn easing(&self) -> Ease {
+    pub fn easing(&self) -> Ease
+    {
         match self.easing {
             Some(ease) => ease,
             None => Ease::Linear,
@@ -151,7 +159,8 @@ impl AnimationConfig {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
-pub struct LoopedAnimationConfig {
+pub struct LoopedAnimationConfig
+{
     pub duration: f32,
     #[reflect(default)]
     pub easing: Option<Ease>,
@@ -163,14 +172,16 @@ pub struct LoopedAnimationConfig {
     pub loop_type: Option<AnimationLoop>,
 }
 
-impl LoopedAnimationConfig {
+impl LoopedAnimationConfig
+{
     pub fn new(
         duration: f32,
         easing: impl Into<Option<Ease>>,
         start_delay: impl Into<Option<f32>>,
         loop_gap: impl Into<Option<f32>>,
         loop_type: impl Into<Option<AnimationLoop>>,
-    ) -> LoopedAnimationConfig {
+    ) -> LoopedAnimationConfig
+    {
         LoopedAnimationConfig {
             duration,
             easing: easing.into(),
@@ -180,35 +191,40 @@ impl LoopedAnimationConfig {
         }
     }
 
-    fn start_delay(&self) -> f32 {
+    fn start_delay(&self) -> f32
+    {
         match self.start_delay {
             Some(delay) => delay,
             None => 0.,
         }
     }
 
-    fn loop_gap(&self) -> f32 {
+    fn loop_gap(&self) -> f32
+    {
         match self.loop_gap {
             Some(delay) => delay,
             None => 0.,
         }
     }
 
-    fn easing(&self) -> Ease {
+    fn easing(&self) -> Ease
+    {
         match self.easing {
             Some(ease) => ease,
             None => Ease::Linear,
         }
     }
 
-    fn loop_type(&self) -> AnimationLoop {
+    fn loop_type(&self) -> AnimationLoop
+    {
         match self.loop_type {
             Some(loop_type) => loop_type,
             None => AnimationLoop::None,
         }
     }
 
-    fn is_pingpong(&self) -> bool {
+    fn is_pingpong(&self) -> bool
+    {
         match self.loop_type() {
             AnimationLoop::PingPong(_) | AnimationLoop::PingPongContinous => true,
             _ => false,
@@ -217,7 +233,8 @@ impl LoopedAnimationConfig {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
-pub struct AnimationSettings {
+pub struct AnimationSettings
+{
     #[reflect(default)]
     pub enter: Option<AnimationConfig>,
     #[reflect(default)]
@@ -324,12 +341,15 @@ macro_rules! state_from_animation_setter {
     };
 }
 
-impl AnimationSettings {
-    pub fn new() -> Self {
+impl AnimationSettings
+{
+    pub fn new() -> Self
+    {
         Self { ..default() }
     }
 
-    pub fn copy_from(&mut self, other: Self) -> &mut Self {
+    pub fn copy_from(&mut self, other: Self) -> &mut Self
+    {
         self.enter = other.enter;
         self.non_interacted = other.non_interacted;
         self.pointer_enter = other.pointer_enter;
@@ -371,13 +391,15 @@ impl AnimationSettings {
     state_animation_setter!(pressed);
     state_from_animation_setter!(pressed, pressed_from);
 
-    pub fn delete_on_entered(&mut self, do_delete: bool) -> &mut Self {
+    pub fn delete_on_entered(&mut self, do_delete: bool) -> &mut Self
+    {
         self.delete_on_entered = do_delete;
 
         self
     }
 
-    pub fn to_tween(&self, flux_interaction: &FluxInteraction) -> Option<AnimationConfig> {
+    pub fn to_tween(&self, flux_interaction: &FluxInteraction) -> Option<AnimationConfig>
+    {
         match flux_interaction {
             FluxInteraction::None => self.enter,
             FluxInteraction::PointerEnter => self.pointer_enter,
@@ -389,10 +411,8 @@ impl AnimationSettings {
         }
     }
 
-    pub fn to_loop_tween(
-        &self,
-        flux_interaction: &FluxInteraction,
-    ) -> Option<LoopedAnimationConfig> {
+    pub fn to_loop_tween(&self, flux_interaction: &FluxInteraction) -> Option<LoopedAnimationConfig>
+    {
         match flux_interaction {
             FluxInteraction::None => self.idle,
             FluxInteraction::PointerEnter => self.hover,
@@ -404,11 +424,13 @@ impl AnimationSettings {
         }
     }
 
-    pub fn enter_duration(&self) -> StopwatchLock {
+    pub fn enter_duration(&self) -> StopwatchLock
+    {
         AnimationSettings::transition_lock_duration(self.enter)
     }
 
-    pub fn lock_duration(&self, flux_interaction: &FluxInteraction) -> StopwatchLock {
+    pub fn lock_duration(&self, flux_interaction: &FluxInteraction) -> StopwatchLock
+    {
         let transition = match flux_interaction {
             FluxInteraction::PressCanceled => {
                 let cancel_lock = AnimationSettings::transition_lock_duration(self.cancel);
@@ -431,7 +453,8 @@ impl AnimationSettings {
         transition + state_animation
     }
 
-    pub fn transition_lock_duration(tween: Option<AnimationConfig>) -> StopwatchLock {
+    pub fn transition_lock_duration(tween: Option<AnimationConfig>) -> StopwatchLock
+    {
         let Some(tween) = tween else {
             return StopwatchLock::None;
         };
@@ -439,15 +462,16 @@ impl AnimationSettings {
         StopwatchLock::Duration(Duration::from_secs_f32(tween.delay() + tween.duration))
     }
 
-    pub fn state_lock_duration(tween: Option<LoopedAnimationConfig>) -> StopwatchLock {
+    pub fn state_lock_duration(tween: Option<LoopedAnimationConfig>) -> StopwatchLock
+    {
         let Some(tween) = tween else {
             return StopwatchLock::None;
         };
 
         match tween.loop_type() {
-            AnimationLoop::None => StopwatchLock::Duration(Duration::from_secs_f32(
-                tween.start_delay() + tween.duration,
-            )),
+            AnimationLoop::None => {
+                StopwatchLock::Duration(Duration::from_secs_f32(tween.start_delay() + tween.duration))
+            }
             AnimationLoop::Continous => StopwatchLock::Infinite,
             AnimationLoop::Times(n, _) => StopwatchLock::Duration(Duration::from_secs_f32(
                 tween.start_delay() + (tween.duration * n as f32) + (tween.loop_gap() * n as f32),
@@ -461,17 +485,21 @@ impl AnimationSettings {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct AnimationState {
+pub struct AnimationState
+{
     result: AnimationResult,
     iteration: u8,
 }
 
-impl AnimationState {
-    pub fn extract<T: Lerp + Default + Clone + PartialEq>(&self, bundle: &AnimatedVals<T>) -> T {
+impl AnimationState
+{
+    pub fn extract<T: Lerp + Default + Clone + PartialEq>(&self, bundle: &AnimatedVals<T>) -> T
+    {
         self.result.extract(bundle)
     }
 
-    pub fn is_entering(&self) -> bool {
+    pub fn is_entering(&self) -> bool
+    {
         match self.result {
             AnimationResult::Hold(style) => style == InteractionStyle::Enter,
             AnimationResult::Interpolate { from, .. } => from == InteractionStyle::Enter,
@@ -485,22 +513,15 @@ impl AnimationState {
         tween: Option<AnimationConfig>,
         loop_tween: Option<LoopedAnimationConfig>,
         elapsed: f32,
-    ) -> Self {
+    ) -> Self
+    {
         // No animation applied for the current interaction
         let Some(tween) = tween else {
             let (Some(alt_tween), Some(alt_target)) = (loop_tween, target_style.alt()) else {
-                return AnimationState {
-                    result: AnimationResult::Hold(target_style),
-                    iteration: 0,
-                };
+                return AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 };
             };
 
-            return AnimationState::process_animation_loops(
-                target_style,
-                alt_target,
-                elapsed,
-                alt_tween,
-            );
+            return AnimationState::process_animation_loops(target_style, alt_target, elapsed, alt_tween);
         };
 
         let delay = tween.delay();
@@ -531,10 +552,7 @@ impl AnimationState {
         if elapsed > (tween_time + delay) {
             // Do loop or hold
             let (Some(alt_tween), Some(alt_target)) = (loop_tween, target_style.alt()) else {
-                return AnimationState {
-                    result: AnimationResult::Hold(target_style),
-                    iteration: 0,
-                };
+                return AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 };
             };
             AnimationState::process_animation_loops(
                 target_style,
@@ -559,14 +577,11 @@ impl AnimationState {
         alt_target: InteractionStyle,
         mut elapsed: f32,
         tween: LoopedAnimationConfig,
-    ) -> AnimationState {
+    ) -> AnimationState
+    {
         let start_delay = tween.start_delay();
-        if tween.loop_type() == AnimationLoop::None || elapsed < start_delay || tween.duration <= 0.
-        {
-            return AnimationState {
-                result: AnimationResult::Hold(target_style),
-                iteration: 0,
-            };
+        if tween.loop_type() == AnimationLoop::None || elapsed < start_delay || tween.duration <= 0. {
+            return AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 };
         }
         elapsed -= start_delay;
 
@@ -633,12 +648,7 @@ impl AnimationState {
             };
 
             AnimationState {
-                result: AnimationResult::Interpolate {
-                    from,
-                    to,
-                    t: tween_ratio,
-                    offset: 0.,
-                },
+                result: AnimationResult::Interpolate { from, to, t: tween_ratio, offset: 0. },
                 iteration: (iteration % 255) as u8,
             }
         }
@@ -651,18 +661,14 @@ impl AnimationState {
         tween_time: f32,
         easing: Ease,
         previous_result: &AnimationResult,
-    ) -> AnimationState {
+    ) -> AnimationState
+    {
         let tween_ratio = ((elapsed - delay) / tween_time).clamp(0., 1.).ease(easing);
         match previous_result {
             AnimationResult::Hold(prev_style) => {
                 AnimationState::process_hold(target_style, prev_style, tween_ratio)
             }
-            AnimationResult::Interpolate {
-                from,
-                to,
-                t,
-                offset,
-            } => AnimationState::process_interpolate(
+            AnimationResult::Interpolate { from, to, t, offset } => AnimationState::process_interpolate(
                 target_style,
                 elapsed,
                 delay,
@@ -674,12 +680,7 @@ impl AnimationState {
                 offset,
             ),
             AnimationResult::TransitionBetween { origin, points } => {
-                AnimationState::process_transition_between(
-                    target_style,
-                    tween_ratio,
-                    origin,
-                    points,
-                )
+                AnimationState::process_transition_between(target_style, tween_ratio, origin, points)
             }
         }
     }
@@ -688,7 +689,8 @@ impl AnimationState {
         target_style: InteractionStyle,
         prev_style: &InteractionStyle,
         tween_ratio: f32,
-    ) -> AnimationState {
+    ) -> AnimationState
+    {
         if *prev_style != target_style {
             AnimationState {
                 result: AnimationResult::Interpolate {
@@ -700,10 +702,7 @@ impl AnimationState {
                 iteration: 0,
             }
         } else {
-            AnimationState {
-                result: AnimationResult::Hold(target_style),
-                iteration: 0,
-            }
+            AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 }
         }
     }
 
@@ -717,7 +716,8 @@ impl AnimationState {
         to: &InteractionStyle,
         t: &f32,
         offset: &f32,
-    ) -> AnimationState {
+    ) -> AnimationState
+    {
         // Best effort complete the animation by tweening for only the remaining distance.
         // We could store `elapsed` and the `easing` type and try to continue animations,
         // but there is no guarantee we continue the interrupted one.
@@ -726,22 +726,12 @@ impl AnimationState {
 
         if *from == target_style {
             AnimationState {
-                result: AnimationResult::Interpolate {
-                    from: *to,
-                    to: *from,
-                    t: 1. - *t,
-                    offset: 1. - *t,
-                },
+                result: AnimationResult::Interpolate { from: *to, to: *from, t: 1. - *t, offset: 1. - *t },
                 iteration: 0,
             }
         } else if *to == target_style {
             AnimationState {
-                result: AnimationResult::Interpolate {
-                    from: *from,
-                    to: *to,
-                    t: tween_ratio,
-                    offset: *offset,
-                },
+                result: AnimationResult::Interpolate { from: *from, to: *to, t: tween_ratio, offset: *offset },
                 iteration: 0,
             }
         } else {
@@ -760,7 +750,8 @@ impl AnimationState {
         tween_ratio: f32,
         origin: &InteractionStyle,
         points: &Vec<(InteractionStyle, f32)>,
-    ) -> AnimationState {
+    ) -> AnimationState
+    {
         // TODO: this is not a frequent case, but consider finding workaround for allocation
         let mut new_points = points.clone();
         let point_count = new_points.len();
@@ -787,10 +778,7 @@ impl AnimationState {
         }
 
         AnimationState {
-            result: AnimationResult::TransitionBetween {
-                origin: *origin,
-                points: new_points,
-            },
+            result: AnimationResult::TransitionBetween { origin: *origin, points: new_points },
             iteration: 0,
         }
     }

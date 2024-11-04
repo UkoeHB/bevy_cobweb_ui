@@ -1,9 +1,6 @@
 use bevy::prelude::*;
-
-use sickle_ui_scaffold::{
-    ui_builder::{UiBuilder, UiRoot},
-    ui_style::prelude::*,
-};
+use sickle_ui_scaffold::ui_builder::{UiBuilder, UiRoot};
+use sickle_ui_scaffold::ui_style::prelude::*;
 
 use super::container::UiContainerExt;
 
@@ -11,8 +8,10 @@ use super::container::UiContainerExt;
 #[reflect(Component)]
 pub struct Row;
 
-impl Row {
-    fn frame() -> impl Bundle {
+impl Row
+{
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Row"),
             NodeBundle {
@@ -29,18 +28,23 @@ impl Row {
     }
 }
 
-pub trait UiRowExt {
+pub trait UiRowExt
+{
     fn row(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>;
 }
 
-impl UiRowExt for UiBuilder<'_, UiRoot> {
-    fn row(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity> {
+impl UiRowExt for UiBuilder<'_, UiRoot>
+{
+    fn row(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>
+    {
         self.container((Row::frame(), Row), spawn_children)
     }
 }
 
-impl UiRowExt for UiBuilder<'_, Entity> {
-    fn row(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity> {
+impl UiRowExt for UiBuilder<'_, Entity>
+{
+    fn row(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>
+    {
         self.container((Row::frame(), Row), spawn_children)
     }
 }

@@ -1,41 +1,53 @@
 use bevy_color::{Color, Mix};
 use bevy_ui::{BorderRadius, Outline, UiRect, Val};
 
-pub trait Lerp {
+pub trait Lerp
+{
     fn lerp(&self, to: Self, t: f32) -> Self;
 }
 
-pub trait Lerp64 {
+pub trait Lerp64
+{
     fn lerp_64(&self, to: Self, t: f64) -> Self;
 }
 
-impl Lerp for f32 {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for f32
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         self + ((to - self) * t)
     }
 }
 
-impl Lerp for f64 {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for f64
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         self + ((to - self) * t as f64)
     }
 }
 
-impl Lerp64 for f32 {
-    fn lerp_64(&self, to: Self, t: f64) -> Self {
+impl Lerp64 for f32
+{
+    fn lerp_64(&self, to: Self, t: f64) -> Self
+    {
         self + ((to - self) * t as f32)
     }
 }
 
-impl Lerp64 for f64 {
-    fn lerp_64(&self, to: Self, t: f64) -> Self {
+impl Lerp64 for f64
+{
+    fn lerp_64(&self, to: Self, t: f64) -> Self
+    {
         self + ((to - self) * t)
     }
 }
 
-impl Lerp for usize {
+impl Lerp for usize
+{
     /// NOTE: This will try to convert the `usize` into `f64` for calculation. Falls back to 0.
-    fn lerp(&self, to: Self, t: f32) -> Self {
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         let a = f64::try_from(*self as u32).unwrap_or_default();
         let b = f64::try_from(to as u32).unwrap_or_default();
 
@@ -43,15 +55,19 @@ impl Lerp for usize {
     }
 }
 
-impl Lerp for Color {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for Color
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         self.mix(&to, t)
     }
 }
 
 // TODO: Create a derive macro for these types?
-impl Lerp for BorderRadius {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for BorderRadius
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         Self {
             top_left: self.top_left.lerp(to.top_left, t),
             top_right: self.top_right.lerp(to.top_right, t),
@@ -61,8 +77,10 @@ impl Lerp for BorderRadius {
     }
 }
 
-impl Lerp for Outline {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for Outline
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         Self {
             width: self.width.lerp(to.width, t),
             offset: self.offset.lerp(to.offset, t),
@@ -71,8 +89,10 @@ impl Lerp for Outline {
     }
 }
 
-impl Lerp for Val {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for Val
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         // We can only LERP between values with the same scale
         match self {
             Val::Auto => self.clone(),
@@ -122,8 +142,10 @@ impl Lerp for Val {
     }
 }
 
-impl Lerp for UiRect {
-    fn lerp(&self, to: Self, t: f32) -> Self {
+impl Lerp for UiRect
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
         Self::new(
             self.left.lerp(to.left, t),
             self.right.lerp(to.right, t),

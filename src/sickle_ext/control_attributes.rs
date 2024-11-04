@@ -1,3 +1,11 @@
+use bevy::ecs::entity::Entities;
+use bevy::prelude::*;
+use bevy::reflect::GetTypeRegistration;
+use bevy_cobweb::prelude::*;
+use serde::{Deserialize, Serialize};
+use smallvec::SmallVec;
+use smol_str::SmolStr;
+
 use crate::prelude::*;
 use crate::sickle::lerp::Lerp;
 use crate::sickle::prelude::attribute::{
@@ -7,13 +15,6 @@ use crate::sickle::prelude::*;
 use crate::sickle::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use crate::sickle::theme::pseudo_state::PseudoState;
 use crate::sickle::theme::style_animation::{AnimationSettings, AnimationState};
-use bevy::ecs::entity::Entities;
-use bevy::prelude::*;
-use bevy::reflect::GetTypeRegistration;
-use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
-use smallvec::SmallVec;
-use smol_str::SmolStr;
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_dynamic_style(
@@ -21,7 +22,8 @@ fn add_attribute_to_dynamic_style(
     attribute: DynamicStyleAttribute,
     c: &mut Commands,
     dynamic_styles: &mut Query<Option<&mut DynamicStyle>>,
-) {
+)
+{
     // Insert directly to this entity.
     let Some(maybe_style) = dynamic_styles.get_mut(entity).ok() else { return };
 
@@ -55,7 +57,8 @@ pub(super) fn add_attribute(
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
     mut dynamic_styles: Query<Option<&mut DynamicStyle>>,
-) {
+)
+{
     if !entities.contains(origin) {
         return;
     }
@@ -137,7 +140,8 @@ fn revert_attributes(
     parents: Query<&Parent>,
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
-) {
+)
+{
     if !entities.contains(entity) {
         return;
     }
@@ -159,7 +163,8 @@ fn revert_attributes(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &mut World) {
+fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
+{
     move |entity: Entity, world: &mut World| {
         T::construct(val.clone()).apply(entity, world);
         world.flush();
@@ -170,7 +175,8 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 
 fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
     vals: InteractiveVals<T::Value>,
-) -> impl Fn(Entity, FluxInteraction, &mut World) {
+) -> impl Fn(Entity, FluxInteraction, &mut World)
+{
     move |entity: Entity, state: FluxInteraction, world: &mut World| {
         // Compute new value.
         let new_value = vals.to_value(state);
@@ -202,7 +208,8 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that specify a value for a theme.
-pub trait ThemedAttribute: Instruction + TypePath {
+pub trait ThemedAttribute: Instruction + TypePath
+{
     /// Specifies the value-type of the theme attribute.
     type Value: Loadable + TypePath;
 
@@ -231,7 +238,8 @@ where
     T: Instruction + Splattable + ThemedAttribute + GetTypeRegistration,
 {
     type Value = T::Splat;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         Self(value)
     }
 }
@@ -267,7 +275,8 @@ impl<T: ThemedAttribute> Instruction for Themed<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
-    fn apply(self, entity: Entity, world: &mut World) {
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
             CustomStaticStyleAttribute::new(extract_static_value::<T>(self.value)),
@@ -276,7 +285,8 @@ where
         world.syscall((entity, None, self.target, self.state, attribute), add_attribute);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         // Revert instruction.
         T::revert(entity, world);
 
@@ -325,7 +335,8 @@ impl<T: ResponsiveAttribute + ThemedAttribute> Instruction for Responsive<T>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
 {
-    fn apply(self, entity: Entity, world: &mut World) {
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
             CustomInteractiveStyleAttribute::new(extract_responsive_value::<T>(self.values)),
@@ -334,7 +345,8 @@ where
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         // Revert instruction.
         T::revert(entity, world);
 
@@ -386,7 +398,8 @@ impl<T: AnimatableAttribute + ThemedAttribute> Instruction for Animated<T>
 where
     <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
 {
-    fn apply(self, entity: Entity, world: &mut World) {
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
             attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
@@ -398,7 +411,8 @@ where
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         // Revert instruction.
         T::revert(entity, world);
 

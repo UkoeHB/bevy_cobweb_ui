@@ -8,47 +8,50 @@ pub mod theme_data;
 pub mod theme_spacing;
 pub mod typography;
 
-use std::{
-    any::{type_name, TypeId},
-    collections::HashSet,
-    marker::PhantomData,
-};
+use std::any::{type_name, TypeId};
+use std::collections::HashSet;
+use std::marker::PhantomData;
 
-use bevy::{prelude::*, ui::UiSystem};
+use bevy::prelude::*;
+use bevy::ui::UiSystem;
 use dynamic_style::{DynamicStyle, DynamicStylePlugin};
 use pseudo_state::{AutoPseudoStatePlugin, PseudoState, PseudoStates};
-use theme_colors::{loader::ThemeColorsLoader, ThemeColors};
+use theme_colors::loader::ThemeColorsLoader;
+use theme_colors::ThemeColors;
 use theme_data::ThemeData;
 
-use crate::{prelude::UiBuilder, ui_commands::RefreshThemeExt, ui_style::builder::StyleBuilder};
+use crate::prelude::UiBuilder;
+use crate::ui_commands::RefreshThemeExt;
+use crate::ui_style::builder::StyleBuilder;
 
-pub mod prelude {
+pub mod prelude
+{
+    pub use super::dynamic_style::{
+        ContextStyleAttribute, DynamicStyle, DynamicStyleEnterState, DynamicStylePostUpdate,
+    };
+    pub use super::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+    pub use super::icons::IconData;
+    pub use super::pseudo_state::{
+        FlexDirectionToPseudoState, HierarchyToPseudoState, PseudoState, PseudoStates, VisibilityToPseudoState,
+    };
+    pub use super::style_animation::{
+        AnimationLoop, AnimationSettings, AnimationState, InteractionStyle, LoopedAnimationConfig,
+    };
+    pub use super::theme_colors::{Accent, Container, OnColor, Surface};
+    pub use super::theme_data::{Contrast, Scheme, ThemeData};
+    pub use super::typography::{FontScale, FontStyle, FontType, SizedFont};
     pub use super::{
-        dynamic_style::{
-            ContextStyleAttribute, DynamicStyle, DynamicStyleEnterState, DynamicStylePostUpdate,
-        },
-        dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController},
-        icons::IconData,
-        pseudo_state::{
-            FlexDirectionToPseudoState, HierarchyToPseudoState, PseudoState, PseudoStates,
-            VisibilityToPseudoState,
-        },
-        style_animation::{
-            AnimationLoop, AnimationSettings, AnimationState, InteractionStyle,
-            LoopedAnimationConfig,
-        },
-        theme_colors::{Accent, Container, OnColor, Surface},
-        theme_data::{Contrast, Scheme, ThemeData},
-        typography::{FontScale, FontStyle, FontType, SizedFont},
-        ComponentThemePlugin, CustomThemeUpdate, DefaultTheme, DynamicStyleBuilder, PseudoTheme,
-        Theme, ThemeUpdate, UiContext,
+        ComponentThemePlugin, CustomThemeUpdate, DefaultTheme, DynamicStyleBuilder, PseudoTheme, Theme,
+        ThemeUpdate, UiContext,
     };
 }
 
 pub struct ThemePlugin;
 
-impl Plugin for ThemePlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ThemePlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(
             PostUpdate,
             (ThemeUpdate, CustomThemeUpdate.after(ThemeUpdate)).before(UiSystem::Layout),
@@ -68,70 +71,66 @@ pub struct ThemeUpdate;
 pub struct CustomThemeUpdate;
 
 #[derive(Clone, Debug)]
-pub enum DynamicStyleBuilder<C> {
+pub enum DynamicStyleBuilder<C>
+{
     Static(DynamicStyle),
     StyleBuilder(fn(&mut StyleBuilder, &ThemeData)),
     ContextStyleBuilder(fn(&mut StyleBuilder, &C, &ThemeData)),
     WorldStyleBuilder(fn(&mut StyleBuilder, Entity, &C, &World)),
-    InfoWorldStyleBuilder(
-        fn(&mut StyleBuilder, Option<Entity>, &Option<Vec<PseudoState>>, Entity, &C, &World),
-    ),
+    InfoWorldStyleBuilder(fn(&mut StyleBuilder, Option<Entity>, &Option<Vec<PseudoState>>, Entity, &C, &World)),
 }
 
-impl<C> From<StyleBuilder> for DynamicStyleBuilder<C> {
-    fn from(value: StyleBuilder) -> Self {
+impl<C> From<StyleBuilder> for DynamicStyleBuilder<C>
+{
+    fn from(value: StyleBuilder) -> Self
+    {
         Self::Static(value.into())
     }
 }
 
-impl<C> From<DynamicStyle> for DynamicStyleBuilder<C> {
-    fn from(value: DynamicStyle) -> Self {
+impl<C> From<DynamicStyle> for DynamicStyleBuilder<C>
+{
+    fn from(value: DynamicStyle) -> Self
+    {
         Self::Static(value)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct PseudoTheme<C> {
+pub struct PseudoTheme<C>
+{
     state: Option<Vec<PseudoState>>,
     builder: DynamicStyleBuilder<C>,
 }
 
-impl<C> PseudoTheme<C> {
-    pub fn new(
-        state: impl Into<Option<Vec<PseudoState>>>,
-        theme: impl Into<DynamicStyleBuilder<C>>,
-    ) -> Self {
-        Self {
-            state: state.into(),
-            builder: theme.into(),
-        }
+impl<C> PseudoTheme<C>
+{
+    pub fn new(state: impl Into<Option<Vec<PseudoState>>>, theme: impl Into<DynamicStyleBuilder<C>>) -> Self
+    {
+        Self { state: state.into(), builder: theme.into() }
     }
 
-    pub fn state(&self) -> &Option<Vec<PseudoState>> {
+    pub fn state(&self) -> &Option<Vec<PseudoState>>
+    {
         &self.state
     }
 
-    pub fn builder(&self) -> &DynamicStyleBuilder<C> {
+    pub fn builder(&self) -> &DynamicStyleBuilder<C>
+    {
         &self.builder
     }
 
-    pub fn build(
-        state: impl Into<Option<Vec<PseudoState>>>,
-        builder: fn(&mut StyleBuilder),
-    ) -> Self {
+    pub fn build(state: impl Into<Option<Vec<PseudoState>>>, builder: fn(&mut StyleBuilder)) -> Self
+    {
         let mut style_builder = StyleBuilder::new();
         builder(&mut style_builder);
 
-        Self {
-            state: state.into(),
-            builder: style_builder.into(),
-        }
+        Self { state: state.into(), builder: style_builder.into() }
     }
 
-    pub fn deferred(
-        state: impl Into<Option<Vec<PseudoState>>>,
-        builder: fn(&mut StyleBuilder, &ThemeData),
-    ) -> Self {
+    pub fn deferred(state: impl Into<Option<Vec<PseudoState>>>, builder: fn(&mut StyleBuilder, &ThemeData))
+        -> Self
+    {
         Self {
             state: state.into(),
             builder: DynamicStyleBuilder::StyleBuilder(builder),
@@ -141,7 +140,8 @@ impl<C> PseudoTheme<C> {
     pub fn deferred_context(
         state: impl Into<Option<Vec<PseudoState>>>,
         builder: fn(&mut StyleBuilder, &C, &ThemeData),
-    ) -> Self {
+    ) -> Self
+    {
         Self {
             state: state.into(),
             builder: DynamicStyleBuilder::ContextStyleBuilder(builder),
@@ -151,7 +151,8 @@ impl<C> PseudoTheme<C> {
     pub fn deferred_world(
         state: impl Into<Option<Vec<PseudoState>>>,
         builder: fn(&mut StyleBuilder, Entity, &C, &World),
-    ) -> Self {
+    ) -> Self
+    {
         Self {
             state: state.into(),
             builder: DynamicStyleBuilder::WorldStyleBuilder(builder),
@@ -160,29 +161,25 @@ impl<C> PseudoTheme<C> {
 
     pub fn deferred_info_world(
         state: impl Into<Option<Vec<PseudoState>>>,
-        builder: fn(
-            &mut StyleBuilder,
-            Option<Entity>,
-            &Option<Vec<PseudoState>>,
-            Entity,
-            &C,
-            &World,
-        ),
-    ) -> Self {
+        builder: fn(&mut StyleBuilder, Option<Entity>, &Option<Vec<PseudoState>>, Entity, &C, &World),
+    ) -> Self
+    {
         Self {
             state: state.into(),
             builder: DynamicStyleBuilder::InfoWorldStyleBuilder(builder),
         }
     }
 
-    pub fn is_base_theme(&self) -> bool {
+    pub fn is_base_theme(&self) -> bool
+    {
         match &self.state {
             Some(list) => list.is_empty(),
             None => true,
         }
     }
 
-    pub fn count_match(&self, node_states: &Vec<PseudoState>) -> usize {
+    pub fn count_match(&self, node_states: &Vec<PseudoState>) -> usize
+    {
         match &self.state {
             // Only consider pseudo themes that are specific to an inclusive substet of the themed
             // element's pseudo states. A theme for [Checked, Disabled] will apply to
@@ -201,8 +198,10 @@ impl<C> PseudoTheme<C> {
     }
 }
 
-pub trait UiContext {
-    fn get(&self, _target: &str) -> Result<Entity, String> {
+pub trait UiContext
+{
+    fn get(&self, _target: &str) -> Result<Entity, String>
+    {
         Err(format!(
             "{} has no UI contexts",
             std::any::type_name::<Self>()
@@ -217,17 +216,21 @@ pub trait UiContext {
     /// Warning: If a context is a sub-widget with its own theme, it should not
     /// be included in the cleared contexts, nor should it be used for placement
     /// from the main entity. The behavior is undefined.
-    fn cleared_contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn cleared_contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         self.contexts()
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [].into_iter()
     }
 }
 
-pub trait DefaultTheme: Sized + Component + UiContext {
-    fn default_theme() -> Option<Theme<Self>> {
+pub trait DefaultTheme: Sized + Component + UiContext
+{
+    fn default_theme() -> Option<Theme<Self>>
+    {
         None
     }
 }
@@ -245,26 +248,28 @@ impl<C> Theme<C>
 where
     C: DefaultTheme,
 {
-    pub fn new(pseudo_themes: impl Into<Vec<PseudoTheme<C>>>) -> Self {
-        Self {
-            context: PhantomData,
-            pseudo_themes: pseudo_themes.into(),
-        }
+    pub fn new(pseudo_themes: impl Into<Vec<PseudoTheme<C>>>) -> Self
+    {
+        Self { context: PhantomData, pseudo_themes: pseudo_themes.into() }
     }
 
-    pub fn pseudo_themes(&self) -> &Vec<PseudoTheme<C>> {
+    pub fn pseudo_themes(&self) -> &Vec<PseudoTheme<C>>
+    {
         &self.pseudo_themes
     }
 
-    pub fn post_update() -> impl IntoSystemConfigs<()> {
+    pub fn post_update() -> impl IntoSystemConfigs<()>
+    {
         Theme::<C>::post_update_in(ThemeUpdate)
     }
 
-    pub fn custom_post_update() -> impl IntoSystemConfigs<()> {
+    pub fn custom_post_update() -> impl IntoSystemConfigs<()>
+    {
         Theme::<C>::post_update_in(CustomThemeUpdate)
     }
 
-    pub fn post_update_in(set: impl SystemSet) -> impl IntoSystemConfigs<()> {
+    pub fn post_update_in(set: impl SystemSet) -> impl IntoSystemConfigs<()>
+    {
         (
             Theme::<C>::process_theme_update,
             Theme::<C>::process_updated_pseudo_states,
@@ -279,11 +284,9 @@ where
         q_changed_themes: Query<Entity, Changed<Theme<C>>>,
         theme_data: Res<ThemeData>,
         mut commands: Commands,
-    ) {
-        if theme_data.is_changed()
-            || q_removed_themes.len() > 0
-            || q_changed_themes.iter().count() > 0
-        {
+    )
+    {
+        if theme_data.is_changed() || q_removed_themes.len() > 0 || q_changed_themes.iter().count() > 0 {
             for entity in &q_targets {
                 commands.entity(entity).refresh_theme::<C>();
             }
@@ -299,7 +302,8 @@ where
         q_changed_targets: Query<Entity, (With<C>, Changed<PseudoStates>)>,
         mut q_removed_targets: RemovedComponents<PseudoStates>,
         mut commands: Commands,
-    ) {
+    )
+    {
         for entity in &q_changed_targets {
             commands.entity(entity).refresh_theme::<C>();
         }
@@ -312,14 +316,17 @@ where
     }
 }
 
-pub trait InsertThemedComponentExt {
+pub trait InsertThemedComponentExt
+{
     /// Inserts `C` as a component to the entity and checks if
     /// [`ComponentThemePlugin<C>`](ComponentThemePlugin) was added to the app.
     fn insert_themed_component<C: DefaultTheme + Component>(&mut self, component: C) -> &mut Self;
 }
 
-impl InsertThemedComponentExt for UiBuilder<'_, Entity> {
-    fn insert_themed_component<C: DefaultTheme + Component>(&mut self, component: C) -> &mut Self {
+impl InsertThemedComponentExt for UiBuilder<'_, Entity>
+{
+    fn insert_themed_component<C: DefaultTheme + Component>(&mut self, component: C) -> &mut Self
+    {
         self.insert(component);
         self.commands().add(|world: &mut World| {
             if !world.resource::<ThemeRegistry>().contains_by_id(TypeId::of::<C>()) {
@@ -334,28 +341,34 @@ impl InsertThemedComponentExt for UiBuilder<'_, Entity> {
 ///
 /// This can be used to check if a theme's plugin is missing.
 #[derive(Resource, Default, Debug)]
-pub struct ThemeRegistry {
+pub struct ThemeRegistry
+{
     themes: HashSet<TypeId>,
 }
 
-impl ThemeRegistry {
-    fn new_with<C: 'static>() -> Self {
+impl ThemeRegistry
+{
+    fn new_with<C: 'static>() -> Self
+    {
         let mut registry = Self::default();
         registry.add::<C>();
         registry
     }
 
-    fn add<C: 'static>(&mut self) {
+    fn add<C: 'static>(&mut self)
+    {
         self.themes.insert(TypeId::of::<C>());
     }
 
     /// Returns `true` if the theme `C` has been registered.
-    pub fn contains<C: 'static>(&self) -> bool {
+    pub fn contains<C: 'static>(&self) -> bool
+    {
         self.contains_by_id(TypeId::of::<C>())
     }
 
     /// Returns `true` if the theme `id` has been registered.
-    pub fn contains_by_id(&self, id: TypeId) -> bool {
+    pub fn contains_by_id(&self, id: TypeId) -> bool
+    {
         self.themes.contains(&id)
     }
 }
@@ -373,19 +386,15 @@ impl<C> ComponentThemePlugin<C>
 where
     C: DefaultTheme,
 {
-    pub fn new() -> Self {
-        Self {
-            context: PhantomData,
-            is_custom: false,
-        }
+    pub fn new() -> Self
+    {
+        Self { context: PhantomData, is_custom: false }
     }
 
     /// Adds the theme update systems to the `CustomThemeUpdate` system set
-    pub fn custom() -> Self {
-        Self {
-            context: PhantomData,
-            is_custom: true,
-        }
+    pub fn custom() -> Self
+    {
+        Self { context: PhantomData, is_custom: true }
     }
 }
 
@@ -393,7 +402,8 @@ impl<C> Plugin for ComponentThemePlugin<C>
 where
     C: DefaultTheme,
 {
-    fn build(&self, app: &mut App) {
+    fn build(&self, app: &mut App)
+    {
         if let Some(mut registry) = app.world_mut().get_resource_mut::<ThemeRegistry>() {
             registry.add::<C>();
         } else {

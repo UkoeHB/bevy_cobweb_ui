@@ -1,9 +1,6 @@
-use bevy::{
-    input::mouse::MouseScrollUnit,
-    prelude::*,
-    ui::{FocusPolicy, RelativeCursorPosition},
-};
-
+use bevy::input::mouse::MouseScrollUnit;
+use bevy::prelude::*;
+use bevy::ui::{FocusPolicy, RelativeCursorPosition};
 use sickle_ui_scaffold::prelude::*;
 
 use super::container::UiContainerExt;
@@ -12,8 +9,10 @@ use super::container::UiContainerExt;
 // TODO: Fix horizontal scroll performance issue
 pub struct ScrollViewPlugin;
 
-impl Plugin for ScrollViewPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for ScrollViewPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins(ComponentThemePlugin::<ScrollView>::default())
             .add_systems(
                 Update,
@@ -38,7 +37,8 @@ pub struct ScrollViewLayoutUpdate;
 
 fn update_scroll_view_on_tracked_style_state_change(
     mut q_scroll_views: Query<(&mut ScrollView, &TrackedStyleState), Changed<TrackedStyleState>>,
-) {
+)
+{
     for (mut scroll_view, state) in &mut q_scroll_views {
         let should_disable = *state == TrackedStyleState::Enter || *state == TrackedStyleState::Transitioning;
 
@@ -51,7 +51,8 @@ fn update_scroll_view_on_tracked_style_state_change(
 fn update_scroll_view_on_content_change(
     q_content: Query<&ScrollViewContent, Changed<Node>>,
     mut q_scroll_view: Query<&mut ScrollView>,
-) {
+)
+{
     for content in &q_content {
         let Ok(mut container) = q_scroll_view.get_mut(content.scroll_view) else {
             continue;
@@ -65,7 +66,8 @@ fn update_scroll_view_on_content_change(
 fn update_scroll_view_on_scroll(
     q_scrollables: Query<(AnyOf<(&ScrollViewViewport, &ScrollBarHandle)>, &Scrollable), Changed<Scrollable>>,
     mut q_scroll_view: Query<&mut ScrollView>,
-) {
+)
+{
     for ((viewport, handle), scrollable) in &q_scrollables {
         let Some((axis, diff, unit)) = scrollable.last_change() else {
             continue;
@@ -105,7 +107,8 @@ fn update_scroll_view_on_drag(
     q_draggable: Query<(Entity, &Draggable, &ScrollBarHandle), Changed<Draggable>>,
     q_node: Query<&Node>,
     mut q_scroll_view: Query<&mut ScrollView>,
-) {
+)
+{
     for (entity, draggable, bar_handle) in &q_draggable {
         if draggable.state == DragState::Inactive
             || draggable.state == DragState::MaybeDragged
@@ -168,7 +171,8 @@ fn update_scroll_view_on_drag(
 fn update_scroll_view_offset(
     mut q_scroll_views: Query<(&Node, &mut ScrollView), Or<(Changed<ScrollView>, Changed<Node>)>>,
     q_node: Query<&Node>,
-) {
+)
+{
     for (container_node, mut scroll_view) in &mut q_scroll_views {
         let container_width = container_node.unrounded_size().x;
         let container_height = container_node.unrounded_size().y;
@@ -210,7 +214,8 @@ fn update_scroll_view_layout(
     q_scroll_view: Query<(Entity, &ScrollView), Or<(Changed<ScrollView>, Changed<Node>)>>,
     q_node: Query<&Node>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, scroll_view) in &q_scroll_view {
         if scroll_view.disabled {
             commands
@@ -294,27 +299,33 @@ fn update_scroll_view_layout(
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ScrollBarHandle {
+pub struct ScrollBarHandle
+{
     axis: ScrollAxis,
     scroll_view: Entity,
 }
 
-impl Default for ScrollBarHandle {
-    fn default() -> Self {
+impl Default for ScrollBarHandle
+{
+    fn default() -> Self
+    {
         Self { axis: Default::default(), scroll_view: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ScrollBar {
+pub struct ScrollBar
+{
     axis: ScrollAxis,
     scroll_view: Entity,
     handle: Entity,
 }
 
-impl Default for ScrollBar {
-    fn default() -> Self {
+impl Default for ScrollBar
+{
+    fn default() -> Self
+    {
         Self {
             axis: Default::default(),
             scroll_view: Entity::PLACEHOLDER,
@@ -325,43 +336,54 @@ impl Default for ScrollBar {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ScrollViewContent {
+pub struct ScrollViewContent
+{
     scroll_view: Entity,
 }
 
-impl Default for ScrollViewContent {
-    fn default() -> Self {
+impl Default for ScrollViewContent
+{
+    fn default() -> Self
+    {
         Self { scroll_view: Entity::PLACEHOLDER }
     }
 }
 
-impl ScrollViewContent {
-    pub fn scroll_view(&self) -> Entity {
+impl ScrollViewContent
+{
+    pub fn scroll_view(&self) -> Entity
+    {
         self.scroll_view
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ScrollViewViewport {
+pub struct ScrollViewViewport
+{
     scroll_view: Entity,
 }
 
-impl Default for ScrollViewViewport {
-    fn default() -> Self {
+impl Default for ScrollViewViewport
+{
+    fn default() -> Self
+    {
         Self { scroll_view: Entity::PLACEHOLDER }
     }
 }
 
-impl ScrollViewViewport {
-    pub fn scroll_view(&self) -> Entity {
+impl ScrollViewViewport
+{
+    pub fn scroll_view(&self) -> Entity
+    {
         self.scroll_view
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct ScrollView {
+pub struct ScrollView
+{
     viewport: Entity,
     content_container: Entity,
     horizontal_scroll_bar: Entity,
@@ -380,8 +402,10 @@ pub struct ScrollView {
     pub disabled: bool,
 }
 
-impl Default for ScrollView {
-    fn default() -> Self {
+impl Default for ScrollView
+{
+    fn default() -> Self
+    {
         Self {
             viewport: Entity::PLACEHOLDER,
             content_container: Entity::PLACEHOLDER,
@@ -398,8 +422,10 @@ impl Default for ScrollView {
     }
 }
 
-impl UiContext for ScrollView {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for ScrollView
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             ScrollView::VIEWPORT => Ok(self.viewport),
             ScrollView::CONTENT_CONTAINER => Ok(self.content_container),
@@ -415,7 +441,8 @@ impl UiContext for ScrollView {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             ScrollView::VIEWPORT,
             ScrollView::CONTENT_CONTAINER,
@@ -428,13 +455,16 @@ impl UiContext for ScrollView {
     }
 }
 
-impl DefaultTheme for ScrollView {
-    fn default_theme() -> Option<Theme<ScrollView>> {
+impl DefaultTheme for ScrollView
+{
+    fn default_theme() -> Option<Theme<ScrollView>>
+    {
         ScrollView::theme().into()
     }
 }
 
-impl ScrollView {
+impl ScrollView
+{
     pub const VIEWPORT: &'static str = "Viewport";
     pub const CONTENT_CONTAINER: &'static str = "ContentContainer";
     pub const HORIZONTAL_SCROLL_BAR: &'static str = "HorizontalScrollBar";
@@ -443,27 +473,32 @@ impl ScrollView {
     pub const VERTICAL_SCROLL_HANDLE: &'static str = "VerticalScrollHandle";
 
     /// The viewport that clips the content
-    pub fn viewport_id(&self) -> Entity {
+    pub fn viewport_id(&self) -> Entity
+    {
         self.viewport
     }
 
     /// The container of the content that will be scrolled when it overflows the viewport
-    pub fn content_container_id(&self) -> Entity {
+    pub fn content_container_id(&self) -> Entity
+    {
         self.content_container
     }
 
     /// The amount of content hidden by the viewport
     /// Update in ScrollViewOffsetUpdate
-    pub fn overflow(&self) -> Vec2 {
+    pub fn overflow(&self) -> Vec2
+    {
         self.overflow
     }
 
     /// The 0-1 ratio of content visible in the viewport
-    pub fn visible_ratio(&self) -> Vec2 {
+    pub fn visible_ratio(&self) -> Vec2
+    {
         self.visible_ratio
     }
 
-    pub fn theme() -> Theme<ScrollView> {
+    pub fn theme() -> Theme<ScrollView>
+    {
         let base_theme = PseudoTheme::deferred_context(None, ScrollView::primary_style);
         let disabled_theme = PseudoTheme::deferred(vec![PseudoState::Disabled], ScrollView::disabled_style);
         let overflow_x_theme = PseudoTheme::deferred(vec![PseudoState::OverflowX], ScrollView::overflow_x_style);
@@ -482,7 +517,8 @@ impl ScrollView {
         ])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, _scroll_view: &ScrollView, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, _scroll_view: &ScrollView, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -544,7 +580,8 @@ impl ScrollView {
             .copy_from(theme_data.interaction_animation);
     }
 
-    fn disabled_style(style_builder: &mut StyleBuilder, _theme_data: &ThemeData) {
+    fn disabled_style(style_builder: &mut StyleBuilder, _theme_data: &ThemeData)
+    {
         style_builder
             .switch_target(ScrollView::HORIZONTAL_SCROLL_BAR)
             .visibility(Visibility::Hidden);
@@ -553,7 +590,8 @@ impl ScrollView {
             .visibility(Visibility::Hidden);
     }
 
-    fn overflow_x_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn overflow_x_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
 
         style_builder
@@ -565,7 +603,8 @@ impl ScrollView {
             .padding(UiRect::bottom(Val::Px(theme_spacing.scroll_bar_size)));
     }
 
-    fn overflow_y_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn overflow_y_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
 
         style_builder
@@ -577,7 +616,8 @@ impl ScrollView {
             .padding(UiRect::right(Val::Px(theme_spacing.scroll_bar_size)));
     }
 
-    fn overflow_xy_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn overflow_xy_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
 
         style_builder
@@ -594,7 +634,8 @@ impl ScrollView {
             ));
     }
 
-    fn frame() -> impl Bundle {
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Scroll View"),
             NodeBundle {
@@ -605,7 +646,8 @@ impl ScrollView {
         )
     }
 
-    fn viewport(scroll_view: Entity) -> impl Bundle {
+    fn viewport(scroll_view: Entity) -> impl Bundle
+    {
         (
             Name::new("Viewport"),
             NodeBundle {
@@ -635,7 +677,8 @@ impl ScrollView {
         )
     }
 
-    fn content(scroll_view: Entity, restrict_to: Option<ScrollAxis>) -> impl Bundle {
+    fn content(scroll_view: Entity, restrict_to: Option<ScrollAxis>) -> impl Bundle
+    {
         let width = if let Some(axis) = restrict_to {
             match axis {
                 ScrollAxis::Horizontal => Val::Auto,
@@ -685,7 +728,8 @@ impl ScrollView {
         )
     }
 
-    fn scroll_bar(axis: ScrollAxis) -> impl Bundle {
+    fn scroll_bar(axis: ScrollAxis) -> impl Bundle
+    {
         (
             Name::new(match axis {
                 ScrollAxis::Horizontal => "Horizontal Scroll Bar",
@@ -712,7 +756,8 @@ impl ScrollView {
         )
     }
 
-    fn scroll_bar_handle(scroll_view: Entity, axis: ScrollAxis) -> impl Bundle {
+    fn scroll_bar_handle(scroll_view: Entity, axis: ScrollAxis) -> impl Bundle
+    {
         (
             Name::new("Scroll Bar Handle"),
             ButtonBundle {
@@ -744,7 +789,8 @@ impl ScrollView {
     }
 }
 
-pub trait UiScrollViewExt {
+pub trait UiScrollViewExt
+{
     fn scroll_view(
         &mut self,
         restrict_to: impl Into<Option<ScrollAxis>>,
@@ -752,7 +798,8 @@ pub trait UiScrollViewExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl UiScrollViewExt for UiBuilder<'_, Entity> {
+impl UiScrollViewExt for UiBuilder<'_, Entity>
+{
     /// A simple scroll view. When the content overflows, scroll bars appear for the given direction.
     /// Can be restricted to scroll only on one axis.
     ///
@@ -764,7 +811,8 @@ impl UiScrollViewExt for UiBuilder<'_, Entity> {
         &mut self,
         restrict_to: impl Into<Option<ScrollAxis>>,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let restricted_to = restrict_to.into();
         let mut scroll_view = ScrollView { restricted_to, ..default() };
 

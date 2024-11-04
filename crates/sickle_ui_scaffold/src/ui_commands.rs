@@ -1,37 +1,32 @@
 use std::marker::PhantomData;
 
-use bevy::{
-    core::Name,
-    ecs::{
-        component::ComponentInfo,
-        entity::Entity,
-        query::With,
-        system::{Commands, EntityCommand, EntityCommands},
-        world::{Command, World},
-    },
-    hierarchy::{Children, Parent},
-    log::{info, warn},
-    state::state::{FreelyMutableState, NextState, States},
-    text::{Text, TextSection, TextStyle},
-    ui::Interaction,
-    window::{CursorIcon, PrimaryWindow, Window},
-};
+use bevy::core::Name;
+use bevy::ecs::component::ComponentInfo;
+use bevy::ecs::entity::Entity;
+use bevy::ecs::query::With;
+use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
+use bevy::ecs::world::{Command, World};
+use bevy::hierarchy::{Children, Parent};
+use bevy::log::{info, warn};
+use bevy::state::state::{FreelyMutableState, NextState, States};
+use bevy::text::{Text, TextSection, TextStyle};
+use bevy::ui::Interaction;
+use bevy::window::{CursorIcon, PrimaryWindow, Window};
 
-use crate::{
-    flux_interaction::{
-        FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction,
-    },
-    prelude::UiUtils,
-    theme::prelude::*,
-    ui_style::builder::StyleBuilder,
-};
+use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
+use crate::prelude::UiUtils;
+use crate::theme::prelude::*;
+use crate::ui_style::builder::StyleBuilder;
 
-struct SetTextSections {
+struct SetTextSections
+{
     sections: Vec<TextSection>,
 }
 
-impl EntityCommand for SetTextSections {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl EntityCommand for SetTextSections
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(mut text) = world.get_mut::<Text>(entity) else {
             warn!(
                 "Failed to set text sections on entity {}: No Text component found!",
@@ -44,27 +39,33 @@ impl EntityCommand for SetTextSections {
     }
 }
 
-pub trait SetTextSectionsExt {
+pub trait SetTextSectionsExt
+{
     /// Set text sections for a UI entity
     ///
     /// The [`Text`] component must already exist on the target entity.
     fn set_text_sections(&mut self, sections: Vec<TextSection>) -> &mut Self;
 }
 
-impl SetTextSectionsExt for EntityCommands<'_> {
-    fn set_text_sections(&mut self, sections: Vec<TextSection>) -> &mut Self {
+impl SetTextSectionsExt for EntityCommands<'_>
+{
+    fn set_text_sections(&mut self, sections: Vec<TextSection>) -> &mut Self
+    {
         self.add(SetTextSections { sections });
         self
     }
 }
 
-struct SetText {
+struct SetText
+{
     text: String,
     style: TextStyle,
 }
 
-impl EntityCommand for SetText {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl EntityCommand for SetText
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(mut text) = world.get_mut::<Text>(entity) else {
             warn!(
                 "Failed to set text on entity {}: No Text component found!",
@@ -77,30 +78,33 @@ impl EntityCommand for SetText {
     }
 }
 
-pub trait SetTextExt {
+pub trait SetTextExt
+{
     /// Set text for a UI entity with the given [`TextStyle`]
     ///
     /// The [`Text`] component must already exist on the target entity.
     fn set_text(&mut self, text: impl Into<String>, style: Option<TextStyle>) -> &mut Self;
 }
 
-impl SetTextExt for EntityCommands<'_> {
-    fn set_text(&mut self, text: impl Into<String>, style: Option<TextStyle>) -> &mut Self {
-        self.add(SetText {
-            text: text.into(),
-            style: style.unwrap_or_default(),
-        });
+impl SetTextExt for EntityCommands<'_>
+{
+    fn set_text(&mut self, text: impl Into<String>, style: Option<TextStyle>) -> &mut Self
+    {
+        self.add(SetText { text: text.into(), style: style.unwrap_or_default() });
 
         self
     }
 }
 
-struct UpdateText {
+struct UpdateText
+{
     text: String,
 }
 
-impl EntityCommand for UpdateText {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl EntityCommand for UpdateText
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(mut text) = world.get_mut::<Text>(entity) else {
             warn!(
                 "Failed to set text on entity {}: No Text component found!",
@@ -118,15 +122,18 @@ impl EntityCommand for UpdateText {
     }
 }
 
-pub trait UpdateTextExt {
+pub trait UpdateTextExt
+{
     /// Update an entity's [`Text`]
     ///
     /// The [`Text`] component must already exist.
     fn update_text(&mut self, text: impl Into<String>) -> &mut Self;
 }
 
-impl UpdateTextExt for EntityCommands<'_> {
-    fn update_text(&mut self, text: impl Into<String>) -> &mut Self {
+impl UpdateTextExt for EntityCommands<'_>
+{
+    fn update_text(&mut self, text: impl Into<String>) -> &mut Self
+    {
         self.add(UpdateText { text: text.into() });
 
         self
@@ -134,12 +141,15 @@ impl UpdateTextExt for EntityCommands<'_> {
 }
 
 // TODO: Move to style and apply to Node's window
-struct SetCursor {
+struct SetCursor
+{
     cursor: CursorIcon,
 }
 
-impl Command for SetCursor {
-    fn apply(self, world: &mut World) {
+impl Command for SetCursor
+{
+    fn apply(self, world: &mut World)
+    {
         let mut q_window = world.query_filtered::<&mut Window, With<PrimaryWindow>>();
         let Ok(mut window) = q_window.get_single_mut(world) else {
             return;
@@ -151,26 +161,32 @@ impl Command for SetCursor {
     }
 }
 
-pub trait SetCursorExt<'w, 's, 'a> {
+pub trait SetCursorExt<'w, 's, 'a>
+{
     /// Set the [`PrimaryWindow`]'s cursor
     fn set_cursor(&mut self, cursor: CursorIcon);
 }
 
-impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's> {
-    fn set_cursor(&mut self, cursor: CursorIcon) {
+impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's>
+{
+    fn set_cursor(&mut self, cursor: CursorIcon)
+    {
         self.add(SetCursor { cursor });
     }
 }
 
-struct LogHierarchy {
+struct LogHierarchy
+{
     level: usize,
     is_last: bool,
     trace_levels: Vec<usize>,
     component_filter: Option<fn(ComponentInfo) -> bool>,
 }
 
-impl EntityCommand for LogHierarchy {
-    fn apply(self, id: Entity, world: &mut World) {
+impl EntityCommand for LogHierarchy
+{
+    fn apply(self, id: Entity, world: &mut World)
+    {
         let mut children_ids: Vec<Entity> = Vec::new();
         if let Some(children) = world.get::<Children>(id) {
             children_ids = children.iter().map(|child| *child).collect();
@@ -255,7 +271,8 @@ impl EntityCommand for LogHierarchy {
     }
 }
 
-pub trait LogHierarchyExt {
+pub trait LogHierarchyExt
+{
     /// Logs the hierarchy of the entity along with the component of each entity in the tree.
     /// Components listed can be optionally filtered by supplying a `component_filter`
     ///
@@ -285,8 +302,10 @@ pub trait LogHierarchyExt {
     fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self;
 }
 
-impl LogHierarchyExt for EntityCommands<'_> {
-    fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self {
+impl LogHierarchyExt for EntityCommands<'_>
+{
+    fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self
+    {
         self.add(LogHierarchy {
             level: 0,
             is_last: true,
@@ -298,18 +317,22 @@ impl LogHierarchyExt for EntityCommands<'_> {
 }
 
 // Adopted from @brandonreinhart
-pub trait EntityCommandsNamedExt {
+pub trait EntityCommandsNamedExt
+{
     /// Name the entity by inserting a [`Name`] component with the given string
     fn named(&mut self, name: impl Into<String>) -> &mut Self;
 }
 
-impl EntityCommandsNamedExt for EntityCommands<'_> {
-    fn named(&mut self, name: impl Into<String>) -> &mut Self {
+impl EntityCommandsNamedExt for EntityCommands<'_>
+{
+    fn named(&mut self, name: impl Into<String>) -> &mut Self
+    {
         self.insert(Name::new(name.into()))
     }
 }
 
-pub trait RefreshThemeExt {
+pub trait RefreshThemeExt
+{
     /// Refresh the entity's theme, based on the `C` component
     ///
     /// This requires `C` to implement [`DefaultTheme`] as described in the readme.
@@ -318,14 +341,13 @@ pub trait RefreshThemeExt {
         C: DefaultTheme;
 }
 
-impl RefreshThemeExt for EntityCommands<'_> {
+impl RefreshThemeExt for EntityCommands<'_>
+{
     fn refresh_theme<C>(&mut self) -> &mut Self
     where
         C: DefaultTheme,
     {
-        self.add(RefreshEntityTheme::<C> {
-            context: PhantomData,
-        });
+        self.add(RefreshEntityTheme::<C> { context: PhantomData });
         self
     }
 }
@@ -341,7 +363,8 @@ impl<C> EntityCommand for RefreshEntityTheme<C>
 where
     C: DefaultTheme,
 {
-    fn apply(self, entity: Entity, world: &mut World) {
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let context = world.get::<C>(entity).unwrap();
         let theme_data = world.resource::<ThemeData>();
         let pseudo_states = world.get::<PseudoStates>(entity);
@@ -389,8 +412,7 @@ where
 
         // Assuming we have a base style and two-three pseudo state style is a reasonable guess.
         // TODO: Cache most common pseudo theme count in theme data.
-        let mut pseudo_themes: Vec<(&PseudoTheme<C>, Option<Entity>)> =
-            Vec::with_capacity(themes.len() * 4);
+        let mut pseudo_themes: Vec<(&PseudoTheme<C>, Option<Entity>)> = Vec::with_capacity(themes.len() * 4);
 
         for (theme, source_entity) in &themes {
             if let Some(base_theme) = theme.pseudo_themes().iter().find(|pt| pt.is_base_theme()) {
@@ -510,7 +532,8 @@ where
 fn fold_dynamic_styles(
     mut acc: Vec<(Option<Entity>, DynamicStyle)>,
     mut context_style: (Option<Entity>, DynamicStyle),
-) -> Vec<(Option<Entity>, DynamicStyle)> {
+) -> Vec<(Option<Entity>, DynamicStyle)>
+{
     let index = acc.iter().position(|entry| entry.0 == context_style.0);
     match index {
         Some(index) => {
@@ -522,7 +545,8 @@ fn fold_dynamic_styles(
     acc
 }
 
-pub trait ManageFluxInteractionStopwatchLockExt {
+pub trait ManageFluxInteractionStopwatchLockExt
+{
     /// Set the [`FluxInteractionStopwatchLock`] of the entity to the given duration
     ///
     /// This in turn will keep the [`crate::flux_interaction::FluxInteractionStopwatch`] for the given period.
@@ -534,8 +558,10 @@ pub trait ManageFluxInteractionStopwatchLockExt {
     fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self;
 }
 
-impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_> {
-    fn lock_stopwatch(&mut self, owner: &'static str, duration: StopwatchLock) -> &mut Self {
+impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
+{
+    fn lock_stopwatch(&mut self, owner: &'static str, duration: StopwatchLock) -> &mut Self
+    {
         self.add(move |entity, world: &mut World| {
             if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
                 lock.lock(owner, duration);
@@ -548,7 +574,8 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_> {
         self
     }
 
-    fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self {
+    fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self
+    {
         self.add(move |entity, world: &mut World| {
             if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
                 lock.release(lock_of);
@@ -558,7 +585,8 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_> {
     }
 }
 
-pub trait ManagePseudoStateExt {
+pub trait ManagePseudoStateExt
+{
     /// Add a [`PseudoState`] to the entity if it doesn't have it already
     ///
     /// Will insert the carrier [`PseudoStates`] component if necessary.
@@ -571,8 +599,10 @@ pub trait ManagePseudoStateExt {
     fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self;
 }
 
-impl ManagePseudoStateExt for EntityCommands<'_> {
-    fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self {
+impl ManagePseudoStateExt for EntityCommands<'_>
+{
+    fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self
+    {
         self.add(move |entity, world: &mut World| {
             let pseudo_states = world.get_mut::<PseudoStates>(entity);
 
@@ -591,7 +621,8 @@ impl ManagePseudoStateExt for EntityCommands<'_> {
         self
     }
 
-    fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self {
+    fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self
+    {
         self.add(move |entity, world: &mut World| {
             let Some(mut pseudo_states) = world.get_mut::<PseudoStates>(entity) else {
                 return;
@@ -607,7 +638,8 @@ impl ManagePseudoStateExt for EntityCommands<'_> {
     }
 }
 
-pub trait UpdateStatesExt<'w, 's, 'a> {
+pub trait UpdateStatesExt<'w, 's, 'a>
+{
     // TODO: deprecate in favor of bevy's own
     // #[deprecated(
     //     since = "0.3.0",
@@ -617,8 +649,10 @@ pub trait UpdateStatesExt<'w, 's, 'a> {
     fn next_state<C: States + FreelyMutableState>(&mut self, state: C);
 }
 
-impl<'w, 's, 'a> UpdateStatesExt<'w, 's, 'a> for Commands<'w, 's> {
-    fn next_state<C: States + FreelyMutableState>(&mut self, state: C) {
+impl<'w, 's, 'a> UpdateStatesExt<'w, 's, 'a> for Commands<'w, 's>
+{
+    fn next_state<C: States + FreelyMutableState>(&mut self, state: C)
+    {
         self.add(|world: &mut World| {
             if let Some(mut old_state) = world.get_resource_mut::<NextState<C>>() {
                 old_state.set(state);

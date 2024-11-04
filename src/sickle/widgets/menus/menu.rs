@@ -1,13 +1,11 @@
-use bevy::{prelude::*, ui::FocusPolicy};
-
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::sickle::widgets::layout::{
-    container::UiContainerExt,
-    label::{LabelConfig, UiLabelExt},
-};
-
-use super::{menu_bar::MenuBar, menu_item::MenuItem};
+use super::menu_bar::MenuBar;
+use super::menu_item::MenuItem;
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, UiLabelExt};
 
 // TODO: Move all z-index constants to a resource
 const MENU_CONTAINER_Z_INDEX: i32 = 100000;
@@ -15,8 +13,10 @@ const MENU_CONTAINER_Z_INDEX: i32 = 100000;
 // TODO: Implement scrolling and up/down arrows when menu too large (>70%?)
 pub struct MenuPlugin;
 
-impl Plugin for MenuPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for MenuPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.configure_sets(Update, MenuUpdate.after(FluxInteractionUpdate))
             .add_plugins(ComponentThemePlugin::<Menu>::default())
             .add_systems(
@@ -40,7 +40,8 @@ fn handle_click_or_touch(
     r_touches: Res<Touches>,
     q_menu_items: Query<(&MenuItem, Ref<FluxInteraction>)>,
     mut q_menus: Query<(Entity, &mut Menu, Ref<FluxInteraction>)>,
-) {
+)
+{
     if r_mouse.any_just_pressed([MouseButton::Left, MouseButton::Middle, MouseButton::Right])
         || r_touches.any_just_pressed()
     {
@@ -121,7 +122,8 @@ fn handle_click_or_touch(
     }
 }
 
-fn handle_item_interaction(q_menu_items: Query<&MenuItem, Changed<MenuItem>>, mut q_menus: Query<&mut Menu>) {
+fn handle_item_interaction(q_menu_items: Query<&MenuItem, Changed<MenuItem>>, mut q_menus: Query<&mut Menu>)
+{
     let any_interacted = q_menu_items.iter().any(|item| item.interacted());
     if any_interacted {
         for mut menu in &mut q_menus {
@@ -130,7 +132,8 @@ fn handle_item_interaction(q_menu_items: Query<&MenuItem, Changed<MenuItem>>, mu
     }
 }
 
-fn update_menu_container_visibility(q_menus: Query<(Entity, &Menu), Changed<Menu>>, mut commands: Commands) {
+fn update_menu_container_visibility(q_menus: Query<(Entity, &Menu), Changed<Menu>>, mut commands: Commands)
+{
     for (entity, menu) in &q_menus {
         if menu.is_open {
             commands.entity(entity).add_pseudo_state(PseudoState::Open);
@@ -144,21 +147,25 @@ fn update_menu_container_visibility(q_menus: Query<(Entity, &Menu), Changed<Menu
 
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct MenuConfig {
+pub struct MenuConfig
+{
     pub name: String,
     pub alt_code: Option<KeyCode>,
 }
 
 #[derive(Component, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Menu {
+pub struct Menu
+{
     label: Entity,
     container: Entity,
     is_open: bool,
 }
 
-impl Default for Menu {
-    fn default() -> Self {
+impl Default for Menu
+{
+    fn default() -> Self
+    {
         Self {
             label: Entity::PLACEHOLDER,
             container: Entity::PLACEHOLDER,
@@ -167,8 +174,10 @@ impl Default for Menu {
     }
 }
 
-impl UiContext for Menu {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Menu
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Menu::LABEL => Ok(self.label),
             Menu::CONTAINER => Ok(self.container),
@@ -180,28 +189,34 @@ impl UiContext for Menu {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [Menu::LABEL, Menu::CONTAINER].into_iter()
     }
 }
 
-impl DefaultTheme for Menu {
-    fn default_theme() -> Option<Theme<Menu>> {
+impl DefaultTheme for Menu
+{
+    fn default_theme() -> Option<Theme<Menu>>
+    {
         Menu::theme().into()
     }
 }
 
-impl Menu {
+impl Menu
+{
     pub const CONTAINER: &'static str = "Container";
     pub const LABEL: &'static str = "Label";
 
-    pub fn theme() -> Theme<Menu> {
+    pub fn theme() -> Theme<Menu>
+    {
         let base_theme = PseudoTheme::deferred(None, Menu::primary_style);
         let open_theme = PseudoTheme::deferred(vec![PseudoState::Open], Menu::open_style);
         Theme::new(vec![base_theme, open_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -245,7 +260,8 @@ impl Menu {
             .visibility(Visibility::Hidden);
     }
 
-    fn open_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn open_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let colors = theme_data.colors();
 
         style_builder
@@ -261,11 +277,13 @@ impl Menu {
             .visibility(Visibility::Inherited);
     }
 
-    fn button(name: String) -> impl Bundle {
+    fn button(name: String) -> impl Bundle
+    {
         (Name::new(name), ButtonBundle::default(), TrackedInteraction::default())
     }
 
-    fn container() -> impl Bundle {
+    fn container() -> impl Bundle
+    {
         (
             Name::new("Container"),
             NodeBundle {
@@ -282,7 +300,8 @@ impl Menu {
     }
 }
 
-pub trait UiMenuExt {
+pub trait UiMenuExt
+{
     /// A menu in a MenuBar
     ///
     /// ### PseudoState usage
@@ -290,8 +309,10 @@ pub trait UiMenuExt {
     fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity>;
 }
 
-impl UiMenuExt for UiBuilder<'_, Entity> {
-    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity> {
+impl UiMenuExt for UiBuilder<'_, Entity>
+{
+    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity>
+    {
         let mut menu = Menu::default();
         let name = format!("Menu [{}]", config.name.clone());
 
@@ -312,8 +333,10 @@ impl UiMenuExt for UiBuilder<'_, Entity> {
     }
 }
 
-impl UiMenuExt for UiBuilder<'_, (Entity, MenuBar)> {
-    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity> {
+impl UiMenuExt for UiBuilder<'_, (Entity, MenuBar)>
+{
+    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity>
+    {
         let own_id = self.id();
         let id = self
             .commands()
@@ -325,12 +348,15 @@ impl UiMenuExt for UiBuilder<'_, (Entity, MenuBar)> {
     }
 }
 
-pub trait UiMenuSubExt {
+pub trait UiMenuSubExt
+{
     fn container(&self) -> Entity;
 }
 
-impl UiMenuSubExt for UiBuilder<'_, Menu> {
-    fn container(&self) -> Entity {
+impl UiMenuSubExt for UiBuilder<'_, Menu>
+{
+    fn container(&self) -> Entity
+    {
         self.context().container
     }
 }

@@ -21,7 +21,8 @@ const D1_F32: f32 = 2.75;
 // const D1_F64: f64 = 2.75;
 
 #[derive(Default, Copy, Clone, Debug, Hash, PartialEq, Eq, Reflect, Serialize, Deserialize)]
-pub enum Ease {
+pub enum Ease
+{
     #[default]
     Linear,
     InSine,
@@ -56,12 +57,15 @@ pub enum Ease {
     InOutBounce,
 }
 
-pub trait ValueEasing {
+pub trait ValueEasing
+{
     fn ease(&self, ease_type: Ease) -> Self;
 }
 
-impl ValueEasing for f32 {
-    fn ease(&self, ease_type: Ease) -> Self {
+impl ValueEasing for f32
+{
+    fn ease(&self, ease_type: Ease) -> Self
+    {
         let x = self.clamp(0., 1.);
 
         match ease_type {
@@ -184,8 +188,7 @@ impl ValueEasing for f32 {
                         if x < 0.5 {
                             -(2f32.powf(20. * x - 10.) * ((20. * x - 11.125) * C5_F32).sin()) / 2.
                         } else {
-                            (2f32.powf(-20. * x + 10.) * ((20. * x - 11.125) * C5_F32).sin()) / 2.
-                                + 1.
+                            (2f32.powf(-20. * x + 10.) * ((20. * x - 11.125) * C5_F32).sin()) / 2. + 1.
                         }
                     }
                 }

@@ -1,29 +1,27 @@
-use bevy::{prelude::*, ui::UiSystem};
+use bevy::prelude::*;
+use bevy::ui::UiSystem;
+use sickle_ui_scaffold::prelude::*;
+use sickle_ui_scaffold::ui_commands::LogHierarchyExt;
 
-use sickle_ui_scaffold::{prelude::*, ui_commands::LogHierarchyExt};
-
-use super::{
-    container::UiContainerExt,
-    docking_zone::DockingZoneUpdate,
-    resize_handles::{ResizeHandle, UiResizeHandlesExt},
-};
+use super::container::UiContainerExt;
+use super::docking_zone::DockingZoneUpdate;
+use super::resize_handles::{ResizeHandle, UiResizeHandlesExt};
 
 const MIN_SIZED_ZONE_SIZE: f32 = 50.;
 
 pub struct SizedZonePlugin;
 
-impl Plugin for SizedZonePlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SizedZonePlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins((
             HierarchyToPseudoState::<SizedZone>::new(),
             ComponentThemePlugin::<SizedZone>::default(),
         ))
         .add_systems(
             PreUpdate,
-            (
-                preset_sized_zone_flex_layout,
-                preset_sized_zone_children_size,
-            )
+            (preset_sized_zone_flex_layout, preset_sized_zone_children_size)
                 .chain()
                 .in_set(SizedZonePreUpdate)
                 .run_if(should_update_sized_zone_layout),
@@ -54,12 +52,10 @@ pub struct SizedZonePreUpdate;
 
 fn should_update_sized_zone_layout(
     q_added_zones: Query<Entity, Added<SizedZone>>,
-    q_parent_children_changed_zones: Query<
-        Entity,
-        (With<SizedZone>, Or<(Changed<Parent>, Changed<Children>)>),
-    >,
+    q_parent_children_changed_zones: Query<Entity, (With<SizedZone>, Or<(Changed<Parent>, Changed<Children>)>)>,
     q_removed_zones: RemovedComponents<SizedZone>,
-) -> bool {
+) -> bool
+{
     q_added_zones.iter().count() > 0
         || q_parent_children_changed_zones.iter().count() > 0
         || q_removed_zones.len() > 0
@@ -70,7 +66,8 @@ fn preset_sized_zone_flex_layout(
     mut q_sized_zone: Query<&mut SizedZone>,
     q_children: Query<&Children>,
     q_style: Query<&Style>,
-) {
+)
+{
     let static_zones: Vec<(Entity, Entity)> = q_sized_zones
         .iter()
         .filter(|(_, parent)| q_sized_zone.get(parent.get()).is_err())
@@ -84,12 +81,7 @@ fn preset_sized_zone_flex_layout(
         };
 
         let parent_flex_direction = parent_style.flex_direction;
-        preset_drop_zone_flex_direction(
-            sized_zone,
-            &mut q_sized_zone,
-            &q_children,
-            parent_flex_direction,
-        );
+        preset_drop_zone_flex_direction(sized_zone, &mut q_sized_zone, &q_children, parent_flex_direction);
     }
 }
 
@@ -98,7 +90,8 @@ fn preset_drop_zone_flex_direction(
     q_sized_zone: &mut Query<&mut SizedZone>,
     q_children: &Query<&Children>,
     parent_flex_direction: FlexDirection,
-) {
+)
+{
     let mut zone = q_sized_zone.get_mut(sized_zone).unwrap();
 
     zone.flex_direction = match parent_flex_direction {
@@ -122,7 +115,8 @@ fn preset_sized_zone_children_size(
     q_sized_zones: Query<Entity, With<SizedZone>>,
     mut q_sized_zone: Query<&mut SizedZone>,
     q_parents: Query<&Parent>,
-) {
+)
+{
     for mut zone in &mut q_sized_zone {
         zone.children_size = 0.;
     }
@@ -155,10 +149,10 @@ fn update_sized_zone_resize_handles(
     q_style: Query<&Style>,
     mut q_resize_handle: Query<&mut SizedZoneResizeHandle>,
     mut commands: Commands,
-) {
+)
+{
     let zone_count = q_sized_zone_parents.iter().count();
-    let mut handle_visibility: Vec<(Entity, CardinalDirection, bool)> =
-        Vec::with_capacity(zone_count * 4);
+    let mut handle_visibility: Vec<(Entity, CardinalDirection, bool)> = Vec::with_capacity(zone_count * 4);
     let mut handle_neighbours: Vec<(Entity, Option<Entity>)> = Vec::with_capacity(zone_count * 4);
     let parents: Vec<Entity> =
         q_sized_zone_parents
@@ -207,48 +201,24 @@ fn update_sized_zone_resize_handles(
 
                 match zone.flex_direction {
                     FlexDirection::Row => {
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::North,
-                            !prev_is_zone,
-                        ));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::North, !prev_is_zone));
                         handle_visibility.push((
                             zone.resize_handles,
                             CardinalDirection::South,
                             i != child_count - 1,
                         ));
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::East,
-                            false,
-                        ));
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::West,
-                            false,
-                        ));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::East, false));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::West, false));
                     }
                     FlexDirection::Column => {
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::West,
-                            !prev_is_zone,
-                        ));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::West, !prev_is_zone));
                         handle_visibility.push((
                             zone.resize_handles,
                             CardinalDirection::East,
                             i != child_count - 1,
                         ));
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::North,
-                            false,
-                        ));
-                        handle_visibility.push((
-                            zone.resize_handles,
-                            CardinalDirection::South,
-                            false,
-                        ));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::North, false));
+                        handle_visibility.push((zone.resize_handles, CardinalDirection::South, false));
                     }
                     _ => warn!(
                         "Invalid flex_direction detected on sized zone {}",
@@ -262,25 +232,23 @@ fn update_sized_zone_resize_handles(
 
             for i in 0..zone_children.len() {
                 let zone = q_sized_zones.get(zone_children[i]).unwrap();
-                let Some((prev_dir, prev_handle, next_dir, next_handle)) =
-                    (match zone.flex_direction {
-                        FlexDirection::Row => (
-                            CardinalDirection::North,
-                            zone.top_handle,
-                            CardinalDirection::South,
-                            zone.bottom_handle,
-                        )
-                            .into(),
-                        FlexDirection::Column => (
-                            CardinalDirection::West,
-                            zone.left_handle,
-                            CardinalDirection::East,
-                            zone.right_handle,
-                        )
-                            .into(),
-                        _ => None,
-                    })
-                else {
+                let Some((prev_dir, prev_handle, next_dir, next_handle)) = (match zone.flex_direction {
+                    FlexDirection::Row => (
+                        CardinalDirection::North,
+                        zone.top_handle,
+                        CardinalDirection::South,
+                        zone.bottom_handle,
+                    )
+                        .into(),
+                    FlexDirection::Column => (
+                        CardinalDirection::West,
+                        zone.left_handle,
+                        CardinalDirection::East,
+                        zone.right_handle,
+                    )
+                        .into(),
+                    _ => None,
+                }) else {
                     warn!(
                         "Invalid flex_direction detected on sized zone {}",
                         zone_children[i]
@@ -337,7 +305,8 @@ fn update_sized_zone_on_resize(
     q_draggable: Query<(&Draggable, &ResizeHandle, &SizedZoneResizeHandle), Changed<Draggable>>,
     mut q_sized_zone: Query<(&mut SizedZone, &Parent)>,
     q_node: Query<&Node>,
-) {
+)
+{
     for (draggable, handle, handle_ref) in &q_draggable {
         if handle_ref.neighbour.is_none() {
             continue;
@@ -437,7 +406,8 @@ fn update_sized_zone_on_resize(
     }
 }
 
-fn update_sized_zone_style(mut q_sized_zones: Query<(&SizedZone, &mut Style), Changed<SizedZone>>) {
+fn update_sized_zone_style(mut q_sized_zones: Query<(&SizedZone, &mut Style), Changed<SizedZone>>)
+{
     for (zone, mut style) in &mut q_sized_zones {
         style.flex_direction = zone.flex_direction;
         match zone.flex_direction {
@@ -457,7 +427,8 @@ fn update_sized_zone_style(mut q_sized_zones: Query<(&SizedZone, &mut Style), Ch
 fn should_fit_sized_zones(
     q_changed_nodes: Query<Entity, (With<SizedZone>, Changed<Node>)>,
     q_removed_zones: RemovedComponents<SizedZone>,
-) -> bool {
+) -> bool
+{
     q_changed_nodes.iter().count() > 0 || q_removed_zones.len() > 0
 }
 
@@ -467,7 +438,8 @@ fn fit_sized_zones_on_window_resize(
     q_sized_zone_parents: Query<&Parent, With<SizedZone>>,
     q_non_sized: Query<(&Node, &Style), Without<SizedZone>>,
     mut q_sized_zone: Query<(&mut SizedZone, &Node)>,
-) {
+)
+{
     let parents: Vec<Entity> = q_sized_zone_parents.iter().fold(
         Vec::with_capacity(q_sized_zone_parents.iter().count()),
         |mut acc, parent| {
@@ -540,8 +512,7 @@ fn fit_sized_zones_on_window_resize(
                 _ => 0.,
             };
 
-            sized_zone.size_percent =
-                (own_size.max(sized_zone.children_size) / total_size) * 100. * multiplier;
+            sized_zone.size_percent = (own_size.max(sized_zone.children_size) / total_size) * 100. * multiplier;
         }
     }
 }
@@ -552,13 +523,16 @@ pub struct SizedZoneResizeHandleContainer;
 
 #[derive(Component, Clone, Copy, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SizedZoneResizeHandle {
+pub struct SizedZoneResizeHandle
+{
     pub sized_zone: Entity,
     pub neighbour: Option<Entity>,
 }
 
-impl Default for SizedZoneResizeHandle {
-    fn default() -> Self {
+impl Default for SizedZoneResizeHandle
+{
+    fn default() -> Self
+    {
         Self {
             sized_zone: Entity::PLACEHOLDER,
             neighbour: Default::default(),
@@ -567,14 +541,16 @@ impl Default for SizedZoneResizeHandle {
 }
 
 #[derive(Debug, Default)]
-pub struct SizedZoneConfig {
+pub struct SizedZoneConfig
+{
     pub size: f32,
     pub min_size: f32,
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SizedZone {
+pub struct SizedZone
+{
     size_percent: f32,
     min_size: f32,
     children_size: f32,
@@ -586,8 +562,10 @@ pub struct SizedZone {
     left_handle: Entity,
 }
 
-impl Default for SizedZone {
-    fn default() -> Self {
+impl Default for SizedZone
+{
+    fn default() -> Self
+    {
         Self {
             size_percent: Default::default(),
             min_size: MIN_SIZED_ZONE_SIZE,
@@ -602,8 +580,10 @@ impl Default for SizedZone {
     }
 }
 
-impl UiContext for SizedZone {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for SizedZone
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             SizedZone::RESIZE_HANDLES => Ok(self.resize_handles),
             _ => Err(format!(
@@ -614,42 +594,52 @@ impl UiContext for SizedZone {
         }
     }
 
-    fn cleared_contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn cleared_contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [].into_iter()
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [SizedZone::RESIZE_HANDLES].into_iter()
     }
 }
 
-impl DefaultTheme for SizedZone {
-    fn default_theme() -> Option<Theme<SizedZone>> {
+impl DefaultTheme for SizedZone
+{
+    fn default_theme() -> Option<Theme<SizedZone>>
+    {
         SizedZone::theme().into()
     }
 }
 
-impl SizedZone {
+impl SizedZone
+{
     pub const RESIZE_HANDLES: &'static str = "Label";
     pub const RESIZE_HANDLES_Z_INDEX: i32 = 200;
 
-    pub fn direction(&self) -> FlexDirection {
+    pub fn direction(&self) -> FlexDirection
+    {
         self.flex_direction
     }
 
-    pub fn size(&self) -> f32 {
+    pub fn size(&self) -> f32
+    {
         self.size_percent
     }
 
-    pub fn set_size(&mut self, size: f32) {
+    pub fn set_size(&mut self, size: f32)
+    {
         self.size_percent = size.clamp(0., 100.);
     }
 
-    pub fn min_size(&self) -> f32 {
+    pub fn min_size(&self) -> f32
+    {
         self.min_size
     }
 
-    pub fn theme() -> Theme<SizedZone> {
+    pub fn theme() -> Theme<SizedZone>
+    {
         let base_theme = PseudoTheme::deferred(None, SizedZone::primary_style);
 
         let theme_row = PseudoTheme::deferred(vec![PseudoState::LayoutRow], SizedZone::style_row);
@@ -671,8 +661,7 @@ impl SizedZone {
             SizedZone::style_row_single,
         );
 
-        let theme_column =
-            PseudoTheme::deferred(vec![PseudoState::LayoutColumn], SizedZone::style_column);
+        let theme_column = PseudoTheme::deferred(vec![PseudoState::LayoutColumn], SizedZone::style_column);
         let theme_column_first = PseudoTheme::deferred(
             vec![PseudoState::LayoutColumn, PseudoState::FirstChild],
             SizedZone::style_column_first,
@@ -704,7 +693,8 @@ impl SizedZone {
         ])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         let colors = theme_data.colors();
 
         style_builder
@@ -716,43 +706,42 @@ impl SizedZone {
             .z_index(ZIndex::Global(SizedZone::RESIZE_HANDLES_Z_INDEX));
     }
 
-    fn style_row(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
-        style_builder.border(UiRect::vertical(Val::Px(
-            theme_data.spacing.borders.extra_small,
-        )));
+    fn style_row(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
+        style_builder.border(UiRect::vertical(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_row_first(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
-        style_builder.border(UiRect::bottom(Val::Px(
-            theme_data.spacing.borders.extra_small,
-        )));
+    fn style_row_first(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
+        style_builder.border(UiRect::bottom(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_row_last(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
+    fn style_row_last(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
         style_builder.border(UiRect::top(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_row_single(style_builder: &mut StyleBuilder, _: &ThemeData) {
+    fn style_row_single(style_builder: &mut StyleBuilder, _: &ThemeData)
+    {
         style_builder.border(UiRect::all(Val::Auto));
     }
 
-    fn style_column(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
-        style_builder.border(UiRect::horizontal(Val::Px(
-            theme_data.spacing.borders.extra_small,
-        )));
+    fn style_column(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
+        style_builder.border(UiRect::horizontal(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_column_first(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
-        style_builder.border(UiRect::right(Val::Px(
-            theme_data.spacing.borders.extra_small,
-        )));
+    fn style_column_first(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
+        style_builder.border(UiRect::right(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_column_last(style_builder: &mut StyleBuilder, theme_data: &ThemeData) {
-        style_builder.border(UiRect::left(Val::Px(
-            theme_data.spacing.borders.extra_small,
-        )));
+    fn style_column_last(style_builder: &mut StyleBuilder, theme_data: &ThemeData)
+    {
+        style_builder.border(UiRect::left(Val::Px(theme_data.spacing.borders.extra_small)));
     }
-    fn style_column_single(style_builder: &mut StyleBuilder, _: &ThemeData) {
+    fn style_column_single(style_builder: &mut StyleBuilder, _: &ThemeData)
+    {
         style_builder.border(UiRect::all(Val::Auto));
     }
 
-    fn frame() -> impl Bundle {
+    fn frame() -> impl Bundle
+    {
         (
             Name::new("Sized Zone"),
             NodeBundle::default(),
@@ -766,7 +755,8 @@ impl SizedZone {
     }
 }
 
-pub trait UiSizedZoneExt {
+pub trait UiSizedZoneExt
+{
     fn sized_zone(
         &mut self,
         config: SizedZoneConfig,
@@ -774,7 +764,8 @@ pub trait UiSizedZoneExt {
     ) -> UiBuilder<Entity>;
 }
 
-impl UiSizedZoneExt for UiBuilder<'_, Entity> {
+impl UiSizedZoneExt for UiBuilder<'_, Entity>
+{
     /// A sized zone, that can be resized by dragging its edge handle.
     /// Nested sized zones automatically change layout direction to fit the resizing axis.
     ///
@@ -788,23 +779,17 @@ impl UiSizedZoneExt for UiBuilder<'_, Entity> {
         &mut self,
         config: SizedZoneConfig,
         spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    ) -> UiBuilder<Entity>
+    {
         let size = config.size.clamp(0., 100.);
         let min_size = config.min_size.max(MIN_SIZED_ZONE_SIZE);
-        let mut sized_zone = SizedZone {
-            size_percent: size,
-            min_size,
-            ..Default::default()
-        };
+        let mut sized_zone = SizedZone { size_percent: size, min_size, ..Default::default() };
 
         let mut frame = self.container(SizedZone::frame(), |container| {
             let zone_id = container.id();
             spawn_children(container);
 
-            let handle = SizedZoneResizeHandle {
-                sized_zone: zone_id,
-                ..default()
-            };
+            let handle = SizedZoneResizeHandle { sized_zone: zone_id, ..default() };
             sized_zone.resize_handles = container
                 .resize_handles(handle, |handles| {
                     sized_zone.top_handle = handles.context().handle_north;

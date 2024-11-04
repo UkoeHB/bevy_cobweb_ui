@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct DividerSpacing {
+pub struct DividerSpacing
+{
     pub extra_small: f32,
     pub small: f32,
     pub medium: f32,
@@ -11,7 +12,8 @@ pub struct DividerSpacing {
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct Spacing {
+pub struct Spacing
+{
     pub tiny: f32,
     pub extra_small: f32,
     pub small: f32,
@@ -25,7 +27,8 @@ pub struct Spacing {
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct IconSizes {
+pub struct IconSizes
+{
     pub extra_small: f32,
     pub small: f32,
     pub medium: f32,
@@ -35,47 +38,56 @@ pub struct IconSizes {
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct CheckboxSizes {
+pub struct CheckboxSizes
+{
     pub line_height: f32,
     pub border_size: f32,
     pub checkbox_size: f32,
     pub checkmark_size: f32,
 }
 
-impl CheckboxSizes {
-    pub fn checkbox_size(&self) -> f32 {
+impl CheckboxSizes
+{
+    pub fn checkbox_size(&self) -> f32
+    {
         self.checkbox_size + 2. * self.border_size
     }
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct RedioButtonSizes {
+pub struct RedioButtonSizes
+{
     pub border_size: f32,
     pub radiomark_outer_size: f32,
     pub radiomark_size: f32,
 }
 
-impl RedioButtonSizes {
-    pub fn radiomark_full_outer_size(&self) -> f32 {
+impl RedioButtonSizes
+{
+    pub fn radiomark_full_outer_size(&self) -> f32
+    {
         self.radiomark_outer_size + 2. * self.border_size
     }
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct InputSizes {
+pub struct InputSizes
+{
     pub checkbox: CheckboxSizes,
     pub radio_button: RedioButtonSizes,
 }
 
 #[derive(Clone, Copy, Debug, Default, Reflect)]
-pub struct ResizeZone {
+pub struct ResizeZone
+{
     pub width: f32,
     pub pullback: f32,
     pub handle_gap: f32,
 }
 
 #[derive(Clone, Copy, Debug, Reflect)]
-pub struct ThemeSpacing {
+pub struct ThemeSpacing
+{
     pub borders: DividerSpacing,
     pub corners: Spacing,
     pub gaps: Spacing,
@@ -86,8 +98,10 @@ pub struct ThemeSpacing {
     pub scroll_bar_size: f32,
 }
 
-impl Default for ThemeSpacing {
-    fn default() -> Self {
+impl Default for ThemeSpacing
+{
+    fn default() -> Self
+    {
         Self {
             borders: DividerSpacing {
                 extra_small: 1.,
@@ -154,11 +168,7 @@ impl Default for ThemeSpacing {
                     radiomark_size: 6.,
                 },
             },
-            resize_zone: ResizeZone {
-                width: 4.,
-                pullback: 2.,
-                handle_gap: 1.,
-            },
+            resize_zone: ResizeZone { width: 4., pullback: 2., handle_gap: 1. },
             scroll_bar_size: 8.,
         }
     }

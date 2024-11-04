@@ -3,36 +3,34 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{ui_commands::ManagePseudoStateExt, CardinalDirection};
-
 use super::ThemeUpdate;
+use crate::ui_commands::ManagePseudoStateExt;
+use crate::CardinalDirection;
 
 pub struct AutoPseudoStatePlugin;
 
-impl Plugin for AutoPseudoStatePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            PostUpdate,
-            propagate_flex_direction_to_pseudo_state.before(ThemeUpdate),
-        )
-        .add_systems(
-            PostUpdate,
-            propagate_visibility_to_pseudo_state
-                // TODO: This is a regression that may cause a frame delay in applying the state
-                // .after(VisibilitySystems::VisibilityPropagate)
-                .before(ThemeUpdate),
-        );
+impl Plugin for AutoPseudoStatePlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        app.add_systems(PostUpdate, propagate_flex_direction_to_pseudo_state.before(ThemeUpdate))
+            .add_systems(
+                PostUpdate,
+                propagate_visibility_to_pseudo_state
+                    // TODO: This is a regression that may cause a frame delay in applying the state
+                    // .after(VisibilitySystems::VisibilityPropagate)
+                    .before(ThemeUpdate),
+            );
     }
 }
 
 fn propagate_flex_direction_to_pseudo_state(
     q_nodes: Query<(Entity, &Style), (With<FlexDirectionToPseudoState>, Changed<Style>)>,
     mut commands: Commands,
-) {
+)
+{
     for (entity, style) in &q_nodes {
-        if style.flex_direction == FlexDirection::Column
-            || style.flex_direction == FlexDirection::ColumnReverse
-        {
+        if style.flex_direction == FlexDirection::Column || style.flex_direction == FlexDirection::ColumnReverse {
             commands
                 .entity(entity)
                 .add_pseudo_state(PseudoState::LayoutColumn);
@@ -59,10 +57,11 @@ fn propagate_visibility_to_pseudo_state(
         ),
     >,
     mut commands: Commands,
-) {
+)
+{
     for (entity, visibility, inherited) in &q_nodes {
-        let visible = visibility == Visibility::Visible
-            || (inherited.get() && visibility == Visibility::Inherited);
+        let visible =
+            visibility == Visibility::Visible || (inherited.get() && visibility == Visibility::Inherited);
 
         if visible {
             commands
@@ -90,7 +89,8 @@ impl<C> Plugin for HierarchyToPseudoState<C>
 where
     C: Component,
 {
-    fn build(&self, app: &mut App) {
+    fn build(&self, app: &mut App)
+    {
         app.add_systems(
             PostUpdate,
             HierarchyToPseudoState::<C>::post_update
@@ -100,8 +100,10 @@ where
     }
 }
 
-impl<C: Component> HierarchyToPseudoState<C> {
-    pub fn new() -> Self {
+impl<C: Component> HierarchyToPseudoState<C>
+{
+    pub fn new() -> Self
+    {
         Self(PhantomData::default())
     }
 
@@ -109,10 +111,9 @@ impl<C: Component> HierarchyToPseudoState<C> {
         q_added_tags: Query<Entity, Added<C>>,
         q_parent_changed_tags: Query<Entity, (With<C>, Changed<Parent>)>,
         q_removed_tags: RemovedComponents<C>,
-    ) -> bool {
-        q_added_tags.iter().count() > 0
-            || q_parent_changed_tags.iter().count() > 0
-            || q_removed_tags.len() > 0
+    ) -> bool
+    {
+        q_added_tags.iter().count() > 0 || q_parent_changed_tags.iter().count() > 0 || q_removed_tags.len() > 0
     }
 
     fn post_update(
@@ -120,17 +121,17 @@ impl<C: Component> HierarchyToPseudoState<C> {
         q_children: Query<&Children>,
         mut q_pseudo_states: Query<&mut PseudoStates>,
         mut commands: Commands,
-    ) {
+    )
+    {
         let node_count = q_nodes.iter().len();
-        let parents: Vec<Entity> =
-            q_nodes
-                .iter()
-                .fold(Vec::with_capacity(node_count), |mut acc, (_, p)| {
-                    if !acc.contains(&p.get()) {
-                        acc.push(p.get());
-                    }
-                    acc
-                });
+        let parents: Vec<Entity> = q_nodes
+            .iter()
+            .fold(Vec::with_capacity(node_count), |mut acc, (_, p)| {
+                if !acc.contains(&p.get()) {
+                    acc.push(p.get());
+                }
+                acc
+            });
 
         for parent in parents.iter() {
             let children = q_children.get(*parent).unwrap();
@@ -183,7 +184,8 @@ impl<C: Component> HierarchyToPseudoState<C> {
         entity: Entity,
         q_pseudo_states: &mut Query<&mut PseudoStates>,
         mut commands: Commands,
-    ) {
+    )
+    {
         if let Ok(mut pseudo_states) = q_pseudo_states.get_mut(entity) {
             let to_remove: Vec<PseudoState> = pseudo_states
                 .get()
@@ -209,10 +211,9 @@ impl<C: Component> HierarchyToPseudoState<C> {
     }
 }
 
-#[derive(
-    Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect, Serialize, Deserialize,
-)]
-pub enum PseudoState {
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]
+pub enum PseudoState
+{
     #[default]
     Enabled,
     Disabled,
@@ -241,8 +242,10 @@ pub enum PseudoState {
 #[derive(Component, Clone, Debug, Default, Reflect)]
 pub struct PseudoStates(Vec<PseudoState>);
 
-impl From<Vec<PseudoState>> for PseudoStates {
-    fn from(value: Vec<PseudoState>) -> Self {
+impl From<Vec<PseudoState>> for PseudoStates
+{
+    fn from(value: Vec<PseudoState>) -> Self
+    {
         let mut uniques: Vec<PseudoState> = Vec::with_capacity(value.len());
         for val in value {
             if !uniques.contains(&val) {
@@ -254,26 +257,32 @@ impl From<Vec<PseudoState>> for PseudoStates {
     }
 }
 
-impl PseudoStates {
-    pub fn new() -> Self {
+impl PseudoStates
+{
+    pub fn new() -> Self
+    {
         Self(Vec::new())
     }
 
-    pub fn single(state: PseudoState) -> Self {
+    pub fn single(state: PseudoState) -> Self
+    {
         Self(vec![state])
     }
 
-    pub fn has(&self, state: &PseudoState) -> bool {
+    pub fn has(&self, state: &PseudoState) -> bool
+    {
         self.0.contains(state)
     }
 
-    pub fn add(&mut self, state: PseudoState) {
+    pub fn add(&mut self, state: PseudoState)
+    {
         if !self.0.contains(&state) {
             self.0.push(state);
         }
     }
 
-    pub fn remove(&mut self, state: PseudoState) {
+    pub fn remove(&mut self, state: PseudoState)
+    {
         if self.0.contains(&state) {
             // Safe unwrap: checked in if
             self.0
@@ -281,11 +290,13 @@ impl PseudoStates {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool
+    {
         self.0.is_empty()
     }
 
-    pub fn get(&self) -> &Vec<PseudoState> {
+    pub fn get(&self) -> &Vec<PseudoState>
+    {
         &self.0
     }
 }

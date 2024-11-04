@@ -1,9 +1,12 @@
-use bevy::{asset::embedded_asset, prelude::*};
+use bevy::asset::embedded_asset;
+use bevy::prelude::*;
 
 pub(crate) struct BuiltInFontsPlugin;
 
-impl Plugin for BuiltInFontsPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for BuiltInFontsPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         embedded_asset!(app, "src/sickle/assets/", "FiraSans-Bold.ttf");
         embedded_asset!(app, "src/sickle/assets/", "FiraSans-BoldItalic.ttf");
         embedded_asset!(app, "src/sickle/assets/", "FiraSans-Italic.ttf");

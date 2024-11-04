@@ -1,24 +1,27 @@
 use std::ops::DerefMut;
 
-use bevy::{input::mouse::MouseScrollUnit, prelude::*, ui::RelativeCursorPosition};
+use bevy::input::mouse::MouseScrollUnit;
+use bevy::prelude::*;
+use bevy::ui::RelativeCursorPosition;
+use sickle_ui_scaffold::prelude::*;
+use sickle_ui_scaffold::ui_commands::UpdateTextExt;
 
-use sickle_ui_scaffold::{prelude::*, ui_commands::UpdateTextExt};
-
-use crate::sickle::widgets::layout::{
-    container::UiContainerExt,
-    label::{LabelConfig, UiLabelExt},
-};
+use crate::sickle::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::label::{LabelConfig, UiLabelExt};
 
 #[cfg(feature = "observable")]
 #[derive(Event, Copy, Clone, Debug)]
-pub struct SliderChanged {
+pub struct SliderChanged
+{
     pub ratio: f32,
 }
 
 pub struct SliderPlugin;
 
-impl Plugin for SliderPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for SliderPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.add_plugins(ComponentThemePlugin::<Slider>::default())
             .add_systems(
                 Update,
@@ -43,7 +46,8 @@ fn update_slider_on_scroll(
     q_scrollables: Query<(AnyOf<(&SliderBar, &SliderDragHandle)>, &Scrollable), Changed<Scrollable>>,
     mut q_slider: Query<&mut Slider>,
     mut commands: Commands,
-) {
+)
+{
     for ((slider_bar, handle), scrollable) in &q_scrollables {
         let Some((axis, diff, unit)) = scrollable.last_change() else {
             continue;
@@ -82,7 +86,8 @@ fn update_slider_on_drag(
     q_node: Query<&Node>,
     mut q_slider: Query<&mut Slider>,
     mut commands: Commands,
-) {
+)
+{
     for (draggable, handle, node) in &q_draggable {
         let Ok(mut slider) = q_slider.get_mut(handle.slider) else {
             continue;
@@ -135,7 +140,8 @@ fn update_slider_on_drag(
     }
 }
 
-fn update_slider_on_bar_change(q_slider_bars: Query<&SliderBar, Changed<Node>>, mut q_slider: Query<&mut Slider>) {
+fn update_slider_on_bar_change(q_slider_bars: Query<&SliderBar, Changed<Node>>, mut q_slider: Query<&mut Slider>)
+{
     for bar in &q_slider_bars {
         let Ok(mut slider) = q_slider.get_mut(bar.slider) else {
             continue;
@@ -149,7 +155,8 @@ fn update_slider_handle(
     q_slider: Query<&Slider, Or<(Changed<Slider>, Changed<Node>)>>,
     q_node: Query<&Node>,
     mut q_hadle_style: Query<(&Node, &mut Style), With<SliderDragHandle>>,
-) {
+)
+{
     for slider in &q_slider {
         let Ok(slider_bar) = q_node.get(slider.bar_container) else {
             continue;
@@ -178,7 +185,8 @@ fn update_slider_handle(
     }
 }
 
-fn update_slider_readout(q_slider: Query<&Slider, Changed<Slider>>, mut commands: Commands) {
+fn update_slider_readout(q_slider: Query<&Slider, Changed<Slider>>, mut commands: Commands)
+{
     for slider in &q_slider {
         if !slider.config.show_current {
             continue;
@@ -191,7 +199,8 @@ fn update_slider_readout(q_slider: Query<&Slider, Changed<Slider>>, mut commands
 }
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Reflect)]
-pub enum SliderAxis {
+pub enum SliderAxis
+{
     #[default]
     Horizontal,
     Vertical,
@@ -199,30 +208,37 @@ pub enum SliderAxis {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SliderDragHandle {
+pub struct SliderDragHandle
+{
     pub slider: Entity,
 }
 
-impl Default for SliderDragHandle {
-    fn default() -> Self {
+impl Default for SliderDragHandle
+{
+    fn default() -> Self
+    {
         Self { slider: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct SliderBar {
+pub struct SliderBar
+{
     pub slider: Entity,
 }
 
-impl Default for SliderBar {
-    fn default() -> Self {
+impl Default for SliderBar
+{
+    fn default() -> Self
+    {
         Self { slider: Entity::PLACEHOLDER }
     }
 }
 
 #[derive(Component, Clone, Debug, Reflect)]
-pub struct SliderConfig {
+pub struct SliderConfig
+{
     pub label: Option<String>,
     pub min: f32,
     pub max: f32,
@@ -231,7 +247,8 @@ pub struct SliderConfig {
     pub axis: SliderAxis,
 }
 
-impl SliderConfig {
+impl SliderConfig
+{
     pub fn new(
         label: impl Into<Option<String>>,
         min: f32,
@@ -239,7 +256,8 @@ impl SliderConfig {
         initial_value: f32,
         show_current: bool,
         axis: SliderAxis,
-    ) -> Self {
+    ) -> Self
+    {
         if max <= min || initial_value < min || initial_value > max {
             panic!(
                 "Invalid slider config values! Min: {}, Max: {}, Initial: {}",
@@ -263,7 +281,8 @@ impl SliderConfig {
         max: f32,
         initial_value: f32,
         show_current: bool,
-    ) -> Self {
+    ) -> Self
+    {
         Self::new(
             label.into(),
             min,
@@ -280,7 +299,8 @@ impl SliderConfig {
         max: f32,
         initial_value: f32,
         show_current: bool,
-    ) -> Self {
+    ) -> Self
+    {
         Self::new(
             label.into(),
             min,
@@ -291,7 +311,8 @@ impl SliderConfig {
         )
     }
 
-    pub fn with_value(self, value: f32) -> Self {
+    pub fn with_value(self, value: f32) -> Self
+    {
         if value >= self.min && value <= self.max {
             return Self { initial_value: value, ..self };
         }
@@ -300,8 +321,10 @@ impl SliderConfig {
     }
 }
 
-impl Default for SliderConfig {
-    fn default() -> Self {
+impl Default for SliderConfig
+{
+    fn default() -> Self
+    {
         Self {
             label: None,
             min: 0.,
@@ -315,7 +338,8 @@ impl Default for SliderConfig {
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct Slider {
+pub struct Slider
+{
     ratio: f32,
     config: SliderConfig,
     label: Entity,
@@ -327,8 +351,10 @@ pub struct Slider {
     base_ratio: Option<f32>,
 }
 
-impl Default for Slider {
-    fn default() -> Self {
+impl Default for Slider
+{
+    fn default() -> Self
+    {
         Self {
             ratio: Default::default(),
             config: Default::default(),
@@ -343,8 +369,10 @@ impl Default for Slider {
     }
 }
 
-impl UiContext for Slider {
-    fn get(&self, target: &str) -> Result<Entity, String> {
+impl UiContext for Slider
+{
+    fn get(&self, target: &str) -> Result<Entity, String>
+    {
         match target {
             Slider::LABEL => Ok(self.label),
             Slider::BAR_CONTAINER => Ok(self.bar_container),
@@ -360,7 +388,8 @@ impl UiContext for Slider {
         }
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_
+    {
         [
             Slider::LABEL,
             Slider::BAR_CONTAINER,
@@ -373,13 +402,16 @@ impl UiContext for Slider {
     }
 }
 
-impl DefaultTheme for Slider {
-    fn default_theme() -> Option<Theme<Slider>> {
+impl DefaultTheme for Slider
+{
+    fn default_theme() -> Option<Theme<Slider>>
+    {
         Slider::theme().into()
     }
 }
 
-impl Slider {
+impl Slider
+{
     pub const LABEL: &'static str = "Label";
     pub const BAR_CONTAINER: &'static str = "BarContainer";
     pub const BAR: &'static str = "Bar";
@@ -387,15 +419,18 @@ impl Slider {
     pub const READOUT_CONTAINER: &'static str = "ReadoutContainer";
     pub const READOUT: &'static str = "Readout";
 
-    pub fn value(&self) -> f32 {
+    pub fn value(&self) -> f32
+    {
         self.config.min.lerp(self.config.max, self.ratio)
     }
 
-    pub fn config(&self) -> &SliderConfig {
+    pub fn config(&self) -> &SliderConfig
+    {
         &self.config
     }
 
-    pub fn set_value(&mut self, value: f32) {
+    pub fn set_value(&mut self, value: f32)
+    {
         if value > self.config.max || value < self.config.min {
             warn!("Tried to set slider value outside of range");
             return;
@@ -404,12 +439,14 @@ impl Slider {
         self.ratio = (value - self.config.min) / (self.config.max + (0. - self.config.min))
     }
 
-    pub fn theme() -> Theme<Slider> {
+    pub fn theme() -> Theme<Slider>
+    {
         let base_theme = PseudoTheme::deferred_context(None, Slider::primary_style);
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData) {
+    fn primary_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData)
+    {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let font = theme_data
@@ -560,11 +597,13 @@ impl Slider {
             .copy_from(theme_data.interaction_animation);
     }
 
-    fn container(name: String) -> impl Bundle {
+    fn container(name: String) -> impl Bundle
+    {
         (Name::new(name), NodeBundle::default())
     }
 
-    fn bar_container() -> impl Bundle {
+    fn bar_container() -> impl Bundle
+    {
         (
             Name::new("Bar Container"),
             NodeBundle::default(),
@@ -573,11 +612,13 @@ impl Slider {
         )
     }
 
-    fn bar() -> impl Bundle {
+    fn bar() -> impl Bundle
+    {
         (Name::new("Slider Bar"), NodeBundle::default())
     }
 
-    fn handle(slider: Entity) -> impl Bundle {
+    fn handle(slider: Entity) -> impl Bundle
+    {
         (
             Name::new("Handle"),
             ButtonBundle::default(),
@@ -589,17 +630,21 @@ impl Slider {
         )
     }
 
-    fn readout_container() -> impl Bundle {
+    fn readout_container() -> impl Bundle
+    {
         (Name::new("Readout"), NodeBundle::default())
     }
 }
 
-pub trait UiSliderExt {
+pub trait UiSliderExt
+{
     fn slider(&mut self, config: SliderConfig) -> UiBuilder<Entity>;
 }
 
-impl UiSliderExt for UiBuilder<'_, Entity> {
-    fn slider(&mut self, config: SliderConfig) -> UiBuilder<Entity> {
+impl UiSliderExt for UiBuilder<'_, Entity>
+{
+    fn slider(&mut self, config: SliderConfig) -> UiBuilder<Entity>
+    {
         let mut slider = Slider {
             ratio: (config.initial_value - config.min) / (config.max + (0. - config.min)),
             config: config.clone(),

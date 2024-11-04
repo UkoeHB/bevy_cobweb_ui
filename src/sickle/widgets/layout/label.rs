@@ -1,14 +1,12 @@
-use bevy::{
-    ecs::system::{EntityCommand, EntityCommands},
-    prelude::*,
-    ui::FocusPolicy,
-};
-
+use bevy::ecs::system::{EntityCommand, EntityCommands};
+use bevy::prelude::*;
+use bevy::ui::FocusPolicy;
 use sickle_ui_scaffold::ui_builder::UiBuilder;
 
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
-pub struct LabelConfig {
+pub struct LabelConfig
+{
     pub label: String,
     pub color: Color,
     pub margin: UiRect,
@@ -16,8 +14,10 @@ pub struct LabelConfig {
     pub flex_grow: f32,
 }
 
-impl Default for LabelConfig {
-    fn default() -> Self {
+impl Default for LabelConfig
+{
+    fn default() -> Self
+    {
         Self {
             label: "Label".into(),
             color: bevy::color::palettes::css::ANTIQUE_WHITE.into(),
@@ -28,32 +28,28 @@ impl Default for LabelConfig {
     }
 }
 
-impl From<&str> for LabelConfig {
-    fn from(value: &str) -> Self {
-        LabelConfig {
-            label: value.into(),
-            ..default()
-        }
+impl From<&str> for LabelConfig
+{
+    fn from(value: &str) -> Self
+    {
+        LabelConfig { label: value.into(), ..default() }
     }
 }
 
-impl LabelConfig {
-    pub fn from(label: impl Into<String>) -> LabelConfig {
-        LabelConfig {
-            label: label.into(),
-            ..default()
-        }
+impl LabelConfig
+{
+    pub fn from(label: impl Into<String>) -> LabelConfig
+    {
+        LabelConfig { label: label.into(), ..default() }
     }
 
-    fn text_style(&self) -> TextStyle {
-        TextStyle {
-            color: self.color,
-            font_size: 14.,
-            ..default()
-        }
+    fn text_style(&self) -> TextStyle
+    {
+        TextStyle { color: self.color, font_size: 14., ..default() }
     }
 
-    fn frame(self) -> impl Bundle {
+    fn frame(self) -> impl Bundle
+    {
         let mut section = Text::from_section(self.label.clone(), self.text_style());
 
         if self.wrap == FlexWrap::NoWrap {
@@ -79,22 +75,28 @@ impl LabelConfig {
     }
 }
 
-pub trait UiLabelExt {
+pub trait UiLabelExt
+{
     fn label(&mut self, config: impl Into<LabelConfig>) -> UiBuilder<Entity>;
 }
 
-impl UiLabelExt for UiBuilder<'_, Entity> {
-    fn label(&mut self, config: impl Into<LabelConfig>) -> UiBuilder<Entity> {
+impl UiLabelExt for UiBuilder<'_, Entity>
+{
+    fn label(&mut self, config: impl Into<LabelConfig>) -> UiBuilder<Entity>
+    {
         self.spawn((config.into().frame(), Label))
     }
 }
 
-struct UpdateLabelText {
+struct UpdateLabelText
+{
     text: String,
 }
 
-impl EntityCommand for UpdateLabelText {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl EntityCommand for UpdateLabelText
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         let Some(config) = world.get::<LabelConfig>(entity) else {
             warn!(
                 "Failed to set label text on entity {}: No LabelConfig component found!",
@@ -117,12 +119,15 @@ impl EntityCommand for UpdateLabelText {
     }
 }
 
-pub trait SetLabelTextExt {
+pub trait SetLabelTextExt
+{
     fn set_label_text(&mut self, text: impl Into<String>) -> &mut Self;
 }
 
-impl SetLabelTextExt for EntityCommands<'_> {
-    fn set_label_text(&mut self, text: impl Into<String>) -> &mut Self {
+impl SetLabelTextExt for EntityCommands<'_>
+{
+    fn set_label_text(&mut self, text: impl Into<String>) -> &mut Self
+    {
         self.add(UpdateLabelText { text: text.into() });
 
         self

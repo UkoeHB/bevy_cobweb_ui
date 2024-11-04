@@ -3,7 +3,8 @@ use std::char;
 use bevy::prelude::*;
 
 #[derive(Clone, Debug, Default, Reflect)]
-pub enum IconData {
+pub enum IconData
+{
     #[default]
     None,
     Image(String, Color),
@@ -11,20 +12,25 @@ pub enum IconData {
     // TODO: add texture atlas config
 }
 
-impl IconData {
-    pub fn is_none(&self) -> bool {
+impl IconData
+{
+    pub fn is_none(&self) -> bool
+    {
         matches!(self, Self::None)
     }
 
-    pub fn is_image(&self) -> bool {
+    pub fn is_image(&self) -> bool
+    {
         matches!(self, Self::Image(_, _))
     }
 
-    pub fn is_codepoint(&self) -> bool {
+    pub fn is_codepoint(&self) -> bool
+    {
         matches!(self, Self::FontCodepoint(_, _, _, _))
     }
 
-    pub fn with_color(&self, color: Color) -> Self {
+    pub fn with_color(&self, color: Color) -> Self
+    {
         match self {
             IconData::None => IconData::None,
             IconData::Image(path, _) => Self::Image(path.clone(), color),
@@ -34,7 +40,8 @@ impl IconData {
         }
     }
 
-    pub fn with_size(&self, size: f32) -> Self {
+    pub fn with_size(&self, size: f32) -> Self
+    {
         match self {
             IconData::None => IconData::None,
             IconData::Image(_, _) => self.clone(),
@@ -44,7 +51,8 @@ impl IconData {
         }
     }
 
-    pub fn with(&self, color: Color, size: f32) -> Self {
+    pub fn with(&self, color: Color, size: f32) -> Self
+    {
         match self {
             IconData::None => IconData::None,
             IconData::Image(path, _) => Self::Image(path.clone(), color),
@@ -56,13 +64,15 @@ impl IconData {
 }
 
 #[derive(Clone, Debug, Default, Reflect)]
-pub struct CustomIconData {
+pub struct CustomIconData
+{
     pub name: String,
     pub data: IconData,
 }
 
 #[derive(Clone, Debug, Reflect)]
-pub struct Icons {
+pub struct Icons
+{
     pub arrow_right: IconData,
     pub bug_report: IconData,
     pub checkmark: IconData,
@@ -88,8 +98,10 @@ pub struct Icons {
 }
 
 // TODO: create codepoint parser?
-impl Default for Icons {
-    fn default() -> Self {
+impl Default for Icons
+{
+    fn default() -> Self
+    {
         Self {
             arrow_right: IconData::FontCodepoint(
                 "embedded://bevy_cobweb_ui/fonts/MaterialIcons-Regular.ttf".into(),
