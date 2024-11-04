@@ -1,7 +1,5 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
-use bevy::text::TextLayoutInfo;
-use bevy::ui::widget::TextFlags;
 
 use super::generated::*;
 use super::{LockableStyleAttribute, LockedStyleAttributes, UiStyle, UiStyleUnchecked};
@@ -612,7 +610,6 @@ impl EntityCommand for SetFontSize
             .collect();
     }
 }
-
 
 struct SetLockedAttribute
 {

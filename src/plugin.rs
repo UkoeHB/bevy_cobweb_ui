@@ -7,8 +7,6 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that sets up `bevy_cobweb_ui` in an app.
-///
-/// Panics if [`bevy_cobweb::prelude::ReactPlugin`] is missing.
 pub struct CobwebUiPlugin;
 
 impl Plugin for CobwebUiPlugin

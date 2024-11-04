@@ -1,27 +1,9 @@
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
+
 use crate::prelude::*;
 
-pub(crate) struct BuiltInFontsPlugin;
-
-impl Plugin for BuiltInFontsPlugin
-{
-    fn build(&self, app: &mut App)
-    {
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-Bold.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-BoldItalic.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-Italic.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-Medium.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-MediumItalic.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSans-Regular.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Bold.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-BoldItalic.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Italic.ttf");
-        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Regular.ttf");
-        app.add_systems(Startup, load_sickle_ui_default_fonts);
-    }
-}
-
+//-------------------------------------------------------------------------------------------------------------------
 
 fn load_sickle_ui_default_fonts(mut c: Commands)
 {
@@ -95,3 +77,27 @@ fn load_sickle_ui_default_fonts(mut c: Commands)
     // Now actually load the registered font family.
     c.add(LoadFonts(vec!["Fira Sans".into()]));
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+pub(crate) struct BuiltInFontsPlugin;
+
+impl Plugin for BuiltInFontsPlugin
+{
+    fn build(&self, app: &mut App)
+    {
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-Bold.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-BoldItalic.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-Italic.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-Medium.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-MediumItalic.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSans-Regular.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Bold.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-BoldItalic.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Italic.ttf");
+        embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Regular.ttf");
+        app.add_systems(Startup, load_sickle_ui_default_fonts);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------

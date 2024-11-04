@@ -23,7 +23,8 @@ pub use sickle_macros::*;
 pub use sickle_math::*;
 pub use sickle_ui_scaffold::*;
 
-pub mod prelude {
+pub mod prelude
+{
     pub use sickle_macros::*;
     pub use sickle_math::*;
     pub use sickle_ui_scaffold::prelude::*;
