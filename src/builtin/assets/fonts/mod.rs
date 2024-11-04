@@ -18,7 +18,6 @@ impl Plugin for BuiltInFontsPlugin
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-BoldItalic.ttf");
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Italic.ttf");
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Regular.ttf");
-        embedded_asset!(app, "src/builtin/assets", "MaterialIcons-Regular.ttf");
         app.add_systems(Startup, load_sickle_ui_default_fonts);
     }
 }
@@ -91,15 +90,6 @@ fn load_sickle_ui_default_fonts(mut c: Commands)
                     weight: FontWeight::Bold,
                 },
             ],
-        },
-        RegisterFontFamily {
-            family: "Material Icons".into(),
-            fonts: vec![FontVariant {
-                path: "embedded://bevy_cobweb_ui/fonts/MaterialIcons-Regular.ttf".into(),
-                width: FontWidth::Normal,
-                style: FontStyle::Normal,
-                weight: FontWeight::Normal,
-            }],
         },
     ]));
     // Now actually load the registered font family.
