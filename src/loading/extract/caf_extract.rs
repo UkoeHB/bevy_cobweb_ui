@@ -12,29 +12,36 @@ use crate::prelude::*;
 ///
 /// Only the manifest and imports sections of the file are extracted here.
 pub(crate) fn preprocess_caf_file(
-    manifest: &mut HashMap<CafFile, ManifestKey>,
     asset_server: &AssetServer,
     caf_files: &mut LoadedCobwebAssetFiles,
     caf_cache: &mut CobwebAssetCache,
+    commands_buffer: &mut CommandsBuffer,
     data: Caf,
 )
 {
     caf_cache.initialize_file(&data.file);
 
     // Extract manifest and import sections.
-    manifest.clear();
+    let mut manifest = vec![];
     let mut imports: HashMap<ManifestKey, CafImportAlias> = HashMap::default();
 
     for section in data.sections.iter() {
         match section {
-            CafSection::Manifest(section) => extract_manifest_section(&data.file, section, manifest),
+            CafSection::Manifest(section) => extract_manifest_section(&data.file, section, &mut manifest),
             CafSection::Import(section) => extract_import_section(section, &mut imports),
             _ => (),
         }
     }
 
     // Register manifest keys.
-    for (other_file, manifest_key) in manifest.drain() {
+    let mut descendants = vec![];
+    for (other_file, manifest_key) in manifest {
+        // Cache file for commands buffer.
+        // - We skip any self reference in the manifest.
+        if other_file != data.file {
+            descendants.push(other_file.clone());
+        }
+
         // Continue if this file has been registered before.
         if !caf_cache.register_manifest_key(other_file.clone(), Some(manifest_key)) {
             continue;
@@ -43,6 +50,9 @@ pub(crate) fn preprocess_caf_file(
         // Load this manifest entry.
         caf_files.start_loading(other_file, caf_cache, asset_server);
     }
+
+    // Update this file in the commands buffer.
+    commands_buffer.set_file_descendants(data.file.clone(), descendants);
 
     // Save this file for processing once its import dependencies are ready.
     caf_cache.add_preprocessed_file(data.file.clone(), imports, data);
@@ -55,6 +65,7 @@ pub(crate) fn extract_caf_data(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     caf_cache: &mut CobwebAssetCache,
+    commands_buffer: &mut CommandsBuffer,
     scene_loader: &mut SceneLoader,
     file: CafFile,
     mut data: Caf,
@@ -66,6 +77,8 @@ pub(crate) fn extract_caf_data(
 )
 {
     tracing::info!("extracting cobweb asset file {:?}", file.as_str());
+
+    let mut commands = vec![];
 
     for section in data.sections.iter_mut() {
         match section {
@@ -79,7 +92,7 @@ pub(crate) fn extract_caf_data(
             CafSection::Commands(section) => {
                 // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
                 // insert_specs(&file, &mut data, specs);
-                extract_commands_section(type_registry, caf_cache, &file, section, name_shortcuts);
+                extract_commands_section(type_registry, &mut commands, &file, section, name_shortcuts);
             }
             CafSection::Scenes(section) => {
                 // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
@@ -97,6 +110,8 @@ pub(crate) fn extract_caf_data(
             _ => (),
         }
     }
+
+    commands_buffer.set_file_commands(file, commands);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

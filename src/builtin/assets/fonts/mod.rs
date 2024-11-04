@@ -96,7 +96,7 @@ impl Plugin for BuiltInFontsPlugin
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-BoldItalic.ttf");
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Italic.ttf");
         embedded_asset!(app, "src/builtin/assets", "FiraSansCondensed-Regular.ttf");
-        app.add_systems(Startup, load_sickle_ui_default_fonts);
+        app.add_systems(PreStartup, load_sickle_ui_default_fonts);
     }
 }
 

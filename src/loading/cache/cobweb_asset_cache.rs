@@ -14,46 +14,6 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn insert_command_loadable_entry(
-    loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
-    loadable_ref: &SceneRef,
-    loadable: ReflectedLoadable,
-    type_id: TypeId,
-    full_type_name: &str,
-) -> bool
-{
-    match loadables.entry(loadable_ref.clone()) {
-        Vacant(entry) => {
-            let mut vec = SmallVec::default();
-            vec.push(ErasedLoadable { type_id, loadable });
-            entry.insert(vec);
-        }
-        Occupied(mut entry) => {
-            // Insert if the loadable value changed.
-            if let Some(erased_loadable) = entry.get_mut().iter_mut().find(|e| e.type_id == type_id) {
-                match erased_loadable.loadable.equals(&loadable) {
-                    Some(true) => return false,
-                    Some(false) => {
-                        // Replace the existing value.
-                        *erased_loadable = ErasedLoadable { type_id, loadable };
-                    }
-                    None => {
-                        tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
-                            PartialEq", full_type_name, loadable_ref);
-                        return false;
-                    }
-                }
-            } else {
-                entry.get_mut().push(ErasedLoadable { type_id, loadable });
-            }
-        }
-    }
-
-    true
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 // This function assumes loadables are unique within a scene node.
 fn insert_node_loadable_entry(
     loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
@@ -158,23 +118,6 @@ impl Command for RevertCommand
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct CommandLoadCommand
-{
-    callback: fn(&mut World, ReflectedLoadable, SceneRef),
-    loadable_ref: SceneRef,
-    loadable: ReflectedLoadable,
-}
-
-impl Command for CommandLoadCommand
-{
-    fn apply(self, world: &mut World)
-    {
-        (self.callback)(world, self.loadable, self.loadable_ref);
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 struct NodeLoadCommand
 {
     callback: fn(&mut World, Entity, ReflectedLoadable, SceneRef),
@@ -223,15 +166,6 @@ struct ProcessedSceneFile
     /// Data cached for re-loading when dependencies are reloaded.
     #[cfg(feature = "hot_reload")]
     data: Caf,
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Debug)]
-struct ErasedLoadable
-{
-    type_id: TypeId,
-    loadable: ReflectedLoadable,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -331,8 +265,6 @@ pub struct CobwebAssetCache
     /// Records processed files.
     processed: HashMap<CafFile, ProcessedSceneFile>,
 
-    /// Tracks loadable commands from all loaded files.
-    command_loadables: HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
     /// Tracks loadables from all loaded files.
     /// - Note: If a scene node is hot-removed, then this map will *not* be updated. However, the scene's loader
     /// will correctly update, so new scene spawns won't include dead nodes (and existing scenes will be
@@ -346,8 +278,6 @@ pub struct CobwebAssetCache
     #[cfg(feature = "hot_reload")]
     subscriptions_rev: HashMap<Entity, (SceneRef, NodeInitializer)>,
 
-    /// Records commands that need to be applied.
-    commands_need_updates: Vec<(ErasedLoadable, SceneRef)>,
     /// Records loadables that need to be reverted/updated.
     #[cfg(feature = "hot_reload")]
     refresh_ctx: RefreshCtx,
@@ -508,6 +438,7 @@ impl CobwebAssetCache
         preprocessed: PreprocessedSceneFile,
         type_registry: &TypeRegistry,
         c: &mut Commands,
+        commands_buffer: &mut CommandsBuffer,
         scene_loader: &mut SceneLoader,
     )
     {
@@ -550,6 +481,7 @@ impl CobwebAssetCache
             type_registry,
             c,
             self,
+            commands_buffer,
             scene_loader,
             preprocessed.file.clone(),
             preprocessed.data,
@@ -601,6 +533,7 @@ impl CobwebAssetCache
         &mut self,
         type_registry: &TypeRegistry,
         c: &mut Commands,
+        commands_buffer: &mut CommandsBuffer,
         scene_loader: &mut SceneLoader,
     ) -> bool
     {
@@ -630,7 +563,7 @@ impl CobwebAssetCache
                     }
                 }
 
-                self.process_cobweb_asset_file(preprocessed, type_registry, c, scene_loader);
+                self.process_cobweb_asset_file(preprocessed, type_registry, c, commands_buffer, scene_loader);
                 num_processed += 1;
             }
 
@@ -660,37 +593,6 @@ impl CobwebAssetCache
         }
 
         num_processed > 0
-    }
-
-    /// Inserts a loadable command if its value will change.
-    ///
-    /// Returns `true` if the command's saved value changed.
-    pub(crate) fn insert_command(
-        &mut self,
-        loadable_ref: &SceneRef,
-        loadable: ReflectedLoadable,
-        type_id: TypeId,
-        full_type_name: &str,
-    ) -> bool
-    {
-        // TODO: rework so this doesn't cache commands except durign hot reloading
-        if !insert_command_loadable_entry(
-            &mut self.command_loadables,
-            loadable_ref,
-            loadable.clone(),
-            type_id,
-            full_type_name,
-        ) {
-            return false;
-        }
-
-        // TODO: rework this so commands are globally ordered
-        self.commands_need_updates.push((
-            ErasedLoadable { type_id, loadable: loadable.clone() },
-            loadable_ref.clone(),
-        ));
-
-        true
     }
 
     /// Prepares a scene node.
@@ -893,24 +795,6 @@ impl CobwebAssetCache
             SubscriptionRef { entity, initializer: *initializer },
             loadable_ref.clone(),
         );
-    }
-
-    /// Schedules all pending commands to be processed.
-    pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
-    {
-        for (loadable, loadable_ref) in self.commands_need_updates.drain(..) {
-            let Some(callback) = callbacks.get_for_command(loadable.type_id) else {
-                tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
-                    loadable_ref);
-                continue;
-            };
-
-            c.add(CommandLoadCommand {
-                callback,
-                loadable_ref: loadable_ref.clone(),
-                loadable: loadable.loadable.clone(),
-            });
-        }
     }
 
     #[cfg(feature = "hot_reload")]

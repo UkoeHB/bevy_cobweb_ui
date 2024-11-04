@@ -319,6 +319,7 @@ LoadImages[
 ]
 AnotherCommand($stuff)
 GenericEnum<A B>::Var
+A2("aaa")
 
 /*
 # Scenes
@@ -340,6 +341,7 @@ The scene section must be the *last* section in a caf file.
                 ImplicitNode
         }
     )
+    A2("aaa")
 
 // Custom node structure for the example app.
 // - The node name "root" is optional. An index will be used for its scene path if missing.

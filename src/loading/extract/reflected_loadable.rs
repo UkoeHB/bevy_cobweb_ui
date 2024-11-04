@@ -1,9 +1,18 @@
-use std::any::type_name;
+use std::any::{type_name, TypeId};
 use std::sync::Arc;
 
 use bevy::prelude::*;
 
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Clone, Debug)]
+pub(crate) struct ErasedLoadable
+{
+    pub(crate) type_id: TypeId,
+    pub(crate) loadable: ReflectedLoadable,
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 

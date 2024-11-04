@@ -191,7 +191,7 @@ Commands are globally ordered by:
 1. Files manually registered to an app with [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
 2. Commands in a file's `#commands` section(s).
 3. Files loaded recursively via CAF manifests. Commands in file A will be applied before any commands in 
-manifest files in file A.
+manifest files in file A. All `self as xxx` manifest entries are ignored for command ordering.
 
 ```json
 {
