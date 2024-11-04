@@ -1,6 +1,6 @@
 //! Adds built-in `sickle_ui` assets via [`embedding`](https://docs.rs/bevy/latest/bevy/asset/macro.embedded_asset.html).
 //!
-//! Access these assets with `asset_server.load("embedded://sickle_ui/icons/exit.png")`.
+//! Access these assets with `asset_server.load("embedded://bevy_cobweb_ui/icons/exit.png")`.
 //!
 
 mod fonts;

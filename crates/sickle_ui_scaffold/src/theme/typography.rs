@@ -55,22 +55,10 @@ pub struct FontConfig {
 impl FontConfig {
     pub fn get(&self, font_type: FontType) -> SizedFont {
         match font_type {
-            FontType::Regular => SizedFont {
-                font: self.font.regular.clone(),
-                size: self.size,
-            },
-            FontType::Bold => SizedFont {
-                font: self.font.bold.clone(),
-                size: self.size,
-            },
-            FontType::Italic => SizedFont {
-                font: self.font.italic.clone(),
-                size: self.size,
-            },
-            FontType::BoldItalic => SizedFont {
-                font: self.font.bold_italic.clone(),
-                size: self.size,
-            },
+            FontType::Regular => SizedFont { font: self.font.regular.clone(), size: self.size },
+            FontType::Bold => SizedFont { font: self.font.bold.clone(), size: self.size },
+            FontType::Italic => SizedFont { font: self.font.italic.clone(), size: self.size },
+            FontType::BoldItalic => SizedFont { font: self.font.bold_italic.clone(), size: self.size },
         }
     }
 }
@@ -116,24 +104,24 @@ impl ThemeTypography {
 impl Default for ThemeTypography {
     fn default() -> Self {
         let regular_set = FontSet {
-            regular: "embedded://sickle_ui/fonts/FiraSans-Regular.ttf".into(),
-            bold: "embedded://sickle_ui/fonts/FiraSans-Bold.ttf".into(),
-            italic: "embedded://sickle_ui/fonts/FiraSans-Italic.ttf".into(),
-            bold_italic: "embedded://sickle_ui/fonts/FiraSans-BoldItalic.ttf".into(),
+            regular: "embedded://bevy_cobweb_ui/fonts/FiraSans-Regular.ttf".into(),
+            bold: "embedded://bevy_cobweb_ui/fonts/FiraSans-Bold.ttf".into(),
+            italic: "embedded://bevy_cobweb_ui/fonts/FiraSans-Italic.ttf".into(),
+            bold_italic: "embedded://bevy_cobweb_ui/fonts/FiraSans-BoldItalic.ttf".into(),
         };
 
         let medium_set = FontSet {
-            regular: "embedded://sickle_ui/fonts/FiraSans-Medium.ttf".into(),
-            bold: "embedded://sickle_ui/fonts/FiraSans-Bold.ttf".into(),
-            italic: "embedded://sickle_ui/fonts/FiraSans-MediumItalic.ttf".into(),
-            bold_italic: "embedded://sickle_ui/fonts/FiraSans-BoldItalic.ttf".into(),
+            regular: "embedded://bevy_cobweb_ui/fonts/FiraSans-Medium.ttf".into(),
+            bold: "embedded://bevy_cobweb_ui/fonts/FiraSans-Bold.ttf".into(),
+            italic: "embedded://bevy_cobweb_ui/fonts/FiraSans-MediumItalic.ttf".into(),
+            bold_italic: "embedded://bevy_cobweb_ui/fonts/FiraSans-BoldItalic.ttf".into(),
         };
 
         let condensed_set = FontSet {
-            regular: "embedded://sickle_ui/fonts/FiraSansCondensed-Regular.ttf".into(),
-            bold: "embedded://sickle_ui/fonts/FiraSansCondensed-Bold.ttf".into(),
-            italic: "embedded://sickle_ui/fonts/FiraSansCondensed-Italic.ttf".into(),
-            bold_italic: "embedded://sickle_ui/fonts/FiraSansCondensed-BoldItalic.ttf".into(),
+            regular: "embedded://bevy_cobweb_ui/fonts/FiraSansCondensed-Regular.ttf".into(),
+            bold: "embedded://bevy_cobweb_ui/fonts/FiraSansCondensed-Bold.ttf".into(),
+            italic: "embedded://bevy_cobweb_ui/fonts/FiraSansCondensed-Italic.ttf".into(),
+            bold_italic: "embedded://bevy_cobweb_ui/fonts/FiraSansCondensed-BoldItalic.ttf".into(),
         };
 
         Self {
