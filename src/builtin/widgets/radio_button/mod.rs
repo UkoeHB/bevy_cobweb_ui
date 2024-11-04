@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::prelude::*;
 
 //use crate::load_embedded_scene_file;
 use crate::prelude::*;
@@ -8,8 +7,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
-enum Indicator
-{
+enum Indicator {
     #[default]
     None,
     Prime,
@@ -22,18 +20,15 @@ enum Indicator
 ///
 /// See [`RadioButtonBuilder::build`].
 #[derive(Component, Default, Debug)]
-pub struct RadioButtonManager
-{
+pub struct RadioButtonManager {
     selected: Option<Entity>,
 }
 
-impl RadioButtonManager
-{
+impl RadioButtonManager {
     /// Inserts a new manager onto the builder entity.
     ///
     /// Returns the entity where the manager is stored.
-    pub fn insert(node: &mut UiBuilder<Entity>) -> Entity
-    {
+    pub fn insert(node: &mut UiBuilder<Entity>) -> Entity {
         node.insert(Self::default());
         node.id()
     }
@@ -41,8 +36,7 @@ impl RadioButtonManager
     /// Deselects the previous entity and saves the next selected.
     ///
     /// Does not *select* the next entity, which is assumed to already be selected.
-    pub fn swap_selected(&mut self, c: &mut Commands, next: Entity)
-    {
+    pub fn swap_selected(&mut self, c: &mut Commands, next: Entity) {
         if let Some(prev) = self.selected {
             c.react().entity_event(prev, Deselect);
         }
@@ -63,28 +57,15 @@ pub struct RadioButtonContent;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-enum RadioButtonType
-{
-    Default
-    {
-        text: Option<String>,
-    },
-    DefaultInBox
-    {
-        text: Option<String>,
-    },
+enum RadioButtonType {
+    Default { text: Option<String> },
+    DefaultInBox { text: Option<String> },
     Custom(SceneRef),
-    CustomWithText
-    {
-        loadable: SceneRef,
-        text: Option<String>,
-    },
+    CustomWithText { loadable: SceneRef, text: Option<String> },
 }
 
-impl RadioButtonType
-{
-    fn get_scene(&self) -> SceneRef
-    {
+impl RadioButtonType {
+    fn get_scene(&self) -> SceneRef {
         match self {
             Self::Default { .. } => SceneRef::new("builtin.widgets.radio_button", "radio_button_default"),
             Self::DefaultInBox { .. } => {
@@ -95,8 +76,7 @@ impl RadioButtonType
         }
     }
 
-    fn take_text(self) -> Option<String>
-    {
+    fn take_text(self) -> Option<String> {
         match self {
             Self::Default { text } | Self::DefaultInBox { text } | Self::CustomWithText { text, .. } => text,
             Self::Custom(..) => None,
@@ -107,17 +87,14 @@ impl RadioButtonType
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Builds a [`RadioButton`] widget into an entity.
-pub struct RadioButtonBuilder
-{
+pub struct RadioButtonBuilder {
     button_type: RadioButtonType,
     indicator: Indicator,
     localized: bool,
 }
 
-impl RadioButtonBuilder
-{
-    pub fn default() -> Self
-    {
+impl RadioButtonBuilder {
+    pub fn default() -> Self {
         Self {
             button_type: RadioButtonType::Default { text: None },
             indicator: Indicator::Prime, // Included by default
@@ -125,8 +102,7 @@ impl RadioButtonBuilder
         }
     }
 
-    pub fn default_in_box() -> Self
-    {
+    pub fn default_in_box() -> Self {
         Self {
             button_type: RadioButtonType::DefaultInBox { text: None },
             indicator: Indicator::Prime, // Included by default
@@ -137,8 +113,7 @@ impl RadioButtonBuilder
     /// Builds from a custom scene.
     ///
     /// Does NOT include an indicator. Use [`Self::with_indicator`].
-    pub fn custom(scene: SceneRef) -> Self
-    {
+    pub fn custom(scene: SceneRef) -> Self {
         Self {
             button_type: RadioButtonType::Custom(scene),
             indicator: Indicator::None,
@@ -149,8 +124,7 @@ impl RadioButtonBuilder
     /// Builds from a custom scene with text.
     ///
     /// Does NOT include an indicator. Use [`Self::with_indicator`].
-    pub fn custom_with_text(scene: SceneRef, text: impl Into<String>) -> Self
-    {
+    pub fn custom_with_text(scene: SceneRef, text: impl Into<String>) -> Self {
         Self {
             button_type: RadioButtonType::CustomWithText { loadable: scene, text: Some(text.into()) },
             indicator: Indicator::None,
@@ -158,8 +132,7 @@ impl RadioButtonBuilder
         }
     }
 
-    pub fn new(text: impl Into<String>) -> Self
-    {
+    pub fn new(text: impl Into<String>) -> Self {
         Self {
             button_type: RadioButtonType::Default { text: Some(text.into()) },
             indicator: Indicator::Prime, // Included by default
@@ -167,8 +140,7 @@ impl RadioButtonBuilder
         }
     }
 
-    pub fn new_in_box(text: impl Into<String>) -> Self
-    {
+    pub fn new_in_box(text: impl Into<String>) -> Self {
         Self {
             button_type: RadioButtonType::DefaultInBox { text: Some(text.into()) },
             indicator: Indicator::Prime, // Included by default
@@ -179,8 +151,7 @@ impl RadioButtonBuilder
     /// Include an indicator dot in the button to the left/top of the content.
     ///
     /// Use [`Self::with_indicator_rev`] if you want the button to the right/bottom of the content.
-    pub fn with_indicator(mut self) -> Self
-    {
+    pub fn with_indicator(mut self) -> Self {
         self.indicator = Indicator::Prime;
         self
     }
@@ -188,8 +159,7 @@ impl RadioButtonBuilder
     /// Include an indicator dot in the button to the right/bottom of the content.
     ///
     /// Use [`Self::with_indicator`] if you want the button to the left/top of the content.
-    pub fn with_indicator_rev(mut self) -> Self
-    {
+    pub fn with_indicator_rev(mut self) -> Self {
         self.indicator = Indicator::Reversed;
         self
     }
@@ -198,8 +168,7 @@ impl RadioButtonBuilder
     ///
     /// Mainly useful for default-themed radio buttons, since custom buttons can include [`LocalizedText`]
     /// components directly.
-    pub fn localized(mut self) -> Self
-    {
+    pub fn localized(mut self) -> Self {
         self.localized = true;
         self
     }
@@ -210,8 +179,7 @@ impl RadioButtonBuilder
     ///
     /// If you want to add children to the content entity with [`Animated`] or [`Responsive`], then
     /// use [`Self::build_with_themed_content`] instead.
-    pub fn build<'a>(self, manager_entity: Entity, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity>
-    {
+    pub fn build<'a>(self, manager_entity: Entity, node: &'a mut UiBuilder<Entity>) -> UiBuilder<'a, Entity> {
         self.build_with_themed_content(manager_entity, node, |_| {})
     }
 
@@ -228,8 +196,7 @@ impl RadioButtonBuilder
         manager_entity: Entity,
         node: &'a mut UiBuilder<Entity>,
         content_builder: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<'a, Entity>
-    {
+    ) -> UiBuilder<'a, Entity> {
         let scene = self.button_type.get_scene();
 
         let mut base_entity = Entity::PLACEHOLDER;
@@ -293,8 +260,7 @@ impl RadioButtonBuilder
         node.commands().ui_builder(base_entity)
     }
 
-    fn add_indicator(node: &mut UiBuilder<Entity>, path: &SceneRef)
-    {
+    fn add_indicator(node: &mut UiBuilder<Entity>, path: &SceneRef) {
         node.load(path + "indicator", |outline, path| {
             outline.load(path + "indicator_dot", |_, _| {});
         });
@@ -305,10 +271,8 @@ impl RadioButtonBuilder
 
 pub(crate) struct CobwebRadioButtonPlugin;
 
-impl Plugin for CobwebRadioButtonPlugin
-{
-    fn build(&self, _app: &mut App)
-    {
+impl Plugin for CobwebRadioButtonPlugin {
+    fn build(&self, _app: &mut App) {
         // TODO: re-enable once CAF scene macros are implemented
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
         // "radio_button.caf.json");
