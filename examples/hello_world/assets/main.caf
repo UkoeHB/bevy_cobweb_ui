@@ -1,29 +1,3 @@
 #scenes
 "scene"
-    ControlRoot("a")
-    FlexStyle{dims:{width:500px height:400px}}
-    BgColor(#111100)
-
-    ""
-        ControlLabel("b")
-        FlexStyle{dims:{width:200px height:150px}}
-        Responsive<BgColor>{values:{idle:#004400 hover:#008800} source:"c"}
-
-        ""
-            ControlLabel("c")
-            FlexStyle{dims:{width:150px height:100px}}
-            Responsive<BgColor>{values:{idle:#009999 hover:#BBBBBB}}
-
-        ""
-            ControlLabel("e")
-            FlexStyle{dims:{width:25px height:30px}}
-            Responsive<BgColor>{values:{idle:#009900 hover:#BBBB00}}
-
-            ""
-                ControlLabel("d")
-                FlexStyle{dims:{width:50px height:10px}}
-                Responsive<BgColor>{values:{idle:#1100FF hover:#5500AA} source:"c"}
-
-
-
-//TextLine{ size: 50.0 text: "Hello, World!" }
+    TextLine{ size: 50.0 text: "Hello, World!" }

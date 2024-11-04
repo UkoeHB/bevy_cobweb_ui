@@ -8,7 +8,6 @@ impl Plugin for BuiltinPlugin
 {
     fn build(&self, _app: &mut App)
     {
-        #[cfg(feature = "assets")]
         _app.add_plugins(crate::builtin::assets::BuiltinAssetsPlugin);
 
         #[cfg(feature = "colors")]

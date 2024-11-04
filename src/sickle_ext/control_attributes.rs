@@ -3,19 +3,18 @@ use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::lerp::Lerp;
-use sickle_ui::prelude::attribute::{
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-};
-use sickle_ui::prelude::*;
-use sickle_ui::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
-use sickle_ui::theme::pseudo_state::PseudoState;
-use sickle_ui::theme::style_animation::{AnimationSettings, AnimationState};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
-
+use crate::sickle_ext::lerp::Lerp;
+use crate::sickle_ext::prelude::attribute::{
+    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
+};
+use crate::sickle_ext::prelude::*;
+use crate::sickle_ext::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+use crate::sickle_ext::theme::pseudo_state::PseudoState;
+use crate::sickle_ext::theme::style_animation::{AnimationSettings, AnimationState};
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_dynamic_style(
@@ -68,20 +67,27 @@ pub(super) fn add_attribute(
     let Ok(label) = labels.get(origin) else {
         if let Some(state) = &state {
             if !state.is_empty() {
-                tracing::error!("failed adding attribute to {origin:?}, pseudo states are not supported for \
-                    non-controlled dynamic sytle attributes (state: {:?})", state);
+                tracing::error!(
+                    "failed adding attribute to {origin:?}, pseudo states are not supported for \
+                    non-controlled dynamic sytle attributes (state: {:?})",
+                    state
+                );
                 return;
             }
         }
 
         if let Some(source) = &source {
-            tracing::warn!("ignoring control source {source:?} for dynamic style attribute on {origin:?} that doesn't \
-                have a ControlLabel");
+            tracing::warn!(
+                "ignoring control source {source:?} for dynamic style attribute on {origin:?} that doesn't \
+                have a ControlLabel"
+            );
         }
 
         if let Some(target) = &target {
-            tracing::warn!("ignoring control target {target:?} for dynamic style attribute on {origin:?} that doesn't \
-                have a ControlLabel");
+            tracing::warn!(
+                "ignoring control target {target:?} for dynamic style attribute on {origin:?} that doesn't \
+                have a ControlLabel"
+            );
         }
 
         // Fall back to inserting as a plain dynamic style attribute.
@@ -121,8 +127,10 @@ pub(super) fn add_attribute(
         return;
     }
 
-    tracing::error!("failed adding controlled dynamic attribute to {origin:?} with {label:?}, \
-        no ancestor with ControlRoot");
+    tracing::error!(
+        "failed adding controlled dynamic attribute to {origin:?} with {label:?}, \
+        no ancestor with ControlRoot"
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
-use sickle_ui::ui_builder::*;
 
 use crate::prelude::*;
+use crate::sickle_ext::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -84,14 +84,18 @@ impl ControlBuilderExt for UiBuilder<'_, Entity>
         let entity = self.id();
         self.commands().add(move |world: &mut World| {
             let Some(control_map) = world.get::<ControlMap>(entity) else {
-                tracing::warn!("failed editing child {child} of entity {entity:?}, \
-                    entity is missing or does not have ControlMap (see ControlRoot)");
+                tracing::warn!(
+                    "failed editing child {child} of entity {entity:?}, \
+                    entity is missing or does not have ControlMap (see ControlRoot)"
+                );
                 return;
             };
 
             let Some(child_entity) = control_map.get_entity(child) else {
-                tracing::warn!("failed editing child {child} of entity {entity:?}, \
-                    entity's ControlMap does not have an entry for {child} (see ControlLabel)");
+                tracing::warn!(
+                    "failed editing child {child} of entity {entity:?}, \
+                    entity's ControlMap does not have an entry for {child} (see ControlLabel)"
+                );
                 return;
             };
 

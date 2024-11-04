@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::prelude::*;
 
 //use crate::load_embedded_scene_file;
 use crate::prelude::*;
+use crate::sickle_ext::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

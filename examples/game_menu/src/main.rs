@@ -6,7 +6,7 @@ use bevy::window::{PresentMode, PrimaryWindow, WindowTheme};
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::builtin::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::prelude::*;
+use bevy_cobweb_ui::sickle_ext::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -73,7 +73,7 @@ fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, them
     style_builder
         .switch_target(Slider::LABEL)
         .sized_font(SizedFont {
-            font: "embedded://sickle_ui/fonts/FiraSans-Regular.ttf".into(),
+            font: "embedded://bevy_cobweb_ui/fonts/FiraSans-Regular.ttf".into(),
             size: 25.0,
         })
         .font_color(Color::WHITE);
@@ -105,7 +105,7 @@ fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, them
     style_builder
         .switch_target(Slider::READOUT)
         .sized_font(SizedFont {
-            font: "embedded://sickle_ui/fonts/FiraSans-Regular.ttf".into(),
+            font: "embedded://bevy_cobweb_ui/fonts/FiraSans-Regular.ttf".into(),
             size: 25.0,
         })
         .font_color(Color::WHITE);

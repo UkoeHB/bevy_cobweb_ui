@@ -2,11 +2,11 @@ use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::prelude::DynamicStyle;
-use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
+use crate::sickle_ext::prelude::DynamicStyle;
+use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -138,7 +138,7 @@ impl Instruction for ControlRoot
 ///
 /// Use this if you want values on the entity to respond to interactions on other parts of the widget, or if
 /// you want different values to be applied depending on the widget's
-/// [`PseudoStates`](crate::sickle::prelude::PseudoState).
+/// [`PseudoStates`](crate::sickle_ext::prelude::PseudoState).
 ///
 /// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
 /// loadables.
@@ -183,8 +183,11 @@ impl Instruction for ControlLabel
             }
 
             if !found {
-                tracing::error!("error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
-                    (see ControlRoot)", self.0);
+                tracing::error!(
+                    "error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
+                    (see ControlRoot)",
+                    self.0
+                );
             }
         }
 

@@ -1,4 +1,3 @@
-#[cfg(feature = "assets")]
 pub mod assets;
 
 #[cfg(feature = "colors")]

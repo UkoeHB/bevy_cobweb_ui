@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::prelude::*;
-use sickle_ui::theme::pseudo_state::{PseudoState, PseudoStates};
 
 use crate::prelude::*;
+use crate::sickle_ext::prelude::*;
+use crate::sickle_ext::theme::pseudo_state::{PseudoState, PseudoStates};
 
 //-------------------------------------------------------------------------------------------------------------------
 

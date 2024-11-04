@@ -2,11 +2,11 @@ use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
 use bevy::prelude::*;
 use bevy::ui::widget::text_system;
 use serde::{Deserialize, Serialize};
-use sickle_ui::prelude::DynamicStylePostUpdate;
-use sickle_ui::theme::ThemeUpdate;
 use smallvec::SmallVec;
 
 use crate::prelude::*;
+use crate::sickle_ext::prelude::DynamicStylePostUpdate;
+use crate::sickle_ext::theme::ThemeUpdate;
 
 // TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
 // fade in ancestor nodes while keeping a segment of the node tree the same opacity.

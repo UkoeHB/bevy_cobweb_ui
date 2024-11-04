@@ -15,12 +15,6 @@ pub mod sickle_ext;
 pub mod tools;
 pub mod ui_bevy;
 
-pub mod sickle
-{
-    // Re-export sickle_ui so the dependency doesn't need to be tracked by users of this crate.
-    pub use sickle_ui::*;
-}
-
 pub mod prelude
 {
     pub use bevy_cobweb_ui_derive::*;

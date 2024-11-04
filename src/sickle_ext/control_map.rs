@@ -2,18 +2,20 @@ use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::prelude::{ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction};
-use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
-use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
-use sickle_ui::theme::pseudo_state::PseudoState;
-use sickle_ui::theme::{ThemeUpdate, UiContext};
-use sickle_ui::ui_style::builder::StyleBuilder;
-use sickle_ui::ui_style::LogicalEq;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use super::*;
 use crate::prelude::*;
+use crate::sickle_ext::prelude::{
+    ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction,
+};
+use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
+use crate::sickle_ext::theme::dynamic_style_attribute::DynamicStyleAttribute;
+use crate::sickle_ext::theme::pseudo_state::PseudoState;
+use crate::sickle_ext::theme::{ThemeUpdate, UiContext};
+use crate::sickle_ext::ui_style::builder::StyleBuilder;
+use crate::sickle_ext::ui_style::LogicalEq;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -255,9 +257,9 @@ impl UiContext for ControlMap
     {
         let Some(entity) = self.get_entity(target) else {
             return Err(format!(
-                    "unknown UI context {target} requested for ControlMap, available are {:?}",
-                    Vec::from_iter(self.contexts())
-                ));
+                "unknown UI context {target} requested for ControlMap, available are {:?}",
+                Vec::from_iter(self.contexts())
+            ));
         };
         Ok(entity)
     }

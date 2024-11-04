@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::BuiltinFontsPlugin;
+use super::fonts::BuiltInFontsPlugin;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ impl Plugin for BuiltinAssetsPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(BuiltinFontsPlugin);
+        app.add_plugins(BuiltInFontsPlugin);
     }
 }
 

@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
-use sickle_ui::lerp::Lerp;
 
 use crate::prelude::*;
+use crate::sickle_ext::lerp::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 
