@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::SickleUiPlugin;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -12,10 +11,8 @@ use crate::prelude::*;
 /// Panics if [`bevy_cobweb::prelude::ReactPlugin`] or [`crate::sickle::SickleUiPlugin`] are missing.
 pub struct CobwebUiPlugin;
 
-impl Plugin for CobwebUiPlugin
-{
-    fn build(&self, app: &mut App)
-    {
+impl Plugin for CobwebUiPlugin {
+    fn build(&self, app: &mut App) {
         if !app.is_plugin_added::<ReactPlugin>() {
             app.add_plugins(ReactPlugin);
         }
