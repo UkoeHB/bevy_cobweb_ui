@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::input_extension::SymmetricKeysExt;
+use crate::sickle::input_extension::SymmetricKeysExt;
 
 pub struct ShortcutPlugin;
 
@@ -27,10 +27,7 @@ fn reset_pressed_shortcuts(mut q_shortcuts: Query<&mut Shortcut>) {
     }
 }
 
-fn update_shortcut_on_key_press(
-    mut q_shortcuts: Query<&mut Shortcut>,
-    r_keys: Res<ButtonInput<KeyCode>>,
-) {
+fn update_shortcut_on_key_press(mut q_shortcuts: Query<&mut Shortcut>, r_keys: Res<ButtonInput<KeyCode>>) {
     if !r_keys.is_changed() {
         return;
     }
@@ -68,10 +65,7 @@ pub struct Shortcut {
 
 impl Shortcut {
     pub fn new(code: Vec<KeyCode>) -> Self {
-        Self {
-            code,
-            pressed: false,
-        }
+        Self { code, pressed: false }
     }
 
     pub fn pressed(&self) -> bool {

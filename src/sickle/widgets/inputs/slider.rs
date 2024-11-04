@@ -4,7 +4,7 @@ use bevy::{input::mouse::MouseScrollUnit, prelude::*, ui::RelativeCursorPosition
 
 use sickle_ui_scaffold::{prelude::*, ui_commands::UpdateTextExt};
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, UiLabelExt},
 };
@@ -40,10 +40,7 @@ impl Plugin for SliderPlugin {
 // TODO: Add input for value (w/ read/write flags)
 // TODO: Support click-on-bar value setting
 fn update_slider_on_scroll(
-    q_scrollables: Query<
-        (AnyOf<(&SliderBar, &SliderDragHandle)>, &Scrollable),
-        Changed<Scrollable>,
-    >,
+    q_scrollables: Query<(AnyOf<(&SliderBar, &SliderDragHandle)>, &Scrollable), Changed<Scrollable>>,
     mut q_slider: Query<&mut Slider>,
     mut commands: Commands,
 ) {
@@ -76,12 +73,7 @@ fn update_slider_on_scroll(
         slider.ratio = (slider.ratio + fraction).clamp(0., 1.);
 
         #[cfg(feature = "observable")]
-        commands.trigger_targets(
-            SliderChanged {
-                ratio: slider.ratio,
-            },
-            slider_id,
-        );
+        commands.trigger_targets(SliderChanged { ratio: slider.ratio }, slider_id);
     }
 }
 
@@ -139,19 +131,11 @@ fn update_slider_on_drag(
         slider.ratio = (slider.ratio + fraction).clamp(0., 1.);
 
         #[cfg(feature = "observable")]
-        commands.trigger_targets(
-            SliderChanged {
-                ratio: slider.ratio,
-            },
-            handle.slider,
-        );
+        commands.trigger_targets(SliderChanged { ratio: slider.ratio }, handle.slider);
     }
 }
 
-fn update_slider_on_bar_change(
-    q_slider_bars: Query<&SliderBar, Changed<Node>>,
-    mut q_slider: Query<&mut Slider>,
-) {
+fn update_slider_on_bar_change(q_slider_bars: Query<&SliderBar, Changed<Node>>, mut q_slider: Query<&mut Slider>) {
     for bar in &q_slider_bars {
         let Ok(mut slider) = q_slider.get_mut(bar.slider) else {
             continue;
@@ -221,9 +205,7 @@ pub struct SliderDragHandle {
 
 impl Default for SliderDragHandle {
     fn default() -> Self {
-        Self {
-            slider: Entity::PLACEHOLDER,
-        }
+        Self { slider: Entity::PLACEHOLDER }
     }
 }
 
@@ -235,9 +217,7 @@ pub struct SliderBar {
 
 impl Default for SliderBar {
     fn default() -> Self {
-        Self {
-            slider: Entity::PLACEHOLDER,
-        }
+        Self { slider: Entity::PLACEHOLDER }
     }
 }
 
@@ -313,10 +293,7 @@ impl SliderConfig {
 
     pub fn with_value(self, value: f32) -> Self {
         if value >= self.min && value <= self.max {
-            return Self {
-                initial_value: value,
-                ..self
-            };
+            return Self { initial_value: value, ..self };
         }
 
         panic!("Value must be between min and max!");

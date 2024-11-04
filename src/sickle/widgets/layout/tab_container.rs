@@ -3,10 +3,9 @@ use bevy::{ecs::world::Command, prelude::*, ui::RelativeCursorPosition};
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::menus::{
+use crate::sickle::widgets::menus::{
     context_menu::{
-        ContextMenu, ContextMenuGenerator, ContextMenuUpdate, GenerateContextMenu,
-        ReflectContextMenuGenerator,
+        ContextMenu, ContextMenuGenerator, ContextMenuUpdate, GenerateContextMenu, ReflectContextMenuGenerator,
     },
     menu_item::{MenuItem, MenuItemConfig, MenuItemUpdate, UiMenuItemExt},
 };
@@ -14,8 +13,8 @@ use crate::widgets::menus::{
 use super::{
     container::UiContainerExt,
     floating_panel::{
-        FloatingPanel, FloatingPanelConfig, FloatingPanelLayout, FloatingPanelUpdate,
-        UiFloatingPanelExt, UpdateFloatingPanelPanelId,
+        FloatingPanel, FloatingPanelConfig, FloatingPanelLayout, FloatingPanelUpdate, UiFloatingPanelExt,
+        UpdateFloatingPanelPanelId,
     },
     label::{LabelConfig, UiLabelExt},
     panel::{Panel, UiPanelExt},
@@ -42,10 +41,7 @@ impl Plugin for TabContainerPlugin {
         .add_systems(PreUpdate, popout_panel_from_tab.before(SizedZonePreUpdate))
         .add_systems(
             Update,
-            (
-                close_tab_on_context_menu_press,
-                popout_tab_on_context_menu_press,
-            )
+            (close_tab_on_context_menu_press, popout_tab_on_context_menu_press)
                 .after(MenuItemUpdate)
                 .before(ContextMenuUpdate)
                 .before(TabContainerUpdate),
@@ -69,10 +65,7 @@ impl Plugin for TabContainerPlugin {
 pub struct TabContainerUpdate;
 
 fn dock_panel_in_tab_container(
-    mut q_docking_panels: Query<
-        (Entity, &mut TabContainer, &DockFloatingPanel),
-        Added<DockFloatingPanel>,
-    >,
+    mut q_docking_panels: Query<(Entity, &mut TabContainer, &DockFloatingPanel), Added<DockFloatingPanel>>,
     q_floating_panel: Query<&FloatingPanel>,
     q_panel: Query<&Panel>,
     mut commands: Commands,
@@ -110,21 +103,15 @@ fn dock_panel_in_tab_container(
 
         commands
             .ui_builder(bar_id)
-            .container(
-                Tab::frame(format!("Tab [{}]", panel.title())),
-                |container| {
-                    tab.label_container = container
-                        .container(NodeBundle::default(), |container| {
-                            tab.label = container
-                                .label(LabelConfig {
-                                    label: panel.title(),
-                                    ..default()
-                                })
-                                .id();
-                        })
-                        .id();
-                },
-            )
+            .container(Tab::frame(format!("Tab [{}]", panel.title())), |container| {
+                tab.label_container = container
+                    .container(NodeBundle::default(), |container| {
+                        tab.label = container
+                            .label(LabelConfig { label: panel.title(), ..default() })
+                            .id();
+                    })
+                    .id();
+            })
             .insert(tab);
 
         commands.entity(viewport_id).add_child(panel_id);
@@ -136,10 +123,7 @@ fn dock_panel_in_tab_container(
 }
 
 fn popout_panel_from_tab(
-    q_popout: Query<
-        (Entity, &Tab, &PopoutPanelFromTabContainer),
-        Added<PopoutPanelFromTabContainer>,
-    >,
+    q_popout: Query<(Entity, &Tab, &PopoutPanelFromTabContainer), Added<PopoutPanelFromTabContainer>>,
     q_panel: Query<&Panel>,
     q_parent: Query<&Parent>,
     q_ui_context_root: Query<&UiContextRoot>,
@@ -189,10 +173,7 @@ fn popout_panel_from_tab(
         let floating_panel_id = commands
             .ui_builder(root_node)
             .floating_panel(
-                FloatingPanelConfig {
-                    title: title.into(),
-                    ..default()
-                },
+                FloatingPanelConfig { title: title.into(), ..default() },
                 FloatingPanelLayout {
                     size: popout_ref.size,
                     position: popout_ref.position.into(),
@@ -220,10 +201,7 @@ fn close_tab_on_context_menu_press(
     for (entity, context_menu, menu_item) in &q_menu_items {
         if menu_item.interacted() {
             let Ok(tab_data) = q_tab.get(context_menu.tab) else {
-                warn!(
-                    "Context menu {} refers to missing tab {}",
-                    entity, context_menu.tab
-                );
+                warn!("Context menu {} refers to missing tab {}", entity, context_menu.tab);
                 continue;
             };
 
@@ -346,9 +324,9 @@ fn update_sized_zone_resize_handles_on_tab_drag(
         return;
     }
 
-    let dragging = q_accepted_types.iter().any(|draggable| {
-        draggable.state == DragState::DragStart || draggable.state == DragState::Dragging
-    });
+    let dragging = q_accepted_types
+        .iter()
+        .any(|draggable| draggable.state == DragState::DragStart || draggable.state == DragState::Dragging);
 
     for container in &q_handle_containers {
         commands.style(container).render(!dragging);
@@ -413,8 +391,7 @@ fn handle_tab_dragging(
                     continue;
                 };
 
-                let left =
-                    transform.translation.truncate().x - (node.size().x / 2.) + bar_half_width;
+                let left = transform.translation.truncate().x - (node.size().x / 2.) + bar_half_width;
                 let placeholder = commands
                     .ui_builder(container.bar)
                     .tab_placeholder(node.size().x)
@@ -515,13 +492,8 @@ fn handle_tab_dragging(
                     continue;
                 };
 
-                let Some(placeholder_index) =
-                    children.iter().position(|child| *child == placeholder)
-                else {
-                    error!(
-                        "Tab placeholder {} isn't a child of its tab container bar",
-                        entity
-                    );
+                let Some(placeholder_index) = children.iter().position(|child| *child == placeholder) else {
+                    error!("Tab placeholder {} isn't a child of its tab container bar", entity);
                     continue;
                 };
 
@@ -588,9 +560,7 @@ pub struct CloseTabContextMenu {
 
 impl Default for CloseTabContextMenu {
     fn default() -> Self {
-        Self {
-            tab: Entity::PLACEHOLDER,
-        }
+        Self { tab: Entity::PLACEHOLDER }
     }
 }
 
@@ -602,9 +572,7 @@ pub struct PopoutTabContextMenu {
 
 impl Default for PopoutTabContextMenu {
     fn default() -> Self {
-        Self {
-            tab: Entity::PLACEHOLDER,
-        }
+        Self { tab: Entity::PLACEHOLDER }
     }
 }
 
@@ -691,8 +659,7 @@ impl Tab {
 
     pub fn theme() -> Theme<Tab> {
         let base_theme = PseudoTheme::deferred(None, Tab::primary_style);
-        let selected_theme =
-            PseudoTheme::deferred(vec![PseudoState::Selected], Tab::selected_style);
+        let selected_theme = PseudoTheme::deferred(vec![PseudoState::Selected], Tab::selected_style);
         Theme::new(vec![base_theme, selected_theme])
     }
 
@@ -836,9 +803,7 @@ pub struct TabBar {
 
 impl Default for TabBar {
     fn default() -> Self {
-        Self {
-            container: Entity::PLACEHOLDER,
-        }
+        Self { container: Entity::PLACEHOLDER }
     }
 }
 
@@ -856,9 +821,7 @@ pub struct TabViewport {
 
 impl Default for TabViewport {
     fn default() -> Self {
-        Self {
-            container: Entity::PLACEHOLDER,
-        }
+        Self { container: Entity::PLACEHOLDER }
     }
 }
 
@@ -880,11 +843,7 @@ impl TabPlaceholder {
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(
-        style_builder: &mut StyleBuilder,
-        context: &TabPlaceholder,
-        theme_data: &ThemeData,
-    ) {
+    fn primary_style(style_builder: &mut StyleBuilder, context: &TabPlaceholder, theme_data: &ThemeData) {
         let colors = theme_data.colors();
 
         style_builder
@@ -1020,10 +979,7 @@ impl TabContainer {
         (
             Name::new("Tab Bar"),
             NodeBundle {
-                style: Style {
-                    overflow: Overflow::clip(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::clip(), ..default() },
                 ..default()
             },
             Interaction::default(),
@@ -1051,19 +1007,12 @@ impl UiTabContainerExt for UiBuilder<'_, Entity> {
             let container_id = container.id();
 
             tab_container.bar = container
-                .spawn((
-                    TabContainer::bar(),
-                    TabBar {
-                        container: container_id,
-                    },
-                ))
+                .spawn((TabContainer::bar(), TabBar { container: container_id }))
                 .id();
 
             container.scroll_view(None, |scroll_view| {
                 tab_container.viewport = scroll_view
-                    .insert(TabViewport {
-                        container: container_id,
-                    })
+                    .insert(TabViewport { container: container_id })
                     .id();
             });
         });
@@ -1114,35 +1063,23 @@ impl UiTabContainerSubExt for UiBuilder<'_, (Entity, TabContainer)> {
             .panel(title.clone(), spawn_children)
             .id();
 
-        let mut tab = Tab {
-            container: container_id,
-            bar: bar_id,
-            panel,
-            ..default()
-        };
+        let mut tab = Tab { container: container_id, bar: bar_id, panel, ..default() };
 
         self.commands()
             .ui_builder(bar_id)
-            .container(
-                Tab::frame(format!("Tab [{}]", title.clone())),
-                |container| {
-                    tab.label_container = container
-                        .container(NodeBundle::default(), |container| {
-                            tab.label = container
-                                .label(LabelConfig {
-                                    label: title,
-                                    ..default()
-                                })
-                                .id();
-                        })
-                        .id();
-                },
-            )
+            .container(Tab::frame(format!("Tab [{}]", title.clone())), |container| {
+                tab.label_container = container
+                    .container(NodeBundle::default(), |container| {
+                        tab.label = container
+                            .label(LabelConfig { label: title, ..default() })
+                            .id();
+                    })
+                    .id();
+            })
             .insert(tab);
 
-        self.commands().add(IncrementTabCount {
-            container: container_id,
-        });
+        self.commands()
+            .add(IncrementTabCount { container: container_id });
         self.commands().ui_builder(context)
     }
 

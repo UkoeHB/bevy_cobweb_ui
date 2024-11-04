@@ -2,7 +2,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 
 use sickle_ui_scaffold::prelude::*;
 
-use crate::{
+use crate::sickle::{
     input_extension::ShortcutTextExt,
     widgets::layout::{
         container::UiContainerExt,
@@ -64,9 +64,7 @@ fn update_menu_item_on_pressed(
     }
 }
 
-fn update_menu_item_on_shortcut_press(
-    mut q_menu_items: Query<(&mut MenuItem, &Shortcut), Changed<Shortcut>>,
-) {
+fn update_menu_item_on_shortcut_press(mut q_menu_items: Query<(&mut MenuItem, &Shortcut), Changed<Shortcut>>) {
     for (mut item, shortcut) in &mut q_menu_items {
         if shortcut.pressed() && !item.interacted {
             item.interacted = true;
@@ -195,11 +193,7 @@ impl MenuItem {
         Theme::new(vec![base_theme])
     }
 
-    fn primary_style(
-        style_builder: &mut StyleBuilder,
-        menu_item: &MenuItem,
-        theme_data: &ThemeData,
-    ) {
+    fn primary_style(style_builder: &mut StyleBuilder, menu_item: &MenuItem, theme_data: &ThemeData) {
         let leading_icon = menu_item.leading_icon.clone();
         let trailing_icon = menu_item.trailing_icon.clone();
 
@@ -233,10 +227,7 @@ impl MenuItem {
             .copy_from(theme_data.interaction_animation);
 
         let leading_icon = match leading_icon.is_codepoint() {
-            true => leading_icon.with(
-                colors.on(OnColor::SurfaceVariant),
-                theme_spacing.icons.small,
-            ),
+            true => leading_icon.with(colors.on(OnColor::SurfaceVariant), theme_spacing.icons.small),
             false => leading_icon,
         };
         style_builder
@@ -264,10 +255,7 @@ impl MenuItem {
             .font_color(colors.on(OnColor::SurfaceVariant));
 
         let trailing_icon = match trailing_icon.is_codepoint() {
-            true => trailing_icon.with(
-                colors.on(OnColor::SurfaceVariant),
-                theme_spacing.icons.small,
-            ),
+            true => trailing_icon.with(colors.on(OnColor::SurfaceVariant), theme_spacing.icons.small),
             false => trailing_icon,
         };
         style_builder
@@ -282,10 +270,7 @@ impl MenuItem {
         (
             Name::new(name),
             ButtonBundle {
-                style: Style {
-                    overflow: Overflow::visible(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::visible(), ..default() },
                 focus_policy: bevy::ui::FocusPolicy::Pass,
                 ..default()
             },
@@ -304,10 +289,7 @@ impl MenuItem {
     fn leading_icon_bundle() -> impl Bundle {
         (
             Name::new("Leading Icon"),
-            ImageBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
             BorderColor::default(),
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
@@ -316,10 +298,7 @@ impl MenuItem {
     fn trailing_icon_bundle() -> impl Bundle {
         (
             Name::new("Trailing Icon"),
-            ImageBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
             BorderColor::default(),
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
@@ -346,23 +325,14 @@ impl MenuItem {
         let mut item = builder.container(MenuItem::button(name), |container| {
             menu_item.leading = container.spawn(MenuItem::leading_icon_bundle()).id();
             menu_item.label = container
-                .label(LabelConfig {
-                    label: config.name,
-                    ..default()
-                })
+                .label(LabelConfig { label: config.name, ..default() })
                 .id();
             menu_item.shortcut_container = container
-                .container(
-                    MenuItem::shortcut_container_bundle(),
-                    |shortcut_container| {
-                        menu_item.shortcut = shortcut_container
-                            .label(LabelConfig {
-                                label: shortcut_text,
-                                ..default()
-                            })
-                            .id();
-                    },
-                )
+                .container(MenuItem::shortcut_container_bundle(), |shortcut_container| {
+                    menu_item.shortcut = shortcut_container
+                        .label(LabelConfig { label: shortcut_text, ..default() })
+                        .id();
+                })
                 .id();
 
             menu_item.trailing = container.spawn(MenuItem::trailing_icon_bundle()).id();

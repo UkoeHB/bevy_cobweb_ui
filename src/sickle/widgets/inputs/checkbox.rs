@@ -2,7 +2,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, UiLabelExt},
 };
@@ -39,20 +39,12 @@ fn toggle_checkbox(
             checkbox.checked = !checkbox.checked;
 
             #[cfg(feature = "observable")]
-            commands.trigger_targets(
-                CheckboxChanged {
-                    value: checkbox.checked,
-                },
-                entity,
-            );
+            commands.trigger_targets(CheckboxChanged { value: checkbox.checked }, entity);
         }
     }
 }
 
-fn update_checkbox(
-    q_checkboxes: Query<(Entity, &Checkbox), Changed<Checkbox>>,
-    mut commands: Commands,
-) {
+fn update_checkbox(q_checkboxes: Query<(Entity, &Checkbox), Changed<Checkbox>>, mut commands: Commands) {
     for (entity, checkbox) in &q_checkboxes {
         commands
             .style_unchecked(checkbox.checkmark)
@@ -107,12 +99,7 @@ impl UiContext for Checkbox {
     }
 
     fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
-        [
-            Checkbox::CHECKMARK_BACKGROUND,
-            Checkbox::CHECKMARK,
-            Checkbox::LABEL,
-        ]
-        .into_iter()
+        [Checkbox::CHECKMARK_BACKGROUND, Checkbox::CHECKMARK, Checkbox::LABEL].into_iter()
     }
 }
 
@@ -129,8 +116,7 @@ impl Checkbox {
 
     pub fn theme() -> Theme<Checkbox> {
         let base_theme = PseudoTheme::deferred(None, Checkbox::primary_style);
-        let checked_theme =
-            PseudoTheme::deferred(vec![PseudoState::Checked], Checkbox::checked_style);
+        let checked_theme = PseudoTheme::deferred(vec![PseudoState::Checked], Checkbox::checked_style);
         Theme::new(vec![base_theme, checked_theme])
     }
 
@@ -144,9 +130,7 @@ impl Checkbox {
             .align_items(AlignItems::Center)
             .margin(UiRect::horizontal(Val::Px(theme_spacing.gaps.small)))
             .background_color(Color::NONE)
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )));
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)));
 
         style_builder
             .switch_target(Checkbox::CHECKMARK_BACKGROUND)
@@ -155,12 +139,8 @@ impl Checkbox {
             .align_content(AlignContent::Center)
             .size(Val::Px(theme_spacing.inputs.checkbox.checkbox_size()))
             .margin(UiRect::all(Val::Px(theme_spacing.gaps.small)))
-            .border(UiRect::all(Val::Px(
-                theme_spacing.inputs.checkbox.border_size,
-            )))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )))
+            .border(UiRect::all(Val::Px(theme_spacing.inputs.checkbox.border_size)))
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)))
             .animated()
             .border_color(AnimatedVals {
                 idle: colors.on(OnColor::SurfaceVariant),
@@ -192,12 +172,7 @@ impl Checkbox {
             .get(FontStyle::Body, FontScale::Medium, FontType::Regular);
         style_builder
             .switch_target(Checkbox::LABEL)
-            .margin(UiRect::px(
-                theme_spacing.gaps.small,
-                theme_spacing.gaps.medium,
-                0.,
-                0.,
-            ))
+            .margin(UiRect::px(theme_spacing.gaps.small, theme_spacing.gaps.medium, 0., 0.))
             .sized_font(font)
             .animated()
             .font_color(AnimatedVals {
@@ -245,29 +220,18 @@ impl Checkbox {
         style_builder
             .switch_target(Checkbox::CHECKMARK)
             .animated()
-            .scale(AnimatedVals {
-                idle: 1.,
-                enter_from: Some(0.),
-                ..default()
-            })
+            .scale(AnimatedVals { idle: 1., enter_from: Some(0.), ..default() })
             .copy_from(theme_data.enter_animation);
     }
 
     fn checkbox_container(name: String) -> impl Bundle {
-        (
-            Name::new(name),
-            ButtonBundle::default(),
-            TrackedInteraction::default(),
-        )
+        (Name::new(name), ButtonBundle::default(), TrackedInteraction::default())
     }
 
     fn checkmark_background() -> impl Bundle {
         (
             Name::new("Checkmark Background"),
-            NodeBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            NodeBundle { focus_policy: FocusPolicy::Pass, ..default() },
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
     }
@@ -275,10 +239,7 @@ impl Checkbox {
     fn checkmark() -> impl Bundle {
         (
             Name::new("Checkmark"),
-            ImageBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
             BorderColor::default(),
             LockedStyleAttributes::from_vec(vec![
                 LockableStyleAttribute::FocusPolicy,
@@ -298,10 +259,7 @@ impl UiCheckboxExt for UiBuilder<'_, Entity> {
     /// ### PseudoState usage
     /// - `PseudoState::Checked`, when the checkbox is in a checked state
     fn checkbox(&mut self, label: impl Into<Option<String>>, checked: bool) -> UiBuilder<Entity> {
-        let mut checkbox = Checkbox {
-            checked,
-            ..default()
-        };
+        let mut checkbox = Checkbox { checked, ..default() };
 
         let label = match label.into() {
             Some(label) => label,

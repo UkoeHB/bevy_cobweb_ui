@@ -2,7 +2,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::{menus::menu_item::MenuItemUpdate, WidgetLibraryUpdate};
+use crate::sickle::widgets::{menus::menu_item::MenuItemUpdate, WidgetLibraryUpdate};
 
 use super::{
     container::UiContainerExt,
@@ -47,10 +47,7 @@ fn handle_foldable_button_press(
     }
 }
 
-fn update_foldable_container(
-    q_foldables: Query<(Entity, &Foldable), Changed<Foldable>>,
-    mut commands: Commands,
-) {
+fn update_foldable_container(q_foldables: Query<(Entity, &Foldable), Changed<Foldable>>, mut commands: Commands) {
     for (entity, foldable) in &q_foldables {
         if foldable.empty {
             commands
@@ -114,12 +111,7 @@ impl UiContext for Foldable {
     }
 
     fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
-        [
-            Foldable::BUTTON_ICON,
-            Foldable::BUTTON_LABEL,
-            Foldable::CONTAINER,
-        ]
-        .into_iter()
+        [Foldable::BUTTON_ICON, Foldable::BUTTON_LABEL, Foldable::CONTAINER].into_iter()
     }
 }
 
@@ -228,10 +220,7 @@ impl Foldable {
     fn button(name: String) -> impl Bundle {
         (
             Name::new(format!("Foldable [{}] - Button", name)),
-            ButtonBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ButtonBundle { focus_policy: FocusPolicy::Pass, ..default() },
             TrackedInteraction::default(),
         )
     }
@@ -266,20 +255,13 @@ impl UiFoldableExt for UiBuilder<'_, Entity> {
     ) -> UiBuilder<Entity> {
         let name = name.into();
 
-        let mut foldable = Foldable {
-            open,
-            empty,
-            ..default()
-        };
+        let mut foldable = Foldable { open, empty, ..default() };
 
         let button = self
             .container(Foldable::button(name.clone()), |button| {
                 foldable.icon = button.spawn(Foldable::button_icon()).id();
                 foldable.label = button
-                    .label(LabelConfig {
-                        label: name.clone(),
-                        ..default()
-                    })
+                    .label(LabelConfig { label: name.clone(), ..default() })
                     .id();
             })
             .id();

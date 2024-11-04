@@ -2,7 +2,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, UiLabelExt},
 };
@@ -81,12 +81,11 @@ fn handle_click_or_touch(
     }
 
     let any_open = q_menus.iter().any(|(_, m, _)| m.is_open);
-    let mut open: Option<Entity> =
-        if let Some((entity, _, _)) = q_menus.iter().find(|(_, m, _)| m.is_open) {
-            entity.into()
-        } else {
-            None
-        };
+    let mut open: Option<Entity> = if let Some((entity, _, _)) = q_menus.iter().find(|(_, m, _)| m.is_open) {
+        entity.into()
+    } else {
+        None
+    };
 
     for (entity, menu, interaction) in &mut q_menus {
         if interaction.is_changed() {
@@ -96,8 +95,7 @@ fn handle_click_or_touch(
                 open = None;
                 break;
             }
-            if *interaction == FluxInteraction::Pressed || *interaction == FluxInteraction::Released
-            {
+            if *interaction == FluxInteraction::Pressed || *interaction == FluxInteraction::Released {
                 open = entity.into();
                 break;
             }
@@ -123,10 +121,7 @@ fn handle_click_or_touch(
     }
 }
 
-fn handle_item_interaction(
-    q_menu_items: Query<&MenuItem, Changed<MenuItem>>,
-    mut q_menus: Query<&mut Menu>,
-) {
+fn handle_item_interaction(q_menu_items: Query<&MenuItem, Changed<MenuItem>>, mut q_menus: Query<&mut Menu>) {
     let any_interacted = q_menu_items.iter().any(|item| item.interacted());
     if any_interacted {
         for mut menu in &mut q_menus {
@@ -135,10 +130,7 @@ fn handle_item_interaction(
     }
 }
 
-fn update_menu_container_visibility(
-    q_menus: Query<(Entity, &Menu), Changed<Menu>>,
-    mut commands: Commands,
-) {
+fn update_menu_container_visibility(q_menus: Query<(Entity, &Menu), Changed<Menu>>, mut commands: Commands) {
     for (entity, menu) in &q_menus {
         if menu.is_open {
             commands.entity(entity).add_pseudo_state(PseudoState::Open);
@@ -222,9 +214,7 @@ impl Menu {
                 Val::Px(theme_spacing.gaps.medium),
                 Val::Px(theme_spacing.gaps.small),
             ))
-            .border(UiRect::horizontal(Val::Px(
-                theme_spacing.borders.extra_small,
-            )))
+            .border(UiRect::horizontal(Val::Px(theme_spacing.borders.extra_small)))
             .border_color(Color::NONE)
             .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.medium)))
             .animated()
@@ -242,9 +232,7 @@ impl Menu {
 
         style_builder
             .switch_target(Menu::CONTAINER)
-            .top(Val::Px(
-                theme_spacing.areas.small - theme_spacing.borders.extra_small,
-            ))
+            .top(Val::Px(theme_spacing.areas.small - theme_spacing.borders.extra_small))
             .left(Val::Px(-theme_spacing.borders.extra_small))
             .position_type(PositionType::Absolute)
             .border(UiRect::all(Val::Px(theme_spacing.borders.extra_small)))
@@ -253,9 +241,7 @@ impl Menu {
             .z_index(ZIndex::Global(MENU_CONTAINER_Z_INDEX))
             .background_color(colors.container(Container::SurfaceMid))
             .border_color(colors.accent(Accent::Shadow))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )))
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)))
             .visibility(Visibility::Hidden);
     }
 
@@ -276,21 +262,14 @@ impl Menu {
     }
 
     fn button(name: String) -> impl Bundle {
-        (
-            Name::new(name),
-            ButtonBundle::default(),
-            TrackedInteraction::default(),
-        )
+        (Name::new(name), ButtonBundle::default(), TrackedInteraction::default())
     }
 
     fn container() -> impl Bundle {
         (
             Name::new("Container"),
             NodeBundle {
-                style: Style {
-                    overflow: Overflow::visible(),
-                    ..default()
-                },
+                style: Style { overflow: Overflow::visible(), ..default() },
                 focus_policy: FocusPolicy::Block,
                 ..default()
             },
@@ -308,19 +287,11 @@ pub trait UiMenuExt {
     ///
     /// ### PseudoState usage
     /// - `PseudoState::Open` is used when the menu panel is visible
-    fn menu(
-        &mut self,
-        config: MenuConfig,
-        spawn_items: impl FnOnce(&mut UiBuilder<Menu>),
-    ) -> UiBuilder<Entity>;
+    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity>;
 }
 
 impl UiMenuExt for UiBuilder<'_, Entity> {
-    fn menu(
-        &mut self,
-        config: MenuConfig,
-        spawn_items: impl FnOnce(&mut UiBuilder<Menu>),
-    ) -> UiBuilder<Entity> {
+    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity> {
         let mut menu = Menu::default();
         let name = format!("Menu [{}]", config.name.clone());
 
@@ -328,10 +299,7 @@ impl UiMenuExt for UiBuilder<'_, Entity> {
             .container(Menu::button(name), |menu_button| {
                 menu.container = menu_button.spawn(Menu::container()).id();
                 menu.label = menu_button
-                    .label(LabelConfig {
-                        label: config.name.clone(),
-                        ..default()
-                    })
+                    .label(LabelConfig { label: config.name.clone(), ..default() })
                     .id();
             })
             .insert((menu, config))
@@ -345,11 +313,7 @@ impl UiMenuExt for UiBuilder<'_, Entity> {
 }
 
 impl UiMenuExt for UiBuilder<'_, (Entity, MenuBar)> {
-    fn menu(
-        &mut self,
-        config: MenuConfig,
-        spawn_items: impl FnOnce(&mut UiBuilder<Menu>),
-    ) -> UiBuilder<Entity> {
+    fn menu(&mut self, config: MenuConfig, spawn_items: impl FnOnce(&mut UiBuilder<Menu>)) -> UiBuilder<Entity> {
         let own_id = self.id();
         let id = self
             .commands()

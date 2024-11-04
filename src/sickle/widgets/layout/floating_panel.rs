@@ -8,7 +8,7 @@ use bevy::{
 
 use sickle_ui_scaffold::{prelude::*, ui_commands::RefreshThemeExt};
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, SetLabelTextExt, UiLabelExt},
     panel::UiPanelExt,
@@ -124,10 +124,7 @@ fn process_panel_close_pressed(
 }
 
 fn process_panel_fold_pressed(
-    q_buttons: Query<
-        (Entity, &FloatingPanelFoldButton, &FluxInteraction),
-        Changed<FluxInteraction>,
-    >,
+    q_buttons: Query<(Entity, &FloatingPanelFoldButton, &FluxInteraction), Changed<FluxInteraction>>,
     mut q_panel_configs: Query<&mut FloatingPanelConfig>,
 ) {
     for (entity, button, interaction) in &q_buttons {
@@ -225,13 +222,7 @@ fn clip_position_change(diff: f32, min: f32, old_size: f32, new_size: f32) -> f3
 }
 
 fn update_panel_on_title_drag(
-    q_draggable: Query<
-        (
-            &Draggable,
-            AnyOf<(&FloatingPanelTitle, &FloatingPanelDragHandle)>,
-        ),
-        Changed<Draggable>,
-    >,
+    q_draggable: Query<(&Draggable, AnyOf<(&FloatingPanelTitle, &FloatingPanelDragHandle)>), Changed<Draggable>>,
     mut q_panels: Query<(Entity, &mut FloatingPanel)>,
 ) {
     if let Some(_) = q_panels.iter().find(|(_, p)| p.priority) {
@@ -440,9 +431,7 @@ pub struct FloatingPanelResizeHandle {
 
 impl Default for FloatingPanelResizeHandle {
     fn default() -> Self {
-        Self {
-            panel: Entity::PLACEHOLDER,
-        }
+        Self { panel: Entity::PLACEHOLDER }
     }
 }
 
@@ -454,9 +443,7 @@ pub struct FloatingPanelTitle {
 
 impl Default for FloatingPanelTitle {
     fn default() -> Self {
-        Self {
-            panel: Entity::PLACEHOLDER,
-        }
+        Self { panel: Entity::PLACEHOLDER }
     }
 }
 
@@ -474,9 +461,7 @@ pub struct FloatingPanelDragHandle {
 
 impl Default for FloatingPanelDragHandle {
     fn default() -> Self {
-        Self {
-            panel: Entity::PLACEHOLDER,
-        }
+        Self { panel: Entity::PLACEHOLDER }
     }
 }
 
@@ -488,9 +473,7 @@ pub struct FloatingPanelFoldButton {
 
 impl Default for FloatingPanelFoldButton {
     fn default() -> Self {
-        Self {
-            panel: Entity::PLACEHOLDER,
-        }
+        Self { panel: Entity::PLACEHOLDER }
     }
 }
 
@@ -502,9 +485,7 @@ pub struct FloatingPanelCloseButton {
 
 impl Default for FloatingPanelCloseButton {
     fn default() -> Self {
-        Self {
-            panel: Entity::PLACEHOLDER,
-        }
+        Self { panel: Entity::PLACEHOLDER }
     }
 }
 
@@ -632,17 +613,12 @@ impl FloatingPanel {
 
     pub fn theme() -> Theme<FloatingPanel> {
         let base_theme = PseudoTheme::deferred_context(None, FloatingPanel::primary_style);
-        let folded_theme =
-            PseudoTheme::deferred_context(vec![PseudoState::Folded], FloatingPanel::folded_style);
+        let folded_theme = PseudoTheme::deferred_context(vec![PseudoState::Folded], FloatingPanel::folded_style);
 
         Theme::new(vec![base_theme, folded_theme])
     }
 
-    fn primary_style(
-        style_builder: &mut StyleBuilder,
-        panel: &FloatingPanel,
-        theme_data: &ThemeData,
-    ) {
+    fn primary_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData) {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -651,9 +627,7 @@ impl FloatingPanel {
             .border(UiRect::all(Val::Px(theme_spacing.borders.extra_small)))
             .border_color(colors.accent(Accent::Shadow))
             .background_color(colors.surface(Surface::Surface))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )));
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)));
 
         style_builder
             .animated()
@@ -679,9 +653,7 @@ impl FloatingPanel {
             .align_items(AlignItems::Center)
             .justify_content(JustifyContent::Start)
             .background_color(colors.container(Container::SurfaceMid))
-            .border_radius(BorderRadius::top(Val::Px(
-                theme_spacing.corners.extra_small,
-            )));
+            .border_radius(BorderRadius::top(Val::Px(theme_spacing.corners.extra_small)));
 
         style_builder
             .switch_target(FloatingPanel::TITLE)
@@ -703,17 +675,13 @@ impl FloatingPanel {
             .switch_target(FloatingPanel::CLOSE_BUTTON_CONTAINER)
             .right(Val::Px(0.))
             .background_color(colors.container(Container::SurfaceMid))
-            .border_radius(BorderRadius::top_right(Val::Px(
-                theme_spacing.corners.extra_small,
-            )));
+            .border_radius(BorderRadius::top_right(Val::Px(theme_spacing.corners.extra_small)));
 
         style_builder
             .switch_target(FloatingPanel::CONTENT_VIEW)
             .width(Val::Percent(100.))
             .height(Val::Percent(100.))
-            .border_radius(BorderRadius::bottom(Val::Px(
-                theme_spacing.corners.extra_small,
-            )));
+            .border_radius(BorderRadius::bottom(Val::Px(theme_spacing.corners.extra_small)));
 
         style_builder
             .switch_context(FloatingPanel::DRAG_HANDLE, None)
@@ -766,11 +734,7 @@ impl FloatingPanel {
             .copy_from(theme_data.interaction_animation);
     }
 
-    fn folded_style(
-        style_builder: &mut StyleBuilder,
-        panel: &FloatingPanel,
-        theme_data: &ThemeData,
-    ) {
+    fn folded_style(style_builder: &mut StyleBuilder, panel: &FloatingPanel, theme_data: &ThemeData) {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
 
@@ -874,10 +838,7 @@ impl FloatingPanel {
         (
             Name::new("Close Button Container"),
             NodeBundle {
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    ..default()
-                },
+                style: Style { position_type: PositionType::Absolute, ..default() },
                 focus_policy: bevy::ui::FocusPolicy::Block,
                 ..default()
             },
@@ -918,10 +879,7 @@ impl Default for FloatingPanelLayout {
 
 impl FloatingPanelLayout {
     pub fn min() -> Self {
-        Self {
-            size: MIN_PANEL_SIZE,
-            ..default()
-        }
+        Self { size: MIN_PANEL_SIZE, ..default() }
     }
 }
 
@@ -972,34 +930,27 @@ impl<T: UiContainerExt> UiFloatingPanelExt for T {
                 .resize_handles(FloatingPanelResizeHandle { panel }, |_| {})
                 .id();
 
-            let mut title_builder =
-                container.container(FloatingPanel::title_container(panel), |container| {
-                    floating_panel.fold_button = container
-                        .spawn(FloatingPanel::fold_button(panel))
-                        .style()
-                        .render(config.foldable)
-                        .id();
+            let mut title_builder = container.container(FloatingPanel::title_container(panel), |container| {
+                floating_panel.fold_button = container
+                    .spawn(FloatingPanel::fold_button(panel))
+                    .style()
+                    .render(config.foldable)
+                    .id();
 
-                    floating_panel.title = container
-                        .label(LabelConfig {
-                            label: title_text.clone(),
-                            ..default()
-                        })
-                        .id();
+                floating_panel.title = container
+                    .label(LabelConfig { label: title_text.clone(), ..default() })
+                    .id();
 
-                    floating_panel.close_button_container = container
-                        .container(
-                            FloatingPanel::close_button_container(),
-                            |close_button_container| {
-                                floating_panel.close_button = close_button_container
-                                    .spawn(FloatingPanel::close_button(panel))
-                                    .style()
-                                    .render(config.closable)
-                                    .id();
-                            },
-                        )
-                        .id();
-                });
+                floating_panel.close_button_container = container
+                    .container(FloatingPanel::close_button_container(), |close_button_container| {
+                        floating_panel.close_button = close_button_container
+                            .spawn(FloatingPanel::close_button(panel))
+                            .style()
+                            .render(config.closable)
+                            .id();
+                    })
+                    .id();
+            });
             title_builder.style().render(config.title.is_some());
 
             if layout.droppable {
@@ -1009,10 +960,7 @@ impl<T: UiContainerExt> UiFloatingPanelExt for T {
             floating_panel.title_container = title_builder.id();
 
             floating_panel.drag_handle = container
-                .spawn((
-                    FloatingPanel::drag_handle(),
-                    FloatingPanelDragHandle { panel },
-                ))
+                .spawn((FloatingPanel::drag_handle(), FloatingPanelDragHandle { panel }))
                 .style()
                 .render(config.title.is_none())
                 .id();
@@ -1022,10 +970,7 @@ impl<T: UiContainerExt> UiFloatingPanelExt for T {
                     column.scroll_view(restrict_to, |scroll_view| {
                         floating_panel.content_panel_container = scroll_view.id();
                         floating_panel.content_panel = scroll_view
-                            .panel(
-                                config.title.clone().unwrap_or("Untitled".into()),
-                                spawn_children,
-                            )
+                            .panel(config.title.clone().unwrap_or("Untitled".into()), spawn_children)
                             .id();
                     });
                 })

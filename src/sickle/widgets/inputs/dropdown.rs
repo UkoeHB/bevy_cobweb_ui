@@ -4,7 +4,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 
 use sickle_ui_scaffold::{prelude::*, ui_commands::UpdateTextExt};
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, UiLabelExt},
     panel::UiPanelExt,
@@ -111,12 +111,7 @@ fn handle_option_press(
             dropdown.value = option.option.into();
 
             #[cfg(feature = "observable")]
-            commands.trigger_targets(
-                DropdownChanged {
-                    value: dropdown.value,
-                },
-                option.dropdown,
-            );
+            commands.trigger_targets(DropdownChanged { value: dropdown.value }, option.dropdown);
         }
     }
 }
@@ -300,9 +295,7 @@ pub struct DropdownPanel {
 
 impl Default for DropdownPanel {
     fn default() -> Self {
-        Self {
-            dropdown: Entity::PLACEHOLDER,
-        }
+        Self { dropdown: Entity::PLACEHOLDER }
     }
 }
 
@@ -413,9 +406,7 @@ impl Dropdown {
             ))
             .border(UiRect::all(Val::Px(0.)))
             .border_color(colors.accent(Accent::Outline))
-            .border_radius(BorderRadius::all(Val::Px(
-                theme_spacing.corners.extra_small,
-            )))
+            .border_radius(BorderRadius::all(Val::Px(theme_spacing.corners.extra_small)))
             .animated()
             .background_color(AnimatedVals {
                 idle: colors.accent(Accent::Primary),
@@ -487,8 +478,7 @@ impl Dropdown {
         let theme_spacing = theme_data.spacing;
         let colors = theme_data.colors();
         let enter_animation = theme_data.enter_animation.clone();
-        let corner_from_width =
-            placement.panel_width < placement.button_width - theme_spacing.corners.extra_small;
+        let corner_from_width = placement.panel_width < placement.button_width - theme_spacing.corners.extra_small;
         let extra_small_border = theme_spacing.borders.extra_small;
         let extra_small_corner = theme_spacing.corners.extra_small;
         let maybe_button_corner = match corner_from_width {
@@ -628,10 +618,7 @@ impl Dropdown {
             .copy_from(enter_animation);
     }
 
-    pub fn panel_placement_for(
-        entity: Entity,
-        world: &World,
-    ) -> Result<DropdownPanelPlacement, String> {
+    pub fn panel_placement_for(entity: Entity, world: &World) -> Result<DropdownPanelPlacement, String> {
         let Some(dropdown) = world.get::<Dropdown>(entity) else {
             return Err("Entity has no Dropdown component".into());
         };
@@ -773,10 +760,7 @@ impl Dropdown {
     fn button_icon() -> impl Bundle {
         (
             Name::new("Dropdown Icon"),
-            ImageBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ImageBundle { focus_policy: FocusPolicy::Pass, ..default() },
             BorderColor::default(),
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
@@ -785,10 +769,7 @@ impl Dropdown {
     fn option_bundle(option: usize) -> impl Bundle {
         (
             Name::new(format!("Option {}", option)),
-            ButtonBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            ButtonBundle { focus_policy: FocusPolicy::Pass, ..default() },
             TrackedInteraction::default(),
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
@@ -796,11 +777,7 @@ impl Dropdown {
 }
 
 pub trait UiDropdownExt {
-    fn dropdown(
-        &mut self,
-        options: Vec<impl Into<String>>,
-        value: impl Into<Option<usize>>,
-    ) -> UiBuilder<Entity>;
+    fn dropdown(&mut self, options: Vec<impl Into<String>>, value: impl Into<Option<usize>>) -> UiBuilder<Entity>;
 }
 
 impl UiDropdownExt for UiBuilder<'_, Entity> {
@@ -808,11 +785,7 @@ impl UiDropdownExt for UiBuilder<'_, Entity> {
     ///
     /// ### PseudoState usage
     /// - `PseudoState::Open`, when the options panel should be visible
-    fn dropdown(
-        &mut self,
-        options: Vec<impl Into<String>>,
-        value: impl Into<Option<usize>>,
-    ) -> UiBuilder<Entity> {
+    fn dropdown(&mut self, options: Vec<impl Into<String>>, value: impl Into<Option<usize>>) -> UiBuilder<Entity> {
         let mut label_id = Entity::PLACEHOLDER;
         let mut icon_id = Entity::PLACEHOLDER;
         let mut panel_id = Entity::PLACEHOLDER;
@@ -841,10 +814,7 @@ impl UiDropdownExt for UiBuilder<'_, Entity> {
                                 let mut label_id = Entity::PLACEHOLDER;
                                 scroll_view.container(Dropdown::option_bundle(index), |option| {
                                     label_id = option
-                                        .label(LabelConfig {
-                                            label: label.clone(),
-                                            ..default()
-                                        })
+                                        .label(LabelConfig { label: label.clone(), ..default() })
                                         .id();
 
                                     option.insert(DropdownOption {
@@ -859,9 +829,7 @@ impl UiDropdownExt for UiBuilder<'_, Entity> {
                         .id();
                 })
                 .insert((
-                    DropdownPanel {
-                        dropdown: dropdown_id,
-                    },
+                    DropdownPanel { dropdown: dropdown_id },
                     LockedStyleAttributes::from_vec(vec![
                         LockableStyleAttribute::Visibility,
                         LockableStyleAttribute::Display,

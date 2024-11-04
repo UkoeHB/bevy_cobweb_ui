@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use sickle_ui_scaffold::ui_builder::{UiBuilder, UiBuilderExt};
 
-use crate::widgets::layout::container::UiContainerExt;
+use crate::sickle::widgets::layout::container::UiContainerExt;
 
 use super::menu_bar::MenuBar;
 
@@ -28,17 +28,11 @@ impl ExtraMenu {
 }
 
 pub trait UiExtraMenuExt {
-    fn extra_menu(
-        &mut self,
-        spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity>;
+    fn extra_menu(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity>;
 }
 
 impl UiExtraMenuExt for UiBuilder<'_, (Entity, MenuBar)> {
-    fn extra_menu(
-        &mut self,
-        spawn_children: impl FnOnce(&mut UiBuilder<Entity>),
-    ) -> UiBuilder<Entity> {
+    fn extra_menu(&mut self, spawn_children: impl FnOnce(&mut UiBuilder<Entity>)) -> UiBuilder<Entity> {
         let own_id = self.id();
         let id = self
             .commands()

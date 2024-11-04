@@ -3,7 +3,7 @@ use bevy::{prelude::*, ui::FocusPolicy};
 use sickle_macros::UiContext;
 use sickle_ui_scaffold::prelude::*;
 
-use crate::widgets::layout::{
+use crate::sickle::widgets::layout::{
     container::UiContainerExt,
     label::{LabelConfig, UiLabelExt},
 };
@@ -24,11 +24,7 @@ impl Plugin for RadioGroupPlugin {
         ))
         .add_systems(
             Update,
-            (
-                toggle_radio_button,
-                update_radio_group_buttons,
-                update_radio_button,
-            )
+            (toggle_radio_button, update_radio_group_buttons, update_radio_button)
                 .chain()
                 .after(FluxInteractionUpdate),
         );
@@ -75,9 +71,7 @@ fn toggle_radio_button(
 
             #[cfg(feature = "observable")]
             commands.trigger_targets(
-                RadioButtonChanged {
-                    selected: radio_group.selected,
-                },
+                RadioButtonChanged { selected: radio_group.selected },
                 radio_button.group,
             );
         }
@@ -210,12 +204,7 @@ impl UiContext for RadioButton {
     }
 
     fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
-        [
-            RadioButton::RADIOMARK_BACKGROUND,
-            RadioButton::RADIOMARK,
-            RadioButton::LABEL,
-        ]
-        .into_iter()
+        [RadioButton::RADIOMARK_BACKGROUND, RadioButton::RADIOMARK, RadioButton::LABEL].into_iter()
     }
 }
 
@@ -232,8 +221,7 @@ impl RadioButton {
 
     pub fn theme() -> Theme<RadioButton> {
         let base_theme = PseudoTheme::deferred(None, RadioButton::primary_style);
-        let checked_theme =
-            PseudoTheme::deferred(vec![PseudoState::Checked], RadioButton::checked_style);
+        let checked_theme = PseudoTheme::deferred(vec![PseudoState::Checked], RadioButton::checked_style);
         Theme::new(vec![base_theme, checked_theme])
     }
 
@@ -253,13 +241,9 @@ impl RadioButton {
             .justify_content(JustifyContent::Center)
             .align_items(AlignItems::Center)
             .align_content(AlignContent::Center)
-            .size(Val::Px(
-                theme_spacing.inputs.radio_button.radiomark_outer_size,
-            ))
+            .size(Val::Px(theme_spacing.inputs.radio_button.radiomark_outer_size))
             .margin(UiRect::all(Val::Px(theme_spacing.gaps.small)))
-            .border(UiRect::all(Val::Px(
-                theme_spacing.inputs.radio_button.border_size,
-            )))
+            .border(UiRect::all(Val::Px(theme_spacing.inputs.radio_button.border_size)))
             .border_radius(BorderRadius::all(Val::Px(
                 theme_spacing.inputs.radio_button.radiomark_outer_size,
             )))
@@ -295,12 +279,7 @@ impl RadioButton {
             .get(FontStyle::Body, FontScale::Medium, FontType::Regular);
         style_builder
             .switch_target(RadioButton::LABEL)
-            .margin(UiRect::px(
-                theme_spacing.gaps.small,
-                theme_spacing.gaps.medium,
-                0.,
-                0.,
-            ))
+            .margin(UiRect::px(theme_spacing.gaps.small, theme_spacing.gaps.medium, 0., 0.))
             .sized_font(font)
             .animated()
             .font_color(AnimatedVals {
@@ -346,20 +325,13 @@ impl RadioButton {
     }
 
     fn button(name: String) -> impl Bundle {
-        (
-            Name::new(name),
-            ButtonBundle::default(),
-            TrackedInteraction::default(),
-        )
+        (Name::new(name), ButtonBundle::default(), TrackedInteraction::default())
     }
 
     fn radio_mark_background() -> impl Bundle {
         (
             Name::new("Radiomark Background"),
-            NodeBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            NodeBundle { focus_policy: FocusPolicy::Pass, ..default() },
             LockedStyleAttributes::lock(LockableStyleAttribute::FocusPolicy),
         )
     }
@@ -367,10 +339,7 @@ impl RadioButton {
     fn radio_mark() -> impl Bundle {
         (
             Name::new("Radiomark"),
-            NodeBundle {
-                focus_policy: FocusPolicy::Pass,
-                ..default()
-            },
+            NodeBundle { focus_policy: FocusPolicy::Pass, ..default() },
             LockedStyleAttributes::from_vec(vec![
                 LockableStyleAttribute::FocusPolicy,
                 LockableStyleAttribute::Visibility,
@@ -399,32 +368,20 @@ impl UiRadioGroupExt for UiBuilder<'_, Entity> {
         selected: impl Into<Option<usize>>,
         unselectable: bool,
     ) -> UiBuilder<Entity> {
-        let mut radio_group = self.spawn((
-            RadioGroup::container(),
-            RadioGroup {
-                selected: selected.into(),
-            },
-        ));
+        let mut radio_group = self.spawn((RadioGroup::container(), RadioGroup { selected: selected.into() }));
 
         let mut index = 0;
         let group = radio_group.id();
         for option in options {
             let label = option.into();
             let name = format!("Radio Button [{}]", label);
-            let mut radio_button = RadioButton {
-                checked: false,
-                unselectable,
-                index,
-                group,
-                ..default()
-            };
+            let mut radio_button = RadioButton { checked: false, unselectable, index, group, ..default() };
 
             radio_group
                 .container(RadioButton::button(name), |button| {
                     radio_button.radiomark_background = button
                         .container(RadioButton::radio_mark_background(), |radio_mark_bg| {
-                            radio_button.radiomark =
-                                radio_mark_bg.spawn(RadioButton::radio_mark()).id();
+                            radio_button.radiomark = radio_mark_bg.spawn(RadioButton::radio_mark()).id();
                         })
                         .id();
                     radio_button.label = button.label(LabelConfig { label, ..default() }).id();
