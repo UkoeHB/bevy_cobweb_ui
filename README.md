@@ -38,6 +38,8 @@ Check the repository examples for how to build different kinds of UI.
 
 ## Examples
 
+**NOTICE**: Many examples are not yet migrated to use CAF, which is still indevelopment to reach feature parity with the previous JSON format.
+
 - [`hello_world`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/hello_world): Bare-bones hello world.
 - [`counter`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter): Simple counter button. Shows how [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) can be used to transfer interactions within a widget. Also demonstrates updating text dynamically on the code side.
 - [`counter_widget`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter_widget): Widget-ified counter that can be configured. Uses scene 'specs' to make the widget scene data parameterized, enabling customization within asset files.
@@ -57,4 +59,4 @@ You may encounter a [compiler diagnostic bug](https://github.com/rust-lang/rust/
 
 | `bevy` | `bevy_cobweb_ui` |
 |-------|-------------------|
-| 0.14  | 0.1.0 - master    |
+| 0.14  | 0.1.0 - main      |
