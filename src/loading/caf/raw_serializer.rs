@@ -101,7 +101,7 @@ impl<'a> RawSerializer for DefaultRawSerializer<'a>
     }
     fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), std::io::Error>
     {
-        self.write_all(bytes)?;
+        self.write(bytes)?;
         Ok(())
     }
 }
