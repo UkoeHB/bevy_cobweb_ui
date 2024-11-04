@@ -7,15 +7,15 @@ use smol_str::SmolStr;
 
 use super::*;
 use crate::prelude::*;
-use crate::sickle::prelude::{
+use crate::sickle_ext::prelude::{
     ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction,
 };
-use crate::sickle::theme::dynamic_style::DynamicStyleStopwatch;
-use crate::sickle::theme::dynamic_style_attribute::DynamicStyleAttribute;
-use crate::sickle::theme::pseudo_state::PseudoState;
-use crate::sickle::theme::{ThemeUpdate, UiContext};
-use crate::sickle::ui_style::builder::StyleBuilder;
-use crate::sickle::ui_style::LogicalEq;
+use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
+use crate::sickle_ext::theme::dynamic_style_attribute::DynamicStyleAttribute;
+use crate::sickle_ext::theme::pseudo_state::PseudoState;
+use crate::sickle_ext::theme::{ThemeUpdate, UiContext};
+use crate::sickle_ext::ui_style::builder::StyleBuilder;
+use crate::sickle_ext::ui_style::LogicalEq;
 
 //-------------------------------------------------------------------------------------------------------------------
 

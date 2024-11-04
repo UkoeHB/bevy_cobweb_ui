@@ -15,8 +15,6 @@ pub mod sickle_ext;
 pub mod tools;
 pub mod ui_bevy;
 
-pub mod sickle;
-
 pub mod prelude
 {
     pub use bevy_cobweb_ui_derive::*;
@@ -27,7 +25,6 @@ pub mod prelude
     pub use crate::localization::*;
     pub use crate::plugin::*;
     pub use crate::react_ext::*;
-    pub use crate::sickle::*;
     pub use crate::sickle_ext::*;
     pub use crate::tools::*;
     pub use crate::ui_bevy::*;

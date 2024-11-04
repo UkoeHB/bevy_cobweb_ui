@@ -8,7 +8,7 @@ use crate::prelude::*;
 
 /// Plugin that sets up `bevy_cobweb_ui` in an app.
 ///
-/// Panics if [`bevy_cobweb::prelude::ReactPlugin`] or [`crate::sickle::SickleUiPlugin`] are missing.
+/// Panics if [`bevy_cobweb::prelude::ReactPlugin`] is missing.
 pub struct CobwebUiPlugin;
 
 impl Plugin for CobwebUiPlugin
@@ -17,9 +17,6 @@ impl Plugin for CobwebUiPlugin
     {
         if !app.is_plugin_added::<ReactPlugin>() {
             app.add_plugins(ReactPlugin);
-        }
-        if !app.is_plugin_added::<SickleUiPlugin>() {
-            app.add_plugins(SickleUiPlugin);
         }
 
         app

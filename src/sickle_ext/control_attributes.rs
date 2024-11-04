@@ -7,14 +7,14 @@ use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
-use crate::sickle::lerp::Lerp;
-use crate::sickle::prelude::attribute::{
+use crate::sickle_ext::lerp::Lerp;
+use crate::sickle_ext::prelude::attribute::{
     CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
 };
-use crate::sickle::prelude::*;
-use crate::sickle::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
-use crate::sickle::theme::pseudo_state::PseudoState;
-use crate::sickle::theme::style_animation::{AnimationSettings, AnimationState};
+use crate::sickle_ext::prelude::*;
+use crate::sickle_ext::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+use crate::sickle_ext::theme::pseudo_state::PseudoState;
+use crate::sickle_ext::theme::style_animation::{AnimationSettings, AnimationState};
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_dynamic_style(

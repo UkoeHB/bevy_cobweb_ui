@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::prelude::*;
-use crate::sickle::prelude::DynamicStylePostUpdate;
-use crate::sickle::theme::ThemeUpdate;
+use crate::sickle_ext::prelude::DynamicStylePostUpdate;
+use crate::sickle_ext::theme::ThemeUpdate;
 
 // TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
 // fade in ancestor nodes while keeping a segment of the node tree the same opacity.

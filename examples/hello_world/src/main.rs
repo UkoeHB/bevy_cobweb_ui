@@ -6,7 +6,7 @@
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::ui_builder::*;
+use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

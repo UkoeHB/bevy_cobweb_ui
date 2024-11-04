@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 
 use crate::prelude::*;
-use crate::sickle::lerp::Lerp;
+use crate::sickle_ext::lerp::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 

@@ -29,7 +29,7 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 
 [features]
 # Default features.
-default = ["colors", "assets", "widgets"]
+default = ["colors", "widgets"]
 
 # Enables built-in colors.
 colors = []
