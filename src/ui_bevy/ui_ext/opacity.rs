@@ -1,9 +1,9 @@
+use crate::sickle::prelude::DynamicStylePostUpdate;
+use crate::sickle::theme::ThemeUpdate;
 use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
 use bevy::prelude::*;
 use bevy::ui::widget::text_system;
 use serde::{Deserialize, Serialize};
-use sickle_ui::prelude::DynamicStylePostUpdate;
-use sickle_ui::theme::ThemeUpdate;
 use smallvec::SmallVec;
 
 use crate::prelude::*;
@@ -17,8 +17,7 @@ const ALPHA_ROUNDING_ERROR: f32 = 0.0000001;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn color_alpha(color: &Color) -> f32
-{
+fn color_alpha(color: &Color) -> f32 {
     match color {
         Color::Srgba(Srgba { alpha, .. })
         | Color::LinearRgba(LinearRgba { alpha, .. })
@@ -35,8 +34,7 @@ fn color_alpha(color: &Color) -> f32
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn set_color_alpha(color: &mut Color, new_alpha: f32)
-{
+fn set_color_alpha(color: &mut Color, new_alpha: f32) {
     match color {
         Color::Srgba(Srgba { alpha, .. })
         | Color::LinearRgba(LinearRgba { alpha, .. })
@@ -60,8 +58,7 @@ fn set_color_alpha(color: &mut Color, new_alpha: f32)
 /// Used to restore alpha values after rendering.
 // TODO: consider a better design that's more flexible for user-defined components?
 #[derive(Component, Clone, Debug, Default)]
-struct RestorableOpacity
-{
+struct RestorableOpacity {
     ui_image: f32,
     // Record for each section.
     text: SmallVec<[f32; 1]>,
@@ -90,8 +87,7 @@ fn recursively_propagate_opacity_value(
         With<Node>,
     >,
     entity: Entity,
-)
-{
+) {
     let Ok((maybe_propagator, maybe_restorable, maybe_img, maybe_text, maybe_br_color, maybe_bg_color)) =
         nodes.get_mut(entity)
     else {
@@ -227,8 +223,7 @@ fn propagate_opacity_values(
         ),
         With<Node>,
     >,
-)
-{
+) {
     seen_propagators.clear();
     insertion_first_traversal_vals.clear();
 
@@ -268,8 +263,7 @@ fn restore_opacity(
         ),
         Changed<RestorableOpacity>,
     >,
-)
-{
+) {
     // Restore alphas while avoiding excess change detection.
     for (restorable, maybe_img, maybe_text, maybe_br_color, maybe_bg_color) in nodes.iter_mut() {
         if let Some(mut img) = maybe_img {
@@ -326,27 +320,22 @@ fn restore_opacity(
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PropagateOpacity(pub f32);
 
-impl Instruction for PropagateOpacity
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for PropagateOpacity {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut ec) = world.get_entity_mut(entity) else { return };
         ec.insert(self);
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
         });
     }
 }
 
-impl ThemedAttribute for PropagateOpacity
-{
+impl ThemedAttribute for PropagateOpacity {
     type Value = f32;
-    fn construct(value: Self::Value) -> Self
-    {
+    fn construct(value: Self::Value) -> Self {
         Self(value)
     }
 }
@@ -357,10 +346,8 @@ impl AnimatableAttribute for PropagateOpacity {}
 
 pub(crate) struct UiOpacityPlugin;
 
-impl Plugin for UiOpacityPlugin
-{
-    fn build(&self, app: &mut App)
-    {
+impl Plugin for UiOpacityPlugin {
+    fn build(&self, app: &mut App) {
         app.register_animatable::<PropagateOpacity>()
             .add_systems(
                 PostUpdate,

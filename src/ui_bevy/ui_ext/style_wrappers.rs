@@ -1,7 +1,7 @@
+use crate::sickle::lerp::Lerp;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui::lerp::Lerp;
 
 use crate::prelude::*;
 
@@ -11,8 +11,7 @@ use crate::prelude::*;
 ///
 /// All fields default to `Val::Px(0.)`.
 #[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub struct StyleRect
-{
+pub struct StyleRect {
     #[reflect(default = "StyleRect::default_field")]
     pub top: Val,
     #[reflect(default = "StyleRect::default_field")]
@@ -23,24 +22,19 @@ pub struct StyleRect
     pub right: Val,
 }
 
-impl StyleRect
-{
-    fn default_field() -> Val
-    {
+impl StyleRect {
+    fn default_field() -> Val {
         Val::Px(0.)
     }
 
     /// Constructs a style rect with all sides equal to `single`.
-    pub fn splat(single: Val) -> Self
-    {
+    pub fn splat(single: Val) -> Self {
         Self { top: single, bottom: single, left: single, right: single }
     }
 }
 
-impl Into<UiRect> for StyleRect
-{
-    fn into(self) -> UiRect
-    {
+impl Into<UiRect> for StyleRect {
+    fn into(self) -> UiRect {
         UiRect {
             left: self.left,
             right: self.right,
@@ -50,10 +44,8 @@ impl Into<UiRect> for StyleRect
     }
 }
 
-impl Default for StyleRect
-{
-    fn default() -> Self
-    {
+impl Default for StyleRect {
+    fn default() -> Self {
         Self {
             top: Self::default_field(),
             bottom: Self::default_field(),
@@ -63,10 +55,8 @@ impl Default for StyleRect
     }
 }
 
-impl Lerp for StyleRect
-{
-    fn lerp(&self, to: Self, t: f32) -> Self
-    {
+impl Lerp for StyleRect {
+    fn lerp(&self, to: Self, t: f32) -> Self {
         Self {
             left: self.left.lerp(to.left, t),
             right: self.right.lerp(to.right, t),
@@ -80,8 +70,7 @@ impl Lerp for StyleRect
 
 /// Mirrors [`Overflow`] for stylesheet serialization.
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Clipping
-{
+pub enum Clipping {
     #[default]
     None,
     ClipX,
@@ -89,10 +78,8 @@ pub enum Clipping
     ClipXY,
 }
 
-impl Into<Overflow> for Clipping
-{
-    fn into(self) -> Overflow
-    {
+impl Into<Overflow> for Clipping {
+    fn into(self) -> Overflow {
         match self {
             Self::None => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Visible },
             Self::ClipX => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Visible },
@@ -115,8 +102,7 @@ impl Into<Overflow> for Clipping
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum JustifyLines
-{
+pub enum JustifyLines {
     /// Pack lines toward the start of the cross axis.
     ///
     /// Affected by [`ContentFlex::text_direction`] for [`FlexDirection::Column`].
@@ -146,10 +132,8 @@ pub enum JustifyLines
     SpaceAround,
 }
 
-impl Into<AlignContent> for JustifyLines
-{
-    fn into(self) -> AlignContent
-    {
+impl Into<AlignContent> for JustifyLines {
+    fn into(self) -> AlignContent {
         match self {
             Self::FlexStart => AlignContent::FlexStart,
             Self::FlexEnd => AlignContent::FlexEnd,
@@ -180,8 +164,7 @@ impl Into<AlignContent> for JustifyLines
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum JustifyMain
-{
+pub enum JustifyMain {
     /*
     /// Cluster items at the start of the main axis.
     /// - [`FlexDirection::Row`]: Start according to [`ContentFlex::text_direction`].
@@ -223,10 +206,8 @@ pub enum JustifyMain
     SpaceAround,
 }
 
-impl Into<JustifyContent> for JustifyMain
-{
-    fn into(self) -> JustifyContent
-    {
+impl Into<JustifyContent> for JustifyMain {
+    fn into(self) -> JustifyContent {
         match self {
             Self::FlexStart => JustifyContent::FlexStart,
             Self::FlexEnd => JustifyContent::FlexEnd,
@@ -252,8 +233,7 @@ impl Into<JustifyContent> for JustifyMain
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum JustifyCross
-{
+pub enum JustifyCross {
     /// Align children to the start of the cross axis in each line.
     #[default]
     FlexStart,
@@ -274,10 +254,8 @@ pub enum JustifyCross
     Stretch,
 }
 
-impl Into<AlignItems> for JustifyCross
-{
-    fn into(self) -> AlignItems
-    {
+impl Into<AlignItems> for JustifyCross {
+    fn into(self) -> AlignItems {
         match self {
             Self::FlexStart => AlignItems::FlexStart,
             Self::FlexEnd => AlignItems::FlexEnd,
@@ -298,8 +276,7 @@ impl Into<AlignItems> for JustifyCross
 ///
 /// Defaults to [`Self::Auto`].
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum JustifySelfCross
-{
+pub enum JustifySelfCross {
     /// Adopt the parent's [`JustifyCross`] setting.
     #[default]
     Auto,
@@ -313,10 +290,8 @@ pub enum JustifySelfCross
     Stretch,
 }
 
-impl Into<AlignSelf> for JustifySelfCross
-{
-    fn into(self) -> AlignSelf
-    {
+impl Into<AlignSelf> for JustifySelfCross {
+    fn into(self) -> AlignSelf {
         match self {
             Self::Auto => AlignSelf::Auto,
             Self::FlexStart => AlignSelf::FlexStart,
@@ -333,8 +308,7 @@ impl Into<AlignSelf> for JustifySelfCross
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Dims
-{
+pub struct Dims {
     /// Indicates the `desired` width of the node.
     ///
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
@@ -435,11 +409,9 @@ pub struct Dims
     pub right: Val,
 }
 
-impl Dims
-{
+impl Dims {
     /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
-    {
+    pub fn set_in_style(&self, style: &mut Style) {
         style.width = self.width;
         style.height = self.height;
         style.max_width = self.max_width;
@@ -454,20 +426,16 @@ impl Dims
         style.bottom = self.bottom;
     }
 
-    fn default_top() -> Val
-    {
+    fn default_top() -> Val {
         Val::Px(0.)
     }
-    fn default_left() -> Val
-    {
+    fn default_left() -> Val {
         Val::Px(0.)
     }
 }
 
-impl Default for Dims
-{
-    fn default() -> Self
-    {
+impl Default for Dims {
+    fn default() -> Self {
         Self {
             width: Default::default(),
             height: Default::default(),
@@ -491,8 +459,7 @@ impl Default for Dims
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ContentFlex
-{
+pub struct ContentFlex {
     /// Determines whether the node contents will be clipped at the node boundary.
     ///
     /// Defaults to no clipping.
@@ -573,11 +540,9 @@ pub struct ContentFlex
     pub row_gap: Val,
 }
 
-impl ContentFlex
-{
+impl ContentFlex {
     /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
-    {
+    pub fn set_in_style(&self, style: &mut Style) {
         style.overflow = self.clipping.into();
         style.padding = self.padding.into();
         style.flex_direction = self.flex_direction;
@@ -589,16 +554,13 @@ impl ContentFlex
         style.row_gap = self.row_gap;
     }
 
-    fn default_flex_wrap() -> FlexWrap
-    {
+    fn default_flex_wrap() -> FlexWrap {
         FlexWrap::NoWrap
     }
 }
 
-impl Default for ContentFlex
-{
-    fn default() -> Self
-    {
+impl Default for ContentFlex {
+    fn default() -> Self {
         Self {
             flex_wrap: Self::default_flex_wrap(),
 
@@ -621,8 +583,7 @@ impl Default for ContentFlex
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SelfFlex
-{
+pub struct SelfFlex {
     /// Adds space outside the boundary of a node.
     ///
     /// If the main-axis values are set to [`Val::Auto`] then [`JustifyMain`] will do nothing, and similarly for
@@ -673,11 +634,9 @@ pub struct SelfFlex
     pub justify_self_cross: JustifySelfCross,
 }
 
-impl SelfFlex
-{
+impl SelfFlex {
     /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
-    {
+    pub fn set_in_style(&self, style: &mut Style) {
         style.margin = self.margin.into();
         style.flex_basis = self.flex_basis;
         style.flex_grow = self.flex_grow;
@@ -686,10 +645,8 @@ impl SelfFlex
     }
 }
 
-impl Default for SelfFlex
-{
-    fn default() -> Self
-    {
+impl Default for SelfFlex {
+    fn default() -> Self {
         Self {
             margin: Default::default(),
             flex_basis: Default::default(),
@@ -710,18 +667,15 @@ impl Default for SelfFlex
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AbsoluteStyle
-{
+pub struct AbsoluteStyle {
     #[reflect(default)]
     pub dims: Dims,
     #[reflect(default)]
     pub content: ContentFlex,
 }
 
-impl Into<Style> for AbsoluteStyle
-{
-    fn into(self) -> Style
-    {
+impl Into<Style> for AbsoluteStyle {
+    fn into(self) -> Style {
         let mut style = Style::default();
         style.display = Display::Flex;
         style.position_type = PositionType::Absolute;
@@ -731,10 +685,8 @@ impl Into<Style> for AbsoluteStyle
     }
 }
 
-impl Instruction for AbsoluteStyle
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for AbsoluteStyle {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<AbsoluteStyle>>() {
             Some(mut component) => {
@@ -747,8 +699,7 @@ impl Instruction for AbsoluteStyle
         }
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
         });
@@ -763,8 +714,7 @@ impl Instruction for AbsoluteStyle
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct FlexStyle
-{
+pub struct FlexStyle {
     #[reflect(default)]
     pub dims: Dims,
     #[reflect(default)]
@@ -773,10 +723,8 @@ pub struct FlexStyle
     pub flex: SelfFlex,
 }
 
-impl Into<Style> for FlexStyle
-{
-    fn into(self) -> Style
-    {
+impl Into<Style> for FlexStyle {
+    fn into(self) -> Style {
         let mut style = Style::default();
         style.display = Display::Flex;
         style.position_type = PositionType::Relative;
@@ -787,10 +735,8 @@ impl Into<Style> for FlexStyle
     }
 }
 
-impl Instruction for FlexStyle
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for FlexStyle {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<FlexStyle>>() {
             Some(mut component) => {
@@ -803,8 +749,7 @@ impl Instruction for FlexStyle
         }
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
         });
@@ -815,8 +760,7 @@ impl Instruction for FlexStyle
 
 /// Reactive component that toggles the [`Style::display`] field.
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
-pub enum DisplayControl
-{
+pub enum DisplayControl {
     /// Corresponds to [`Display::Flex`].
     #[default]
     Display,
@@ -824,10 +768,8 @@ pub enum DisplayControl
     Hide,
 }
 
-impl Into<Display> for DisplayControl
-{
-    fn into(self) -> Display
-    {
+impl Into<Display> for DisplayControl {
+    fn into(self) -> Display {
         match self {
             Self::Display => Display::Flex,
             Self::Hide => Display::None,
@@ -835,10 +777,8 @@ impl Into<Display> for DisplayControl
     }
 }
 
-impl Instruction for DisplayControl
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for DisplayControl {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<DisplayControl>>() {
             Some(mut component) => {
@@ -851,8 +791,7 @@ impl Instruction for DisplayControl
         }
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<React<DisplayControl>>();
             if let Some(mut style) = e.get_mut::<Style>() {
@@ -869,8 +808,7 @@ fn detect_absolute_style(
     insertion: InsertionEvent<AbsoluteStyle>,
     mutation: MutationEvent<AbsoluteStyle>,
     node: Query<(&React<AbsoluteStyle>, Option<&React<DisplayControl>>)>,
-)
-{
+) {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
     let mut style: Style = (*style).clone().into();
@@ -881,12 +819,10 @@ fn detect_absolute_style(
 }
 
 struct DetectAbsoluteStyle;
-impl WorldReactor for DetectAbsoluteStyle
-{
+impl WorldReactor for DetectAbsoluteStyle {
     type StartingTriggers = (InsertionTrigger<AbsoluteStyle>, MutationTrigger<AbsoluteStyle>);
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
+    fn reactor(self) -> SystemCommandCallback {
         SystemCommandCallback::new(detect_absolute_style)
     }
 }
@@ -898,8 +834,7 @@ fn detect_flex_style(
     insertion: InsertionEvent<FlexStyle>,
     mutation: MutationEvent<FlexStyle>,
     node: Query<(&React<FlexStyle>, Option<&React<DisplayControl>>)>,
-)
-{
+) {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
     let mut style: Style = (*style).clone().into();
@@ -910,12 +845,10 @@ fn detect_flex_style(
 }
 
 struct DetectFlexStyle;
-impl WorldReactor for DetectFlexStyle
-{
+impl WorldReactor for DetectFlexStyle {
     type StartingTriggers = (InsertionTrigger<FlexStyle>, MutationTrigger<FlexStyle>);
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
+    fn reactor(self) -> SystemCommandCallback {
         SystemCommandCallback::new(detect_flex_style)
     }
 }
@@ -926,20 +859,17 @@ fn detect_display_control(
     insertion: InsertionEvent<DisplayControl>,
     mutation: MutationEvent<DisplayControl>,
     mut node: Query<(&mut Style, &React<DisplayControl>)>,
-)
-{
+) {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((mut style, control)) = node.get_mut(entity) else { return };
     style.display = (**control).into();
 }
 
 struct DetectDisplayControl;
-impl WorldReactor for DetectDisplayControl
-{
+impl WorldReactor for DetectDisplayControl {
     type StartingTriggers = (InsertionTrigger<DisplayControl>, MutationTrigger<DisplayControl>);
     type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
+    fn reactor(self) -> SystemCommandCallback {
         SystemCommandCallback::new(detect_display_control)
     }
 }
@@ -948,10 +878,8 @@ impl WorldReactor for DetectDisplayControl
 
 pub(crate) struct StyleWrappersPlugin;
 
-impl Plugin for StyleWrappersPlugin
-{
-    fn build(&self, app: &mut App)
-    {
+impl Plugin for StyleWrappersPlugin {
+    fn build(&self, app: &mut App) {
         app.add_world_reactor_with(
             DetectAbsoluteStyle,
             (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),

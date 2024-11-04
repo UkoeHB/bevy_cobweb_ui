@@ -1,14 +1,16 @@
+use crate::sickle::prelude::{
+    ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction,
+};
+use crate::sickle::theme::dynamic_style::DynamicStyleStopwatch;
+use crate::sickle::theme::dynamic_style_attribute::DynamicStyleAttribute;
+use crate::sickle::theme::pseudo_state::PseudoState;
+use crate::sickle::theme::{ThemeUpdate, UiContext};
+use crate::sickle::ui_style::builder::StyleBuilder;
+use crate::sickle::ui_style::LogicalEq;
 use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui::prelude::{ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction};
-use sickle_ui::theme::dynamic_style::DynamicStyleStopwatch;
-use sickle_ui::theme::dynamic_style_attribute::DynamicStyleAttribute;
-use sickle_ui::theme::pseudo_state::PseudoState;
-use sickle_ui::theme::{ThemeUpdate, UiContext};
-use sickle_ui::ui_style::builder::StyleBuilder;
-use sickle_ui::ui_style::LogicalEq;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
@@ -18,8 +20,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
-struct ControlRefreshCache
-{
+struct ControlRefreshCache {
     collected_styles: Vec<(Option<Entity>, DynamicStyle)>,
     unstyled_entities: Vec<Entity>,
     style_builder: StyleBuilder,
@@ -30,17 +31,14 @@ struct ControlRefreshCache
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
-struct CachedContextualAttribute
-{
+struct CachedContextualAttribute {
     source: Option<SmolStr>,
     target: Option<SmolStr>,
     attribute: DynamicStyleAttribute,
 }
 
-impl LogicalEq for CachedContextualAttribute
-{
-    fn logical_eq(&self, other: &Self) -> bool
-    {
+impl LogicalEq for CachedContextualAttribute {
+    fn logical_eq(&self, other: &Self) -> bool {
         self.source == other.source && self.target == other.target && self.attribute.logical_eq(&other.attribute)
     }
 }
@@ -48,36 +46,33 @@ impl LogicalEq for CachedContextualAttribute
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
-struct EditablePseudoTheme
-{
+struct EditablePseudoTheme {
     state: Option<SmallVec<[PseudoState; 3]>>,
     /// [ (origin entity, attribute )]
     /// - Origin entity is used for cleanup when an attribute is reverted.
     style: SmallVec<[(Entity, CachedContextualAttribute); 3]>,
 }
 
-impl EditablePseudoTheme
-{
-    fn new(origin: Entity, state: Option<SmallVec<[PseudoState; 3]>>, attribute: CachedContextualAttribute)
-        -> Self
-    {
+impl EditablePseudoTheme {
+    fn new(
+        origin: Entity,
+        state: Option<SmallVec<[PseudoState; 3]>>,
+        attribute: CachedContextualAttribute,
+    ) -> Self {
         let mut style = SmallVec::new();
         style.push((origin, attribute));
         Self { state, style }
     }
 
-    fn remove_origin(&mut self, origin: Entity)
-    {
+    fn remove_origin(&mut self, origin: Entity) {
         self.style.retain(|(e, _)| *e != origin);
     }
 
-    fn matches(&self, state: &Option<SmallVec<[PseudoState; 3]>>) -> bool
-    {
+    fn matches(&self, state: &Option<SmallVec<[PseudoState; 3]>>) -> bool {
         self.state == *state
     }
 
-    fn set_attribute(&mut self, origin: Entity, attribute: CachedContextualAttribute)
-    {
+    fn set_attribute(&mut self, origin: Entity, attribute: CachedContextualAttribute) {
         // Merge attribute with existing list.
         if let Some(index) = self
             .style
@@ -90,8 +85,7 @@ impl EditablePseudoTheme
         }
     }
 
-    fn is_subset(&self, node_states: &[PseudoState]) -> Option<usize>
-    {
+    fn is_subset(&self, node_states: &[PseudoState]) -> Option<usize> {
         match &self.state {
             // Only consider pseudo themes that are specific to an inclusive substet of the themed element's pseudo
             // states. A theme for [Checked, Disabled] will apply to elements with [Checked, Disabled,
@@ -106,8 +100,7 @@ impl EditablePseudoTheme
     }
 
     /// Adds all attributes to the style builder.
-    fn build(&self, style_builder: &mut StyleBuilder)
-    {
+    fn build(&self, style_builder: &mut StyleBuilder) {
         for (_, CachedContextualAttribute { source, target, attribute }) in self.style.iter() {
             // Set the placement.
             if let Some(source) = source {
@@ -128,8 +121,7 @@ impl EditablePseudoTheme
         }
     }
 
-    fn cleanup_references(&mut self, entities: &Entities)
-    {
+    fn cleanup_references(&mut self, entities: &Entities) {
         self.style.retain(|(e, _)| entities.contains(*e));
     }
 }
@@ -140,16 +132,13 @@ impl EditablePseudoTheme
 ///
 /// Control maps should be placed on the root entity of a widget. See [`ControlRoot`] and [`ControlLabel`].
 #[derive(Component, Debug, Default)]
-pub(crate) struct ControlMap
-{
+pub(crate) struct ControlMap {
     entities: SmallVec<[(SmolStr, Entity); 5]>,
     pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
 }
 
-impl ControlMap
-{
-    pub(crate) fn insert(&mut self, label: impl AsRef<str>, entity: Entity)
-    {
+impl ControlMap {
+    pub(crate) fn insert(&mut self, label: impl AsRef<str>, entity: Entity) {
         let label = SmolStr::new(label.as_ref());
         let Some(pos) = self.entities.iter().position(|(name, _)| *name == label) else {
             self.entities.push((label, entity));
@@ -158,8 +147,7 @@ impl ControlMap
         self.entities[pos] = (label, entity);
     }
 
-    pub(crate) fn remove(&mut self, entity: Entity)
-    {
+    pub(crate) fn remove(&mut self, entity: Entity) {
         if let Some(pos) = self.entities.iter().position(|(_, e)| *e == entity) {
             self.entities.remove(pos);
         }
@@ -176,8 +164,7 @@ impl ControlMap
         source: Option<SmolStr>,
         target: Option<SmolStr>,
         attribute: DynamicStyleAttribute,
-    )
-    {
+    ) {
         if let Some(states) = state.as_deref_mut() {
             states.sort_unstable();
         }
@@ -191,8 +178,7 @@ impl ControlMap
         }
     }
 
-    pub(crate) fn get_entity(&self, target: impl AsRef<str>) -> Option<Entity>
-    {
+    pub(crate) fn get_entity(&self, target: impl AsRef<str>) -> Option<Entity> {
         let target = target.as_ref();
         self.entities
             .iter()
@@ -200,8 +186,7 @@ impl ControlMap
             .map(|(_, entity)| *entity)
     }
 
-    pub(crate) fn remove_all_labels(&mut self) -> impl Iterator<Item = (SmolStr, Entity)> + '_
-    {
+    pub(crate) fn remove_all_labels(&mut self) -> impl Iterator<Item = (SmolStr, Entity)> + '_ {
         self.entities.drain(..)
     }
 
@@ -213,8 +198,7 @@ impl ControlMap
         Option<SmolStr>,
         Option<SmallVec<[PseudoState; 3]>>,
         DynamicStyleAttribute,
-    )>
-    {
+    )> {
         let res = self
             .pseudo_themes
             .iter_mut()
@@ -235,35 +219,30 @@ impl ControlMap
         res
     }
 
-    fn cleanup_references(&mut self, entities: &Entities)
-    {
+    fn cleanup_references(&mut self, entities: &Entities) {
         self.entities.retain(|(_, e)| entities.contains(*e));
         for pt in self.pseudo_themes.iter_mut() {
             pt.cleanup_references(entities);
         }
     }
 
-    fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_
-    {
+    fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_ {
         self.entities.iter()
     }
 }
 
-impl UiContext for ControlMap
-{
-    fn get(&self, target: &str) -> Result<Entity, String>
-    {
+impl UiContext for ControlMap {
+    fn get(&self, target: &str) -> Result<Entity, String> {
         let Some(entity) = self.get_entity(target) else {
             return Err(format!(
-                    "unknown UI context {target} requested for ControlMap, available are {:?}",
-                    Vec::from_iter(self.contexts())
-                ));
+                "unknown UI context {target} requested for ControlMap, available are {:?}",
+                Vec::from_iter(self.contexts())
+            ));
         };
         Ok(entity)
     }
 
-    fn contexts(&self) -> impl Iterator<Item = &str> + '_
-    {
+    fn contexts(&self) -> impl Iterator<Item = &str> + '_ {
         self.iter_entities().map(|(name, _)| name.as_str())
     }
 }
@@ -276,8 +255,7 @@ pub(crate) struct ControlMapDying;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDying>>)
-{
+fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDying>>) {
     // If any control map is dead, then remove it and reapply its contents.
     // - Reapplied content should only 'move' to a lower control map in the hierarchy. If a higher control
     // map was added that would steal attributes from the dead control map, then that map will auto-steal
@@ -303,8 +281,7 @@ fn refresh_controlled_styles(
         (With<PseudoStates>, Or<(Changed<ControlMap>, Changed<PseudoStates>)>),
     >,
     mut changed_without_states: Query<(Entity, &mut ControlMap), (Changed<ControlMap>, Without<PseudoStates>)>,
-)
-{
+) {
     for (entity, mut map) in changed_with_states
         .iter_mut()
         .chain(changed_without_states.iter_mut())
@@ -325,10 +302,8 @@ fn refresh_controlled_styles(
 /// control map if possible.
 struct RemoveDeadControlMap;
 
-impl EntityCommand for RemoveDeadControlMap
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl EntityCommand for RemoveDeadControlMap {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut old_control_map) = world
             .get_entity_mut(entity)
             .and_then(|mut emut| emut.take::<ControlMap>())
@@ -360,10 +335,8 @@ impl EntityCommand for RemoveDeadControlMap
 
 struct RefreshControlledStyles;
 
-impl EntityCommand for RefreshControlledStyles
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl EntityCommand for RefreshControlledStyles {
+    fn apply(self, entity: Entity, world: &mut World) {
         let mut collected_styles =
             std::mem::take(&mut world.resource_mut::<ControlRefreshCache>().collected_styles);
         let mut unstyled_entities = std::mem::take(
@@ -509,10 +482,8 @@ impl EntityCommand for RefreshControlledStyles
 
 pub(crate) struct ControlMapPlugin;
 
-impl Plugin for ControlMapPlugin
-{
-    fn build(&self, app: &mut App)
-    {
+impl Plugin for ControlMapPlugin {
+    fn build(&self, app: &mut App) {
         app.init_resource::<ControlRefreshCache>().add_systems(
             PostUpdate,
             (cleanup_control_maps, refresh_controlled_styles)
