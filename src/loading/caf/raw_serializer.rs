@@ -5,8 +5,7 @@ use super::CafNumberValue;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Serializer for converting [`Caf`]/[`CafLoadable`]/[`CafValue`] to raw bytes.
-pub trait RawSerializer: std::io::Write
-{
+pub trait RawSerializer: std::io::Write {
     fn write_u128(&mut self, val: u128) -> Result<(), std::io::Error>;
     fn write_i128(&mut self, val: i128) -> Result<(), std::io::Error>;
     /// Only finite numbers are passed in here.
@@ -19,42 +18,34 @@ pub trait RawSerializer: std::io::Write
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Implementation of [`RawSerializer`] with default options.
-pub struct DefaultRawSerializer<'a>
-{
+pub struct DefaultRawSerializer<'a> {
     cursor: Cursor<&'a mut Vec<u8>>,
     simplify_fp: bool,
 }
 
-impl<'a> DefaultRawSerializer<'a>
-{
+impl<'a> DefaultRawSerializer<'a> {
     /// Makes a new raw serializer with default options.
-    pub fn new(bytes: &'a mut Vec<u8>) -> Self
-    {
+    pub fn new(bytes: &'a mut Vec<u8>) -> Self {
         Self { cursor: Cursor::new(bytes), simplify_fp: true }
     }
 
     /// Controls whether floating point numbers can be coerced to integers if there is no precision loss.
     ///
     /// On by default.
-    pub fn simplify_fp(mut self, simplify: bool) -> Self
-    {
+    pub fn simplify_fp(mut self, simplify: bool) -> Self {
         self.simplify_fp = simplify;
         self
     }
 }
 
-impl<'a> RawSerializer for DefaultRawSerializer<'a>
-{
-    fn write_u128(&mut self, val: u128) -> Result<(), std::io::Error>
-    {
+impl<'a> RawSerializer for DefaultRawSerializer<'a> {
+    fn write_u128(&mut self, val: u128) -> Result<(), std::io::Error> {
         write!(self, "{:?}", val)
     }
-    fn write_i128(&mut self, val: i128) -> Result<(), std::io::Error>
-    {
+    fn write_i128(&mut self, val: i128) -> Result<(), std::io::Error> {
         write!(self, "{:?}", val)
     }
-    fn write_f64(&mut self, val: f64) -> Result<(), std::io::Error>
-    {
+    fn write_f64(&mut self, val: f64) -> Result<(), std::io::Error> {
         debug_assert!(val.is_finite());
 
         // Try to write as integer.
@@ -77,8 +68,7 @@ impl<'a> RawSerializer for DefaultRawSerializer<'a>
 
         write!(self, "{:?}", val)
     }
-    fn write_f32(&mut self, val: f32) -> Result<(), std::io::Error>
-    {
+    fn write_f32(&mut self, val: f32) -> Result<(), std::io::Error> {
         debug_assert!(val.is_finite());
 
         // Try to write as integer.
@@ -99,22 +89,18 @@ impl<'a> RawSerializer for DefaultRawSerializer<'a>
 
         write!(self, "{:?}", val)
     }
-    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), std::io::Error>
-    {
-        self.write(bytes)?;
+    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), std::io::Error> {
+        self.write_all(bytes)?;
         Ok(())
     }
 }
 
-impl<'a> std::io::Write for DefaultRawSerializer<'a>
-{
-    fn write(&mut self, bytes: &[u8]) -> Result<usize, std::io::Error>
-    {
+impl<'a> std::io::Write for DefaultRawSerializer<'a> {
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, std::io::Error> {
         self.cursor.write(bytes)
     }
 
-    fn flush(&mut self) -> Result<(), std::io::Error>
-    {
+    fn flush(&mut self) -> Result<(), std::io::Error> {
         Ok(())
     }
 }
