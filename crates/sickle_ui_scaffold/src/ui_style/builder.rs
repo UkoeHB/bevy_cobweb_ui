@@ -1,69 +1,10 @@
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
-use super::attribute::{
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-};
 use super::generated::*;
 use super::LogicalEq;
-use crate::prelude::FluxInteraction;
+use crate::theme::custom_attrs::CustomStaticStyleAttribute;
 use crate::theme::prelude::*;
-
-pub struct InteractiveStyleBuilder<'a>
-{
-    pub style_builder: &'a mut StyleBuilder,
-}
-
-impl<'a> InteractiveStyleBuilder<'a>
-{
-    pub fn custom(
-        &mut self,
-        callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static,
-    ) -> &mut Self
-    {
-        self.style_builder
-            .add(DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
-                CustomInteractiveStyleAttribute::new(callback),
-            )));
-
-        self
-    }
-}
-
-pub struct AnimatedStyleBuilder<'a>
-{
-    pub style_builder: &'a mut StyleBuilder,
-}
-
-impl AnimatedStyleBuilder<'_>
-{
-    pub fn add_and_extract_animation(&mut self, attribute: DynamicStyleAttribute) -> &mut AnimationSettings
-    {
-        let index = self.style_builder.add(attribute.clone());
-
-        let DynamicStyleAttribute::Animated {
-            controller: DynamicStyleController { ref mut animation, .. }, ..
-        } = self.style_builder.attributes[index].attribute
-        else {
-            unreachable!();
-        };
-
-        animation
-    }
-
-    pub fn custom(
-        &mut self,
-        callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static,
-    ) -> &mut AnimationSettings
-    {
-        let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(callback)),
-            controller: DynamicStyleController::default(),
-        };
-
-        self.add_and_extract_animation(attribute)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct ContextStyleAttributeConfig
@@ -167,16 +108,6 @@ impl StyleBuilder
         )));
 
         self
-    }
-
-    pub fn interactive(&mut self) -> InteractiveStyleBuilder
-    {
-        InteractiveStyleBuilder { style_builder: self }
-    }
-
-    pub fn animated(&mut self) -> AnimatedStyleBuilder
-    {
-        AnimatedStyleBuilder { style_builder: self }
     }
 
     /// Switch context of styling by changing the placement of the DynamicStyle and the target of interaction

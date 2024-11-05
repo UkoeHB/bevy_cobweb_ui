@@ -1,8 +1,9 @@
 use bevy::utils::default;
 
+use super::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use super::style_animation::{AnimationSettings, AnimationState, InteractionStyle};
 use crate::flux_interaction::FluxInteraction;
-use crate::ui_style::generated::{AnimatedStyleAttribute, InteractiveStyleAttribute, StaticStyleAttribute};
+use crate::ui_style::generated::StaticStyleAttribute;
 use crate::ui_style::LogicalEq;
 
 #[derive(Clone, Debug)]
@@ -30,16 +31,16 @@ impl LogicalEq for DynamicStyleAttribute
     {
         match (self, other) {
             (Self::Static(l0), Self::Static(r0)) => l0.logical_eq(r0),
-            (Self::Static(l0), Self::Interactive(r0)) => l0.logical_eq(r0),
-            (Self::Static(l0), Self::Animated { attribute: r_attribute, .. }) => l0.logical_eq(r_attribute),
+            (Self::Static(_), Self::Interactive(_)) => false,
+            (Self::Static(_), Self::Animated { .. }) => false,
             (Self::Interactive(l0), Self::Interactive(r0)) => l0.logical_eq(r0),
-            (Self::Interactive(l0), Self::Static(r0)) => l0.logical_eq(r0),
-            (Self::Interactive(l0), Self::Animated { attribute: r_attribute, .. }) => l0.logical_eq(r_attribute),
+            (Self::Interactive(_), Self::Static(_)) => false,
+            (Self::Interactive(_), Self::Animated { .. }) => false,
             (Self::Animated { attribute: l_attribute, .. }, Self::Animated { attribute: r_attribute, .. }) => {
                 l_attribute.logical_eq(r_attribute)
             }
-            (Self::Animated { attribute: l_attribute, .. }, Self::Static(r0)) => l_attribute.logical_eq(r0),
-            (Self::Animated { attribute: l_attribute, .. }, Self::Interactive(r0)) => l_attribute.logical_eq(r0),
+            (Self::Animated { .. }, Self::Static(_)) => false,
+            (Self::Animated { .. }, Self::Interactive(_)) => false,
         }
     }
 }

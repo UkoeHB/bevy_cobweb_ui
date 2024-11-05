@@ -1,3 +1,4 @@
+pub mod custom_attrs;
 pub mod dynamic_style;
 pub mod dynamic_style_attribute;
 pub mod pseudo_state;

@@ -3,14 +3,10 @@ use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use sickle_macros::StyleCommands;
 
-use super::attribute::{
-    ApplyCustomAnimatadStyleAttribute, ApplyCustomInteractiveStyleAttribute, ApplyCustomStaticStyleAttribute,
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute, InteractiveVals,
-};
-use super::builder::{AnimatedStyleBuilder, InteractiveStyleBuilder, StyleBuilder};
+use super::builder::StyleBuilder;
 use super::manual::{FontSource, ImageSource, SetAbsolutePositionExt, SetFluxInteractionExt, SetImageExt};
-use super::{AnimatedVals, LockedStyleAttributes, LogicalEq, TrackedStyleState, UiStyle, UiStyleUnchecked};
-use crate::flux_interaction::FluxInteraction;
+use super::{LockedStyleAttributes, LogicalEq, TrackedStyleState, UiStyle, UiStyleUnchecked};
+use crate::theme::custom_attrs::{ApplyCustomStaticStyleAttribute, CustomStaticStyleAttribute};
 use crate::theme::prelude::*;
 
 /// Derive leaves the original struct, ignore it.
@@ -34,52 +30,42 @@ enum _StyleAttributes
     {
         direction: Direction
     },
-    #[animatable]
     Left
     {
         left: Val
     },
-    #[animatable]
     Right
     {
         right: Val
     },
-    #[animatable]
     Top
     {
         top: Val
     },
-    #[animatable]
     Bottom
     {
         bottom: Val
     },
-    #[animatable]
     Width
     {
         width: Val
     },
-    #[animatable]
     Height
     {
         height: Val
     },
-    #[animatable]
     MinWidth
     {
         min_width: Val
     },
-    #[animatable]
     MinHeight
     {
         min_height: Val
     },
-    #[animatable]
     MaxWidth
     {
         max_width: Val
     },
-    #[animatable]
     MaxHeight
     {
         max_height: Val
@@ -112,17 +98,14 @@ enum _StyleAttributes
     {
         justify_content: JustifyContent
     },
-    #[animatable]
     Margin
     {
         margin: UiRect
     },
-    #[animatable]
     Padding
     {
         padding: UiRect
     },
-    #[animatable]
     Border
     {
         border: UiRect
@@ -135,27 +118,22 @@ enum _StyleAttributes
     {
         flex_wrap: FlexWrap
     },
-    #[animatable]
     FlexGrow
     {
         flex_grow: f32
     },
-    #[animatable]
     FlexShrink
     {
         flex_shrink: f32
     },
-    #[animatable]
     FlexBasis
     {
         flex_basis: Val
     },
-    #[animatable]
     RowGap
     {
         row_gap: Val
     },
-    #[animatable]
     ColumnGap
     {
         column_gap: Val
@@ -189,13 +167,11 @@ enum _StyleAttributes
         grid_column: GridPlacement
     },
     #[target_tupl(BackgroundColor)]
-    #[animatable]
     BackgroundColor
     {
         background_color: Color
     },
     #[target_tupl(BorderColor)]
-    #[animatable]
     BorderColor
     {
         border_color: Color
@@ -221,7 +197,6 @@ enum _StyleAttributes
         image: ImageSource
     },
     #[skip_enity_command]
-    #[animatable]
     ImageTint
     {
         image_tint: Color
@@ -256,34 +231,29 @@ enum _StyleAttributes
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
-    #[animatable]
     FontSize
     {
         font_size: f32
     },
     #[skip_enity_command]
-    #[animatable]
     Scale
     {
         scale: f32
     },
     #[target_enum]
     #[skip_lockable_enum]
-    #[animatable]
     TrackedStyleState
     {
         tracked_style_state: TrackedStyleState
     },
     #[skip_lockable_enum]
     #[skip_enity_command]
-    #[animatable]
     Size
     {
         size: Val
     },
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
-    #[animatable]
     BorderRadius
     {
         border_radius: BorderRadius
@@ -291,7 +261,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(top_right)]
-    #[animatable]
     BorderTRRadius
     {
         border_tr_radius: Val
@@ -299,7 +268,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(bottom_right)]
-    #[animatable]
     BorderBRRadius
     {
         border_br_radius: Val
@@ -307,7 +275,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(bottom_left)]
-    #[animatable]
     BorderBLRadius
     {
         border_bl_radius: Val
@@ -315,14 +282,12 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(BorderRadius)]
     #[target_component_attr(top_left)]
-    #[animatable]
     BorderTLRadius
     {
         border_tl_radius: Val
     },
     #[skip_lockable_enum]
     #[target_component(Outline)]
-    #[animatable]
     Outline
     {
         outline: Outline
@@ -330,7 +295,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(width)]
-    #[animatable]
     OutlineWidth
     {
         outline_width: Val
@@ -338,7 +302,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(offset)]
-    #[animatable]
     OutlineOffset
     {
         outline_offset: Val
@@ -346,7 +309,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(Outline)]
     #[target_component_attr(color)]
-    #[animatable]
     OutlineColor
     {
         outline_color: Color
@@ -354,7 +316,6 @@ enum _StyleAttributes
     #[skip_lockable_enum]
     #[target_component(TextureAtlas)]
     #[target_component_attr(index)]
-    #[animatable]
     TextureAtlasIndex
     {
         atlas_index: usize

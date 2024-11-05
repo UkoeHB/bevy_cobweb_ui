@@ -3,18 +3,18 @@ use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
+use sickle_ui_scaffold::theme::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
+use theme::custom_attrs::CustomStaticStyleAttribute;
 
 use crate::prelude::*;
 use crate::sickle_ext::lerp::Lerp;
-use crate::sickle_ext::prelude::attribute::{
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-};
 use crate::sickle_ext::prelude::*;
 use crate::sickle_ext::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
 use crate::sickle_ext::theme::pseudo_state::PseudoState;
 use crate::sickle_ext::theme::style_animation::{AnimationSettings, AnimationState};
+
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_dynamic_style(
@@ -338,8 +338,8 @@ where
     fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
-            CustomInteractiveStyleAttribute::new(extract_responsive_value::<T>(self.values)),
+        let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::new(
+            extract_responsive_value::<T>(self.values),
         ));
 
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
@@ -402,9 +402,7 @@ where
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
-                extract_animation_value::<T>(self.values),
-            )),
+            attribute: AnimatedStyleAttribute::new(extract_animation_value::<T>(self.values)),
             controller: DynamicStyleController::new(self.settings, AnimationState::default()),
         };
 
