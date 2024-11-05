@@ -3,7 +3,6 @@
 //! You can experiment with hot reloading by running the app and modifying the `assets/main.caf` file.
 //! Hot-reloading is enabled by default in examples.
 
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb_ui::prelude::*;

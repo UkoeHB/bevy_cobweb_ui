@@ -8,4 +8,4 @@ mod caf_scenes;
 mod caf_using;
 mod serde;
 
-//mod reflection_bug;
+//mod reflection_bug;  // Uses serde_json which is no longer a dependency.
