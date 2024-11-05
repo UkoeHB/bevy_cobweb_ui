@@ -207,6 +207,12 @@ pub trait UiBuilderExt
 {
     /// A contextual UI Builder, see [`UiBuilder<'a, T>`]
     fn ui_builder<T>(&mut self, context: T) -> UiBuilder<T>;
+
+    /// A UI Builder for the root of a UI tree.
+    fn ui_root(&mut self) -> UiBuilder<UiRoot>
+    {
+        self.ui_builder(UiRoot)
+    }
 }
 
 impl UiBuilderExt for Commands<'_, '_>

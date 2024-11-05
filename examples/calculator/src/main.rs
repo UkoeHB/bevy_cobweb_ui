@@ -67,7 +67,7 @@ fn build_ui(mut c: Commands)
         "1", "2", "3", "-", "0", ".", "=", "+",
     ];
 
-    c.ui_builder(UiRoot).container(NodeBundle::default(), |ui| {
+    c.ui_root().container(NodeBundle::default(), |ui| {
         ui.style()
             .display(Display::Grid)
             .grid_template_columns(RepeatedGridTrack::auto(4))

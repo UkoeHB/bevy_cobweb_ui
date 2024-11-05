@@ -56,7 +56,7 @@ commands.spawn_empty().load(file + "root");
 commands.spawn_empty().load(file + "root::a");
 
 // Spawns and loads an entire scene (entities: root, root::a, root::a::inner, root::b).
-commands.load_scene(file + "root", |_|{});
+commands.load_scene(file + "root");
 ```
 
 Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities.
@@ -121,14 +121,14 @@ If you have the `hot_reload` feature enabled, then whenever a loadable is change
 
 - **Warning**: Loadables are 'non-reversible' so if you delete a loadable from a scene node, entities subscribed to that node won't be updated to reflect the change. To see the effects, you need to either restart your app or spawn new entities with that node.
 
-To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene` callback.
+To load a full scene, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene_and_edit` callback.
 
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let file = &SceneFile::new("path/to/file.caf.json");
 
-    c.load_scene(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
+    c.load_scene_and_edit(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
         // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
         loaded_scene.insert(MyComponent);
@@ -143,7 +143,7 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
             // ...
 
             // Insert another scene as a child of this node.
-            loaded_scene.load_scene(file + "footer_scene", |loaded_scene| {
+            loaded_scene.load_scene_and_edit(file + "footer_scene", |loaded_scene| {
                 // ...
             });
         });
@@ -651,13 +651,13 @@ And now manifest keys can be used instead of file paths to reference files:
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     // Load widget
-    c.load_scene(&mut s, SceneRef::new("widgets.button", "widget"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("widgets.button", "widget"));
 
     // Load app scene
-    c.load_scene(&mut s, SceneRef::new("app", "my_scene"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("app", "my_scene"));
 
     // Load demo scene
-    c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"));
 }
 ```
 
@@ -789,6 +789,6 @@ Now when you load the built-in widget, it will use your override for `constant_a
 fn build_scene(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let scene = SceneRef::new("builtin.widgets.example_widget", "scene");
-    c.load_scene(&mut s, scene, |_|{});
+    c.load_scene(&mut s, scene);
 }
 ```

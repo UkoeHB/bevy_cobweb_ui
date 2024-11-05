@@ -555,7 +555,12 @@ impl SceneLoader
     ///
     /// The scene hierarchy is saved temporarily in a `SceneInstance`. It will be discarded when
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
-    pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
+    pub(crate) fn load_scene_and_edit<T>(
+        &mut self,
+        c: &mut Commands,
+        root_entity: Entity,
+        mut scene_ref: SceneRef,
+    ) -> bool
     where
         T: crate::loading::scene::load_scene_ext::scene_traits::SceneNodeLoader,
     {

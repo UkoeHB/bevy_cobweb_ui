@@ -25,7 +25,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let scene = SceneRef::new("main.caf.json", "root");
 
-    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
+    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         l.edit("button", |l| {
             let button_id = l.id();
             l.insert_reactive(Counter(0)).on_pressed(

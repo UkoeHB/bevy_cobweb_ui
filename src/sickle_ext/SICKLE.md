@@ -233,7 +233,7 @@ To build the widget, we use the `UiBuilder` from `sickle_ui`:
 ```rust
 fn build_ui(mut c: Commands)
 {
-    c.ui_builder(UiRoot).container(|n| {
+    c.ui_root().container(|n| {
         // Add default widget.
         CounterWidgetBuilder::default().build(n);
 

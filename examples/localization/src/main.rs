@@ -13,7 +13,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let scene = SceneRef::new("localization", "root");
 
-    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
+    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         // Header
         // - Localized image from file (see `assets/main.caf.json`).
 
@@ -64,7 +64,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     l.apply(TextLine::from_text("untranslated"));
                 });
 
-                // Localized and partly translated text (localized in only some, but not all, alternate languages).
+                // Localized and partly translated text (localized in only some, but not all, alternate
+                // languages).
                 l.edit("partially_translated", |l| {
                     l.insert(LocalizedText::default());
                     l.apply(TextLine::from_text("partly-translated"));
