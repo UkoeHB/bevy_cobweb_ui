@@ -211,7 +211,7 @@ where
 pub trait ThemedAttribute: Instruction + TypePath
 {
     /// Specifies the value-type of the theme attribute.
-    type Value: Loadable + TypePath;
+    type Value: Loadable + TypePath + Clone;
 
     /// Converts [`Self::Value`] into `Self`.
     fn construct(value: Self::Value) -> Self;

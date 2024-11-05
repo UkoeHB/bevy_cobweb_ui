@@ -9,22 +9,16 @@ use serde::{Deserialize, Serialize};
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait representing types that can be loaded from cobweb asset files.
-pub trait Loadable:
-    Reflect + FromReflect + PartialEq + Clone + Default + Serialize + for<'de> Deserialize<'de>
-{
-}
+pub trait Loadable: Reflect + FromReflect + PartialEq + Default + Serialize + for<'de> Deserialize<'de> {}
 
-impl<T> Loadable for T where
-    T: Reflect + FromReflect + PartialEq + Clone + Default + Serialize + for<'de> Deserialize<'de>
-{
-}
+impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default + Serialize + for<'de> Deserialize<'de> {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for converting `Self` into entity modifications.
 ///
 /// An instruction can be written in a CAF file, or applied directly with
-/// [`apply`](crate::prelude::UiReactEntityCommandsExt::apply).
+/// [`apply`](InstructionExt::apply).
 ///
 /// See [`register_instruction`](crate::prelude::CobwebAssetRegistrationAppExt::register_instruction).
 pub trait Instruction: Loadable
