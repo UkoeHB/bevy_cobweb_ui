@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::ui_commands::ManagePseudoStateExt;
-use crate::CardinalDirection;
 
 pub struct PseudoStatePlugin;
 
@@ -213,6 +212,20 @@ impl<C: Component> HierarchyToPseudoState<C>
             commands.entity(entity).insert(PseudoStates::new());
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]
+pub enum CardinalDirection
+{
+    #[default]
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]

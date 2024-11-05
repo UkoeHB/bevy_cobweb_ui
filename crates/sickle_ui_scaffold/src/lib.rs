@@ -6,9 +6,6 @@ pub mod ui_commands;
 pub mod ui_style;
 pub mod ui_utils;
 
-use bevy::reflect::Reflect;
-use serde::{Deserialize, Serialize};
-
 pub mod prelude
 {
     pub use super::attributes::prelude::*;
@@ -21,19 +18,4 @@ pub mod prelude
     pub use super::ui_commands::{ManagePseudoStateExt, UpdateStatesExt, UpdateTextExt};
     pub use super::ui_style::prelude::*;
     pub use super::ui_utils::UiUtils;
-    pub use super::CardinalDirection;
-}
-
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]
-pub enum CardinalDirection
-{
-    #[default]
-    North,
-    NorthEast,
-    East,
-    SouthEast,
-    South,
-    SouthWest,
-    West,
-    NorthWest,
 }
