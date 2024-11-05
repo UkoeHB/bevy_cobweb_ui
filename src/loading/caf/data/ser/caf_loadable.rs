@@ -356,14 +356,62 @@ impl serde::ser::SerializeTupleStruct for SerializeTupleStruct
         Ok(())
     }
 
-    fn end(self) -> CafResult<CafLoadable>
+    fn end(mut self) -> CafResult<CafLoadable>
     {
-        if self.vec.len() == 0 {
+        let unit = || -> CafResult<CafLoadable> {
             Ok(CafLoadable {
                 fill: CafFill::default(),
                 id: self.name.try_into()?,
                 variant: CafLoadableVariant::Unit,
             })
+        };
+        if self.vec.len() == 0 {
+            (unit)()
+        } else if self.vec.len() == 1 {
+            let value = self.vec.drain(..).next().unwrap();
+            match value {
+                CafValue::Tuple(tuple) => {
+                    if tuple.entries.len() == 0 {
+                        (unit)()
+                    } else {
+                        Ok(CafLoadable {
+                            fill: CafFill::default(),
+                            id: self.name.try_into()?,
+                            variant: CafLoadableVariant::Tuple(tuple),
+                        })
+                    }
+                }
+                CafValue::Array(array) => {
+                    if array.entries.len() == 0 {
+                        (unit)()
+                    } else {
+                        Ok(CafLoadable {
+                            fill: CafFill::default(),
+                            id: self.name.try_into()?,
+                            variant: CafLoadableVariant::Array(array),
+                        })
+                    }
+                }
+                CafValue::Map(map) => {
+                    if map.entries.len() == 0 {
+                        (unit)()
+                    } else {
+                        Ok(CafLoadable {
+                            fill: CafFill::default(),
+                            id: self.name.try_into()?,
+                            variant: CafLoadableVariant::Map(map),
+                        })
+                    }
+                }
+                value => {
+                    self.vec.push(value);
+                    Ok(CafLoadable {
+                        fill: CafFill::default(),
+                        id: self.name.try_into()?,
+                        variant: CafLoadableVariant::Tuple(CafTuple::from(self.vec)),
+                    })
+                }
+            }
         } else {
             Ok(CafLoadable {
                 fill: CafFill::default(),

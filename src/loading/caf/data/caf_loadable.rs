@@ -1,4 +1,5 @@
-use bevy::reflect::TypeRegistry;
+use bevy::reflect::serde::TypedReflectSerializer;
+use bevy::reflect::{Reflect, TypeRegistry};
 use nom::bytes::complete::tag;
 use nom::Parser;
 use serde::Serialize;
@@ -219,6 +220,16 @@ impl CafLoadable
             .ok_or(CafError::LoadableNotRegistered)?;
         let name = registration.type_info().type_path_table().short_path();
         value.serialize(CafLoadableSerializer { name })
+    }
+
+    pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CafResult<Self>
+    {
+        let registration = registry
+            .get(std::any::TypeId::of::<T>())
+            .ok_or(CafError::LoadableNotRegistered)?;
+        let name = registration.type_info().type_path_table().short_path();
+        let wrapper = TypedReflectSerializer::new(value, registry);
+        wrapper.serialize(CafLoadableSerializer { name })
     }
 }
 

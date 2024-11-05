@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 use crate::sickle_ext::lerp::Lerp;
@@ -10,7 +9,7 @@ use crate::sickle_ext::lerp::Lerp;
 /// Mirrors [`UiRect`] for stylesheet serialization.
 ///
 /// All fields default to `Val::Px(0.)`.
-#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Copy, Clone, PartialEq)]
 pub struct StyleRect
 {
     #[reflect(default = "StyleRect::default_field")]
@@ -79,7 +78,7 @@ impl Lerp for StyleRect
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Overflow`] for stylesheet serialization.
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum Clipping
 {
     #[default]
@@ -114,7 +113,7 @@ impl Into<Overflow> for Clipping
 /// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum JustifyLines
 {
     /// Pack lines toward the start of the cross axis.
@@ -179,7 +178,7 @@ impl Into<AlignContent> for JustifyLines
 /// [`FlexWrap::WrapReverse`] is used, but don't use that.)
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum JustifyMain
 {
     /*
@@ -251,7 +250,7 @@ impl Into<JustifyContent> for JustifyMain
 /// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum JustifyCross
 {
     /// Align children to the start of the cross axis in each line.
@@ -297,7 +296,7 @@ impl Into<AlignItems> for JustifyCross
 /// (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::Auto`].
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum JustifySelfCross
 {
     /// Adopt the parent's [`JustifyCross`] setting.
@@ -332,7 +331,7 @@ impl Into<AlignSelf> for JustifySelfCross
 /// Controls a node's size and offset.
 ///
 /// Mirrors fields in [`Style`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
 pub struct Dims
 {
     /// Indicates the `desired` width of the node.
@@ -490,7 +489,7 @@ impl Default for Dims
 /// Controls the layout of a node's children.
 ///
 /// Mirrors fields in [`Style`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
 pub struct ContentFlex
 {
     /// Determines whether the node contents will be clipped at the node boundary.
@@ -620,7 +619,7 @@ impl Default for ContentFlex
 /// Controls a node's flex behavior in its parent.
 ///
 /// Mirrors fields in [`Style`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
 pub struct SelfFlex
 {
     /// Adds space outside the boundary of a node.
@@ -709,7 +708,7 @@ impl Default for SelfFlex
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
 pub struct AbsoluteStyle
 {
     #[reflect(default)]
@@ -762,7 +761,7 @@ impl Instruction for AbsoluteStyle
 /// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
 pub struct FlexStyle
 {
     #[reflect(default)]
@@ -814,7 +813,7 @@ impl Instruction for FlexStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Reactive component that toggles the [`Style::display`] field.
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
 pub enum DisplayControl
 {
     /// Corresponds to [`Display::Flex`].

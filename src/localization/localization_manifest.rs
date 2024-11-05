@@ -5,7 +5,6 @@ use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::{negotiate_languages, LanguageIdentifier, LangugeIdentifierParserError, NegotiationStrategy};
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
@@ -72,7 +71,7 @@ pub struct LanguagesNegotiated;
 /// Version of [`LocalizationMeta`] that can be reflected.
 ///
 /// Used by [`LoadLocalizationManifest`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct LocalizationMetaReflected
 {
     pub id: String,
@@ -310,7 +309,7 @@ impl LocalizationManifest
 /// Languages are inserted to the manifest in the order they appear in this loadable. You should organize the
 /// manifest according to the order you want languages to appear in [`LocalizationManifest::languages`] (this is
 /// useful for automatically generating localization options lists).
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct LoadLocalizationManifest
 {
     /// The default language.

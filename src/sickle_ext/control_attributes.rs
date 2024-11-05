@@ -3,7 +3,6 @@ use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 use sickle_ui_scaffold::attributes::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
@@ -251,7 +250,7 @@ impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribu
 /// Loadable type for theme values.
 ///
 /// Primarily useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Themed<T: ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
@@ -301,7 +300,7 @@ where
 ///
 /// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
@@ -361,7 +360,7 @@ where
 ///
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Animated<T: AnimatableAttribute + ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,

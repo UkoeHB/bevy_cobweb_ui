@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 use crate::sickle_ext::lerp::Lerp;
@@ -75,7 +74,7 @@ fn set_border_radius_bottom_right(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BackgroundColor`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BgColor(pub Color);
 
 impl Instruction for BgColor
@@ -110,7 +109,7 @@ impl AnimatableAttribute for BgColor {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BorderColor`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrColor(pub Color);
 
 impl Instruction for BrColor
@@ -148,7 +147,7 @@ impl AnimatableAttribute for BrColor {}
 ///
 /// See [`BrRadiusTopLeft`], [`BrRadiusTopRight`], [`BrRadiusBottomLeft`], [`BrRadiusBottomRight`] to set
 /// individual corners.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrRadius(pub Val);
 
 impl Instruction for BrRadius
@@ -185,7 +184,7 @@ impl AnimatableAttribute for BrRadius {}
 /// Mirrors [`BorderRadius`] to set the top left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrRadiusTopLeft(pub Val);
 
 impl Instruction for BrRadiusTopLeft
@@ -220,7 +219,7 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 /// Mirrors [`BorderRadius`] to set the top right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrRadiusTopRight(pub Val);
 
 impl Instruction for BrRadiusTopRight
@@ -255,7 +254,7 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 /// Mirrors [`BorderRadius`] to set the bottom left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrRadiusBottomLeft(pub Val);
 
 impl Instruction for BrRadiusBottomLeft
@@ -290,7 +289,7 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 /// Mirrors [`BorderRadius`] to set the bottom right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct BrRadiusBottomRight(pub Val);
 
 impl Instruction for BrRadiusBottomRight
@@ -323,7 +322,7 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Outline`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct NodeOutline
 {
     pub width: Val,
@@ -387,7 +386,7 @@ impl AnimatableAttribute for NodeOutline {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`FocusPolicy`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub enum SetFocusPolicy
 {
     Block,
@@ -437,7 +436,7 @@ impl ResponsiveAttribute for SetFocusPolicy {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ZIndex`], can be loaded as an instruction.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
 pub enum SetZIndex
 {
     Local(i32),

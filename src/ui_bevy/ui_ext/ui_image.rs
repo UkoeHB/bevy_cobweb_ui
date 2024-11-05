@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::ui::widget::UiImageSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
@@ -73,7 +72,7 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 /// Mirrors [`UiImage`] for serialization.
 ///
 /// Must be inserted to an entity with [`NodeBundle`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct LoadedUiImage
 {
     /// The location of the UiImage.
@@ -153,7 +152,7 @@ impl ThemedAttribute for LoadedUiImage
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`UiImage::color`], can be loaded as a style.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct UiImageColor(pub Color);
 
 impl Instruction for UiImageColor
@@ -186,7 +185,7 @@ impl AnimatableAttribute for UiImageColor {}
 /// Allows setting the [`TextureAtlas`] index of a UI image.
 ///
 /// Primarily useful for animating UI textures using `sickle_ui`.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct UiImageIndex(pub usize);
 
 impl Instruction for UiImageIndex

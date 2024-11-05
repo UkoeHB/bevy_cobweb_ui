@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -39,7 +38,7 @@ fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<
 ///
 /// Children of the root node can be accessed through their [`ControlLabels`](ControlLabel) using
 /// [`ControlBuilderExt::edit_child`].
-#[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct ControlRoot(pub SmolStr);
 
 impl ControlRoot
@@ -142,7 +141,7 @@ impl Instruction for ControlRoot
 ///
 /// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
 /// loadables.
-#[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct ControlLabel(pub SmolStr);
 
 impl ControlLabel

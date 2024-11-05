@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::LanguageIdentifier;
-use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::prelude::*;
@@ -101,18 +100,15 @@ pub enum TextLocalizationResult
 ///
 /// Includes the language currently loaded to each section, which can be used to accurately set fallback
 /// fonts.
-#[derive(Reflect, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Clone, Default, Debug, PartialEq)]
 pub struct LocalizedTextSection
 {
     #[reflect(ignore)]
-    #[serde(skip)]
     id: Option<LanguageIdentifier>,
     #[reflect(ignore)]
-    #[serde(skip)]
     font_backup: Option<Handle<Font>>,
     /// The localization template that will be used to generate localized text strings.
     #[reflect(ignore)]
-    #[serde(skip)]
     pub template: String,
 }
 
@@ -197,7 +193,7 @@ impl LocalizedTextSection
 ///
 /// [fluent-isolation](https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating)
 /// [directional-isolates](https://unicode.org/reports/tr9/#Explicit_Directional_Isolates)
-#[derive(Component, Reflect, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Reflect, Clone, Debug, PartialEq)]
 pub struct LocalizedText
 {
     /// Localization templates for each [`TextSection`] in the [`Text`] component on this entity.
@@ -205,7 +201,6 @@ pub struct LocalizedText
     /// This should be updated before calling [`LocalizedText::localize`] if the localization template has
     /// changed.
     #[reflect(ignore, default = "LocalizedText::default_loc")]
-    #[serde(skip, default = "LocalizedText::default_loc")]
     localization: SmallVec<[LocalizedTextSection; 1]>,
 }
 

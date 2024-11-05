@@ -2,7 +2,6 @@ use std::any::type_name;
 
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
@@ -165,7 +164,7 @@ fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut 
 /// Initializes [`AbsoluteStyle`] on an entity.
 ///
 /// This instruction should be inserted before all other style field wrappers.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct WithAbsoluteStyle;
 
 impl Instruction for WithAbsoluteStyle
@@ -194,7 +193,7 @@ impl ThemedAttribute for WithAbsoluteStyle
 /// Initializes [`FlexStyle`] on an entity.
 ///
 /// This instruction should be inserted before all other style field wrappers.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct WithFlexStyle;
 
 impl Instruction for WithFlexStyle
@@ -221,7 +220,7 @@ impl ThemedAttribute for WithFlexStyle
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::width`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Width(pub Val);
 
 impl ApplyToDims for Width
@@ -259,7 +258,7 @@ impl AnimatableAttribute for Width {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::height`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Height(pub Val);
 
 impl ApplyToDims for Height
@@ -297,7 +296,7 @@ impl AnimatableAttribute for Height {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::min_width`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct MinWidth(pub Val);
 
 impl ApplyToDims for MinWidth
@@ -335,7 +334,7 @@ impl AnimatableAttribute for MinWidth {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::min_height`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct MinHeight(pub Val);
 
 impl ApplyToDims for MinHeight
@@ -373,7 +372,7 @@ impl AnimatableAttribute for MinHeight {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::max_width`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct MaxWidth(pub Val);
 
 impl ApplyToDims for MaxWidth
@@ -411,7 +410,7 @@ impl AnimatableAttribute for MaxWidth {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::max_height`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct MaxHeight(pub Val);
 
 impl ApplyToDims for MaxHeight
@@ -449,7 +448,7 @@ impl AnimatableAttribute for MaxHeight {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::aspect_ratio`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct AspectRatio(pub f32);
 
 impl ApplyToDims for AspectRatio
@@ -487,7 +486,7 @@ impl AnimatableAttribute for AspectRatio {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::border`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Border(pub StyleRect);
 
 impl ApplyToDims for Border
@@ -534,7 +533,7 @@ impl Splattable for Border
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::top`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct DimsTop(pub Val);
 
 impl ApplyToDims for DimsTop
@@ -572,7 +571,7 @@ impl AnimatableAttribute for DimsTop {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::bottom`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct DimsBottom(pub Val);
 
 impl ApplyToDims for DimsBottom
@@ -610,7 +609,7 @@ impl AnimatableAttribute for DimsBottom {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::left`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct DimsLeft(pub Val);
 
 impl ApplyToDims for DimsLeft
@@ -648,7 +647,7 @@ impl AnimatableAttribute for DimsLeft {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Dims::right`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct DimsRight(pub Val);
 
 impl ApplyToDims for DimsRight
@@ -686,7 +685,7 @@ impl AnimatableAttribute for DimsRight {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::clipping`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetClipping(pub Clipping);
 
 impl ApplyToContentFlex for SetClipping
@@ -723,7 +722,7 @@ impl ResponsiveAttribute for SetClipping {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::padding`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Padding(pub StyleRect);
 
 impl ApplyToContentFlex for Padding
@@ -770,7 +769,7 @@ impl Splattable for Padding
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::flex_direction`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetFlexDirection(pub FlexDirection);
 
 impl ApplyToContentFlex for SetFlexDirection
@@ -807,7 +806,7 @@ impl ResponsiveAttribute for SetFlexDirection {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::flex_wrap`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetFlexWrap(pub FlexWrap);
 
 impl ApplyToContentFlex for SetFlexWrap
@@ -844,7 +843,7 @@ impl ResponsiveAttribute for SetFlexWrap {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::justify_lines`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetJustifyLines(pub JustifyLines);
 
 impl ApplyToContentFlex for SetJustifyLines
@@ -881,7 +880,7 @@ impl ResponsiveAttribute for SetJustifyLines {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::justify_main`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetJustifyMain(pub JustifyMain);
 
 impl ApplyToContentFlex for SetJustifyMain
@@ -918,7 +917,7 @@ impl ResponsiveAttribute for SetJustifyMain {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::justify_cross`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetJustifyCross(pub JustifyCross);
 
 impl ApplyToContentFlex for SetJustifyCross
@@ -955,7 +954,7 @@ impl ResponsiveAttribute for SetJustifyCross {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::text_direction`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetTextDirection(pub Direction);
 
 impl ApplyToContentFlex for SetTextDirection
@@ -992,7 +991,7 @@ impl ResponsiveAttribute for SetTextDirection {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::column_gap`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct ColumnGap(pub Val);
 
 impl ApplyToContentFlex for ColumnGap
@@ -1030,7 +1029,7 @@ impl AnimatableAttribute for ColumnGap {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`ContentFlex::row_gap`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct RowGap(pub Val);
 
 impl ApplyToContentFlex for RowGap
@@ -1068,7 +1067,7 @@ impl AnimatableAttribute for RowGap {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::margin`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Margin(pub StyleRect);
 
 impl ApplyToSelfFlex for Margin
@@ -1115,7 +1114,7 @@ impl Splattable for Margin
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::flex_basis`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct FlexBasis(pub Val);
 
 impl ApplyToSelfFlex for FlexBasis
@@ -1153,7 +1152,7 @@ impl AnimatableAttribute for FlexBasis {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::flex_grow`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct FlexGrow(pub f32);
 
 impl ApplyToSelfFlex for FlexGrow
@@ -1191,7 +1190,7 @@ impl AnimatableAttribute for FlexGrow {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::flex_shrink`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct FlexShrink(pub f32);
 
 impl ApplyToSelfFlex for FlexShrink
@@ -1229,7 +1228,7 @@ impl AnimatableAttribute for FlexShrink {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SelfFlex::justify_self_cross`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct SetJustifySelfCross(pub JustifySelfCross);
 
 impl ApplyToSelfFlex for SetJustifySelfCross

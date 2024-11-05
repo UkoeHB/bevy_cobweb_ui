@@ -423,9 +423,16 @@ impl serde::ser::SerializeStruct for SerializeStruct
 
     fn end(self) -> CafResult<CafValue>
     {
-        // Note: we don't convert to a tuple if the struct has no fields, because we want empty structs to be
-        // displayed as '{}' for clarity.
-        Ok(CafValue::Map(CafMap::from(self.vec)))
+        // Note: we don't *want* to convert to a tuple if the struct has no fields, because we want empty structs
+        // to be displayed as '{}' for clarity. HOWEVER, `bevy_reflect` currently has no way to tell if a
+        // type is a struct with only `#[reflect(ignore)]` fields (and doesn't give us a hint that a struct
+        // is a unit struct either, all unit structs pass through here). So for simplicity we just assume
+        // all structs with no members are unit structs...
+        if self.vec.len() == 0 {
+            Ok(CafValue::Tuple(CafTuple::from(vec![])))
+        } else {
+            Ok(CafValue::Map(CafMap::from(self.vec)))
+        }
     }
 }
 

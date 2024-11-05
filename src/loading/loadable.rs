@@ -4,14 +4,13 @@ use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
-use serde::{Deserialize, Serialize};
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait representing types that can be loaded from cobweb asset files.
-pub trait Loadable: Reflect + FromReflect + PartialEq + Default + Serialize + for<'de> Deserialize<'de> {}
+pub trait Loadable: Reflect + FromReflect + PartialEq + Default {}
 
-impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default + Serialize + for<'de> Deserialize<'de> {}
+impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +68,7 @@ impl InstructionExt for EntityCommands<'_>
 ///
 /// Note that `Multi<T>` must be manually registered with `register_instruction_type` or
 /// `register_command_type` for all `T` that want to use it.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Multi<T>(Vec<T>);
 
 impl<T: Instruction + TypePath + FromReflect + GetTypeRegistration> Instruction for Multi<T>
@@ -105,15 +104,7 @@ impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Mult
 pub trait Splattable
 {
     /// The inner value used to splat-construct `Self`.
-    type Splat: TypePath
-        + FromReflect
-        + GetTypeRegistration
-        + Default
-        + Debug
-        + Clone
-        + PartialEq
-        + Serialize
-        + for<'de> Deserialize<'de>;
+    type Splat: TypePath + FromReflect + GetTypeRegistration + Default + Debug + Clone + PartialEq;
 
     /// Constructs a full `Self` from a single inner `splat` value.
     fn splat(splat: Self::Splat) -> Self;
@@ -123,7 +114,7 @@ pub trait Splattable
 ///
 /// Note that `Splat<T>` must be manually registered with `register_instruction_type` or
 /// `register_command_type` for all `T` that want to use it.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Splat<T: Splattable>(pub T::Splat);
 
 impl<T> Instruction for Splat<T>

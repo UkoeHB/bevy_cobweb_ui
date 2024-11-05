@@ -1,7 +1,6 @@
 use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
 use bevy::prelude::*;
 use bevy::ui::widget::text_system;
-use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::prelude::*;
@@ -322,7 +321,7 @@ fn restore_opacity(
 /// efficient to *hide* those popups using inherited opacity, because it does require hierarchy traversal.
 /// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
 pub struct PropagateOpacity(pub f32);
 
 impl Instruction for PropagateOpacity

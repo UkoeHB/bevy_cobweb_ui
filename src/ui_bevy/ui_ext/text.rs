@@ -3,7 +3,6 @@ use bevy::text::{BreakLineOn, TextLayoutInfo};
 use bevy::ui::widget::TextFlags;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
@@ -61,7 +60,7 @@ fn insert_text_line(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Sets up an entity with a [`Text`] component and one text section.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
 pub struct TextLine
 {
     /// The starting text string.
@@ -164,7 +163,7 @@ impl Default for TextLine
 
 /// Instruction for setting the font size of a [`TextLine`] on an entity.
 //todo: hook this up to TextLine or find a better abstraction
-#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq)]
 pub struct TextLineSize(pub f32);
 
 impl Instruction for TextLineSize
@@ -200,7 +199,7 @@ impl ThemedAttribute for TextLineSize
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction for setting the color of a [`TextLine`] on an entity.
-#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq)]
 pub struct TextLineColor(pub Color);
 
 impl Instruction for TextLineColor

@@ -343,29 +343,29 @@ fn tuple_struct()
 fn single_generic()
 {
     let a = prepare_test_app();
-    test_equivalence(a.world(), "SingleGeneric<u32>", "{}", SingleGeneric::<u32>::default());
+    test_equivalence(a.world(), "SingleGeneric<u32>", "()", SingleGeneric::<u32>::default());
     test_equivalence(
         a.world(),
         "SingleGeneric<(u32, u32)>",
-        "{}",
+        "()",
         SingleGeneric::<(u32, u32)>::default(),
     );
     test_equivalence(
         a.world(),
         "SingleGeneric<UnitStruct>",
-        "{}",
+        "()",
         SingleGeneric::<UnitStruct>::default(),
     );
     test_equivalence(
         a.world(),
         "SingleGeneric<SingleGeneric<u32>>",
-        "{}",
+        "()",
         SingleGeneric::<SingleGeneric<u32>>::default(),
     );
     test_equivalence(
         a.world(),
         "SingleGeneric<MultiGeneric<u32, u32, u32>>",
-        "{}",
+        "()",
         SingleGeneric::<MultiGeneric<u32, u32, u32>>::default(),
     );
 }
@@ -391,7 +391,7 @@ fn single_generic_tuple()
     test_equivalence(
         a.world(),
         "SingleGenericTuple<SingleGeneric<u32>>",
-        "{}",
+        "()",
         SingleGenericTuple::<SingleGeneric<u32>>(SingleGeneric::default()),
     );
 }
@@ -405,19 +405,19 @@ fn multi_generic()
     test_equivalence(
         a.world(),
         "MultiGeneric<u32, u32, u32>",
-        "{}",
+        "()",
         MultiGeneric::<u32, u32, u32>::default(),
     );
     test_equivalence(
         a.world(),
         "MultiGeneric<u32, u32, UnitStruct>",
-        "{}",
+        "()",
         MultiGeneric::<u32, u32, UnitStruct>::default(),
     );
     test_equivalence(
         a.world(),
         "MultiGeneric<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>",
-        "{}",
+        "()",
         MultiGeneric::<SingleGeneric<u32>, SingleGeneric<SingleGeneric<u32>>, SingleGeneric<u32>>::default(),
     );
 }

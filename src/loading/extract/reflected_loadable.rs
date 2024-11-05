@@ -2,6 +2,7 @@ use std::any::{type_name, TypeId};
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use bevy::reflect::TypeRegistry;
 
 use crate::prelude::*;
 
@@ -34,12 +35,12 @@ impl ReflectedLoadable
         this.reflect_partial_eq(other.as_reflect())
     }
 
-    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &SceneRef) -> Option<T>
+    pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &SceneRef, registry: &TypeRegistry) -> Option<T>
     {
         match self {
             ReflectedLoadable::Value(loadable) => {
                 let Some(new_value) = T::from_reflect(loadable.as_reflect()) else {
-                    let hint = Self::make_hint::<T>();
+                    let hint = Self::make_hint::<T>(registry);
                     tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
                         serialization hint: {}",
                         type_name::<T>(), loadable_ref.path.path, loadable_ref.file, hint.as_str());
@@ -48,7 +49,7 @@ impl ReflectedLoadable
                 Some(new_value)
             }
             ReflectedLoadable::DeserializationFailed(err) => {
-                let hint = Self::make_hint::<T>();
+                let hint = Self::make_hint::<T>(registry);
                 tracing::error!("failed deserializing loadable {:?} at path {:?} in file {:?}, {:?}\n\
                     serialization hint: {}",
                     type_name::<T>(), loadable_ref.path.path, loadable_ref.file, **err, hint.as_str());
@@ -57,10 +58,10 @@ impl ReflectedLoadable
         }
     }
 
-    fn make_hint<T: Loadable>() -> String
+    fn make_hint<T: Loadable>(registry: &TypeRegistry) -> String
     {
         let temp = T::default();
-        match CafValue::extract(&temp) {
+        match CafLoadable::extract_reflect(&temp, registry) {
             Ok(value) => {
                 let mut buff = Vec::<u8>::default();
                 let mut serializer = DefaultRawSerializer::new(&mut buff);
