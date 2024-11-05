@@ -1,19 +1,19 @@
+use attributes::custom_attrs::CustomStaticStyleAttribute;
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_ui_scaffold::theme::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
+use sickle_ui_scaffold::attributes::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
-use theme::custom_attrs::CustomStaticStyleAttribute;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
+use crate::sickle_ext::attributes::style_animation::{AnimationSettings, AnimationState};
 use crate::sickle_ext::lerp::Lerp;
 use crate::sickle_ext::prelude::*;
-use crate::sickle_ext::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
-use crate::sickle_ext::theme::style_animation::{AnimationSettings, AnimationState};
 
 //-------------------------------------------------------------------------------------------------------------------
 

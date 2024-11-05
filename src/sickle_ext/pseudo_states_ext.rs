@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
 use crate::sickle_ext::prelude::UiBuilder;
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
 use crate::sickle_ext::ui_commands::ManagePseudoStateExt;
 
 //-------------------------------------------------------------------------------------------------------------------

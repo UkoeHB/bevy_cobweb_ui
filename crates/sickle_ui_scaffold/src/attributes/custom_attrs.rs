@@ -4,9 +4,9 @@ use std::sync::Arc;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 
+use crate::attributes::prelude::*;
 use crate::flux_interaction::FluxInteraction;
 use crate::prelude::{LogicalEq, UiStyle};
-use crate::theme::prelude::*;
 
 #[derive(Clone)]
 pub struct CustomStaticStyleAttribute

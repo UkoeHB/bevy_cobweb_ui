@@ -1,12 +1,12 @@
+use attributes::dynamic_style::DynamicStylePlugin;
+use attributes::pseudo_state::PseudoStatePlugin;
 use bevy::prelude::*;
 use flux_interaction::FluxInteractionPlugin;
-use theme::dynamic_style::DynamicStylePlugin;
-use theme::pseudo_state::PseudoStatePlugin;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
+use crate::sickle_ext::attributes::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 use crate::sickle_ext::ease::Ease;
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
-use crate::sickle_ext::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 
 //-------------------------------------------------------------------------------------------------------------------
 

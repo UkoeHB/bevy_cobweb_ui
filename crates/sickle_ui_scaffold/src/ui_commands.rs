@@ -10,9 +10,9 @@ use bevy::state::state::{FreelyMutableState, NextState, States};
 use bevy::text::{Text, TextSection, TextStyle};
 use bevy::window::{CursorIcon, PrimaryWindow, Window};
 
+use crate::attributes::prelude::*;
 use crate::flux_interaction::{FluxInteractionStopwatchLock, StopwatchLock};
 use crate::prelude::UiUtils;
-use crate::theme::prelude::*;
 
 struct SetTextSections
 {

@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use sickle_math::lerp::Lerp;
 
+use crate::attributes::prelude::*;
 use crate::flux_interaction::FluxInteraction;
-use crate::theme::prelude::*;
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
 pub struct InteractiveVals<T: Clone + Default>

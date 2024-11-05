@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::dynamic_style::DynamicStyleStopwatch;
 use crate::sickle_ext::prelude::DynamicStyle;
-use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
 
 //-------------------------------------------------------------------------------------------------------------------
 

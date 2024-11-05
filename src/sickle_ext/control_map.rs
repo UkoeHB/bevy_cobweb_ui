@@ -1,3 +1,6 @@
+use attributes::prelude::DynamicStylePostUpdate;
+use attributes::pseudo_state::RefreshPseudoStates;
+use attributes::ui_context::UiContext;
 use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
@@ -5,18 +8,15 @@ use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
-use theme::prelude::DynamicStylePostUpdate;
-use theme::pseudo_state::RefreshPseudoStates;
-use theme::ui_context::UiContext;
 
 use super::*;
 use crate::prelude::*;
+use crate::sickle_ext::attributes::dynamic_style::DynamicStyleStopwatch;
+use crate::sickle_ext::attributes::dynamic_style_attribute::DynamicStyleAttribute;
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
 use crate::sickle_ext::prelude::{
     ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction,
 };
-use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
-use crate::sickle_ext::theme::dynamic_style_attribute::DynamicStyleAttribute;
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
 use crate::sickle_ext::ui_style::builder::StyleBuilder;
 use crate::sickle_ext::ui_style::LogicalEq;
 

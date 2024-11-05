@@ -3,8 +3,8 @@ use bevy_cobweb::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::pseudo_state::{PseudoState, PseudoStates};
 use crate::sickle_ext::prelude::*;
-use crate::sickle_ext::theme::pseudo_state::{PseudoState, PseudoStates};
 
 //-------------------------------------------------------------------------------------------------------------------
 
