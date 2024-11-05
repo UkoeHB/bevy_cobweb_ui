@@ -64,8 +64,8 @@ pub(crate) fn preprocess_caf_file(
 pub(crate) fn extract_caf_data(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
     commands_buffer: &mut CommandsBuffer,
+    scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
     file: CafFile,
     mut data: Caf,
@@ -100,7 +100,7 @@ pub(crate) fn extract_caf_data(
                 extract_scenes(
                     type_registry,
                     c,
-                    caf_cache,
+                    scene_buffer,
                     scene_loader,
                     &file,
                     section,

@@ -105,9 +105,9 @@ impl Instruction for ControlRoot
                     collect_dangling_controlled(*child, world, &mut dangling);
                 }
 
-                let mut caf_cache = world.resource_mut::<CobwebAssetCache>();
+                let mut scene_buffer = world.resource_mut::<SceneBuffer>();
                 for controlled_entity in dangling {
-                    caf_cache.request_reload(controlled_entity);
+                    scene_buffer.request_reload(controlled_entity);
                 }
             }
         } else {

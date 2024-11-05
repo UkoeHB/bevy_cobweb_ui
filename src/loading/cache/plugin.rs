@@ -56,12 +56,19 @@ fn process_cobweb_asset_files(
     mut caf_cache: ResMut<CobwebAssetCache>,
     mut c: Commands,
     mut commands_buffer: ResMut<CommandsBuffer>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
 )
 {
     let type_registry = types.read();
 
-    if caf_cache.process_cobweb_asset_files(&type_registry, &mut c, &mut commands_buffer, &mut scene_loader) {
+    if caf_cache.process_cobweb_asset_files(
+        &type_registry,
+        &mut c,
+        &mut commands_buffer,
+        &mut scene_buffer,
+        &mut scene_loader,
+    ) {
         c.react().broadcast(CafCacheUpdated);
     }
 }
@@ -80,24 +87,24 @@ fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, l
 #[cfg(feature = "hot_reload")]
 fn apply_pending_node_updates(
     mut c: Commands,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     loaders: Res<LoaderCallbacks>,
 )
 {
-    caf_cache.apply_pending_node_updates(&mut c, &loaders);
+    scene_buffer.apply_pending_node_updates(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
 fn cleanup_cobweb_asset_cache(
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
     mut removed: RemovedComponents<HasLoadables>,
 )
 {
     for removed in removed.read() {
-        caf_cache.remove_entity(&mut scene_loader, removed);
+        scene_buffer.remove_entity(&mut scene_loader, removed);
     }
 }
 
@@ -125,6 +132,7 @@ impl Plugin for CobwebAssetCachePlugin
         app.insert_resource(CobwebAssetCache::new(manifest_map.clone()))
             .register_asset_tracker::<CobwebAssetCache>()
             .insert_resource(CommandsBuffer::new())
+            .insert_resource(SceneBuffer::new(manifest_map))
             .add_systems(
                 First,
                 (
@@ -142,7 +150,7 @@ impl Plugin for CobwebAssetCachePlugin
         {
             app.configure_sets(First, FileProcessingSet.run_if(in_state(LoadState::Loading)))
                 .add_systems(OnExit(LoadState::Loading), |mut c: Commands| {
-                    c.remove_resource::<CommandsBuffer>()
+                    c.remove_resource::<CommandsBuffer>();
                 });
         }
 

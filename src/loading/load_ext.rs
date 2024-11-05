@@ -124,7 +124,7 @@ fn load_from_ref(
     In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
@@ -133,7 +133,7 @@ fn load_from_ref(
         return;
     }
 
-    caf_cache.track_entity(id, loadable_ref, initializer, &loaders, &mut c);
+    scene_buffer.track_entity(id, loadable_ref, initializer, &loaders, &mut c);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 #[cfg(feature = "hot_reload")]
 pub(crate) fn load_queued_from_ref(
     In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
@@ -168,7 +168,7 @@ pub(crate) fn load_queued_from_ref(
         return;
     }
 
-    caf_cache.track_entity_queued(id, loadable_ref, initializer);
+    scene_buffer.track_entity_queued(id, loadable_ref, initializer);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

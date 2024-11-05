@@ -12,7 +12,7 @@ fn handle_loadable(
     id_scratch: String,
     seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
-    caf_cache: &mut CobwebAssetCache,
+    scene_buffer: &mut SceneBuffer,
     file: &CafFile,
     current_path: &ScenePath,
     loadable: &CafLoadable,
@@ -41,7 +41,7 @@ fn handle_loadable(
     let loadable_value = get_loadable_value(deserializer, loadable);
 
     // Save this loadable.
-    caf_cache.insert_loadable(
+    scene_buffer.insert_loadable(
         &SceneRef {
             file: SceneFile::File(file.clone()),
             path: current_path.clone(),
@@ -62,7 +62,7 @@ fn handle_scene_node(
     seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
@@ -112,7 +112,7 @@ fn handle_scene_node(
         seen_shortnames,
         type_registry,
         c,
-        caf_cache,
+        scene_buffer,
         scene_loader,
         child_layer,
         scene,
@@ -129,7 +129,7 @@ fn extract_scene_layer(
     seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
@@ -140,7 +140,7 @@ fn extract_scene_layer(
 {
     // Prep the node.
     let scene_location = SceneRef { file: scene.file.clone(), path: current_path.clone() };
-    caf_cache.prepare_scene_node(scene_location.clone());
+    scene_buffer.prepare_scene_node(scene_location.clone());
 
     // Begin layer update.
     scene_layer.start_update(caf_layer.entries.len());
@@ -155,7 +155,7 @@ fn extract_scene_layer(
                     id_scratch,
                     seen_shortnames,
                     type_registry,
-                    caf_cache,
+                    scene_buffer,
                     scene
                         .file
                         .file()
@@ -180,7 +180,7 @@ fn extract_scene_layer(
     }
 
     #[cfg(feature = "hot_reload")]
-    caf_cache.end_loadable_insertion(&scene_location, seen_shortnames.len());
+    scene_buffer.end_loadable_insertion(&scene_location, seen_shortnames.len());
 
     // Add layers.
     let mut anonymous_count = 0;
@@ -192,7 +192,7 @@ fn extract_scene_layer(
                     seen_shortnames,
                     type_registry,
                     c,
-                    caf_cache,
+                    scene_buffer,
                     scene_loader,
                     scene_layer,
                     scene,
@@ -229,7 +229,7 @@ fn extract_scene_layer(
 pub(super) fn extract_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
     file: &CafFile,
     section: &CafScenes,
@@ -256,7 +256,7 @@ pub(super) fn extract_scenes(
             &mut seen_shortnames,
             type_registry,
             c,
-            caf_cache,
+            scene_buffer,
             scene_loader,
             scene_layer,
             &scene_ref,
