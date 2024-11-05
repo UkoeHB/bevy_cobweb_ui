@@ -3,26 +3,30 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::ThemeUpdate;
 use crate::ui_commands::ManagePseudoStateExt;
 use crate::CardinalDirection;
 
-pub struct AutoPseudoStatePlugin;
+pub struct PseudoStatePlugin;
 
-impl Plugin for AutoPseudoStatePlugin
+impl Plugin for PseudoStatePlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_systems(PostUpdate, propagate_flex_direction_to_pseudo_state.before(ThemeUpdate))
-            .add_systems(
-                PostUpdate,
-                propagate_visibility_to_pseudo_state
-                    // TODO: This is a regression that may cause a frame delay in applying the state
-                    // .after(VisibilitySystems::VisibilityPropagate)
-                    .before(ThemeUpdate),
-            );
+        app.add_systems(
+            PostUpdate,
+            (
+                propagate_flex_direction_to_pseudo_state,
+                propagate_visibility_to_pseudo_state, /* TODO: This is a regression that may cause a frame
+                                                       * delay in applying the state
+                                                       * .after(VisibilitySystems::VisibilityPropagate) */
+            )
+                .in_set(RefreshPseudoStates),
+        );
     }
 }
+
+#[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
+pub struct RefreshPseudoStates;
 
 fn propagate_flex_direction_to_pseudo_state(
     q_nodes: Query<(Entity, &Style), (With<FlexDirectionToPseudoState>, Changed<Style>)>,
@@ -94,7 +98,7 @@ where
         app.add_systems(
             PostUpdate,
             HierarchyToPseudoState::<C>::post_update
-                .before(ThemeUpdate)
+                .in_set(RefreshPseudoStates)
                 .run_if(HierarchyToPseudoState::<C>::should_update_hierary_pseudo_states),
         );
     }

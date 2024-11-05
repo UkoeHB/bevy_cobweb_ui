@@ -1,22 +1,18 @@
-use std::marker::PhantomData;
-
 use bevy::core::Name;
 use bevy::ecs::component::ComponentInfo;
 use bevy::ecs::entity::Entity;
 use bevy::ecs::query::With;
 use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
 use bevy::ecs::world::{Command, World};
-use bevy::hierarchy::{Children, Parent};
+use bevy::hierarchy::Children;
 use bevy::log::{info, warn};
 use bevy::state::state::{FreelyMutableState, NextState, States};
 use bevy::text::{Text, TextSection, TextStyle};
-use bevy::ui::Interaction;
 use bevy::window::{CursorIcon, PrimaryWindow, Window};
 
-use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
+use crate::flux_interaction::{FluxInteractionStopwatchLock, StopwatchLock};
 use crate::prelude::UiUtils;
 use crate::theme::prelude::*;
-use crate::ui_style::builder::StyleBuilder;
 
 struct SetTextSections
 {
@@ -329,220 +325,6 @@ impl EntityCommandsNamedExt for EntityCommands<'_>
     {
         self.insert(Name::new(name.into()))
     }
-}
-
-pub trait RefreshThemeExt
-{
-    /// Refresh the entity's theme, based on the `C` component
-    ///
-    /// This requires `C` to implement [`DefaultTheme`] as described in the readme.
-    fn refresh_theme<C>(&mut self) -> &mut Self
-    where
-        C: DefaultTheme;
-}
-
-impl RefreshThemeExt for EntityCommands<'_>
-{
-    fn refresh_theme<C>(&mut self) -> &mut Self
-    where
-        C: DefaultTheme,
-    {
-        self.add(RefreshEntityTheme::<C> { context: PhantomData });
-        self
-    }
-}
-
-struct RefreshEntityTheme<C>
-where
-    C: DefaultTheme,
-{
-    context: PhantomData<C>,
-}
-
-impl<C> EntityCommand for RefreshEntityTheme<C>
-where
-    C: DefaultTheme,
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let context = world.get::<C>(entity).unwrap();
-        let theme_data = world.resource::<ThemeData>();
-        let pseudo_states = world.get::<PseudoStates>(entity);
-        let empty_pseudo_state = Vec::new();
-
-        let pseudo_states = match pseudo_states {
-            Some(pseudo_states) => pseudo_states.get(),
-            None => &empty_pseudo_state,
-        };
-
-        // Default -> General (App-wide) -> Specialized (Screen) theming is a reasonable guess.
-        // Round to 4, which is the first growth step.
-        // TODO: Cache most common theme count in theme data.
-        let mut themes: Vec<(&Theme<C>, Option<Entity>)> = Vec::with_capacity(4);
-        // Add own theme
-        if let Some(own_theme) = world.get::<Theme<C>>(entity) {
-            themes.push((own_theme, Some(entity)));
-        }
-
-        // Add all ancestor themes
-        let mut current_ancestor = entity;
-        while let Some(parent) = world.get::<Parent>(current_ancestor) {
-            current_ancestor = parent.get();
-            if let Some(ancestor_theme) = world.get::<Theme<C>>(current_ancestor) {
-                themes.push((ancestor_theme, Some(current_ancestor)));
-            }
-        }
-
-        let default_theme = C::default_theme();
-        if let Some(ref default_theme) = default_theme {
-            themes.push((default_theme, None));
-        }
-
-        if themes.len() == 0 {
-            warn!(
-                "Theme missing for component {} on entity: {}",
-                std::any::type_name::<C>(),
-                entity
-            );
-            return;
-        }
-
-        // The list contains themes in reverse order of application
-        themes.reverse();
-
-        // Assuming we have a base style and two-three pseudo state style is a reasonable guess.
-        // TODO: Cache most common pseudo theme count in theme data.
-        let mut pseudo_themes: Vec<(&PseudoTheme<C>, Option<Entity>)> = Vec::with_capacity(themes.len() * 4);
-
-        for (theme, source_entity) in &themes {
-            if let Some(base_theme) = theme.pseudo_themes().iter().find(|pt| pt.is_base_theme()) {
-                pseudo_themes.push((base_theme, *source_entity));
-            }
-        }
-
-        if pseudo_states.len() > 0 {
-            for i in 0..pseudo_states.len() {
-                for (theme, source_entity) in &themes {
-                    theme
-                        .pseudo_themes()
-                        .iter()
-                        .filter(|pt| pt.count_match(pseudo_states) == i + 1)
-                        .for_each(|pt| pseudo_themes.push((pt, *source_entity)));
-                }
-            }
-        }
-
-        // Merge base attributes on top of the default and down the chain, overwriting per-attribute at each level
-        let mut styles = Vec::<(Option<Entity>, DynamicStyle)>::default();
-        let mut style_builder = StyleBuilder::new();
-        for (pseudo_theme, source_entity) in pseudo_themes.iter() {
-            let builder = pseudo_theme.builder();
-            if let DynamicStyleBuilder::Static(style) = builder {
-                styles = [(None, style.clone())]
-                    .into_iter()
-                    .fold(std::mem::take(&mut styles), fold_dynamic_styles);
-            } else {
-                style_builder.clear();
-                let styles_iter = match builder {
-                    DynamicStyleBuilder::Static(_) => unreachable!(),
-                    DynamicStyleBuilder::StyleBuilder(builder) => {
-                        builder(&mut style_builder, &theme_data);
-
-                        style_builder.convert_to_iter(context)
-                    }
-                    DynamicStyleBuilder::ContextStyleBuilder(builder) => {
-                        builder(&mut style_builder, &context, &theme_data);
-
-                        style_builder.convert_to_iter(context)
-                    }
-                    DynamicStyleBuilder::WorldStyleBuilder(builder) => {
-                        builder(&mut style_builder, entity, &context, world);
-
-                        style_builder.convert_to_iter(context)
-                    }
-                    DynamicStyleBuilder::InfoWorldStyleBuilder(builder) => {
-                        builder(
-                            &mut style_builder,
-                            *source_entity,
-                            pseudo_theme.state(),
-                            entity,
-                            &context,
-                            world,
-                        );
-
-                        style_builder.convert_to_iter(context)
-                    }
-                };
-                styles = styles_iter.fold(std::mem::take(&mut styles), fold_dynamic_styles);
-            }
-        }
-
-        let mut cleanup_main_style = true;
-        let mut unstyled_entities: Vec<Entity> = context
-            .cleared_contexts()
-            .map(|ctx_name| {
-                // Unsafe unwrap: ctx_name comes from the context itslef, we should panic if it doesn't resolve!
-                context.get(&ctx_name).unwrap()
-            })
-            .filter(|e| *e != Entity::PLACEHOLDER)
-            .collect();
-
-        for (placement, mut style) in styles {
-            let placement_entity = match placement {
-                Some(placement_entity) => placement_entity,
-                None => {
-                    cleanup_main_style = false;
-                    entity
-                }
-            };
-
-            unstyled_entities.retain(|e| *e != placement_entity);
-
-            if let Some(current_style) = world.get::<DynamicStyle>(placement_entity) {
-                style.copy_controllers(current_style);
-            }
-
-            if style.is_interactive() || style.is_animated() {
-                if world.get::<Interaction>(placement_entity).is_none() {
-                    world
-                        .entity_mut(placement_entity)
-                        .insert(Interaction::default());
-                }
-
-                if world.get_mut::<FluxInteraction>(placement_entity).is_none() {
-                    world
-                        .entity_mut(placement_entity)
-                        .insert(TrackedInteraction::default());
-                }
-            }
-
-            world.entity_mut(placement_entity).insert(style);
-        }
-
-        for unstyled_context in unstyled_entities {
-            world.entity_mut(unstyled_context).remove::<DynamicStyle>();
-        }
-
-        if cleanup_main_style {
-            world.entity_mut(entity).remove::<DynamicStyle>();
-        }
-    }
-}
-
-fn fold_dynamic_styles(
-    mut acc: Vec<(Option<Entity>, DynamicStyle)>,
-    mut context_style: (Option<Entity>, DynamicStyle),
-) -> Vec<(Option<Entity>, DynamicStyle)>
-{
-    let index = acc.iter().position(|entry| entry.0 == context_style.0);
-    match index {
-        Some(index) => {
-            acc[index].1.merge_in_place(&mut context_style.1);
-        }
-        None => acc.push(context_style),
-    }
-
-    acc
 }
 
 pub trait ManageFluxInteractionStopwatchLockExt

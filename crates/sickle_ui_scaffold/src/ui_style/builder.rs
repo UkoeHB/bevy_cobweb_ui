@@ -5,6 +5,7 @@ use super::generated::*;
 use super::LogicalEq;
 use crate::theme::custom_attrs::CustomStaticStyleAttribute;
 use crate::theme::prelude::*;
+use crate::theme::ui_context::UiContext;
 
 #[derive(Clone, Debug)]
 pub struct ContextStyleAttributeConfig

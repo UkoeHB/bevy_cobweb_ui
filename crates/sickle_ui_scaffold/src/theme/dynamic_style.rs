@@ -3,7 +3,6 @@ use bevy::time::Stopwatch;
 use bevy::ui::UiSystem;
 
 use super::dynamic_style_attribute::DynamicStyleAttribute;
-use super::CustomThemeUpdate;
 use crate::flux_interaction::{FluxInteraction, StopwatchLock};
 use crate::ui_style::{LogicalEq, UiStyleExt};
 
@@ -16,7 +15,6 @@ impl Plugin for DynamicStylePlugin
         app.configure_sets(
             PostUpdate,
             DynamicStylePostUpdate
-                .after(CustomThemeUpdate)
                 //todo: use UiSystem::Prepare in bevy v0.15
                 .before(UiSystem::Layout),
         )

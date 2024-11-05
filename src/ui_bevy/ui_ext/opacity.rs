@@ -6,7 +6,6 @@ use smallvec::SmallVec;
 
 use crate::prelude::*;
 use crate::sickle_ext::prelude::DynamicStylePostUpdate;
-use crate::sickle_ext::theme::ThemeUpdate;
 
 // TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
 // fade in ancestor nodes while keeping a segment of the node tree the same opacity.
@@ -365,8 +364,8 @@ impl Plugin for UiOpacityPlugin
             .add_systems(
                 PostUpdate,
                 propagate_opacity_values
+                    .after(ControlSet)
                     .after(DynamicStylePostUpdate)
-                    .after(ThemeUpdate)
                     // Before text is converted to glyphs for rendering.
                     .before(text_system),
             )

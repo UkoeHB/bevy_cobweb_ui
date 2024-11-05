@@ -221,8 +221,6 @@ impl RadioButtonBuilder
     ///
     /// Load your content sub-entities with `.load_with_subtheme::<RadioButton, YourSubtheme>()`.
     /// Otherwise your sub-entities won't respond properly to interactions on the base button.
-    ///
-    /// The `content_builder` should return [`UiContext`] entries for themed sub-entities.
     pub fn build_with_themed_content<'a>(
         self,
         manager_entity: Entity,
