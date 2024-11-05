@@ -32,7 +32,7 @@
                 "flex": {"!button_flex": ""}
             },
             "Interactive": [],
-            "Animated<BgColor>": {
+            "Animated<BackgroundColor>": {
                 "values": {"idle": "@bg_idle", "hover": "@bg_hover", "press": "@bg_press"},
                 "settings": "$animation_settings"
             }

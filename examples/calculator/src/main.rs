@@ -95,7 +95,7 @@ fn build_ui(mut c: Commands)
                     ui.style().background_color(NORMAL_BUTTON.into());
                 } else {
                     ui.apply(Interactive)
-                        .apply(Responsive::<BgColor> {
+                        .apply(Responsive::<BackgroundColor> {
                             values: InteractiveVals::<Color> {
                                 idle: NORMAL_BUTTON.into(),
                                 hover: Some(HOVERED_BUTTON.into()),

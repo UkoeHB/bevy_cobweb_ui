@@ -66,31 +66,27 @@ Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude
 
 A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobwebAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
 
-For example, with the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable defined in this crate:
+For example, with the [`BackgroundColor`](bevy::prelude::BackgroundColor) component from `bevy`:
 
-```json
-{
-    "root": {
-        "a": {
-            "BgColor": [{"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+```caf
+#scenes
+"root"
+    "a"
+        BackgroundColor(#F50A80)
 
-            "inner": {
-                // More values
-            }
-        },
-        "b": {
-            // Other values
-        }
-    }
-}
+        "inner"
+            // More values
+
+    "b"
+        // Other values
 ```
 
-When the scene node `"root::a"` is loaded to an entity, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable will be applied to the entity.
+When the scene node `"root::a"` is loaded to an entity, the [`BackgroundColor`](bevy::prelude::BackgroundColor) component will be inserted to the entity.
 
 You can define three kinds of loadables:
 - **Bundles**: Inserted as bundles.
 - **Reactive**: Inserted as reactive components.
-- **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is an instruction that inserts the Bevy `BackgroundColor` component.
+- **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BrRadius`](bevy_cobweb_ui::prelude::BrRadius) loadable is an instruction that inserts the `BorderRadius` component.
 
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -230,7 +226,7 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 {
     "#using": [
         "my_color_crate::custom_colors::Color",
-        "bevy_cobweb_ui::ui_bevy::ui_ext::component_wrappers::BgColor"
+        "bevy_cobweb_ui::ui_bevy::ui_ext::component_wrappers::BrRadius"
     ]
 }
 ```
@@ -265,7 +261,7 @@ This example shows inserting a constant in the middle of a value. We use `$path:
     },
 
     "background": {
-        "BgColor": [{"Hsla": {"hue": "$standard::hue", "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+        "BackgroundColor": [{"Hsla": {"hue": "$standard::hue", "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
     }
 }
 ```
@@ -274,19 +270,19 @@ Which expands to:
 ```json
 {
     "background": {
-        "BgColor": [{"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+        "BackgroundColor": [{"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
     }
 }
 ```
 
 When accessing a constant as a map key, you must end it with `::*`, which means 'paste all contents'.
 
-In this example, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
+In this example, the [`BackgroundColor`](bevy_cobweb_ui::prelude::BackgroundColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
 ```json
 {
     "#constants": {
         "$standard":{
-            "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+            "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
             "AbsoluteStyle": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }
@@ -302,7 +298,7 @@ When expanded, the result will be
 ```json
 {
     "my_node": {
-        "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+        "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
         "AbsoluteStyle": {
             "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
         }
@@ -581,7 +577,7 @@ Add the `#import` section to the base map in a file. It should be a map between 
 {
     "#constants": {
         "$standard":{
-            "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+            "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
             "AbsoluteStyle": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }

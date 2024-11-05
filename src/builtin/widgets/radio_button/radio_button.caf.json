@@ -39,7 +39,7 @@
                     "flex": {"!base_flex":{}}
                 },
                 "Interactive": [],
-                "BgColor": ["@base_background_color"],
+                "BackgroundColor": ["@base_background_color"],
                 "!base":{},
 
                 "content": {
@@ -75,7 +75,7 @@
                 },
                 "Splat<Border>": ["@indicator_outline_thickness"],
                 "BrRadius": ["@indicator_outline_radius"],
-                "BrColor": ["@indicator_outline_color"],
+                "BorderColor": ["@indicator_outline_color"],
                 "!indicator":{},
 
                 "indicator_dot": {
@@ -85,7 +85,7 @@
                     },
                     "Splat<Margin>": ["@indicator_internal_spacing"],
                     "BrRadius": ["@indicator_dot_radius"],
-                    "Multi<Animated<BgColor>>": [[
+                    "Multi<Animated<BackgroundColor>>": [[
                         {
                             "values": {
                                 "idle": "@indicator_dot_unselected_color",
@@ -161,7 +161,7 @@
 
         "!base": {
             "BrRadius": ["@base_border_radius"],
-            "BrColor": ["@base_border_color"],
+            "BorderColor": ["@base_border_color"],
             "Multi<Animated<Splat<Border>>>": [[
                 {
                     "values": {
@@ -196,7 +196,7 @@
                 },
                 "!base_padding_animation"
             ]],
-            "Multi<Animated<BgColor>>": [[
+            "Multi<Animated<BackgroundColor>>": [[
                 {
                     "values": {
                         "idle": "@base_idle_background_color",

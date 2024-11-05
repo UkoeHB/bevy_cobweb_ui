@@ -77,7 +77,7 @@
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
-    "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
+    "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
 
     "header": {
         "FlexStyle": {

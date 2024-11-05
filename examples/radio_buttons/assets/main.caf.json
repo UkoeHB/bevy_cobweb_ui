@@ -13,15 +13,15 @@
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
-    "BgColor": [{"Hsla": {"hue": 30.0, "saturation": 0.09, "lightness": 0.72, "alpha": 1.0}}],
+    "BackgroundColor": [{"Hsla": {"hue": 30.0, "saturation": 0.09, "lightness": 0.72, "alpha": 1.0}}],
 
     "display": {
         "FlexStyle": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
-        "BgColor": [{"Hsla": {"hue": 212.0, "saturation": 0.33, "lightness": 0.45, "alpha": 1.0}}],
-        "BrColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
+        "BackgroundColor": [{"Hsla": {"hue": 212.0, "saturation": 0.33, "lightness": 0.45, "alpha": 1.0}}],
+        "BorderColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
         "BrRadius": [{"Px": 6.0}],
 
         "text": {
@@ -43,8 +43,8 @@
             },
             "flex": {"margin": {"top": {"Px": 20.0}}}
         },
-        "BgColor": [{"Hsla": {"hue": 138.0, "saturation": 0.23, "lightness": 0.57, "alpha": 1.0}}],
-        "BrColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
+        "BackgroundColor": [{"Hsla": {"hue": 138.0, "saturation": 0.23, "lightness": 0.57, "alpha": 1.0}}],
+        "BorderColor": [{"Hsla": {"hue": 174.0, "saturation": 0.23, "lightness": 0.18, "alpha": 1.0}}],
         "BrRadius": [{"Px": 6.0}]
     }
 },

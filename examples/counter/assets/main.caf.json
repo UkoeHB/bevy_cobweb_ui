@@ -14,7 +14,7 @@
         "FlexStyle": {
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
-        "Animated<BgColor>": {
+        "Animated<BackgroundColor>": {
             "values": {
                 "idle": {"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
                 "hover": {"Hsla": {"hue": 274.0, "saturation": 0.32, "lightness": 0.45, "alpha": 0.8}},
