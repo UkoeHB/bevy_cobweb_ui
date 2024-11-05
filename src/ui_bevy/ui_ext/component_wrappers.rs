@@ -140,6 +140,11 @@ impl AnimatableAttribute for BorderColor {}
 /// See [`BrRadiusTopLeft`], [`BrRadiusTopRight`], [`BrRadiusBottomLeft`], [`BrRadiusBottomRight`] to set
 /// individual corners.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadius(pub Val);
 
 impl Instruction for BrRadius
@@ -177,6 +182,11 @@ impl AnimatableAttribute for BrRadius {}
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusTopLeft(pub Val);
 
 impl Instruction for BrRadiusTopLeft
@@ -212,6 +222,11 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusTopRight(pub Val);
 
 impl Instruction for BrRadiusTopRight
@@ -247,6 +262,11 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusBottomLeft(pub Val);
 
 impl Instruction for BrRadiusBottomLeft
@@ -282,6 +302,11 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 ///
 /// See [`BrRadius`] to set all corners at once.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusBottomRight(pub Val);
 
 impl Instruction for BrRadiusBottomRight
@@ -315,6 +340,11 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 
 /// Mirrors [`Outline`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct NodeOutline
 {
     pub width: Val,

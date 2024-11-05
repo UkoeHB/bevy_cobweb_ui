@@ -10,6 +10,11 @@ use crate::sickle_ext::lerp::Lerp;
 ///
 /// All fields default to `Val::Px(0.)`.
 #[derive(Reflect, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct StyleRect
 {
     #[reflect(default = "StyleRect::default_field")]
@@ -79,6 +84,11 @@ impl Lerp for StyleRect
 
 /// Mirrors [`Overflow`] for stylesheet serialization.
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum Clipping
 {
     #[default]
@@ -114,6 +124,11 @@ impl Into<Overflow> for Clipping
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyLines
 {
     /// Pack lines toward the start of the cross axis.
@@ -179,6 +194,11 @@ impl Into<AlignContent> for JustifyLines
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyMain
 {
     /*
@@ -251,6 +271,11 @@ impl Into<JustifyContent> for JustifyMain
 ///
 /// Defaults to [`Self::FlexStart`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyCross
 {
     /// Align children to the start of the cross axis in each line.
@@ -297,6 +322,11 @@ impl Into<AlignItems> for JustifyCross
 ///
 /// Defaults to [`Self::Auto`].
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifySelfCross
 {
     /// Adopt the parent's [`JustifyCross`] setting.
@@ -332,6 +362,11 @@ impl Into<AlignSelf> for JustifySelfCross
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct Dims
 {
     /// Indicates the `desired` width of the node.
@@ -490,6 +525,11 @@ impl Default for Dims
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct ContentFlex
 {
     /// Determines whether the node contents will be clipped at the node boundary.
@@ -620,6 +660,11 @@ impl Default for ContentFlex
 ///
 /// Mirrors fields in [`Style`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct SelfFlex
 {
     /// Adds space outside the boundary of a node.
@@ -709,6 +754,11 @@ impl Default for SelfFlex
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct AbsoluteStyle
 {
     #[reflect(default)]
@@ -762,6 +812,11 @@ impl Instruction for AbsoluteStyle
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FlexStyle
 {
     #[reflect(default)]
@@ -814,6 +869,11 @@ impl Instruction for FlexStyle
 
 /// Reactive component that toggles the [`Style::display`] field.
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum DisplayControl
 {
     /// Corresponds to [`Display::Flex`].

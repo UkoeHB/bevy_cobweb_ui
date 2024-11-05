@@ -40,6 +40,9 @@ colors = []
 # Enables built-in widgets.
 widgets = ["colors"]
 
+# Enables Serialize/Deserialize on built-in types.
+serde = ["bevy/serialize"]
+
 # Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.
 hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
 

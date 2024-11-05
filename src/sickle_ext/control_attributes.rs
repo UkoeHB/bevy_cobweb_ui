@@ -250,6 +250,8 @@ impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribu
 /// Loadable type for theme values.
 ///
 /// Primarily useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
+//TODO: how to properly add Serialize/Deserialize derives when `serde` feature is enabled? we don't want to
+// require that T::Value implements Serialize/Deserialize
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Themed<T: ThemedAttribute>
 where

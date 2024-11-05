@@ -322,6 +322,11 @@ fn restore_opacity(
 /// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct PropagateOpacity(pub f32);
 
 impl Instruction for PropagateOpacity

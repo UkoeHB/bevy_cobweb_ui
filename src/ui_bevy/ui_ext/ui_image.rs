@@ -73,6 +73,11 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 ///
 /// Must be inserted to an entity with [`NodeBundle`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LoadedUiImage
 {
     /// The location of the UiImage.
@@ -153,6 +158,11 @@ impl ThemedAttribute for LoadedUiImage
 
 /// Mirrors [`UiImage::color`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct UiImageColor(pub Color);
 
 impl Instruction for UiImageColor
@@ -184,8 +194,13 @@ impl AnimatableAttribute for UiImageColor {}
 
 /// Allows setting the [`TextureAtlas`] index of a UI image.
 ///
-/// Primarily useful for animating UI textures using `sickle_ui`.
+/// Primarily useful for animating UI textures.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct UiImageIndex(pub usize);
 
 impl Instruction for UiImageIndex
