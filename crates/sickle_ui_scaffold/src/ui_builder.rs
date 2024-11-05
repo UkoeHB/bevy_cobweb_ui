@@ -50,6 +50,17 @@ impl<'a, T> UiBuilder<'a, T>
     }
 }
 
+impl<'a, T> UiBuilder<'a, T>
+where
+    T: Copy,
+{
+    /// Reborrows self with a shorter lifetime.
+    pub fn reborrow(&mut self) -> UiBuilder<T>
+    {
+        UiBuilder { commands: self.commands.reborrow(), context: self.context }
+    }
+}
+
 impl UiBuilder<'_, UiRoot>
 {
     /// Spawn a bundle as a root node (without parent)
