@@ -205,7 +205,7 @@ enum _StyleAttributes
     #[skip_enity_command]
     ImageScaleMode
     {
-        image_scale_mode: Option<ImageScaleMode>
+        image_scale_mode: Option<NodeImageMode>
     },
     #[static_style_only]
     #[skip_ui_style_ext]
