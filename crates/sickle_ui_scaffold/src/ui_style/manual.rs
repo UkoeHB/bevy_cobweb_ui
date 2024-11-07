@@ -392,7 +392,7 @@ impl EntityCommand for SetAbsolutePosition {
         }
 
         let offset = if let Some(parent) = world.get::<Parent>(entity) {
-            let Some(parent_node) = world.get::<Node>(parent.get()) else {
+            let Some(parent_node) = world.get::<ComputedNode>(parent.get()) else {
                 warn!(
                     "Failed to set position on entity {}: Parent has no Node component!",
                     entity
@@ -480,37 +480,23 @@ impl EntityCommand for SetFont {
             FontSource::Handle(handle) => handle,
         };
 
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
+        let Some(mut text_font) = world.get_mut::<TextFont>(entity) else {
             warn!("Failed to set font on entity {}: No Text component found!", entity);
             return;
         };
 
-        text.sections = text
-            .sections
-            .iter_mut()
-            .map(|section| {
-                section.style.font = font.clone();
-                section.clone()
-            })
-            .collect();
+        text_font.font = font.clone();
     }
 }
 
 impl EntityCommand for SetFontSize {
     fn apply(self, entity: Entity, world: &mut World) {
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
+        let Some(mut text_font) = world.get_mut::<TextFont>(entity) else {
             warn!("Failed to set font on entity {}: No Text component found!", entity);
             return;
         };
 
-        text.sections = text
-            .sections
-            .iter_mut()
-            .map(|section| {
-                section.style.font_size = self.font_size;
-                section.clone()
-            })
-            .collect();
+        text_font.font_size = self.font_size;
     }
 }
 

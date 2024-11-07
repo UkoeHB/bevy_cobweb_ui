@@ -40,7 +40,7 @@ fn get_component_or_warn<T: Component>(entity: Entity, world: &mut World) -> Opt
 
 impl EntityCommand for SetText {
     fn apply(self, entity: Entity, world: &mut World) {
-        let Some(text) = get_component_or_warn::<Text>(entity, world) else {
+        let Some(mut text) = get_component_or_warn::<Text>(entity, world) else {
             return;
         };
         text.0 = self.text;
@@ -112,10 +112,11 @@ struct SetCursor {
 impl Command for SetCursor {
     fn apply(self, world: &mut World) {
         let mut q_window = world.query_filtered::<Entity, With<PrimaryWindow>>();
-        let Ok(mut window_ent) = q_window.get_single_mut(world) else {
+        let Ok(window_ent) = q_window.get_single_mut(world) else {
             return;
         };
-        let Some(ec) = world.commands().get_entity(window_ent) else {
+        let mut c = world.commands();
+        let Some(mut ec) = c.get_entity(window_ent) else {
             return;
         };
 
