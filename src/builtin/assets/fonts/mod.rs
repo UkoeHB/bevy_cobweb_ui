@@ -1,5 +1,6 @@
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
+
 use crate::prelude::*;
 
 pub(crate) struct BuiltInFontsPlugin;
@@ -21,7 +22,6 @@ impl Plugin for BuiltInFontsPlugin
         app.add_systems(Startup, load_sickle_ui_default_fonts);
     }
 }
-
 
 fn load_sickle_ui_default_fonts(mut c: Commands)
 {

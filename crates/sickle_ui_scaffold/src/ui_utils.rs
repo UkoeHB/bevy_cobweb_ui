@@ -5,19 +5,22 @@ use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
 
 pub struct UiUtils;
 
-impl UiUtils {
+impl UiUtils
+{
     /// Returns a simplified name from a `ComponentInfo`
     ///
     /// `ComponentInfo` returns the fully qualified name, this function calls
     /// [`UiUtils::simplify_type_name`] on it.
-    pub fn simplify_component_name(component_info: &ComponentInfo) -> String {
+    pub fn simplify_component_name(component_info: &ComponentInfo) -> String
+    {
         UiUtils::simplify_type_name(component_info.name())
     }
 
     /// Strips fully qualified names and returns the type name
     ///
     /// Supports a single generic parameter, which will also be stripped from its type path.
-    pub fn simplify_type_name(name: &str) -> String {
+    pub fn simplify_type_name(name: &str) -> String
+    {
         let mut simple_name = String::from(name.split("::").last().unwrap());
 
         if name.split("<").count() > 1 {
@@ -43,7 +46,8 @@ impl UiUtils {
     /// Offset is from the container top left corner to the element's top left corner.
     ///
     /// WARNING: Works only for Ui Nodes, panics if required components are missing!
-    pub fn container_size_and_offset(entity: Entity, world: &World) -> (Vec2, Vec2) {
+    pub fn container_size_and_offset(entity: Entity, world: &World) -> (Vec2, Vec2)
+    {
         let mut container_size = Vec2::ZERO;
 
         // Unsafe unwarp: If a Ui element doesn't have a GT, we should panic!
@@ -102,7 +106,8 @@ impl UiUtils {
     /// This will either be based on TargetCamera or the Primary Window).
     ///
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
-    pub fn padding_as_px(entity: Entity, world: &World) -> Vec4 {
+    pub fn padding_as_px(entity: Entity, world: &World) -> Vec4
+    {
         // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
         let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.padding, entity, world)
@@ -113,7 +118,8 @@ impl UiUtils {
     /// This will either be based on TargetCamera or the Primary Window.
     ///
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
-    pub fn border_as_px(entity: Entity, world: &World) -> Vec4 {
+    pub fn border_as_px(entity: Entity, world: &World) -> Vec4
+    {
         // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
         let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.border, entity, world)
@@ -124,7 +130,8 @@ impl UiUtils {
     /// This will either based on TargetCamera or the Primary Window.
     ///
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
-    pub fn margin_as_px(entity: Entity, world: &World) -> Vec4 {
+    pub fn margin_as_px(entity: Entity, world: &World) -> Vec4
+    {
         // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
         let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.margin, entity, world)
@@ -135,7 +142,8 @@ impl UiUtils {
     /// This will either be based on TargetCamera or the Primary Window.
     ///
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
-    pub fn ui_rect_to_px(rect: UiRect, entity: Entity, world: &World) -> Vec4 {
+    pub fn ui_rect_to_px(rect: UiRect, entity: Entity, world: &World) -> Vec4
+    {
         let viewport_size = if let Some(render_target) = UiUtils::find_render_target(entity, world) {
             UiUtils::render_target_size(render_target, world)
         } else {
@@ -167,7 +175,8 @@ impl UiUtils {
     /// Width and height are calculated by taffy based on flex layout.
     /// Flex shrink may also contract final values for paddings, borders, and margins,
     /// but we can ignore that since these are input/target values.
-    pub fn val_to_px(value: Val, parent: f32, viewport_size: Vec2) -> f32 {
+    pub fn val_to_px(value: Val, parent: f32, viewport_size: Vec2) -> f32
+    {
         match value {
             Val::Auto => 0.,
             Val::Px(px) => px.max(0.),
@@ -180,7 +189,8 @@ impl UiUtils {
     }
 
     /// Finds a UI entity's render target by searching for the closest ancestor with a TargetCamera
-    pub fn find_render_target(entity: Entity, world: &World) -> Option<RenderTarget> {
+    pub fn find_render_target(entity: Entity, world: &World) -> Option<RenderTarget>
+    {
         let mut current_ancestor = entity;
         while let Some(parent) = world.get::<Parent>(current_ancestor) {
             current_ancestor = parent.get();
@@ -196,7 +206,8 @@ impl UiUtils {
     }
 
     /// Extracts a RenderTarget's size
-    pub fn render_target_size(render_target: RenderTarget, world: &World) -> Vec2 {
+    pub fn render_target_size(render_target: RenderTarget, world: &World) -> Vec2
+    {
         match render_target {
             RenderTarget::Window(window) => match window {
                 WindowRef::Primary => UiUtils::resolution_to_vec2(&UiUtils::get_primary_window(world).resolution),
@@ -226,7 +237,8 @@ impl UiUtils {
     }
 
     /// Returns the Window component of the entity marked with `PrimaryWindow`
-    pub fn get_primary_window(world: &World) -> &Window {
+    pub fn get_primary_window(world: &World) -> &Window
+    {
         // Unsafe single: don't ask for a primary window if it doesn't exists pls.
         // TODO: use resource to store primary window entity
         let primary_window = world.component_id::<PrimaryWindow>().unwrap();
@@ -241,7 +253,8 @@ impl UiUtils {
     }
 
     /// Extracts width and height from a WindowResolution
-    pub fn resolution_to_vec2(resolution: &WindowResolution) -> Vec2 {
+    pub fn resolution_to_vec2(resolution: &WindowResolution) -> Vec2
+    {
         Vec2::new(resolution.width(), resolution.height())
     }
 }

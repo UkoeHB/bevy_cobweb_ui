@@ -19,7 +19,8 @@ fn insert_text_line(
     font_map: Res<FontMap>,
     color: Query<&TextLineColor>,
     mut localized: Query<&mut LocalizedText>,
-) {
+)
+{
     // Prep color.
     let color = color
         .get(entity)
@@ -62,7 +63,8 @@ fn insert_text_line(
 
 /// Sets up an entity with a [`Text`] component and one text section.
 #[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct TextLine {
+pub struct TextLine
+{
     /// The starting text string.
     #[reflect(default = "TextLine::default_text")]
     pub text: String,
@@ -86,55 +88,69 @@ pub struct TextLine {
     pub justify: JustifyText,
 }
 
-impl TextLine {
-    pub fn from_text(text: impl Into<String>) -> Self {
+impl TextLine
+{
+    pub fn from_text(text: impl Into<String>) -> Self
+    {
         Self { text: text.into(), ..default() }
     }
 
-    pub fn with_font(mut self, font: impl Into<FontRequest>) -> Self {
+    pub fn with_font(mut self, font: impl Into<FontRequest>) -> Self
+    {
         self.font = Some(font.into());
         self
     }
 
-    fn default_text() -> String {
+    fn default_text() -> String
+    {
         TEXT_LINE_DEFAULT_TEXT.into()
     }
 
-    fn default_font() -> Option<FontRequest> {
+    fn default_font() -> Option<FontRequest>
+    {
         Some(FontRequest::new("Fira Sans").medium())
     }
 
-    fn default_font_size() -> f32 {
+    fn default_font_size() -> f32
+    {
         25.
     }
 
-    fn default_font_color() -> Color {
+    fn default_font_color() -> Color
+    {
         Color::WHITE
     }
 
-    fn default_line_break() -> LineBreak {
+    fn default_line_break() -> LineBreak
+    {
         LineBreak::NoWrap
     }
 
-    fn default_justify_text() -> JustifyText {
+    fn default_justify_text() -> JustifyText
+    {
         JustifyText::Left
     }
 }
 
-impl Instruction for TextLine {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for TextLine
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall((entity, self), insert_text_line);
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<(Text, TextLayoutInfo, TextFlags, ContentSize)>();
         });
     }
 }
 
-impl Default for TextLine {
-    fn default() -> Self {
+impl Default for TextLine
+{
+    fn default() -> Self
+    {
         Self {
             text: Self::default_text(),
             font: Self::default_font(),
@@ -152,8 +168,10 @@ impl Default for TextLine {
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineSize(pub f32);
 
-impl Instruction for TextLineSize {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for TextLineSize
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall(
             (entity, self.0),
             |In((id, size)): In<(Entity, f32)>, mut editor: TextEditor| {
@@ -165,14 +183,17 @@ impl Instruction for TextLineSize {
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         Instruction::apply(Self(TextLine::default_font_size()), entity, world);
     }
 }
 
-impl ThemedAttribute for TextLineSize {
+impl ThemedAttribute for TextLineSize
+{
     type Value = f32;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         TextLineSize(value)
     }
 }
@@ -183,8 +204,10 @@ impl ThemedAttribute for TextLineSize {
 #[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextLineColor(pub Color);
 
-impl Instruction for TextLineColor {
-    fn apply(self, entity: Entity, world: &mut World) {
+impl Instruction for TextLineColor
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
         world.syscall(
             (entity, self.0),
             |In((id, color)): In<(Entity, Color)>, mut editor: TextEditor| {
@@ -196,14 +219,17 @@ impl Instruction for TextLineColor {
         });
     }
 
-    fn revert(entity: Entity, world: &mut World) {
+    fn revert(entity: Entity, world: &mut World)
+    {
         Instruction::apply(Self(TextLine::default_font_color()), entity, world);
     }
 }
 
-impl ThemedAttribute for TextLineColor {
+impl ThemedAttribute for TextLineColor
+{
     type Value = Color;
-    fn construct(value: Self::Value) -> Self {
+    fn construct(value: Self::Value) -> Self
+    {
         TextLineColor(value)
     }
 }
@@ -215,8 +241,10 @@ impl AnimatableAttribute for TextLineColor {}
 
 pub(crate) struct UiTextExtPlugin;
 
-impl Plugin for UiTextExtPlugin {
-    fn build(&self, app: &mut App) {
+impl Plugin for UiTextExtPlugin
+{
+    fn build(&self, app: &mut App)
+    {
         app.register_instruction_type::<TextLine>()
             // IMPORTANT: This must be added after TextLine so the line size will overwrite TextLine defaults.
             .register_themed::<TextLineSize>()

@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 pub mod prelude
 {
     pub use super::flux_interaction::{
-            FluxInteraction, FluxInteractionStopwatch, FluxInteractionStopwatchLock, FluxInteractionUpdate,
-            TrackedInteraction,
+        FluxInteraction, FluxInteractionStopwatch, FluxInteractionStopwatchLock, FluxInteractionUpdate,
+        TrackedInteraction,
     };
     pub use super::theme::prelude::*;
     pub use super::ui_builder::{UiBuilder, UiBuilderExt, UiContextRoot, UiRoot};
