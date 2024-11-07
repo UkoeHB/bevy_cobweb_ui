@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::attributes::prelude::*;
 use bevy::core::Name;
 use bevy::ecs::component::ComponentInfo;
 use bevy::ecs::entity::Entity;
@@ -16,7 +17,6 @@ use bevy::winit::cursor::CursorIcon;
 
 use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
 use crate::prelude::UiUtils;
-use crate::theme::prelude::*;
 use crate::ui_style::builder::StyleBuilder;
 
 struct SetText {
