@@ -237,7 +237,7 @@ impl EntityCommand for SetImageScaleMode
                 image.image_mode = image_scale_mode;
             };
         } else if let Some(mut image) = world.get_mut::<UiImage>(entity) {
-            image.scale_mode = NodeImageMode::default();
+            image.image_mode = NodeImageMode::default();
         }
     }
 }
