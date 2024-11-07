@@ -335,7 +335,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
                 match self {
                     #(#apply_variants)*
                     Self::Custom(callback) => {
-                        ui_style.entity_commands().add(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
+                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
                     }
                 }
             }
@@ -443,7 +443,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_ident for UiStyle<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().add(#cmd_struct_ident {
+                self.entity_commands().queue(#cmd_struct_ident {
                     #target_attr,
                     check_lock: true
                 });
@@ -457,7 +457,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_unchecked_ident for UiStyleUnchecked<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().add(#cmd_struct_ident {
+                self.entity_commands().queue(#cmd_struct_ident {
                     #target_attr,
                     check_lock: false
                 });
@@ -604,9 +604,9 @@ fn to_setter_entity_command_frag(style_attribute: &StyleAttribute) -> proc_macro
         }
     } else {
         quote! {
-            let Some(mut style) = world.get_mut::<Style>(entity) else {
+            let Some(mut style) = world.get_mut::<Node>(entity) else {
                 warn!(
-                    "Failed to set {} property on entity {}: No Style component found!",
+                    "Failed to set {} property on entity {}: No Node component found!",
                     #target_attr_name,
                     entity
                 );
