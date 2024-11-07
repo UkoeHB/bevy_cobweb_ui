@@ -2,11 +2,22 @@
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
+use wasm_timer::{SystemTime, UNIX_EPOCH};
 
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_current_time() -> Duration
+{
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -28,12 +39,12 @@ impl Command for CommandLoadCommand
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Default, Debug)]
-struct PendingCommandsCounter
+struct PendingCounter
 {
     pending: usize,
 }
 
-impl PendingCommandsCounter
+impl PendingCounter
 {
     fn add(&mut self, num: usize)
     {
@@ -46,7 +57,7 @@ impl PendingCommandsCounter
         self.pending = self.pending.saturating_sub(num);
     }
 
-    fn _get(&self) -> usize
+    fn get(&self) -> usize
     {
         self.pending
     }
@@ -73,7 +84,7 @@ enum FileStatus
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum FileParent
 {
     SelfIsRoot,
@@ -114,6 +125,9 @@ struct FileCommandsInfo
     ///
     /// Orphaned files do not participate in the 'pending commands' counter.
     is_orphaned: bool,
+
+    /// Indicates if this info has been initialized. Used to detect if a file is being refreshed.
+    initialized: bool,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -146,7 +160,36 @@ pub(crate) struct CommandsBuffer
 
     /// Number of unapplied commands in non-orphaned files. Used to short-circuit traversal when refreshing
     /// commands.
-    counter: PendingCommandsCounter,
+    command_counter: PendingCounter,
+
+    /// Number of pending non-orphaned files. Used to synchronize hierarchy state in a hot-reloading environment.
+    file_counter: PendingCounter,
+
+    /// Flag indicating whether any file has been refreshed after it was initialized. If true, then commands
+    /// will not be applied if any files are pending. Only relevant in a hot-reloading environment where we need
+    /// to avoid race conditions involving multiple files being refreshed concurrently.
+    any_files_refreshed: bool,
+
+    /// Time lock on applying commands after an orphaning event.
+    ///
+    /// Used to mitigate race conditions around hot-reloaded reparenting.
+    commands_unlock_time: Duration,
+
+    /// Cached for reuse.
+    dummy_commands_path: ScenePath,
+    /// Cached for reuse.
+    empty_descendants: Arc<[CafFile]>,
+    /// Cached for reuse.
+    root_descendents: Arc<[CafFile]>,
+
+    /// Cached for memory reuse.
+    #[cfg(feature = "hot_reload")]
+    seen_cached: Vec<bool>,
+    /// Cached for memory reuse.
+    #[cfg(feature = "hot_reload")]
+    stack_cached: Vec<(usize, Arc<[CafFile]>)>,
+    /// Cached for memory reuse.
+    inverted_stack_cached: Vec<(usize, Arc<[CafFile]>, bool)>,
 }
 
 impl CommandsBuffer
@@ -160,8 +203,19 @@ impl CommandsBuffer
             traversal_point: Some(global.clone()), // Start traversal at global file.
             hierarchy: HashMap::default(),
             #[cfg(feature = "hot_reload")]
-            file_order: vec![global.clone()],
-            counter: PendingCommandsCounter::default(),
+            file_order: vec![], // file_order is empty, indicating a 'fresh traversal'
+            command_counter: PendingCounter::default(),
+            file_counter: PendingCounter::default(),
+            any_files_refreshed: false,
+            commands_unlock_time: Duration::default(),
+            dummy_commands_path: ScenePath::new("#commands"),
+            empty_descendants: Arc::from([]),
+            root_descendents: Arc::from([global.clone()]),
+            #[cfg(feature = "hot_reload")]
+            seen_cached: vec![],
+            #[cfg(feature = "hot_reload")]
+            stack_cached: vec![],
+            inverted_stack_cached: vec![],
         };
         buffer.hierarchy.insert(
             global,
@@ -169,12 +223,14 @@ impl CommandsBuffer
                 status: FileStatus::Pending,
                 parent: FileParent::SelfIsRoot,
                 commands: vec![],
-                descendants: Arc::from([]),
+                descendants: buffer.empty_descendants.clone(),
                 #[cfg(feature = "hot_reload")]
-                idx: 0,
+                idx: usize::MAX,
                 is_orphaned: false,
+                initialized: false,
             },
         );
+        buffer.file_counter.add(1);
 
         buffer
     }
@@ -202,11 +258,19 @@ impl CommandsBuffer
         // must be *after* the end of the current `file_order` vec. And therefore is *after* the current traversal
         // point, which is always a member of `file_order`.
         let Some(maybe_target) = self.file_order.get(target_idx) else {
-            self.traversal_point = self.file_order.last().cloned();
+            self.traversal_point = self
+                .file_order
+                .last()
+                .cloned()
+                .or_else(|| Some(self.root_descendents[0].clone()));
             return;
         };
         if *maybe_target != target {
-            self.traversal_point = self.file_order.last().cloned();
+            self.traversal_point = self
+                .file_order
+                .last()
+                .cloned()
+                .or_else(|| Some(self.root_descendents[0].clone()));
             return;
         }
 
@@ -215,6 +279,41 @@ impl CommandsBuffer
 
         // Save the new traversal point.
         self.traversal_point = Some(target);
+    }
+
+    /// Tries to update the traversal point to the file before the requested file.
+    #[cfg(feature = "hot_reload")]
+    fn update_traversal_point_to_prev(&mut self, target: CafFile, target_idx: usize)
+    {
+        let Some(maybe_target) = self.file_order.get(target_idx) else {
+            self.traversal_point = self
+                .file_order
+                .last()
+                .cloned()
+                .or_else(|| Some(self.root_descendents[0].clone()));
+            return;
+        };
+        if *maybe_target != target {
+            self.traversal_point = self
+                .file_order
+                .last()
+                .cloned()
+                .or_else(|| Some(self.root_descendents[0].clone()));
+            return;
+        }
+
+        self.file_order.truncate(target_idx);
+        self.traversal_point = self
+            .file_order
+            .get(target_idx.saturating_sub(1))
+            .cloned()
+            .or_else(|| Some(self.root_descendents[0].clone()));
+    }
+
+    #[cfg(feature = "hot_reload")]
+    fn update_commands_unlock_time(&mut self)
+    {
+        self.commands_unlock_time = get_current_time() + Duration::from_millis(500);
     }
 
     /// Sets descendants of a file (no hot reloading).
@@ -238,6 +337,7 @@ impl CommandsBuffer
 
         // Update status.
         info.status = FileStatus::AwaitingCommands;
+        info.initialized = true;
 
         // Initialize descendants' slots.
         for descendant in descendants.iter() {
@@ -249,12 +349,15 @@ impl CommandsBuffer
                     status: FileStatus::Pending,
                     parent: FileParent::Parent(file.clone()),
                     commands: vec![],
-                    descendants: Arc::from([]),
+                    descendants: self.empty_descendants.clone(),
                     is_orphaned: false,
+                    initialized: false,
                 },
             ) {
                 tracing::warn!("duplicate file {:?} registered in commands buffer; new parent: {:?}, prev info: {:?}",
                     descendant, file, prev);
+            } else {
+                self.file_counter.add(1);
             }
         }
 
@@ -278,12 +381,45 @@ impl CommandsBuffer
         let file_idx = info.idx;
         let file_is_orphaned = info.is_orphaned;
 
+        // Check if already initialized.
+        if info.initialized {
+            self.any_files_refreshed = true;
+        }
+
+        // Check if now pending.
+        // - We must not count orphaned files in case a file gets deleted while stuck waiting for commands. We
+        // assume all deleted files will eventually be removed from manifest files, meaning they will eventually be
+        // orphaned, thereby unblocking us in the command applier step.
+        // - This opens a race condition involving a file being reparented, a concurrent arbitrary file change, AND
+        //   a
+        // concurrent defs change that needs to propagate through the file that was arbitrarily changed. The race
+        // condition mainly exists if the reparenting is done by removing the original manifest entry
+        // before adding it to the new parent. Specifically, there can be a moment where the reparenting
+        // branch is orphaned and the new parent has not been set. If a file outside the orphaned region
+        // depends on defs within that region, and those defs get stuck on a file separately refreshed,
+        // then the command ordering guarantees we try to enforce here can be violated.
+        //
+        // The other direction is not a race condition, but only if the order is maintained. If the order gets
+        // reversed in the async asset framework machinery, then the race condition resurfaces.
+        //
+        // There is a simpler race condition where a defs change concurrent with a reparenting can cause a
+        // high-priority command to get stuck in the orphaned branch, leading to a dependent command being
+        // applied before it.
+        //
+        // To mitigate these race conditions, we track the most recent orphaning event and delay applying commands
+        // until some time has passed.
+        if !info.is_orphaned && info.status == FileStatus::Loaded {
+            self.file_counter.add(1);
+        }
+
         // Update status.
         info.status = FileStatus::AwaitingCommands;
+        info.initialized = true;
 
         // Update descendants' slots.
         let prev_descendants = std::mem::take(&mut info.descendants);
-        let mut seen: Vec<bool> = vec![];
+        let mut seen = std::mem::take(&mut self.seen_cached);
+        seen.clear();
         seen.resize(prev_descendants.len(), false);
 
         for descendant in descendants.iter() {
@@ -301,16 +437,22 @@ impl CommandsBuffer
                         status: FileStatus::Pending,
                         parent: FileParent::Parent(file.clone()),
                         commands: vec![],
-                        descendants: Arc::from([]),
+                        descendants: self.empty_descendants.clone(),
                         is_orphaned: file_is_orphaned,
-                        idx: 0,
+                        idx: usize::MAX,
+                        initialized: false,
                     });
+
+                    // Add pending file status to the counter.
+                    if !file_is_orphaned {
+                        self.file_counter.add(1);
+                    }
                 }
                 Occupied(mut entry) => {
                     let entry = entry.get_mut();
                     let prev_parent = entry.parent.clone();
                     entry.parent = FileParent::Parent(file.clone());
-                    entry.idx = 0; // Make sure this doesn't point to a valid index.
+                    entry.idx = usize::MAX; // Make sure this doesn't point to a valid index.
                     let prev_orphaned = entry.is_orphaned;
 
                     // Repair the previous parent.
@@ -329,6 +471,11 @@ impl CommandsBuffer
                                 continue;
                             };
 
+                            // NOTE: This can create a hole in the existing file_order, but it should not cause any
+                            // problems. The hole will not be accessible (it's
+                            // essentially a slight memory leak) and will probably
+                            // be repaired when the previous parent refreshes with a correct manifest and the
+                            // traversal point gets pushed below the hole.
                             let mut new_descendants = Vec::with_capacity(parent_info.descendants.len());
                             for parent_desc in parent_info.descendants.iter().filter(|d| *d != descendant) {
                                 new_descendants.push(parent_desc.clone());
@@ -339,15 +486,18 @@ impl CommandsBuffer
 
                     // Repair orphan status of reparented branch.
                     if prev_orphaned != file_is_orphaned {
+                        let mut stack = std::mem::take(&mut self.stack_cached);
+                        stack.push((0, Arc::from([descendant.clone()])));
+
                         self.iter_hierarchy_mut(
                             "repairing orphan status of files",
-                            vec![(0, 0, Arc::from([descendant.clone()]))],
-                            move |buff, _, file, info| -> Option<u8> {
+                            stack,
+                            move |buff, file, info| -> bool {
                                 if info.is_orphaned == file_is_orphaned {
                                     tracing::error!("encountered orphaned={} file {:?} that is a child of a \
                                         file {:?} with the same orphan state while switching orphan state (this is a bug)",
                                         file_is_orphaned, file, info.parent);
-                                    return None;
+                                    return false;
                                 }
 
                                 // Set orphaned status.
@@ -355,14 +505,27 @@ impl CommandsBuffer
 
                                 let num_pending = info.commands.iter().filter(|c| c.is_pending).count();
                                 if file_is_orphaned {
+                                    // Invalidate the index for sanity.
+                                    info.idx = usize::MAX;
+
                                     // Remove pending commands from the counter (since they are now stuck on an orphaned branch).
-                                    buff.counter.remove(num_pending);
+                                    buff.command_counter.remove(num_pending);
+
+                                    // Remove pending file status from the counter.
+                                    if info.status != FileStatus::Loaded {
+                                        buff.file_counter.remove(1);
+                                    }
                                 } else {
                                     // Add pending commands to the counter (since they moving off an orphaned branch).
-                                    buff.counter.add(num_pending);
+                                    buff.command_counter.add(num_pending);
+
+                                    // Add pending file status to the counter.
+                                    if info.status != FileStatus::Loaded {
+                                        buff.file_counter.add(1);
+                                    }
                                 }
 
-                                Some(0)
+                                true
                             }
                         );
                     }
@@ -370,24 +533,50 @@ impl CommandsBuffer
             }
         }
 
-        // If any descendants changed, then truncate the traversal point to this file.
+        // If any descendants changed, then truncate the traversal point to the nearest elder file. We need to
+        // iterate children of this file, which are ordered before this file but after the nearest elder.
         if !file_is_orphaned && &*prev_descendants != &*descendants {
-            self.update_traversal_point(file.clone(), file_idx);
+            // Identify the lowest index in the previous descendants list. We will truncate to the file before
+            // that.
+            let mut lowest = (file.clone(), file_idx);
+
+            if let Some(first_prev_descendant) = prev_descendants.get(0) {
+                let mut stack = std::mem::take(&mut self.inverted_stack_cached);
+                stack.push((0, Arc::from([first_prev_descendant.clone()]), false));
+
+                self.iter_hierarchy_inverted_mut("rejiggering traversal point", stack, |_, file, info| -> bool {
+                    // Just get the very first file in the inverted branch.
+                    lowest = (file.clone(), info.idx);
+                    false
+                });
+            }
+
+            self.update_traversal_point_to_prev(lowest.0, lowest.1);
         }
 
         // Orphan removed descendants.
+        let mut is_orphan_root = true;
+
         for removed in seen
             .iter()
             .enumerate()
             .filter(|(_, s)| !*s)
             .map(|(idx, _)| &prev_descendants[idx])
         {
+            let mut stack = std::mem::take(&mut self.stack_cached);
+            stack.push((0, Arc::from([removed.clone()])));
+
             self.iter_hierarchy_mut(
                 "orphaning files",
-                vec![(true, 0, Arc::from([removed.clone()]))],
-                move |buff, is_orphan_root, file, info| -> Option<bool> {
+                stack,
+                move |buff, file, info| -> bool {
                     if is_orphan_root {
                         info.parent = FileParent::SelfIsOrphan;
+
+                        // Set this here at the place where orphans are created.
+                        buff.update_commands_unlock_time();
+                    } else {
+                        is_orphan_root = false;
                     }
 
                     // If already orphaned, no need to traverse.
@@ -396,7 +585,7 @@ impl CommandsBuffer
                             tracing::error!("encountered orphaned file {:?} that is a child of a non-orphaned file {:?} \
                                 (this is a bug)", file, info.parent);
                         }
-                        return None;
+                        return false;
                     }
 
                     // Set orphaned.
@@ -404,15 +593,24 @@ impl CommandsBuffer
 
                     // Remove pending commands from the counter (since they are now stuck on an orphaned branch).
                     let num_pending = info.commands.iter().filter(|c| c.is_pending).count();
-                    buff.counter.remove(num_pending);
+                    buff.command_counter.remove(num_pending);
 
-                    Some(false)
+                    // Remove pending file status from the counter.
+                    if info.status != FileStatus::Loaded {
+                        buff.file_counter.remove(1);
+                    }
+
+                    true
                 }
             );
         }
 
         // Set descendants.
         self.hierarchy.get_mut(&file).unwrap().descendants = Arc::from(descendants);
+
+        // Recover memory.
+        seen.clear();
+        self.seen_cached = seen;
     }
 
     /// Adds commands to a file.
@@ -431,16 +629,17 @@ impl CommandsBuffer
             debug_assert!(info.commands.len() == 0);
         }
 
-        // Convert to CachedCommands while (for hot reloading) checking if values changed.
+        // Convert to CachedCommands.
         let mut new_commands = Vec::with_capacity(commands.len());
 
         for (_full_type_name, command) in commands {
             #[cfg(not(feature = "hot_reload"))]
             {
                 new_commands.push(CachedCommand { command, is_pending: true });
-                self.counter.add(1);
+                self.command_counter.add(1);
             }
 
+            // For hot reloading we need to check if existing values are changing.
             #[cfg(feature = "hot_reload")]
             {
                 match info
@@ -454,7 +653,7 @@ impl CommandsBuffer
                             Some(false) => {
                                 new_commands.push(CachedCommand { command, is_pending: true });
                                 if !info.is_orphaned && !matches.is_pending {
-                                    self.counter.add(1);
+                                    self.command_counter.add(1);
                                 }
                             }
                             None => {
@@ -470,7 +669,7 @@ impl CommandsBuffer
                     None => {
                         new_commands.push(CachedCommand { command, is_pending: true });
                         if !info.is_orphaned {
-                            self.counter.add(1);
+                            self.command_counter.add(1);
                         }
                     }
                 }
@@ -481,11 +680,16 @@ impl CommandsBuffer
         // remove it from the counter.
         if !info.is_orphaned {
             let num_removed = info.commands.iter().filter(|c| c.is_pending).count();
-            self.counter.remove(num_removed);
+            self.command_counter.remove(num_removed);
+            self.file_counter.remove(1);
         }
 
         // Save the new commands list.
         info.commands = new_commands;
+        if info.status != FileStatus::AwaitingCommands {
+            tracing::error!("adding commands for {:?} that is in {:?} not FileStatus::AwaitingCommands (this is a bug)",
+                file, info.status);
+        }
         info.status = FileStatus::Loaded;
 
         // Update traversal point if we have pending commands.
@@ -500,25 +704,42 @@ impl CommandsBuffer
     }
 
     /// Iterates through the cached hierarchy from the latest traversal point, applying pending commands as they
-    /// are encountered. iterate forward, applying commands from loaded files; stop when number of applied
-    /// commands reaches zero,
-    // or when encounter a pending file
-    // - if file's parent doesn't match the known parent, then skip it and warn (can occur due to duplicates)
-    // - push back to `file_order` as files are traversed
-    // - update the `idx` in each file's info
-    // - set recursion limit in case of manifest loop (a cap of 100 is probably more than adequate for a file
-    //   hierarchy)
+    /// are encountered.
     pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
     {
+        // Don't apply any commands if any files are pending if at least one file has hot reloaded.
+        // - This is needed to avoid race conditions involving multiple files refreshing concurrently. Since defs
+        //   can
+        // be imported 'backward' in the hierarchy, it is possible for a def change to get stuck on a pending file
+        // that is after the traversal point, even though the def change needs to be used before the
+        // traversal point. Critically, a file after the traversal point may depend on that change
+        // propagating both to itself and the upstream command. We need to guarantee the upstream command
+        // is re-applied first, which means ensuring all refreshes fully propagate before applying any
+        // refreshed commands.
+        if self.any_files_refreshed && self.file_counter.get() > 0 {
+            return;
+        }
+
+        // Don't apply commands if there are none pending.
+        if self.command_counter.get() == 0 {
+            return;
+        }
+
+        // Don't apply commands if under a time lock caused by file orphaning.
+        if self.commands_unlock_time > get_current_time() {
+            return;
+        }
+
+        // Do nothing if there is no traversal point.
         let Some(traversal_point) = self.traversal_point.take() else { return };
         let mut dummy_loadable_ref = SceneRef {
             file: SceneFile::File(traversal_point.clone()),
-            path: ScenePath::new("#commands"),
+            path: self.dummy_commands_path.clone(),
         };
 
         // Stack of descendants.
         // [ is in file_order already, current idx, descendants ]
-        let mut stack: Vec<(bool, usize, Arc<[CafFile]>)> = vec![];
+        let mut stack = std::mem::take(&mut self.inverted_stack_cached);
         let mut recursion_count = 0;
 
         // Build stack for the current traversal point.
@@ -541,7 +762,7 @@ impl CommandsBuffer
 
             let parent_file = match parent {
                 FileParent::SelfIsRoot => {
-                    stack.insert(0, (true, 0, Arc::from([current.clone()])));
+                    stack.insert(0, (0, self.root_descendents.clone(), false));
                     break;
                 }
                 #[cfg(feature = "hot_reload")]
@@ -564,24 +785,52 @@ impl CommandsBuffer
                 return;
             };
 
-            stack.insert(0, (true, pos, parent_info.descendants.clone()));
+            stack.insert(0, (pos, parent_info.descendants.clone(), false));
             current = parent_file;
             parent = &parent_info.parent;
         }
 
+        // If we are 'starting fresh' then all files need to be traversed.
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            // Set the current stack-top to descendants-done, because this 'traversal point' is *after*
+            // descendants.
+            // - If self is the root then we must be starting from the 'beginning'.
+            if info.parent != FileParent::SelfIsRoot {
+                stack.last_mut().map(|(_, _, desc_done)| *desc_done = true);
+            }
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            if self.file_order.len() == 0 {
+                if traversal_point.as_str() != GLOBAL_PSEUDO_FILE {
+                    tracing::error!("file order is empty but traversal point {:?} is not the global file (this is a bug)",
+                        traversal_point);
+                }
+            } else {
+                // Set the current stack-top to descendants-done, because this 'traversal point' is *after*
+                // descendants.
+                stack.last_mut().map(|(_, _, desc_done)| *desc_done = true);
+            }
+        }
+
         // Traverse hierarchy to collect commands.
-        self.iter_hierarchy_mut(
+        #[cfg(feature = "hot_reload")]
+        let mut is_first = true;
+
+        self.iter_hierarchy_inverted_mut(
             "applying pending commands",
             stack,
-            move |buff, _in_file_order, file, info| -> Option<bool> {
+            move |buff, file, info| -> bool {
                 // Save the file.
                 #[cfg(feature = "hot_reload")]
                 {
                     // Only push back new files.
-                    if !_in_file_order {
+                    if !is_first || buff.file_order.len() == 0 {
                         info.idx = buff.file_order.len();
                         buff.file_order.push(file.clone());
                     }
+                    is_first = false;
                 }
 
                 // If this stack member is not ready to extract commands, then we need to 'pause' here and try again
@@ -596,7 +845,7 @@ impl CommandsBuffer
                     #[cfg(feature = "hot_reload")]
                     buff.update_traversal_point(file.clone(), info.idx);
 
-                    return None;
+                    return false;
                 }
 
                 // Apply pending commands.
@@ -604,7 +853,7 @@ impl CommandsBuffer
 
                 for cached in info.commands.iter_mut().filter(|c| c.is_pending) {
                     cached.is_pending = false;
-                    buff.counter.remove(1);
+                    buff.command_counter.remove(1);
 
                     let Some(callback) = callbacks.get_for_command(cached.command.type_id) else {
                         tracing::warn!("ignoring command in {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
@@ -623,31 +872,30 @@ impl CommandsBuffer
                 // - We don't check this for non-hot-reload because in that case once the `buff.traversal_point` equals `None`
                 // it can never change to something else. We need to keep iterating forward to find a pending file or
                 // the end of the hierarchy.
-                // TODO: the logic here is slightly spaghetti
                 #[cfg(feature = "hot_reload")]
                 {
-                    if buff.counter._get() == 0 {
-                        return None;
+                    if buff.command_counter.get() == 0 {
+                        return false;
                     }
                 }
 
-                Some(false)
+                true
             }
         );
     }
 
-    /// The callback should return the next `T` value to save in downstream hierarchy entries.
-    fn iter_hierarchy_mut<T: Clone>(
+    #[cfg(feature = "hot_reload")]
+    fn iter_hierarchy_mut(
         &mut self,
         action: &str,
-        mut stack: Vec<(T, usize, Arc<[CafFile]>)>,
-        mut callback: impl FnMut(&mut Self, T, &CafFile, &mut FileCommandsInfo) -> Option<T>,
+        mut stack: Vec<(usize, Arc<[CafFile]>)>,
+        mut callback: impl FnMut(&mut Self, &CafFile, &mut FileCommandsInfo) -> bool,
     )
     {
         let mut recursion_count = 0;
         let mut hierarchy = std::mem::take(&mut self.hierarchy);
 
-        while let Some((custom_data, idx, stack_members)) = stack.pop() {
+        while let Some((idx, stack_members)) = stack.pop() {
             // Check for recursion.
             recursion_count += 1;
             if recursion_count > 100 {
@@ -660,31 +908,87 @@ impl CommandsBuffer
             let Some(info) = hierarchy.get_mut(&stack_members[idx]) else {
                 tracing::error!("failed {action}; tried accessing file {:?} that is missing (this is a bug)",
                     stack_members[idx]);
-                self.hierarchy = hierarchy;
-                return;
+                break;
             };
 
             // Invoke callback on this stack member.
-            let next_custom_data = match (callback)(self, custom_data, &stack_members[idx], info) {
-                Some(next_custom_data) => next_custom_data,
-                None => {
-                    self.hierarchy = hierarchy;
-                    return;
-                }
-            };
+            if !(callback)(self, &stack_members[idx], info) {
+                break;
+            }
 
             // Increment index of this stack entry.
             if idx + 1 < stack_members.len() {
-                stack.push((next_custom_data.clone(), idx + 1, stack_members));
+                stack.push((idx + 1, stack_members));
             }
 
             // Add child stack.
             if info.descendants.len() > 0 {
-                stack.push((next_custom_data, 0, info.descendants.clone()));
+                stack.push((0, info.descendants.clone()));
             }
         }
 
         self.hierarchy = hierarchy;
+        stack.clear();
+        self.stack_cached = stack;
+    }
+
+    /// Applies the callback in inverted order, with children ordered before their parents.
+    fn iter_hierarchy_inverted_mut(
+        &mut self,
+        action: &str,
+        mut stack: Vec<(usize, Arc<[CafFile]>, bool)>,
+        mut callback: impl FnMut(&mut Self, &CafFile, &mut FileCommandsInfo) -> bool,
+    )
+    {
+        let mut recursion_count = 0;
+        let mut hierarchy = std::mem::take(&mut self.hierarchy);
+
+        while let Some((idx, stack_members, descendants_are_done)) = stack.pop() {
+            // Check for recursion.
+            recursion_count += 1;
+            if recursion_count > 100 {
+                tracing::error!("aborting from {action}, recursion limit encountered; there is likely a \
+                    manifest file loop");
+                break;
+            }
+
+            // Get this stack member's info.
+            let Some(info) = hierarchy.get_mut(&stack_members[idx]) else {
+                tracing::error!("failed {action}; tried accessing file {:?} that is missing (this is a bug)",
+                    stack_members[idx]);
+                break;
+            };
+
+            // Descendants are always done if there are none.
+            let descendants_are_done = descendants_are_done || info.descendants.len() == 0;
+
+            // Callback is invoked only after all descendants have iterated.
+            match descendants_are_done {
+                false => {
+                    // Iterate into children.
+                    stack.push((idx, stack_members, false));
+                    stack.push((0, info.descendants.clone(), false));
+                }
+                true => {
+                    // Invoke callback on this stack member.
+                    if !(callback)(self, &stack_members[idx], info) {
+                        break;
+                    }
+
+                    if idx + 1 >= stack_members.len() {
+                        // Set parent to descendants-done.
+                        stack.last_mut().map(|(_, _, desc_done)| *desc_done = true);
+                    } else {
+                        // Go to the next sibling.
+                        stack.push((idx + 1, stack_members, false));
+                    }
+                }
+            }
+        }
+
+        self.hierarchy = hierarchy;
+        stack.clear();
+        self.inverted_stack_cached = stack;
     }
 }
 

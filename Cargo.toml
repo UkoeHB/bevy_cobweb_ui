@@ -1,6 +1,6 @@
 [package]
 name = "bevy_cobweb_ui"
-description = "UI tools and widgets built on bevy_cobweb and sickle_ui"
+description = "UI tools and widgets built on bevy_cobweb"
 authors = ["koe <ukoe@protonmail.com>"]
 version = "0.4.1"
 edition = "2021"
@@ -60,6 +60,7 @@ smol_str = { version = "0.2" }  # Locked to Bevy's smol_str version.
 smallvec = { version = "1.13" }
 thiserror = { version = "1.0" }
 tracing = { version = "0.1" }
+wasm-timer = { version = "0.2" }
 
 # Localization deps
 sys-locale = { version = "0.3" }

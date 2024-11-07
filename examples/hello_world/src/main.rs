@@ -10,13 +10,13 @@ use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
 #[derive(Reflect, PartialEq, Default)]
-struct TestCommand;
+struct TestCommand(String);
 
 impl Command for TestCommand
 {
     fn apply(self, _: &mut World)
     {
-        tracing::info!("success");
+        tracing::info!("TEST: {:?}", self.0.as_str());
     }
 }
 
