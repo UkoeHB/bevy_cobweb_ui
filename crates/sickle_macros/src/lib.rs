@@ -62,7 +62,7 @@ use syn::DeriveInput;
 ///     commands.entity(root_node.single()).with_children(|parent| {
 ///         parent
 ///             .spawn(ButtonBundle {
-///                 style: Style {
+///                 style: Node {
 ///                     width: Val::Px(200.),
 ///                     border: UiRect::all(Val::Px(2.)),
 ///                     ..default()

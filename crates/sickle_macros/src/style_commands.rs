@@ -940,9 +940,9 @@ fn to_setter_entity_command_frag(style_attribute: &StyleAttribute) -> proc_macro
         }
     } else {
         quote! {
-            let Some(mut style) = world.get_mut::<Style>(entity) else {
+            let Some(mut style) = world.get_mut::<Node>(entity) else {
                 warn!(
-                    "Failed to set {} property on entity {}: No Style component found!",
+                    "Failed to set {} property on entity {}: No Node component found!",
                     #target_attr_name,
                     entity
                 );

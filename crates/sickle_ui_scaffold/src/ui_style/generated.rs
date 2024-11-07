@@ -30,10 +30,6 @@ enum _StyleAttributes
     {
         overflow: Overflow
     },
-    Direction
-    {
-        direction: Direction
-    },
     #[animatable]
     Left
     {

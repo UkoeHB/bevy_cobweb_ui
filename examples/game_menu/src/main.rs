@@ -32,7 +32,7 @@ fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Style override for the `sickle_ui` `Slider` widget.
+/// Node override for the `sickle_ui` `Slider` widget.
 fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData)
 {
     // This is styling for a horizontal slider.

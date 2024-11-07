@@ -78,7 +78,7 @@ fn initialize_flex_style(
 fn remove_styles(entity: Entity, world: &mut World)
 {
     world.get_entity_mut(entity).map(|mut e| {
-        e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+        e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
     });
 }
 

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::text::{BreakLineOn, TextLayoutInfo};
+use bevy::text::{LineBreak, TextLayoutInfo};
 use bevy::ui::widget::TextFlags;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
@@ -75,11 +75,11 @@ pub struct TextLine
     /// The desired font size.
     #[reflect(default = "TextLine::default_font_size")]
     pub size: f32,
-    /// The line's [`BreakLineOn`] behavior.
+    /// The line's [`LineBreak`] behavior.
     ///
-    /// Defaults to [`BreakLineOn::NoWrap`].
+    /// Defaults to [`LineBreak::NoWrap`].
     #[reflect(default = "TextLine::default_line_break")]
-    pub linebreak: BreakLineOn,
+    pub linebreak: LineBreak,
     /// The line's [`JustifyText`] behavior.
     ///
     /// Defaults to [`JustifyText::Left`].
@@ -120,9 +120,9 @@ impl TextLine
         Color::WHITE
     }
 
-    fn default_line_break() -> BreakLineOn
+    fn default_line_break() -> LineBreak
     {
-        BreakLineOn::NoWrap
+        LineBreak::NoWrap
     }
 
     fn default_justify_text() -> JustifyText

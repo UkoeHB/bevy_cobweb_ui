@@ -9,72 +9,52 @@ use bevy::ecs::world::{Command, World};
 use bevy::hierarchy::{Children, Parent};
 use bevy::log::{info, warn};
 use bevy::state::state::{FreelyMutableState, NextState, States};
-use bevy::text::{Text, TextSection, TextStyle};
 use bevy::ui::Interaction;
-use bevy::window::{CursorIcon, PrimaryWindow, Window};
-
+use bevy::window::{SystemCursorIcon, PrimaryWindow};
+use bevy::prelude::TextFont;
+use bevy::prelude::Color;
+use bevy::prelude::TextColor;
+use bevy::prelude::Text;
 use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
 use crate::prelude::UiUtils;
 use crate::theme::prelude::*;
 use crate::ui_style::builder::StyleBuilder;
 
-struct SetTextSections
-{
-    sections: Vec<TextSection>,
-}
-
-impl EntityCommand for SetTextSections
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
-            warn!(
-                "Failed to set text sections on entity {}: No Text component found!",
-                entity
-            );
-            return;
-        };
-
-        text.sections = self.sections;
-    }
-}
-
-pub trait SetTextSectionsExt
-{
-    /// Set text sections for a UI entity
-    ///
-    /// The [`Text`] component must already exist on the target entity.
-    fn set_text_sections(&mut self, sections: Vec<TextSection>) -> &mut Self;
-}
-
-impl SetTextSectionsExt for EntityCommands<'_>
-{
-    fn set_text_sections(&mut self, sections: Vec<TextSection>) -> &mut Self
-    {
-        self.add(SetTextSections { sections });
-        self
-    }
-}
-
 struct SetText
 {
     text: String,
-    style: TextStyle,
+    font: TextFont,
+    color: Color
+}
+
+fn get_component_or_warn<T>(entity: Entity, world: &mut World) -> Option<T> {
+    let Some(mut comp) = world.get_mut::<T>(entity) else {
+        warn!(
+            "Expected component not found on entity {}!",
+            entity
+        );
+        return;
+    };
+
+    Some(comp)
 }
 
 impl EntityCommand for SetText
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut text) = world.get_mut::<Text>(entity) else {
-            warn!(
-                "Failed to set text on entity {}: No Text component found!",
-                entity
-            );
+        let Some(text) = get_component_or_warn(entity, world) else {
             return;
         };
-
-        text.sections = vec![TextSection::new(self.text, self.style)];
+        text.text = self.text;
+        let Some(font) = get_component_or_warn(entity, world) else {
+            return;
+        };
+        text.font = self.font;
+        let Some(color) = get_component_or_warn(entity, world) else {
+            return;
+        };
+        text.color = TextColor(color);
     }
 }
 
@@ -83,14 +63,14 @@ pub trait SetTextExt
     /// Set text for a UI entity with the given [`TextStyle`]
     ///
     /// The [`Text`] component must already exist on the target entity.
-    fn set_text(&mut self, text: impl Into<String>, style: Option<TextStyle>) -> &mut Self;
+    fn set_text(&mut self, text: impl Into<String>, font: Option<TextFont>, color: Option<Color>) -> &mut Self;
 }
 
 impl SetTextExt for EntityCommands<'_>
 {
-    fn set_text(&mut self, text: impl Into<String>, style: Option<TextStyle>) -> &mut Self
+    fn set_text(&mut self, text: impl Into<String>, font: Option<TextFont>, color: Option<Color>) -> &mut Self
     {
-        self.add(SetText { text: text.into(), style: style.unwrap_or_default() });
+        self.add(SetText { text: text.into(), font: font.unwrap_or_default(), color: color.unwrap_or_default() });
 
         self
     }
@@ -113,12 +93,7 @@ impl EntityCommand for UpdateText
             return;
         };
 
-        let first_section = match text.sections.get(0) {
-            Some(section) => TextSection::new(self.text, section.style.clone()),
-            None => TextSection::new(self.text, TextStyle::default()),
-        };
-
-        text.sections = vec![first_section];
+        text.text = self.text;
     }
 }
 
@@ -143,33 +118,37 @@ impl UpdateTextExt for EntityCommands<'_>
 // TODO: Move to style and apply to Node's window
 struct SetCursor
 {
-    cursor: CursorIcon,
+    cursor: SystemCursorIcon,
 }
 
 impl Command for SetCursor
 {
     fn apply(self, world: &mut World)
     {
-        let mut q_window = world.query_filtered::<&mut Window, With<PrimaryWindow>>();
-        let Ok(mut window) = q_window.get_single_mut(world) else {
+        let mut q_window = world.query_filtered::<Entity, With<PrimaryWindow>>();
+        let Ok(mut window_ent) = q_window.get_single_mut(world) else {
+            return;
+        };
+        let Some(ec) = world.commands().get_entity_mut(window_ent) else {
             return;
         };
 
-        if window.cursor.icon != self.cursor {
-            window.cursor.icon = self.cursor;
-        }
+        ec.insert(self.cursor);
+        // if window.cursor.icon != self.cursor {
+        //     window.cursor.icon = self.cursor;
+        // }
     }
 }
 
 pub trait SetCursorExt<'w, 's, 'a>
 {
     /// Set the [`PrimaryWindow`]'s cursor
-    fn set_cursor(&mut self, cursor: CursorIcon);
+    fn set_cursor(&mut self, cursor: SystemCursorIcon);
 }
 
 impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's>
 {
-    fn set_cursor(&mut self, cursor: CursorIcon)
+    fn set_cursor(&mut self, cursor: SystemCursorIcon)
     {
         self.add(SetCursor { cursor });
     }

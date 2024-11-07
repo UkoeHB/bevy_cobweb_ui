@@ -101,7 +101,7 @@ impl From<StyleBuilder> for DynamicStyle
                     "StyleBuilder with context-bound attributes converted without context! \
                     Some attributes discarded! \
                     This can be the result of using `PseudoTheme::build()` and calling \
-                    `style_builder.switch_placement(CONTEXT)` in the callback, which is not supported.",                    
+                    `style_builder.switch_placement(CONTEXT)` in the callback, which is not supported.",
                 );
             }
         });
@@ -369,7 +369,7 @@ impl StyleBuilder
         {
             acc.push(new_entry);
         } else {
-            warn!("Style overwritten for {:?}", new_entry);
+            warn!("Node overwritten for {:?}", new_entry);
             // Safe unwrap: checked in if above
             let index = acc
                 .iter()

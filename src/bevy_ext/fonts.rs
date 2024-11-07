@@ -266,7 +266,7 @@ impl<T: Into<FontRequest>> FontWidthExt for T
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Style of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
+/// Node of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
 ///
 /// Take precedence over [`FontWeight`] when negotiating a [`FontRequest`] against available fonts (see
 /// [`FontMap`](crate::prelude::FontMap)).

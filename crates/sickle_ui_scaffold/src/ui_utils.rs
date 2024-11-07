@@ -61,8 +61,8 @@ impl UiUtils
         while let Some(parent) = world.get::<Parent>(current_ancestor) {
             current_ancestor = parent.get();
 
-            // Unsafe unwrap: If a UI element doesn't have a Style, we should panic!
-            let style = world.get::<Style>(current_ancestor).unwrap();
+            // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
+            let style = world.get::<Node>(current_ancestor).unwrap();
             if style.overflow.x == OverflowAxis::Visible && style.overflow.y == OverflowAxis::Visible {
                 continue;
             }
@@ -108,8 +108,8 @@ impl UiUtils
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
     pub fn padding_as_px(entity: Entity, world: &World) -> Vec4
     {
-        // Unsafe unwrap: If a UI element doesn't have a Style, we should panic!
-        let style = world.get::<Style>(entity).unwrap();
+        // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
+        let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.padding, entity, world)
     }
 
@@ -120,8 +120,8 @@ impl UiUtils
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
     pub fn border_as_px(entity: Entity, world: &World) -> Vec4
     {
-        // Unsafe unwrap: If a UI element doesn't have a Style, we should panic!
-        let style = world.get::<Style>(entity).unwrap();
+        // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
+        let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.border, entity, world)
     }
 
@@ -132,8 +132,8 @@ impl UiUtils
     /// Returned Vec4 contains sizes in the order: Top, Right, Bottom, Left.
     pub fn margin_as_px(entity: Entity, world: &World) -> Vec4
     {
-        // Unsafe unwrap: If a UI element doesn't have a Style, we should panic!
-        let style = world.get::<Style>(entity).unwrap();
+        // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
+        let style = world.get::<Node>(entity).unwrap();
         UiUtils::ui_rect_to_px(style.margin, entity, world)
     }
 

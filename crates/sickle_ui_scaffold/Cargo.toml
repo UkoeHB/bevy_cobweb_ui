@@ -15,7 +15,7 @@ disable-ui-context-placeholder-warn = []
 sickle_math = { path = "../sickle_math", version = "0.4.0" }
 sickle_macros = { path = "../sickle_macros", version = "0.4.0" }
 
-bevy = { version = "0.14", default-features = false, features = [
+bevy = { version = "0.15.0-rc.2", default-features = false, features = [
     "bevy_asset",
     "bevy_color",
     "bevy_state",
