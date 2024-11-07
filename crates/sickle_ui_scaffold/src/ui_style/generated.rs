@@ -26,10 +26,6 @@ enum _StyleAttributes
     {
         overflow: Overflow
     },
-    Direction
-    {
-        direction: Direction
-    },
     Left
     {
         left: Val
@@ -312,12 +308,5 @@ enum _StyleAttributes
     OutlineColor
     {
         outline_color: Color
-    },
-    #[skip_lockable_enum]
-    #[target_component(TextureAtlas)]
-    #[target_component_attr(index)]
-    TextureAtlasIndex
-    {
-        atlas_index: usize
     },
 }
