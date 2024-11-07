@@ -12,7 +12,9 @@ fn clear_asset_progress(mut progress: ResMut<LoadProgress>)
 
 fn get_asset_progress<T: AssetLoadProgress + Resource>(world: &mut World) -> (usize, usize)
 {
-    let res = world.resource::<T>();
+    let Some(res) = world.get_resource::<T>() else {
+        return (0, 0);
+    };
     (res.pending_assets(), res.total_assets())
 }
 
@@ -20,7 +22,9 @@ fn get_asset_progress<T: AssetLoadProgress + Resource>(world: &mut World) -> (us
 
 fn get_asset_progress_reactive<T: AssetLoadProgress + ReactResource>(world: &mut World) -> (usize, usize)
 {
-    let res = world.react_resource::<T>();
+    let Some(res) = world.get_react_resource::<T>() else {
+        return (0, 0);
+    };
     (res.pending_assets(), res.total_assets())
 }
 

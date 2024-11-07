@@ -11,12 +11,19 @@ use crate::prelude::*;
 fn load_cobweb_assets(
     mut files: ResMut<LoadedCobwebAssetFiles>,
     mut caf_cache: ResMut<CobwebAssetCache>,
+    mut commands_buffer: ResMut<CommandsBuffer>,
     asset_server: Res<AssetServer>,
 )
 {
-    for file in files.take_preset_files() {
+    let presets = files.take_preset_files();
+
+    // Loads presets.
+    for file in presets.iter().cloned() {
         files.start_loading(file, &mut caf_cache, &asset_server);
     }
+
+    // Initialize commands buffer.
+    commands_buffer.set_root_file(presets);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

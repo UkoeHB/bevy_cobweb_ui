@@ -59,7 +59,8 @@ fn register_node_loadable<T: 'static>(
 /// Applies a loadable command of type `T`.
 fn command_loader<T: Command + Loadable>(w: &mut World, loadable: ReflectedLoadable, loadable_ref: SceneRef)
 {
-    let Some(command) = loadable.get_value::<T>(&loadable_ref) else { return };
+    let registry = w.resource::<AppTypeRegistry>();
+    let Some(command) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
     command.apply(w);
 }
 
@@ -73,9 +74,11 @@ fn bundle_loader<T: Bundle + Loadable>(
     loadable_ref: SceneRef,
 )
 {
-    let Some(mut ec) = w.get_entity_mut(entity) else { return };
-    let Some(bundle) = loadable.get_value::<T>(&loadable_ref) else { return };
-    ec.insert(bundle);
+    w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
+        let Some(mut ec) = world.get_entity_mut(entity) else { return };
+        let Some(bundle) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
+        ec.insert(bundle);
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -88,17 +91,19 @@ fn reactive_loader<T: ReactComponent + Loadable>(
     loadable_ref: SceneRef,
 )
 {
-    let Some(mut emut) = w.get_entity_mut(entity) else { return };
-    let Some(new_val) = loadable.get_value(&loadable_ref) else { return };
-    match emut.get_mut::<React<T>>() {
-        Some(mut component) => {
-            *component.get_noreact() = new_val;
-            React::<T>::trigger_mutation(entity, w);
+    w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
+        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Some(new_val) = loadable.get_value(&loadable_ref, &registry.read()) else { return };
+        match emut.get_mut::<React<T>>() {
+            Some(mut component) => {
+                *component.get_noreact() = new_val;
+                React::<T>::trigger_mutation(entity, world);
+            }
+            None => {
+                world.react(|rc| rc.insert(entity, new_val));
+            }
         }
-        None => {
-            w.react(|rc| rc.insert(entity, new_val));
-        }
-    }
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -114,7 +119,8 @@ fn instruction_loader<T: Instruction + Loadable>(
     if !w.entities().contains(entity) {
         return;
     }
-    let Some(value) = loadable.get_value::<T>(&loadable_ref) else { return };
+    let registry = w.resource::<AppTypeRegistry>();
+    let Some(value) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
     value.apply(entity, w);
 }
 
@@ -124,7 +130,7 @@ fn load_from_ref(
     In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
@@ -133,7 +139,7 @@ fn load_from_ref(
         return;
     }
 
-    caf_cache.track_entity(id, loadable_ref, initializer, &loaders, &mut c);
+    scene_buffer.track_entity(id, loadable_ref, initializer, &loaders, &mut c);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -159,7 +165,7 @@ fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 #[cfg(feature = "hot_reload")]
 pub(crate) fn load_queued_from_ref(
     In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
@@ -168,7 +174,7 @@ pub(crate) fn load_queued_from_ref(
         return;
     }
 
-    caf_cache.track_entity_queued(id, loadable_ref, initializer);
+    scene_buffer.track_entity_queued(id, loadable_ref, initializer);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

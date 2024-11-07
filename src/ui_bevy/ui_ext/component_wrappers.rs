@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 use crate::sickle_ext::lerp::Lerp;
@@ -74,28 +73,24 @@ fn set_border_radius_bottom_right(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BackgroundColor`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BgColor(pub Color);
-
-impl Instruction for BgColor
+impl Instruction for BackgroundColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.insert(BackgroundColor(self.0));
+            e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<BackgroundColor>();
+            e.remove::<Self>();
         });
     }
 }
 
-impl ThemedAttribute for BgColor
+impl ThemedAttribute for BackgroundColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -104,33 +99,29 @@ impl ThemedAttribute for BgColor
     }
 }
 
-impl ResponsiveAttribute for BgColor {}
-impl AnimatableAttribute for BgColor {}
+impl ResponsiveAttribute for BackgroundColor {}
+impl AnimatableAttribute for BackgroundColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BorderColor`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BrColor(pub Color);
-
-impl Instruction for BrColor
+impl Instruction for BorderColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.insert(BorderColor(self.0));
+            e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<BorderColor>();
+            e.remove::<Self>();
         });
     }
 }
 
-impl ThemedAttribute for BrColor
+impl ThemedAttribute for BorderColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -139,8 +130,8 @@ impl ThemedAttribute for BrColor
     }
 }
 
-impl ResponsiveAttribute for BrColor {}
-impl AnimatableAttribute for BrColor {}
+impl ResponsiveAttribute for BorderColor {}
+impl AnimatableAttribute for BorderColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -148,7 +139,12 @@ impl AnimatableAttribute for BrColor {}
 ///
 /// See [`BrRadiusTopLeft`], [`BrRadiusTopRight`], [`BrRadiusBottomLeft`], [`BrRadiusBottomRight`] to set
 /// individual corners.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadius(pub Val);
 
 impl Instruction for BrRadius
@@ -185,7 +181,12 @@ impl AnimatableAttribute for BrRadius {}
 /// Mirrors [`BorderRadius`] to set the top left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusTopLeft(pub Val);
 
 impl Instruction for BrRadiusTopLeft
@@ -220,7 +221,12 @@ impl AnimatableAttribute for BrRadiusTopLeft {}
 /// Mirrors [`BorderRadius`] to set the top right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusTopRight(pub Val);
 
 impl Instruction for BrRadiusTopRight
@@ -255,7 +261,12 @@ impl AnimatableAttribute for BrRadiusTopRight {}
 /// Mirrors [`BorderRadius`] to set the bottom left corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusBottomLeft(pub Val);
 
 impl Instruction for BrRadiusBottomLeft
@@ -290,7 +301,12 @@ impl AnimatableAttribute for BrRadiusBottomLeft {}
 /// Mirrors [`BorderRadius`] to set the bottom right corner radius, can be loaded as an instruction.
 ///
 /// See [`BrRadius`] to set all corners at once.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct BrRadiusBottomRight(pub Val);
 
 impl Instruction for BrRadiusBottomRight
@@ -323,7 +339,12 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Outline`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct NodeOutline
 {
     pub width: Val,
@@ -386,27 +407,7 @@ impl AnimatableAttribute for NodeOutline {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`FocusPolicy`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetFocusPolicy
-{
-    Block,
-    #[default]
-    Pass,
-}
-
-impl Into<FocusPolicy> for SetFocusPolicy
-{
-    fn into(self) -> FocusPolicy
-    {
-        match self {
-            Self::Block => FocusPolicy::Block,
-            Self::Pass => FocusPolicy::Pass,
-        }
-    }
-}
-
-impl Instruction for SetFocusPolicy
+impl Instruction for FocusPolicy
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -424,7 +425,7 @@ impl Instruction for SetFocusPolicy
     }
 }
 
-impl ThemedAttribute for SetFocusPolicy
+impl ThemedAttribute for FocusPolicy
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -432,44 +433,16 @@ impl ThemedAttribute for SetFocusPolicy
         value
     }
 }
-impl ResponsiveAttribute for SetFocusPolicy {}
+impl ResponsiveAttribute for FocusPolicy {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ZIndex`], can be loaded as an instruction.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetZIndex
-{
-    Local(i32),
-    Global(i32),
-}
-
-impl Default for SetZIndex
-{
-    fn default() -> Self
-    {
-        Self::Local(0)
-    }
-}
-
-impl Into<ZIndex> for SetZIndex
-{
-    fn into(self) -> ZIndex
-    {
-        match self {
-            Self::Local(i) => ZIndex::Local(i),
-            Self::Global(i) => ZIndex::Global(i),
-        }
-    }
-}
-
-impl Instruction for SetZIndex
+impl Instruction for ZIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let z: ZIndex = self.into();
         world.get_entity_mut(entity).map(|mut e| {
-            e.insert(z);
+            e.insert(self);
         });
     }
 
@@ -481,7 +454,7 @@ impl Instruction for SetZIndex
     }
 }
 
-impl ThemedAttribute for SetZIndex
+impl ThemedAttribute for ZIndex
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -489,7 +462,7 @@ impl ThemedAttribute for SetZIndex
         value
     }
 }
-impl ResponsiveAttribute for SetZIndex {}
+impl ResponsiveAttribute for ZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -499,16 +472,16 @@ impl Plugin for UiComponentWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_animatable::<BgColor>()
-            .register_animatable::<BrColor>()
+        app.register_animatable::<BackgroundColor>()
+            .register_animatable::<BorderColor>()
             .register_animatable::<BrRadius>()
             .register_animatable::<BrRadiusTopLeft>()
             .register_animatable::<BrRadiusTopRight>()
             .register_animatable::<BrRadiusBottomLeft>()
             .register_animatable::<BrRadiusBottomRight>()
             .register_animatable::<NodeOutline>()
-            .register_responsive::<SetFocusPolicy>()
-            .register_responsive::<SetZIndex>();
+            .register_responsive::<FocusPolicy>()
+            .register_responsive::<ZIndex>();
     }
 }
 

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use serde_json::Value;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
@@ -33,7 +32,7 @@ fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
 //-------------------------------------------------------------------------------------------------------------------
 
 // [ path : [ terminal identifier : constant value ] ]
-type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, Value>>;
+type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, ()>>;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -61,20 +60,20 @@ impl ConstantsBuffer
     }
 
     /// Adds an entry to the new file being constructed.
-    pub(crate) fn _add_entry(&mut self, path: SmolStr, map: HashMap<SmolStr, Value>)
+    pub(crate) fn _add_entry(&mut self, path: SmolStr, map: HashMap<SmolStr, ()>)
     {
         self._new_file.insert(path, map);
     }
 
     /// Gets an already-inserted entry in the new file being constructed.
-    pub(crate) fn _get_entry_mut(&mut self, path: impl AsRef<str>) -> Option<&mut HashMap<SmolStr, Value>>
+    pub(crate) fn _get_entry_mut(&mut self, path: impl AsRef<str>) -> Option<&mut HashMap<SmolStr, ()>>
     {
         let path = path.as_ref();
         self._new_file.get_mut(path)
     }
 
     /// Searches backward through the stack until a match is found.
-    pub(crate) fn _get_path(&self, path: impl AsRef<str>) -> Option<&HashMap<SmolStr, Value>>
+    pub(crate) fn _get_path(&self, path: impl AsRef<str>) -> Option<&HashMap<SmolStr, ()>>
     {
         let path = path.as_ref();
         self._new_file.get(path).or_else(|| {

@@ -10,7 +10,7 @@ readme = "README.md"
 repository = "https://github.com/UkoeHB/bevy_cobweb_ui"
 
 [workspace]
-members = ["bevy_cobweb_ui_derive", "examples/*", "crates/*"]
+members = ["examples/*", "crates/*"]
 exclude = ["examples/*"]
 
 [lib]
@@ -34,11 +34,14 @@ default = ["colors", "widgets"]
 # Enables built-in colors.
 colors = []
 
-# Enables built-in assets.
-assets = []
+# Enables built-in assets. TODO: re-evaluate how to use this feature flag
+#assets = []
 
 # Enables built-in widgets.
 widgets = ["colors"]
+
+# Enables Serialize/Deserialize on built-in types.
+serde = ["bevy/serialize"]
 
 # Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.
 hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
@@ -47,28 +50,16 @@ hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
 dev = ["hot_reload", "bevy/dynamic_linking"]
 
 [dependencies]
-bevy = { version = "0.15.0-rc.2", default-features = true, features = [
-    "serialize",
-] }
+bevy = { version = "0.15.0-rc.2", default-features = true }
 bevy_cobweb = { version = "0.13.0-rc.2" }
 memchr = { version = "2.7" }
 nom = { version = "7.1" }
 nom_locate = { version = "4.2" }
-ryu = { version = "1.0" }
 serde = { version = "1.0" }
-serde_json = { version = "1.0", features = ["preserve_order"] }
-smol_str = { version = "0.2" } # Problem with Reflect derive on v0.3.1?
+smol_str = { version = "0.2" }  # Locked to Bevy's smol_str version.
 smallvec = { version = "1.13" }
-itoa = { version = "1.0" }
 thiserror = { version = "1.0" }
 tracing = { version = "0.1" }
-zerocopy = { version = "0.8" }
-sickle_math = { path = "crates/sickle_math", version = "0.4.0" }
-sickle_macros = { path = "crates/sickle_macros", version = "0.4.0" }
-sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.4.0" }
-
-#sickle_ui = { rev = "fe8c70c", git = "https://github.com/UmbraLuminosa/sickle_ui" }
-#sickle_ui = { rev = "9940ed9", git = "https://github.com/UkoeHB/sickle_ui" }
 
 # Localization deps
 sys-locale = { version = "0.3" }
@@ -81,9 +72,13 @@ serde_yaml = { version = "0.9" }
 unic-langid = { version = "0.9" }
 
 # Local sub-crates
-bevy_cobweb_ui_derive = { path = "bevy_cobweb_ui_derive", version = "0.1.0" }
+bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.1.0" }
+sickle_math = { path = "crates/sickle_math", version = "0.4.0" }
+sickle_macros = { path = "crates/sickle_macros", version = "0.4.0" }
+sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.4.0" }
 
 [dev-dependencies]
+bevy = { version = "0.14", default-features = true, features = ["serialize"] }
 tracing-subscriber = { version = "0.3" }
 
 [profile.dev.package."*"]

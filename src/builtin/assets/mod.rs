@@ -5,5 +5,4 @@
 mod fonts;
 mod plugin;
 
-pub(crate) use fonts::*;
 pub(crate) use plugin::*;

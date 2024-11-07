@@ -132,6 +132,11 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
     {
         commands.ui_builder(entity)
     }
+
+    // fn reborrow(&mut self) -> Self
+    // {
+    //     self.reborrow()
+    // }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -159,6 +164,11 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
     {
         commands.ui_builder(entity)
     }
+
+    // fn reborrow(&mut self) -> Self
+    // {
+    //     self.reborrow()
+    // }
 }
 
 impl<'a> scene_traits::LoadedSceneBuilder<'a> for UiBuilder<'a, Entity> {}

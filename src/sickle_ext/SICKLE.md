@@ -12,17 +12,14 @@ There are three kinds of attributes:
 - **Responsive**: A responsive value will change in response to `sickle_ui` flux interactions (you need the [`Interactive`](bevy_cobweb_ui::prelude::Interactive) loadable to enable this). For example, the background color of a widget may change in response to hovering or pressing it. We have the [`Responsive<T>`](bevy_cobweb_ui::prelude::Responsive) loadable for these attributes, and the corresponding [`ResponsiveAttribute`]((bevy_cobweb_ui::prelude::ResponsiveAttribute)) trait that must be implemented on `T`. Note that `sickle_ui` calls these 'interactive attributes', but we call them 'responsive' for clarity.
 - **Animated**: An animated value will change fluidly between states in response to `sickle_ui` flux interactions (again you need the [`Interactive`](bevy_cobweb_ui::prelude::Interactive) loadable to enable this). We have the [`Animated<T>`](bevy_cobweb_ui::prelude::Animated) loadable for these attributes, and the corresponding [`AnimatableAttribute`]((bevy_cobweb_ui::prelude::AnimatableAttribute)) trait that must be implemented on `T`.
 
-To illustrate, here is our implementation of the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable:
+To illustrate, here is our implementation of traits for `bevy`'s built-in [`BackgroundColor`](bevy::prelude::BackgroundColor) component:
 ```rust
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct BgColor(pub Color);
-
-impl Instruction for BgColor
+impl Instruction for BackgroundColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.insert(BackgroundColor(self.0));
+            e.insert(self);
         });
     }
 
@@ -34,7 +31,7 @@ impl Instruction for BgColor
     }
 }
 
-impl ThemedAttribute for BgColor
+impl ThemedAttribute for BackgroundColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -43,30 +40,22 @@ impl ThemedAttribute for BgColor
     }
 }
 
-impl ResponsiveAttribute for BgColor {}
-impl AnimatableAttribute for BgColor {}
+impl ResponsiveAttribute for BackgroundColor {}
+impl AnimatableAttribute for BackgroundColor {}
 ```
 
+We implement `Instruction` because it is a trait bound on `ThemedAttribute`.
+
 To animate it on an entity, your coweb asset file could look like this (it's a reactive square):
-```json
-{
-"scene": {
-    "FlexStyle": {
-        "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
-    },
-    "Animated<BgColor>": {
-        "values": {
-            "idle": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.25, "alpha": 1.0}},
-            "pressed": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.5, "alpha": 1.0}}
-        },
-        "settings": {
-            "press": {"duration": 0.1, "easing": "Linear"},
-            "release": {"duration": 0.1, "easing": "Linear"}
-        }
-    },
-    "Interactive": []
-}
-}
+```rust
+#scenes
+"scene"
+    FlexStyle{dims: {width:100px height:100px}}
+    Animated<BackgroundColor>{
+        values: {idle:#123456 pressed:#123477}
+        settings: {press:{duration:0.1 easing:Linear} release:{duration:0.1 easing:Linear}}
+    }
+    Interactive
 ```
 
 
@@ -183,7 +172,7 @@ Now we construct a `spec` for the widget containing default structure and stylin
                 "dims": {"!button_dims": ""},
                 "flex": {"!button_flex": ""}
             },
-            "Animated<BgColor>": {
+            "Animated<BackgroundColor>": {
                 "values": {"idle": "@bg_idle", "hover": "@bg_hover", "press": "@bg_press"},
                 "settings": {
                     "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
@@ -233,7 +222,7 @@ To build the widget, we use the `UiBuilder` from `sickle_ui`:
 ```rust
 fn build_ui(mut c: Commands)
 {
-    c.ui_builder(UiRoot).container(|n| {
+    c.ui_root().container(|n| {
         // Add default widget.
         CounterWidgetBuilder::default().build(n);
 

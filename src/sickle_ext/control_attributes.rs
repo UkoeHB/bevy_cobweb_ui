@@ -1,20 +1,19 @@
+use attributes::custom_attrs::CustomStaticStyleAttribute;
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
 use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
+use sickle_ui_scaffold::attributes::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
+use crate::sickle_ext::attributes::style_animation::{AnimationSettings, AnimationState};
 use crate::sickle_ext::lerp::Lerp;
-use crate::sickle_ext::prelude::attribute::{
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-};
 use crate::sickle_ext::prelude::*;
-use crate::sickle_ext::theme::dynamic_style_attribute::{DynamicStyleAttribute, DynamicStyleController};
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
-use crate::sickle_ext::theme::style_animation::{AnimationSettings, AnimationState};
+
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_attribute_to_dynamic_style(
@@ -211,7 +210,7 @@ where
 pub trait ThemedAttribute: Instruction + TypePath
 {
     /// Specifies the value-type of the theme attribute.
-    type Value: Loadable + TypePath;
+    type Value: Loadable + TypePath + Clone;
 
     /// Converts [`Self::Value`] into `Self`.
     fn construct(value: Self::Value) -> Self;
@@ -251,7 +250,9 @@ impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribu
 /// Loadable type for theme values.
 ///
 /// Primarily useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+//TODO: how to properly add Serialize/Deserialize derives when `serde` feature is enabled? we don't want to
+// require that T::Value implements Serialize/Deserialize
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Themed<T: ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
@@ -301,7 +302,7 @@ where
 ///
 /// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: GetTypeRegistration,
@@ -338,8 +339,8 @@ where
     fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
-            CustomInteractiveStyleAttribute::new(extract_responsive_value::<T>(self.values)),
+        let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::new(
+            extract_responsive_value::<T>(self.values),
         ));
 
         world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
@@ -361,7 +362,7 @@ where
 ///
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Animated<T: AnimatableAttribute + ThemedAttribute>
 where
     <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
@@ -402,9 +403,7 @@ where
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(
-                extract_animation_value::<T>(self.values),
-            )),
+            attribute: AnimatedStyleAttribute::new(extract_animation_value::<T>(self.values)),
             controller: DynamicStyleController::new(self.settings, AnimationState::default()),
         };
 

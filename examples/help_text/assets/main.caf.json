@@ -11,7 +11,7 @@
             "dims": {"width": {"Px": 275.0}, "height": {"Px": 200.0}},
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
-        "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.4, "alpha": 1.0}}],
+        "BackgroundColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.4, "alpha": 1.0}}],
         "Animated<PropagateOpacity>": {
             "values": {
                 "idle": 0.4,
@@ -28,7 +28,7 @@
             "FlexStyle": {
                 "dims": {"min_width": {"Px": 100.0}, "min_height": {"Px": 75.0}}
             },
-            "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.65, "alpha": 1.0}}],
+            "BackgroundColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.65, "alpha": 1.0}}],
             "Animated<PropagateOpacity>": {
                 "values": {
                     "idle": 0.4,
@@ -69,7 +69,7 @@
                                 "left": {"Px": 7.0}, "bottom": {"Px": 5.0}, "right": "Auto", "top": "Auto"
                             }
                         },
-                        "BgColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
+                        "BackgroundColor": [{"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}],
                         "Animated<PropagateOpacity>": {
                             "values": {
                                 "idle": 0.0,

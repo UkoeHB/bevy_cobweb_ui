@@ -1,69 +1,11 @@
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
-use super::attribute::{
-    CustomAnimatedStyleAttribute, CustomInteractiveStyleAttribute, CustomStaticStyleAttribute,
-};
 use super::generated::*;
 use super::LogicalEq;
-use crate::prelude::FluxInteraction;
-use crate::theme::prelude::*;
-
-pub struct InteractiveStyleBuilder<'a>
-{
-    pub style_builder: &'a mut StyleBuilder,
-}
-
-impl<'a> InteractiveStyleBuilder<'a>
-{
-    pub fn custom(
-        &mut self,
-        callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static,
-    ) -> &mut Self
-    {
-        self.style_builder
-            .add(DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::Custom(
-                CustomInteractiveStyleAttribute::new(callback),
-            )));
-
-        self
-    }
-}
-
-pub struct AnimatedStyleBuilder<'a>
-{
-    pub style_builder: &'a mut StyleBuilder,
-}
-
-impl AnimatedStyleBuilder<'_>
-{
-    pub fn add_and_extract_animation(&mut self, attribute: DynamicStyleAttribute) -> &mut AnimationSettings
-    {
-        let index = self.style_builder.add(attribute.clone());
-
-        let DynamicStyleAttribute::Animated {
-            controller: DynamicStyleController { ref mut animation, .. }, ..
-        } = self.style_builder.attributes[index].attribute
-        else {
-            unreachable!();
-        };
-
-        animation
-    }
-
-    pub fn custom(
-        &mut self,
-        callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static,
-    ) -> &mut AnimationSettings
-    {
-        let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::Custom(CustomAnimatedStyleAttribute::new(callback)),
-            controller: DynamicStyleController::default(),
-        };
-
-        self.add_and_extract_animation(attribute)
-    }
-}
+use crate::attributes::custom_attrs::CustomStaticStyleAttribute;
+use crate::attributes::prelude::*;
+use crate::attributes::ui_context::UiContext;
 
 #[derive(Clone, Debug)]
 pub struct ContextStyleAttributeConfig
@@ -101,7 +43,7 @@ impl From<StyleBuilder> for DynamicStyle
                     "StyleBuilder with context-bound attributes converted without context! \
                     Some attributes discarded! \
                     This can be the result of using `PseudoTheme::build()` and calling \
-                    `style_builder.switch_placement(CONTEXT)` in the callback, which is not supported.",
+                    `style_builder.switch_placement(CONTEXT)` in the callback, which is not supported.",                    
                 );
             }
         });
@@ -167,16 +109,6 @@ impl StyleBuilder
         )));
 
         self
-    }
-
-    pub fn interactive(&mut self) -> InteractiveStyleBuilder
-    {
-        InteractiveStyleBuilder { style_builder: self }
-    }
-
-    pub fn animated(&mut self) -> AnimatedStyleBuilder
-    {
-        AnimatedStyleBuilder { style_builder: self }
     }
 
     /// Switch context of styling by changing the placement of the DynamicStyle and the target of interaction
@@ -369,7 +301,7 @@ impl StyleBuilder
         {
             acc.push(new_entry);
         } else {
-            warn!("Node overwritten for {:?}", new_entry);
+            warn!("Style overwritten for {:?}", new_entry);
             // Safe unwrap: checked in if above
             let index = acc
                 .iter()

@@ -14,7 +14,6 @@ enum ParseError
     InvalidTargetTuplType,
     InvalidTargetComponentType,
     InvalidTargetComponentAttrType,
-    StaticAnimatable,
 }
 
 #[derive(Clone, Debug)]
@@ -26,7 +25,6 @@ struct StyleAttribute
     target_tupl: Option<proc_macro2::TokenStream>,
     target_component: Option<proc_macro2::TokenStream>,
     target_component_attr: Option<Ident>,
-    animatable: bool,
     target_enum: bool,
     static_style_only: bool,
     skip_enity_command: bool,
@@ -52,7 +50,6 @@ impl StyleAttribute
             target_tupl: None,
             target_component: None,
             target_component_attr: None,
-            animatable: false,
             target_enum: false,
             static_style_only: false,
             skip_enity_command: false,
@@ -83,17 +80,11 @@ pub(crate) fn derive_style_commands_macro(ast: &syn::DeriveInput) -> TokenStream
     let stylable_attribute = prepare_stylable_attribute(&attributes);
     let lockable_attribute = prepare_lockable_attribute(&attributes);
     let static_style_attribute = prepare_static_style_attribute(&attributes);
-    let interactive_style_attribute = prepare_interactive_style_attribute(&attributes);
-    let animated_style_attribute = prepare_animated_style_attribute(&attributes);
-    let enum_equivalence = prepare_enum_equivalence(&attributes);
     let style_commands = prepare_style_commands(&attributes);
 
     quote! {
         #static_style_attribute
         #lockable_attribute
-        #interactive_style_attribute
-        #animated_style_attribute
-        #enum_equivalence
         #stylable_attribute
         #style_commands
     }
@@ -138,11 +129,6 @@ fn match_error(span: proc_macro2::Span, error: ParseError) -> proc_macro2::Token
                 span => compile_error!("Unsupported target_component_attr value. Must be defined as #[target_component_attr(attr)]. Must be used along with target_component.");
             }
         }
-        ParseError::StaticAnimatable => {
-            return quote_spanned! {
-                span => compile_error!("Attribute cannot be static only and animatable at the same time!");
-            }
-        }
     }
 }
 
@@ -180,9 +166,7 @@ fn parse_variant(variant: &Variant) -> Result<StyleAttribute, (proc_macro2::Span
 
     for attr in &variant.attrs {
         if attr.style == AttrStyle::Outer {
-            if attr.path().is_ident("animatable") {
-                attribute.animatable = true;
-            } else if attr.path().is_ident("target_enum") {
+            if attr.path().is_ident("target_enum") {
                 attribute.target_enum = true;
             } else if attr.path().is_ident("static_style_only") {
                 attribute.static_style_only = true;
@@ -203,10 +187,6 @@ fn parse_variant(variant: &Variant) -> Result<StyleAttribute, (proc_macro2::Span
                 attribute.target_component_attr = Some(component_attr_ident);
             }
         }
-    }
-
-    if attribute.static_style_only && attribute.animatable {
-        return Err((field.ty.span(), ParseError::StaticAnimatable));
     }
 
     Ok(attribute)
@@ -355,7 +335,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
                 match self {
                     #(#apply_variants)*
                     Self::Custom(callback) => {
-                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
+                        ui_style.entity_commands().add(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
                     }
                 }
             }
@@ -363,224 +343,6 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
 
         impl StyleBuilder {
             #(#builder_fns)*
-        }
-    }
-}
-
-fn prepare_interactive_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
-    let variants = style_attributes.iter().filter(|v| !v.static_style_only);
-    let base_variants: Vec<proc_macro2::TokenStream> =
-        variants.clone().map(to_interactive_style_variant).collect();
-    let eq_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_eq_style_variant).collect();
-    let apply_variants: Vec<proc_macro2::TokenStream> = variants
-        .clone()
-        .map(to_interactive_style_appl_variant)
-        .collect();
-    let builder_fns: Vec<proc_macro2::TokenStream> = variants
-        .clone()
-        .map(to_interactive_style_builder_fn)
-        .collect();
-
-    quote! {
-        #[derive(Clone, Debug)]
-        pub enum InteractiveStyleAttribute {
-            #(#base_variants)*
-            Custom(CustomInteractiveStyleAttribute),
-        }
-
-        impl LogicalEq for InteractiveStyleAttribute {
-            fn logical_eq(&self, other: &Self) -> bool {
-                match (self, other) {
-                    #(#eq_variants)*
-                    (Self::Custom(l0), Self::Custom(r0)) => l0 == r0,
-                    _ => false,
-                }
-            }
-        }
-
-        impl InteractiveStyleAttribute {
-            fn to_attribute(&self, flux_interaction: FluxInteraction) -> StaticStyleAttribute {
-                match self {
-                    #(#apply_variants)*
-                    Self::Custom(_) => unreachable!(),
-                }
-            }
-
-            pub fn apply(&self, flux_interaction: FluxInteraction, ui_style: &mut UiStyle) {
-                match self {
-                    Self::Custom(callback) => {
-                        ui_style
-                            .entity_commands()
-                            .queue(ApplyCustomInteractiveStyleAttribute {
-                                callback: callback.clone(),
-                                flux_interaction,
-                            });
-                    }
-                    _ => {
-                        self.to_attribute(flux_interaction).apply(ui_style);
-                    }
-                }
-            }
-        }
-
-        impl InteractiveStyleBuilder<'_> {
-            #(#builder_fns)*
-        }
-    }
-}
-
-fn prepare_animated_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
-    let variants = style_attributes.iter().filter(|v| v.animatable);
-    let base_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_animated_style_variant).collect();
-    let eq_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_eq_style_variant).collect();
-    let apply_variants: Vec<proc_macro2::TokenStream> = variants
-        .clone()
-        .map(to_animated_style_appl_variant)
-        .collect();
-    let builder_fns: Vec<proc_macro2::TokenStream> = variants.clone().map(to_animated_style_builder_fn).collect();
-
-    quote! {
-        #[derive(Clone, Debug, PartialEq)]
-        pub enum AnimatedStyleAttribute {
-            #(#base_variants)*
-            Custom(CustomAnimatedStyleAttribute),
-        }
-
-        impl LogicalEq for AnimatedStyleAttribute {
-            fn logical_eq(&self, other: &Self) -> bool {
-                match (self, other) {
-                    #(#eq_variants)*
-                    (Self::Custom(l0), Self::Custom(r0)) => l0 == r0,
-                    _ => false,
-                }
-            }
-        }
-
-        impl AnimatedStyleAttribute {
-            fn to_attribute(
-                &self,
-                current_state: &AnimationState,
-            ) -> StaticStyleAttribute {
-                match self {
-                    #(#apply_variants)*
-                    Self::Custom(_) => unreachable!(),
-                }
-            }
-
-            pub fn apply(
-                &self,
-                current_state: &AnimationState,
-                ui_style: &mut UiStyle,
-            ) {
-                match self {
-                    Self::Custom(callback) => {
-                        ui_style
-                            .entity_commands()
-                            .queue(ApplyCustomAnimatadStyleAttribute {
-                                callback: callback.clone(),
-                                current_state: current_state.clone(),
-                            });
-                    }
-                    _ => {
-                        self
-                            .to_attribute(current_state)
-                            .apply(ui_style);
-                    }
-                }
-            }
-        }
-
-        impl AnimatedStyleBuilder<'_> {
-            #(#builder_fns)*
-        }
-    }
-}
-
-fn prepare_enum_equivalence(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
-    let interactive_to_static: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| !v.static_style_only)
-        .map(to_eq_static_variant)
-        .collect();
-    let static_to_interactive: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| !v.static_style_only)
-        .map(to_eq_interactive_variant)
-        .collect();
-
-    let animated_to_interactive: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| v.animatable)
-        .map(to_eq_interactive_variant)
-        .collect();
-    let interactive_to_animated: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| v.animatable)
-        .map(to_eq_animated_variant)
-        .collect();
-
-    let animated_to_static: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| v.animatable)
-        .map(to_eq_static_variant)
-        .collect();
-    let static_to_animated: Vec<proc_macro2::TokenStream> = style_attributes
-        .iter()
-        .filter(|v| v.animatable)
-        .map(to_eq_animated_variant)
-        .collect();
-
-    quote! {
-        impl LogicalEq<StaticStyleAttribute> for InteractiveStyleAttribute {
-            fn logical_eq(&self, other: &StaticStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#interactive_to_static)*
-                    _ => false,
-                }
-            }
-        }
-        impl LogicalEq<InteractiveStyleAttribute> for StaticStyleAttribute {
-            fn logical_eq(&self, other: &InteractiveStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#static_to_interactive)*
-                    _ => false,
-                }
-            }
-        }
-        impl LogicalEq<InteractiveStyleAttribute> for AnimatedStyleAttribute {
-            fn logical_eq(&self, other: &InteractiveStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#animated_to_interactive)*
-                    _ => false,
-                }
-            }
-        }
-        impl LogicalEq<AnimatedStyleAttribute> for InteractiveStyleAttribute {
-            fn logical_eq(&self, other: &AnimatedStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#interactive_to_animated)*
-                    _ => false,
-                }
-            }
-        }
-        impl LogicalEq<StaticStyleAttribute> for AnimatedStyleAttribute {
-            fn logical_eq(&self, other: &StaticStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#animated_to_static)*
-                    _ => false,
-                }
-            }
-        }
-        impl LogicalEq<AnimatedStyleAttribute> for StaticStyleAttribute {
-            fn logical_eq(&self, other: &AnimatedStyleAttribute) -> bool {
-                match (self, other) {
-                    #(#static_to_animated)*
-                    _ => false,
-                }
-            }
         }
     }
 }
@@ -613,30 +375,6 @@ fn to_eq_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenSt
     }
 }
 
-fn to_eq_static_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    quote! {
-        (Self::#ident(_), StaticStyleAttribute::#ident(_)) => true,
-    }
-}
-
-fn to_eq_interactive_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    quote! {
-        (Self::#ident(_), InteractiveStyleAttribute::#ident(_)) => true,
-    }
-}
-
-fn to_eq_animated_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    quote! {
-        (Self::#ident(_), AnimatedStyleAttribute::#ident(_)) => true,
-    }
-}
-
 fn to_base_attribute_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
 {
     let ident = &style_attribute.ident;
@@ -654,24 +392,6 @@ fn to_static_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::Tok
     }
 }
 
-fn to_interactive_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    let type_path = &style_attribute.type_path;
-    quote! {
-        #ident(InteractiveVals<#type_path>),
-    }
-}
-
-fn to_animated_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    let type_path = &style_attribute.type_path;
-    quote! {
-        #ident(AnimatedVals<#type_path>),
-    }
-}
-
 fn to_static_style_apply_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
 {
     let ident = &style_attribute.ident;
@@ -680,26 +400,6 @@ fn to_static_style_apply_variant(style_attribute: &StyleAttribute) -> proc_macro
         Self::#ident(value) => {
             ui_style.#command(value.clone());
         }
-    }
-}
-
-fn to_interactive_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    quote! {
-        Self::#ident(bundle) => {
-            StaticStyleAttribute::#ident(bundle.to_value(flux_interaction))
-        },
-    }
-}
-
-fn to_animated_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    quote! {
-        Self::#ident(bundle) => StaticStyleAttribute::#ident(
-            bundle.to_value(current_state),
-        ),
     }
 }
 
@@ -715,42 +415,6 @@ fn to_static_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::
             ));
 
             self
-        }
-    }
-}
-
-fn to_interactive_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    let type_path = &style_attribute.type_path;
-    let command = &style_attribute.command;
-    quote! {
-        pub fn #command(&mut self, bundle: impl Into<InteractiveVals<#type_path>>) -> &mut Self {
-            self.style_builder.add(DynamicStyleAttribute::Interactive(
-                InteractiveStyleAttribute::#ident(bundle.into()),
-            ));
-
-            self
-        }
-    }
-}
-
-fn to_animated_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
-    let ident = &style_attribute.ident;
-    let type_path = &style_attribute.type_path;
-    let command = &style_attribute.command;
-    quote! {
-        pub fn  #command(
-            &mut self,
-            bundle: impl Into<AnimatedVals<#type_path>>,
-        ) -> &mut AnimationSettings {
-            let attribute = DynamicStyleAttribute::Animated {
-                attribute: AnimatedStyleAttribute::#ident(bundle.into()),
-                controller: DynamicStyleController::default(),
-            };
-
-            self.add_and_extract_animation(attribute)
         }
     }
 }
@@ -779,7 +443,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_ident for UiStyle<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().queue(#cmd_struct_ident {
+                self.entity_commands().add(#cmd_struct_ident {
                     #target_attr,
                     check_lock: true
                 });
@@ -793,7 +457,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_unchecked_ident for UiStyleUnchecked<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().queue(#cmd_struct_ident {
+                self.entity_commands().add(#cmd_struct_ident {
                     #target_attr,
                     check_lock: false
                 });
@@ -940,9 +604,9 @@ fn to_setter_entity_command_frag(style_attribute: &StyleAttribute) -> proc_macro
         }
     } else {
         quote! {
-            let Some(mut style) = world.get_mut::<Node>(entity) else {
+            let Some(mut style) = world.get_mut::<Style>(entity) else {
                 warn!(
-                    "Failed to set {} property on entity {}: No Node component found!",
+                    "Failed to set {} property on entity {}: No Style component found!",
                     #target_attr_name,
                     entity
                 );

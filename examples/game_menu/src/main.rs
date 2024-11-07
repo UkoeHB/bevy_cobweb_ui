@@ -1,4 +1,6 @@
 //! An example game menu.
+fn main() {}
+/*
 
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
@@ -296,7 +298,7 @@ fn add_menu_option<'a>(
     // Load content page for this section.
     let mut page_entity = Entity::PLACEHOLDER;
     l.edit_from_root(content_path, |l| {
-        l.load_scene(file + page_scene, |l| {
+        l.load_scene_and_edit(file + page_scene, |l| {
             page_entity = l.id();
             l.apply(DisplayControl::Hide);
 
@@ -331,7 +333,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     let file = &SceneFile::new("main.caf.json");
     let scene = file + "menu_scene";
 
-    c.ui_builder(UiRoot).load_scene(&mut s, scene, |l| {
+    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         l.edit("menu::options", |l| {
             RadioButtonManager::insert(l.deref_mut());
             add_menu_option(
@@ -396,3 +398,5 @@ fn main()
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+ */

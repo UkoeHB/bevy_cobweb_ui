@@ -1,19 +1,22 @@
+use attributes::prelude::DynamicStylePostUpdate;
+use attributes::pseudo_state::RefreshPseudoStates;
+use attributes::ui_context::UiContext;
 use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
 use super::*;
 use crate::prelude::*;
+use crate::sickle_ext::attributes::dynamic_style::DynamicStyleStopwatch;
+use crate::sickle_ext::attributes::dynamic_style_attribute::DynamicStyleAttribute;
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
 use crate::sickle_ext::prelude::{
     ContextStyleAttribute, DynamicStyle, FluxInteraction, PseudoStates, TrackedInteraction,
 };
-use crate::sickle_ext::theme::dynamic_style::DynamicStyleStopwatch;
-use crate::sickle_ext::theme::dynamic_style_attribute::DynamicStyleAttribute;
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
-use crate::sickle_ext::theme::{ThemeUpdate, UiContext};
 use crate::sickle_ext::ui_style::builder::StyleBuilder;
 use crate::sickle_ext::ui_style::LogicalEq;
 
@@ -509,18 +512,32 @@ impl EntityCommand for RefreshControlledStyles
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// System set where responsive and animatable attributes are refreshed on entities after pseudo state changes.
+#[derive(SystemSet, Hash, Debug, Eq, PartialEq, Copy, Clone)]
+pub struct ControlSet;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct ControlMapPlugin;
 
 impl Plugin for ControlMapPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<ControlRefreshCache>().add_systems(
-            PostUpdate,
-            (cleanup_control_maps, refresh_controlled_styles)
-                .chain()
-                .before(ThemeUpdate),
-        );
+        app.init_resource::<ControlRefreshCache>()
+            .configure_sets(
+                PostUpdate,
+                ControlSet
+                    .after(RefreshPseudoStates)
+                    .before(DynamicStylePostUpdate)
+                    .before(UiSystem::Layout),
+            )
+            .add_systems(
+                PostUpdate,
+                (cleanup_control_maps, refresh_controlled_styles)
+                    .chain()
+                    .in_set(ControlSet),
+            );
     }
 }
 

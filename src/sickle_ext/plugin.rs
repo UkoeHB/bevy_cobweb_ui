@@ -1,11 +1,12 @@
+use attributes::dynamic_style::DynamicStylePlugin;
+use attributes::pseudo_state::PseudoStatePlugin;
 use bevy::prelude::*;
 use flux_interaction::FluxInteractionPlugin;
-use theme::ThemePlugin;
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::pseudo_state::PseudoState;
+use crate::sickle_ext::attributes::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 use crate::sickle_ext::ease::Ease;
-use crate::sickle_ext::theme::pseudo_state::PseudoState;
-use crate::sickle_ext::theme::style_animation::{AnimationConfig, AnimationLoop, AnimationSettings};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ impl Plugin for SickleExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins((FluxInteractionPlugin, ThemePlugin));
+        app.add_plugins((FluxInteractionPlugin, PseudoStatePlugin, DynamicStylePlugin));
         app.register_type::<Ease>()
             .register_type::<PseudoState>()
             .register_type::<AnimationSettings>()

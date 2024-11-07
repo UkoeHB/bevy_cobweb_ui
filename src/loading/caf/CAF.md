@@ -142,10 +142,12 @@ Containers
         - Unit: identifier only (special case: `Option::None` as `none` keyword)
         - Struct-like
             - Map container; must start immediately after end of identifier
-        - Tuple-like (including newtype variants) (special case: `Option::Some` implicitly elided)
+        - Tuple-like (including newtype variants of non-array/non-map/non-tuple) (special case: `Option::Some` implicitly elided)
             - Tuple container; must start immediately after end of identifier
         - Newtype-of-array
             - Array container; must start immediately after end of identifier
+    - Newtype-variant of tuple/map/array can be flattened (e.g. A({1:1 2:2}) -> A{1:1 2:2})
+        - Very handy for newtype-variant of newtype-struct (e.g. Bevy's Color enum can be simplified directly to its variants' inner structs like Srgba{ ... }, where in Rust it looks like Color::Srgba(Srgba{ ... })).
 
 Keywords and special sequences
 - `none`

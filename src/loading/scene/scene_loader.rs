@@ -13,7 +13,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
-fn find_loadable_child_pos(world: &World, parent_entity: Entity, new_index: usize) -> usize
+fn find_scene_child_pos(world: &World, parent_entity: Entity, new_index: usize) -> usize
 {
     let mut count = 0;
     let children = world.get::<Children>(parent_entity);
@@ -206,15 +206,15 @@ pub(crate) struct SceneRegistry
 impl SceneRegistry
 {
     /// Accesses the child layer of a scene's root node to edit it.
-    pub(crate) fn get_or_insert(&mut self, loadable_ref: SceneRef) -> &mut SceneLayer
+    pub(crate) fn get_or_insert(&mut self, scene_ref: SceneRef) -> &mut SceneLayer
     {
-        self.scenes.entry(loadable_ref).or_default()
+        self.scenes.entry(scene_ref).or_default()
     }
 
     /// Accesses the child layer of a scene's root node.
-    pub(crate) fn get(&self, loadable_ref: &SceneRef) -> Option<&SceneLayer>
+    pub(crate) fn get(&self, scene_ref: &SceneRef) -> Option<&SceneLayer>
     {
-        self.scenes.get(loadable_ref)
+        self.scenes.get(scene_ref)
     }
 }
 
@@ -224,7 +224,7 @@ impl SceneRegistry
 pub(crate) struct SceneInstance
 {
     /// Reference to the scene root.
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
     /// Root entity.
     entity: Entity,
     /// Prep function for new nodes.
@@ -238,13 +238,13 @@ impl SceneInstance
     /// Prepares the instance to be filled by a scene.
     pub(crate) fn prepare(
         &mut self,
-        loadable_ref: SceneRef,
+        scene_ref: SceneRef,
         entity: Entity,
         new_node_prep_fn: fn(&mut EntityCommands),
         node_count: usize,
     )
     {
-        self.loadable_ref = loadable_ref;
+        self.scene_ref = scene_ref;
         self.entity = entity;
         self.new_node_prep_fn = NodeInitializer { initializer: new_node_prep_fn };
         self.nodes.clear();
@@ -271,9 +271,9 @@ impl SceneInstance
     }
 
     /// Returns the file location of this scene.
-    pub(crate) fn loadable_ref(&self) -> &SceneRef
+    pub(crate) fn scene_ref(&self) -> &SceneRef
     {
-        &self.loadable_ref
+        &self.scene_ref
     }
 
     /// Returns the root entity of this instance.
@@ -293,7 +293,7 @@ impl SceneInstance
     pub(crate) fn get(&self, path: &ScenePath) -> Option<Entity>
     {
         self.nodes.get(path).cloned().or_else(|| {
-            if self.loadable_ref.path == *path {
+            if self.scene_ref.path == *path {
                 Some(self.entity)
             } else {
                 None
@@ -307,7 +307,7 @@ impl Default for SceneInstance
     fn default() -> Self
     {
         Self {
-            loadable_ref: SceneRef::default(),
+            scene_ref: SceneRef::default(),
             entity: Entity::PLACEHOLDER,
             new_node_prep_fn: NodeInitializer { initializer: |_| {} },
             nodes: HashMap::default(),
@@ -413,7 +413,7 @@ impl SceneLoader
             let root_entity = scene_instance.root_entity();
             let inserted_inner = inserted.clone();
             c.add(move |world: &mut World| {
-                let position = find_loadable_child_pos(world, parent_entity, insertion_index);
+                let position = find_scene_child_pos(world, parent_entity, insertion_index);
 
                 let Some(mut ec) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
@@ -478,7 +478,7 @@ impl SceneLoader
             let root_entity = scene_instance.root_entity();
             let moved = moved.clone();
             c.add(move |world: &mut World| {
-                let position = find_loadable_child_pos(world, parent_entity, new_index);
+                let position = find_scene_child_pos(world, parent_entity, new_index);
 
                 let Some(mut ec) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
@@ -538,9 +538,9 @@ impl SceneLoader
 
     /// Cleans up despawned root entities.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn cleanup_dead_entity(&mut self, loadable_ref: &SceneRef, dead_entity: Entity)
+    pub(crate) fn cleanup_dead_entity(&mut self, scene_ref: &SceneRef, dead_entity: Entity)
     {
-        let Some(scene_instances) = self.scene_instances.get_mut(&loadable_ref) else { return };
+        let Some(scene_instances) = self.scene_instances.get_mut(&scene_ref) else { return };
         let Some(dead_idx) = scene_instances
             .iter()
             .position(|i| i.root_entity() == dead_entity)
@@ -555,7 +555,12 @@ impl SceneLoader
     ///
     /// The scene hierarchy is saved temporarily in a `SceneInstance`. It will be discarded when
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
-    pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
+    pub(crate) fn load_scene_and_edit<T>(
+        &mut self,
+        c: &mut Commands,
+        root_entity: Entity,
+        mut scene_ref: SceneRef,
+    ) -> bool
     where
         T: crate::loading::scene::load_scene_ext::scene_traits::SceneNodeLoader,
     {
@@ -567,7 +572,7 @@ impl SceneLoader
             return false;
         }
 
-        // Replace manifest key in the requested loadable.
+        // Replace manifest key in the requested scene.
         self.manifest_map().swap_for_file(&mut scene_ref.file);
 
         // Look up the requested scene.
@@ -688,7 +693,7 @@ impl SceneLoader
         #[cfg(feature = "hot_reload")]
         {
             self.scene_instances
-                .entry(released.loadable_ref().clone())
+                .entry(released.scene_ref().clone())
                 .or_default()
                 .push(released);
         }

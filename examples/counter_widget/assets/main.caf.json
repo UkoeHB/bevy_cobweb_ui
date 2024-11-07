@@ -48,7 +48,7 @@
         "border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}
     },
     "!button": {
-        "Animated<BrColor>": {
+        "Animated<BorderColor>": {
             "values": {
                 "idle": {"Hsla": {"hue": 24.0, "saturation": 0.74, "lightness": 0.5, "alpha": 1.0}},
                 "hover": {"Hsla": {"hue": 24.0, "saturation": 0.82, "lightness": 0.35, "alpha": 1.0}},

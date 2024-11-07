@@ -289,7 +289,7 @@ Nice!() = TheEnd
         dims: {width: ?param1}
         flex: {..flex}
     }
-    BrColor(#0053AA)
+    BorderColor(#0053AA)
     "inner"
         ..*  // Infer the parameter this refers to from this scene node's name.
         "innermost"
@@ -319,6 +319,7 @@ LoadImages[
 ]
 AnotherCommand($stuff)
 GenericEnum<A B>::Var
+A2("aaa")
 
 /*
 # Scenes
@@ -331,15 +332,16 @@ The scene section must be the *last* section in a caf file.
 // A spec invocation will bring in parameterized content for the scene.
 "scene_from_spec"
     // This one is inserted to the base node
-    BgColor($colors::tailwind::AMBER_50)
+    BackgroundColor($colors::tailwind::AMBER_50)
     +spec_override(
         'inner'{
             // This is inserted to the 'inner' node (named "inner").
-            BgColor($colors::tailwind::AMBER_50)
+            BackgroundColor($colors::tailwind::AMBER_50)
             "add-node"
                 ImplicitNode
         }
     )
+    A2("aaa")
 
 // Custom node structure for the example app.
 // - The node name "root" is optional. An index will be used for its scene path if missing.
@@ -354,7 +356,7 @@ The scene section must be the *last* section in a caf file.
             justify_cross: Center
         )
         ControlRoot("ExampleButton")
-        Animated<BgColor>{
+        Animated<BackgroundColor>{
             values: {
                 idle: hsla!(274.0 0.25 0.55 0.8)
                 hover: hsla!(274.0 0.25 0.55 0.8)
@@ -401,7 +403,7 @@ The scene section must be the *last* section in a caf file.
     "button"
         F!(jm:Center jc:Center)
         InteractiveRoot!("ExampleButton")
-        Animate!(BgColor
+        Animate!(BackgroundColor
             hsla!(274 0.25 0.55 0.8) h:hsla!(274 0.25 0.55 0.8) p:hsla!(274 0.25 0.55 0.8)
             on_over{$some_dur OutExp} on_press{0.005 InExpo})
 

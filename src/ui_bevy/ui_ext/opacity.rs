@@ -1,12 +1,10 @@
 use bevy::ecs::entity::{EntityHashMap, EntityHashSet};
 use bevy::prelude::*;
 use bevy::ui::widget::text_system;
-use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
 use crate::prelude::*;
 use crate::sickle_ext::prelude::DynamicStylePostUpdate;
-use crate::sickle_ext::theme::ThemeUpdate;
 
 // TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
 // fade in ancestor nodes while keeping a segment of the node tree the same opacity.
@@ -323,7 +321,12 @@ fn restore_opacity(
 /// efficient to *hide* those popups using inherited opacity, because it does require hierarchy traversal.
 /// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct PropagateOpacity(pub f32);
 
 impl Instruction for PropagateOpacity
@@ -365,8 +368,8 @@ impl Plugin for UiOpacityPlugin
             .add_systems(
                 PostUpdate,
                 propagate_opacity_values
+                    .after(ControlSet)
                     .after(DynamicStylePostUpdate)
-                    .after(ThemeUpdate)
                     // Before text is converted to glyphs for rendering.
                     .before(text_system),
             )

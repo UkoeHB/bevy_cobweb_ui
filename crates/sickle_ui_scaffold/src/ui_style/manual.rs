@@ -1,6 +1,5 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
-use bevy::text::TextLayoutInfo;
 
 use super::generated::*;
 use super::{LockableStyleAttribute, LockedStyleAttributes, UiStyle, UiStyleUnchecked};
@@ -30,12 +29,19 @@ impl EntityCommand for SetZIndex
         }
 
         let Some(mut z_index) = world.get_mut::<ZIndex>(entity) else {
-            warn!("Failed to set z index on entity {}: No ZIndex component found!", entity);
+            warn!(
+                "Failed to set z index on entity {}: No ZIndex component found!",
+                entity
+            );
             return;
         };
 
         // Best effort avoid change triggering
-        if let (ZIndex(level), ZIndex(target)) = (*z_index, self.z_index) {
+        if let (ZIndex::Local(level), ZIndex::Local(target)) = (*z_index, self.z_index) {
+            if level != target {
+                *z_index = self.z_index;
+            }
+        } else if let (ZIndex::Global(level), ZIndex::Global(target)) = (*z_index, self.z_index) {
             if level != target {
                 *z_index = self.z_index;
             }
@@ -112,32 +118,31 @@ impl EntityCommand for SetImage
         };
 
         let Some(mut image) = world.get_mut::<UiImage>(entity) else {
-            warn!("Failed to set image on entity {}: No UiImage component found!", entity);
+            warn!(
+                "Failed to set image on entity {}: No UiImage component found!",
+                entity
+            );
             return;
         };
 
-        if image.image != handle {
-            image.image = handle;
+        if image.texture != handle {
+            image.texture = handle;
         }
 
         if let ImageSource::Atlas(_, layout) = self.source {
             let layout_handle = world
                 .resource_mut::<Assets<TextureAtlasLayout>>()
-                .add(layout.clone())
-                .clone();
+                .add(layout.clone());
 
-            let Some(mut image) = world.get_mut::<UiImage>(entity) else {
-                warn!("Failed to set image on entity {}: No UiImage component found!", entity);
-                return;
-            };
-
-            if let Some(atlas) = image.texture_atlas.as_mut() {
+            if let Some(mut atlas) = world.get_mut::<TextureAtlas>(entity) {
                 if atlas.layout != layout_handle {
                     atlas.layout = layout_handle;
                     atlas.index = 0;
                 }
             } else {
-                image.texture_atlas = Some(TextureAtlas::from(layout_handle));
+                world
+                    .entity_mut(entity)
+                    .insert(TextureAtlas::from(layout_handle));
             }
         }
     }
@@ -152,7 +157,7 @@ impl SetImageExt for UiStyle<'_>
 {
     fn image(&mut self, source: ImageSource) -> &mut Self
     {
-        self.commands.queue(SetImage { source, check_lock: true });
+        self.commands.add(SetImage { source, check_lock: true });
         self
     }
 }
@@ -166,7 +171,7 @@ impl SetImageUncheckedExt for UiStyleUnchecked<'_>
 {
     fn image(&mut self, source: ImageSource) -> &mut Self
     {
-        self.commands.queue(SetImage { source, check_lock: false });
+        self.commands.add(SetImage { source, check_lock: false });
         self
     }
 }
@@ -176,7 +181,12 @@ impl EntityCommand for SetImageTint
     fn apply(self, entity: Entity, world: &mut World)
     {
         if self.check_lock {
-            check_lock!(world, entity, "image tint", LockableStyleAttribute::ImageTint);
+            check_lock!(
+                world,
+                entity,
+                "image tint",
+                LockableStyleAttribute::ImageTint
+            );
         }
 
         let Some(mut image) = world.get_mut::<UiImage>(entity) else {
@@ -198,7 +208,12 @@ impl EntityCommand for SetImageFlip
     fn apply(self, entity: Entity, world: &mut World)
     {
         if self.check_lock {
-            check_lock!(world, entity, "image flip", LockableStyleAttribute::ImageFlip);
+            check_lock!(
+                world,
+                entity,
+                "image flip",
+                LockableStyleAttribute::ImageFlip
+            );
         }
 
         let Some(mut image) = world.get_mut::<UiImage>(entity) else {
@@ -295,21 +310,21 @@ impl SetFluxInteractionExt for UiStyle<'_>
     fn disable_flux_interaction(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled: false, check_lock: true });
+            .add(SetFluxInteractionEnabled { enabled: false, check_lock: true });
         self
     }
 
     fn enable_flux_interaction(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled: true, check_lock: true });
+            .add(SetFluxInteractionEnabled { enabled: true, check_lock: true });
         self
     }
 
     fn flux_interaction_enabled(&mut self, enabled: bool) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled, check_lock: true });
+            .add(SetFluxInteractionEnabled { enabled, check_lock: true });
         self
     }
 }
@@ -326,21 +341,21 @@ impl SetFluxInteractionUncheckedExt for UiStyleUnchecked<'_>
     fn disable_flux_interaction(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled: false, check_lock: false });
+            .add(SetFluxInteractionEnabled { enabled: false, check_lock: false });
         self
     }
 
     fn enable_flux_interaction(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled: true, check_lock: false });
+            .add(SetFluxInteractionEnabled { enabled: true, check_lock: false });
         self
     }
 
     fn flux_interaction_enabled(&mut self, enabled: bool) -> &mut Self
     {
         self.commands
-            .queue(SetFluxInteractionEnabled { enabled, check_lock: false });
+            .add(SetFluxInteractionEnabled { enabled, check_lock: false });
         self
     }
 }
@@ -357,16 +372,16 @@ impl SetNodeShowHideExt for UiStyle<'_>
     fn show(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetVisibility { visibility: Visibility::Inherited, check_lock: true })
-            .queue(SetDisplay { display: Display::Flex, check_lock: true });
+            .add(SetVisibility { visibility: Visibility::Inherited, check_lock: true })
+            .add(SetDisplay { display: Display::Flex, check_lock: true });
         self
     }
 
     fn hide(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetVisibility { visibility: Visibility::Hidden, check_lock: true })
-            .queue(SetDisplay { display: Display::None, check_lock: true });
+            .add(SetVisibility { visibility: Visibility::Hidden, check_lock: true })
+            .add(SetDisplay { display: Display::None, check_lock: true });
         self
     }
 
@@ -374,12 +389,12 @@ impl SetNodeShowHideExt for UiStyle<'_>
     {
         if render {
             self.commands
-                .queue(SetVisibility { visibility: Visibility::Inherited, check_lock: true })
-                .queue(SetDisplay { display: Display::Flex, check_lock: true });
+                .add(SetVisibility { visibility: Visibility::Inherited, check_lock: true })
+                .add(SetDisplay { display: Display::Flex, check_lock: true });
         } else {
             self.commands
-                .queue(SetVisibility { visibility: Visibility::Hidden, check_lock: true })
-                .queue(SetDisplay { display: Display::None, check_lock: true });
+                .add(SetVisibility { visibility: Visibility::Hidden, check_lock: true })
+                .add(SetDisplay { display: Display::None, check_lock: true });
         }
 
         self
@@ -398,16 +413,16 @@ impl SetNodeShowHideUncheckedExt for UiStyleUnchecked<'_>
     fn show(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetVisibility { visibility: Visibility::Inherited, check_lock: false })
-            .queue(SetDisplay { display: Display::Flex, check_lock: false });
+            .add(SetVisibility { visibility: Visibility::Inherited, check_lock: false })
+            .add(SetDisplay { display: Display::Flex, check_lock: false });
         self
     }
 
     fn hide(&mut self) -> &mut Self
     {
         self.commands
-            .queue(SetVisibility { visibility: Visibility::Hidden, check_lock: false })
-            .queue(SetDisplay { display: Display::None, check_lock: false });
+            .add(SetVisibility { visibility: Visibility::Hidden, check_lock: false })
+            .add(SetDisplay { display: Display::None, check_lock: false });
         self
     }
 
@@ -415,12 +430,12 @@ impl SetNodeShowHideUncheckedExt for UiStyleUnchecked<'_>
     {
         if render {
             self.commands
-                .queue(SetVisibility { visibility: Visibility::Inherited, check_lock: false })
-                .queue(SetDisplay { display: Display::Flex, check_lock: false });
+                .add(SetVisibility { visibility: Visibility::Inherited, check_lock: false })
+                .add(SetDisplay { display: Display::Flex, check_lock: false });
         } else {
             self.commands
-                .queue(SetVisibility { visibility: Visibility::Hidden, check_lock: false })
-                .queue(SetDisplay { display: Display::None, check_lock: false });
+                .add(SetVisibility { visibility: Visibility::Hidden, check_lock: false })
+                .add(SetDisplay { display: Display::None, check_lock: false });
         }
 
         self
@@ -439,11 +454,16 @@ impl EntityCommand for SetAbsolutePosition
     {
         if self.check_lock {
             check_lock!(world, entity, "position: top", LockableStyleAttribute::Top);
-            check_lock!(world, entity, "position: left", LockableStyleAttribute::Left);
+            check_lock!(
+                world,
+                entity,
+                "position: left",
+                LockableStyleAttribute::Left
+            );
         }
 
         let offset = if let Some(parent) = world.get::<Parent>(entity) {
-            let Some(parent_node) = world.get::<ComputedNode>(parent.get()) else {
+            let Some(parent_node) = world.get::<Node>(parent.get()) else {
                 warn!(
                     "Failed to set position on entity {}: Parent has no Node component!",
                     entity
@@ -465,8 +485,11 @@ impl EntityCommand for SetAbsolutePosition
             Vec2::ZERO
         };
 
-        let Some(mut style) = world.get_mut::<Node>(entity) else {
-            warn!("Failed to set position on entity {}: No Node component found!", entity);
+        let Some(mut style) = world.get_mut::<Style>(entity) else {
+            warn!(
+                "Failed to set position on entity {}: No Style component found!",
+                entity
+            );
             return;
         };
 
@@ -485,7 +508,7 @@ impl SetAbsolutePositionExt for UiStyle<'_>
     fn absolute_position(&mut self, position: Vec2) -> &mut Self
     {
         self.commands
-            .queue(SetAbsolutePosition { absolute_position: position, check_lock: true });
+            .add(SetAbsolutePosition { absolute_position: position, check_lock: true });
         self
     }
 }
@@ -500,7 +523,7 @@ impl SetAbsolutePositionUncheckedExt for UiStyleUnchecked<'_>
     fn absolute_position(&mut self, position: Vec2) -> &mut Self
     {
         self.commands
-            .queue(SetAbsolutePosition { absolute_position: position, check_lock: false });
+            .add(SetAbsolutePosition { absolute_position: position, check_lock: false });
         self
     }
 }
@@ -546,12 +569,22 @@ impl EntityCommand for SetFont
             FontSource::Handle(handle) => handle,
         };
 
-        let Some(mut text_font) = world.get_mut::<TextFont>(entity) else {
-            warn!("Failed to set font on entity {}: No Text component found!", entity);
+        let Some(mut text) = world.get_mut::<Text>(entity) else {
+            warn!(
+                "Failed to set font on entity {}: No Text component found!",
+                entity
+            );
             return;
         };
 
-        text_font.font = font.clone();
+        text.sections = text
+            .sections
+            .iter_mut()
+            .map(|section| {
+                section.style.font = font.clone();
+                section.clone()
+            })
+            .collect();
     }
 }
 
@@ -559,12 +592,22 @@ impl EntityCommand for SetFontSize
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut text_font) = world.get_mut::<TextFont>(entity) else {
-            warn!("Failed to set font on entity {}: No Text component found!", entity);
+        let Some(mut text) = world.get_mut::<Text>(entity) else {
+            warn!(
+                "Failed to set font on entity {}: No Text component found!",
+                entity
+            );
             return;
         };
 
-        text_font.font_size = self.font_size;
+        text.sections = text
+            .sections
+            .iter_mut()
+            .map(|section| {
+                section.style.font_size = self.font_size;
+                section.clone()
+            })
+            .collect();
     }
 }
 
@@ -606,7 +649,7 @@ impl SetLockedAttributeExt for UiStyle<'_>
     fn lock_attribute(&mut self, attribute: LockableStyleAttribute) -> &mut Self
     {
         self.commands
-            .queue(SetLockedAttribute { attribute, locked: true });
+            .add(SetLockedAttribute { attribute, locked: true });
         self
     }
 }
@@ -621,7 +664,7 @@ impl SetLockedAttributeUncheckedExt for UiStyleUnchecked<'_>
     fn unlock_attribute(&mut self, attribute: LockableStyleAttribute) -> &mut Self
     {
         self.commands
-            .queue(SetLockedAttribute { attribute, locked: false });
+            .add(SetLockedAttribute { attribute, locked: false });
         self
     }
 }
@@ -655,11 +698,19 @@ impl EntityCommand for SetSize
     {
         if self.check_lock {
             check_lock!(world, entity, "size: width", LockableStyleAttribute::Width);
-            check_lock!(world, entity, "size: height", LockableStyleAttribute::Height);
+            check_lock!(
+                world,
+                entity,
+                "size: height",
+                LockableStyleAttribute::Height
+            );
         }
 
-        let Some(mut style) = world.get_mut::<Node>(entity) else {
-            warn!("Failed to set size on entity {}: No Node component found!", entity);
+        let Some(mut style) = world.get_mut::<Style>(entity) else {
+            warn!(
+                "Failed to set size on entity {}: No Style component found!",
+                entity
+            );
             return;
         };
 

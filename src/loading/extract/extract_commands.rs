@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 pub(super) fn extract_commands_section(
     type_registry: &TypeRegistry,
-    caf_cache: &mut CobwebAssetCache,
+    commands: &mut Vec<(&'static str, ErasedLoadable)>,
     file: &CafFile,
     section: &CafCommands,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -45,16 +45,11 @@ pub(super) fn extract_commands_section(
 
                 seen_shortnames.push(short_name);
 
-                // Get the loadable's value.
+                // Get the commands's value.
                 let command_value = get_loadable_value(deserializer, loadable);
 
-                // Save this command.
-                caf_cache.insert_command(
-                    &SceneRef { file: SceneFile::File(file.clone()), path: mock_path.clone() },
-                    command_value,
-                    type_id,
-                    long_name,
-                );
+                // Save the command.
+                commands.push((long_name, ErasedLoadable { type_id, loadable: command_value }));
             }
             CafCommandEntry::LoadableMacroCall(_) => {
                 tracing::error!("ignoring unresolved loadable macro in CAF file command section {:?}", file);

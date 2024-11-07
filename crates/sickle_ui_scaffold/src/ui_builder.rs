@@ -50,6 +50,17 @@ impl<'a, T> UiBuilder<'a, T>
     }
 }
 
+impl<'a, T> UiBuilder<'a, T>
+where
+    T: Copy,
+{
+    /// Reborrows self with a shorter lifetime.
+    pub fn reborrow(&mut self) -> UiBuilder<T>
+    {
+        UiBuilder { commands: self.commands.reborrow(), context: self.context }
+    }
+}
+
 impl UiBuilder<'_, UiRoot>
 {
     /// Spawn a bundle as a root node (without parent)
@@ -207,6 +218,12 @@ pub trait UiBuilderExt
 {
     /// A contextual UI Builder, see [`UiBuilder<'a, T>`]
     fn ui_builder<T>(&mut self, context: T) -> UiBuilder<T>;
+
+    /// A UI Builder for the root of a UI tree.
+    fn ui_root(&mut self) -> UiBuilder<UiRoot>
+    {
+        self.ui_builder(UiRoot)
+    }
 }
 
 impl UiBuilderExt for Commands<'_, '_>

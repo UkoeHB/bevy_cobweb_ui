@@ -56,7 +56,7 @@ commands.spawn_empty().load(file + "root");
 commands.spawn_empty().load(file + "root::a");
 
 // Spawns and loads an entire scene (entities: root, root::a, root::a::inner, root::b).
-commands.load_scene(file + "root", |_|{});
+commands.load_scene(file + "root");
 ```
 
 Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities.
@@ -66,31 +66,27 @@ Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude
 
 A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobwebAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
 
-For example, with the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable defined in this crate:
+For example, with the [`BackgroundColor`](bevy::prelude::BackgroundColor) component from `bevy`:
 
-```json
-{
-    "root": {
-        "a": {
-            "BgColor": [{"Hsla": {"hue": 274.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+```caf
+#scenes
+"root"
+    "a"
+        BackgroundColor(#F50A80)
 
-            "inner": {
-                // More values
-            }
-        },
-        "b": {
-            // Other values
-        }
-    }
-}
+        "inner"
+            // More values
+
+    "b"
+        // Other values
 ```
 
-When the scene node `"root::a"` is loaded to an entity, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable will be applied to the entity.
+When the scene node `"root::a"` is loaded to an entity, the [`BackgroundColor`](bevy::prelude::BackgroundColor) component will be inserted to the entity.
 
 You can define three kinds of loadables:
 - **Bundles**: Inserted as bundles.
 - **Reactive**: Inserted as reactive components.
-- **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BgColor`](bevy_cobweb_ui::prelude::BgColor) loadable is an instruction that inserts the Bevy `BackgroundColor` component.
+- **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BrRadius`](bevy_cobweb_ui::prelude::BrRadius) loadable is an instruction that inserts the `BorderRadius` component.
 
 ```rust
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -121,14 +117,14 @@ If you have the `hot_reload` feature enabled, then whenever a loadable is change
 
 - **Warning**: Loadables are 'non-reversible' so if you delete a loadable from a scene node, entities subscribed to that node won't be updated to reflect the change. To see the effects, you need to either restart your app or spawn new entities with that node.
 
-To load a full scene, you can use [`LoadSceneExt::load_scene`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene` callback.
+To load a full scene, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene_and_edit` callback.
 
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let file = &SceneFile::new("path/to/file.caf.json");
 
-    c.load_scene(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
+    c.load_scene_and_edit(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
         // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
         loaded_scene.insert(MyComponent);
@@ -143,7 +139,7 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
             // ...
 
             // Insert another scene as a child of this node.
-            loaded_scene.load_scene(file + "footer_scene", |loaded_scene| {
+            loaded_scene.load_scene_and_edit(file + "footer_scene", |loaded_scene| {
                 // ...
             });
         });
@@ -191,7 +187,7 @@ Commands are globally ordered by:
 1. Files manually registered to an app with [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
 2. Commands in a file's `#commands` section(s).
 3. Files loaded recursively via CAF manifests. Commands in file A will be applied before any commands in 
-manifest files in file A.
+manifest files in file A. All `self as xxx` manifest entries are ignored for command ordering.
 
 ```json
 {
@@ -230,7 +226,7 @@ To solve that you can add a `#using` section to the base map in a file. The usin
 {
     "#using": [
         "my_color_crate::custom_colors::Color",
-        "bevy_cobweb_ui::ui_bevy::ui_ext::component_wrappers::BgColor"
+        "bevy_cobweb_ui::ui_bevy::ui_ext::component_wrappers::BrRadius"
     ]
 }
 ```
@@ -265,7 +261,7 @@ This example shows inserting a constant in the middle of a value. We use `$path:
     },
 
     "background": {
-        "BgColor": [{"Hsla": {"hue": "$standard::hue", "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+        "BackgroundColor": [{"Hsla": {"hue": "$standard::hue", "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
     }
 }
 ```
@@ -274,19 +270,19 @@ Which expands to:
 ```json
 {
     "background": {
-        "BgColor": [{"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
+        "BackgroundColor": [{"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}}],
     }
 }
 ```
 
 When accessing a constant as a map key, you must end it with `::*`, which means 'paste all contents'.
 
-In this example, the [`BgColor`](bevy_cobweb_ui::prelude::BgColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
+In this example, the [`BackgroundColor`](bevy_cobweb_ui::prelude::BackgroundColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
 ```json
 {
     "#constants": {
         "$standard":{
-            "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+            "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
             "AbsoluteStyle": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }
@@ -302,7 +298,7 @@ When expanded, the result will be
 ```json
 {
     "my_node": {
-        "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+        "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
         "AbsoluteStyle": {
             "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
         }
@@ -581,7 +577,7 @@ Add the `#import` section to the base map in a file. It should be a map between 
 {
     "#constants": {
         "$standard":{
-            "BgColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
+            "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
             "AbsoluteStyle": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }
@@ -651,13 +647,13 @@ And now manifest keys can be used instead of file paths to reference files:
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     // Load widget
-    c.load_scene(&mut s, SceneRef::new("widgets.button", "widget"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("widgets.button", "widget"));
 
     // Load app scene
-    c.load_scene(&mut s, SceneRef::new("app", "my_scene"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("app", "my_scene"));
 
     // Load demo scene
-    c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"), |_|{});
+    c.load_scene(&mut s, SceneRef::new("manifest", "demo_scene_in_manifest_file"));
 }
 ```
 
@@ -789,6 +785,6 @@ Now when you load the built-in widget, it will use your override for `constant_a
 fn build_scene(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let scene = SceneRef::new("builtin.widgets.example_widget", "scene");
-    c.load_scene(&mut s, scene, |_|{});
+    c.load_scene(&mut s, scene);
 }
 ```

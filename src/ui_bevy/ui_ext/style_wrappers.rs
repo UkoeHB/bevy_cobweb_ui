@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 use crate::sickle_ext::lerp::Lerp;
@@ -10,7 +9,12 @@ use crate::sickle_ext::lerp::Lerp;
 /// Mirrors [`UiRect`] for stylesheet serialization.
 ///
 /// All fields default to `Val::Px(0.)`.
-#[derive(Reflect, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct StyleRect
 {
     #[reflect(default = "StyleRect::default_field")]
@@ -79,7 +83,12 @@ impl Lerp for StyleRect
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`Overflow`] for stylesheet serialization.
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum Clipping
 {
     #[default]
@@ -114,7 +123,12 @@ impl Into<Overflow> for Clipping
 /// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyLines
 {
     /// Pack lines toward the start of the cross axis.
@@ -179,7 +193,12 @@ impl Into<AlignContent> for JustifyLines
 /// [`FlexWrap::WrapReverse`] is used, but don't use that.)
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyMain
 {
     /*
@@ -251,7 +270,12 @@ impl Into<JustifyContent> for JustifyMain
 /// variants (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::FlexStart`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifyCross
 {
     /// Align children to the start of the cross axis in each line.
@@ -297,7 +321,12 @@ impl Into<AlignItems> for JustifyCross
 /// (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::Auto`].
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum JustifySelfCross
 {
     /// Adopt the parent's [`JustifyCross`] setting.
@@ -331,8 +360,13 @@ impl Into<AlignSelf> for JustifySelfCross
 
 /// Controls a node's size and offset.
 ///
-/// Mirrors fields in [`Node`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Mirrors fields in [`Style`].
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct Dims
 {
     /// Indicates the `desired` width of the node.
@@ -437,8 +471,8 @@ pub struct Dims
 
 impl Dims
 {
-    /// Adds this struct's contents to [`Node`].
-    pub fn set_in_style(&self, style: &mut Node)
+    /// Adds this struct's contents to [`Style`].
+    pub fn set_in_style(&self, style: &mut Style)
     {
         style.width = self.width;
         style.height = self.height;
@@ -489,8 +523,13 @@ impl Default for Dims
 
 /// Controls the layout of a node's children.
 ///
-/// Mirrors fields in [`Node`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Mirrors fields in [`Style`].
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct ContentFlex
 {
     /// Determines whether the node contents will be clipped at the node boundary.
@@ -533,7 +572,7 @@ pub struct ContentFlex
     ///
     /// Has no effect if [`Self::flex_wrap`] is set to [`FlexWrap::NoWrap`].
     ///
-    /// Mirrors [`Node::align_content`].
+    /// Mirrors [`Style::align_content`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,
     /// Controls how children should be aligned on the main axis.
@@ -542,7 +581,7 @@ pub struct ContentFlex
     /// - Any child in the line has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the main axis, or
     ///   has [`SelfFlex::flex_grow`] greater than `0.`.
     ///
-    /// Mirrors [`Node::justify_content`].
+    /// Mirrors [`Style::justify_content`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
     /// Controls how children should be aligned on the cross axis.
@@ -553,7 +592,7 @@ pub struct ContentFlex
     /// Has no effect on a child if it has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the cross
     /// axis.
     ///
-    /// Mirrors [`Node::align_items`].
+    /// Mirrors [`Style::align_items`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
     /// Controls the direction of text (left-to-right (e.g. English) or right-to-left (e.g. Arabic)).
@@ -575,8 +614,8 @@ pub struct ContentFlex
 
 impl ContentFlex
 {
-    /// Adds this struct's contents to [`Node`].
-    pub fn set_in_style(&self, style: &mut Node)
+    /// Adds this struct's contents to [`Style`].
+    pub fn set_in_style(&self, style: &mut Style)
     {
         style.overflow = self.clipping.into();
         style.padding = self.padding.into();
@@ -619,8 +658,13 @@ impl Default for ContentFlex
 
 /// Controls a node's flex behavior in its parent.
 ///
-/// Mirrors fields in [`Node`].
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// Mirrors fields in [`Style`].
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct SelfFlex
 {
     /// Adds space outside the boundary of a node.
@@ -666,7 +710,7 @@ pub struct SelfFlex
     ///
     /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
     ///
-    /// Mirrors [`Node::align_self`].
+    /// Mirrors [`Style::align_self`].
     ///
     /// Defaults to [`JustifySelfCross::Auto`].
     #[reflect(default)]
@@ -675,8 +719,8 @@ pub struct SelfFlex
 
 impl SelfFlex
 {
-    /// Adds this struct's contents to [`Node`].
-    pub fn set_in_style(&self, style: &mut Node)
+    /// Adds this struct's contents to [`Style`].
+    pub fn set_in_style(&self, style: &mut Style)
     {
         style.margin = self.margin.into();
         style.flex_basis = self.flex_basis;
@@ -704,12 +748,17 @@ impl Default for SelfFlex
 
 /// UI style for absolute-positioned nodes.
 ///
-/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Absolute`].
+/// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Absolute`].
 /// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
 /// See [`FlexStyle`] for flexbox-controlled nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct AbsoluteStyle
 {
     #[reflect(default)]
@@ -718,11 +767,11 @@ pub struct AbsoluteStyle
     pub content: ContentFlex,
 }
 
-impl Into<Node> for AbsoluteStyle
+impl Into<Style> for AbsoluteStyle
 {
-    fn into(self) -> Node
+    fn into(self) -> Style
     {
-        let mut style = Node::default();
+        let mut style = Style::default();
         style.display = Display::Flex;
         style.position_type = PositionType::Absolute;
         self.dims.set_in_style(&mut style);
@@ -750,7 +799,7 @@ impl Instruction for AbsoluteStyle
     fn revert(entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
         });
     }
 }
@@ -759,10 +808,15 @@ impl Instruction for AbsoluteStyle
 
 /// UI style for flexbox-controlled nodes.
 ///
-/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
+/// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FlexStyle
 {
     #[reflect(default)]
@@ -773,11 +827,11 @@ pub struct FlexStyle
     pub flex: SelfFlex,
 }
 
-impl Into<Node> for FlexStyle
+impl Into<Style> for FlexStyle
 {
-    fn into(self) -> Node
+    fn into(self) -> Style
     {
-        let mut style = Node::default();
+        let mut style = Style::default();
         style.display = Display::Flex;
         style.position_type = PositionType::Relative;
         self.dims.set_in_style(&mut style);
@@ -806,15 +860,20 @@ impl Instruction for FlexStyle
     fn revert(entity: Entity, world: &mut World)
     {
         world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
         });
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component that toggles the [`Node::display`] field.
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+/// Reactive component that toggles the [`Style::display`] field.
+#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum DisplayControl
 {
     /// Corresponds to [`Display::Flex`].
@@ -855,7 +914,7 @@ impl Instruction for DisplayControl
     {
         world.get_entity_mut(entity).map(|mut e| {
             e.remove::<React<DisplayControl>>();
-            if let Some(mut style) = e.get_mut::<Node>() {
+            if let Some(mut style) = e.get_mut::<Style>() {
                 style.display = Self::Display.into();
             }
         });
@@ -873,7 +932,7 @@ fn detect_absolute_style(
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut style: Node = (*style).clone().into();
+    let mut style: Style = (*style).clone().into();
     if let Some(control) = maybe_display_control {
         style.display = (**control).into();
     }
@@ -902,7 +961,7 @@ fn detect_flex_style(
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut style: Node = (*style).clone().into();
+    let mut style: Style = (*style).clone().into();
     if let Some(control) = maybe_display_control {
         style.display = (**control).into();
     }
@@ -925,7 +984,7 @@ impl WorldReactor for DetectFlexStyle
 fn detect_display_control(
     insertion: InsertionEvent<DisplayControl>,
     mutation: MutationEvent<DisplayControl>,
-    mut node: Query<(&mut Node, &React<DisplayControl>)>,
+    mut node: Query<(&mut Style, &React<DisplayControl>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());

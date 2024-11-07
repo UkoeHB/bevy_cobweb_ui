@@ -5,6 +5,7 @@ use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy_cobweb_ui::prelude::caf::*;
 use bevy_cobweb_ui::prelude::*;
 use serde::de::DeserializeSeed;
+use serde::{Deserialize, Serialize};
 
 use crate::caf::helpers::test_span;
 
@@ -13,7 +14,7 @@ use crate::caf::helpers::test_span;
 /// Tests if a raw CAF loadable, raw CAF value, raw JSON, and rust struct are equivalent.
 ///
 /// Only works for types without reflect-defaulted fields.
-fn test_equivalence_impl<T: Loadable + Debug>(
+fn test_equivalence_impl<T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>>(
     w: &World,
     caf_raw: &str,
     caf_raw_val: &str,
@@ -69,10 +70,16 @@ fn test_equivalence_impl<T: Loadable + Debug>(
     // Rust value to caf loadable
     let mut loadable_from_rust = CafLoadable::extract(&value, &type_registry).unwrap();
     let mut cafvalue_from_rust = CafValue::extract(&value).unwrap();
+    let mut loadable_from_rust_reflect = CafLoadable::extract_reflect(&value, &type_registry).unwrap();
+    let mut cafvalue_from_rust_reflect = CafValue::extract_reflect(&value, &type_registry).unwrap();
     loadable_from_rust.recover_fill(&loadable_parsed);
+    loadable_from_rust_reflect.recover_fill(&loadable_parsed);
     cafvalue_from_rust.recover_fill(&cafvalue_parsed);
+    cafvalue_from_rust_reflect.recover_fill(&cafvalue_parsed);
     assert_eq!(loadable_from_rust, loadable_parsed);
+    assert_eq!(loadable_from_rust_reflect, loadable_parsed);
     assert_eq!(cafvalue_from_rust, cafvalue_parsed);
+    assert_eq!(cafvalue_from_rust_reflect, cafvalue_parsed);
 
     // Rust value from caf loadable parsed (direct)
     let direct_value = T::deserialize(&loadable_parsed).unwrap();
@@ -122,7 +129,9 @@ fn test_equivalence_impl<T: Loadable + Debug>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// See [`test_equivalence_impl`].
-pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+pub fn test_equivalence<T>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+where
+    T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>,
 {
     test_equivalence_impl(w, caf_raw, caf_raw_val, value, true);
 }
@@ -130,7 +139,9 @@ pub fn test_equivalence<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_v
 //-------------------------------------------------------------------------------------------------------------------
 
 /// See [`test_equivalence_impl`].
-pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+pub fn test_equivalence_skip_value_eq<T>(w: &World, caf_raw: &str, caf_raw_val: &str, value: T)
+where
+    T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>,
 {
     test_equivalence_impl(w, caf_raw, caf_raw_val, value, false);
 }
@@ -141,7 +152,7 @@ pub fn test_equivalence_skip_value_eq<T: Loadable + Debug>(w: &World, caf_raw: &
 ///
 /// Expects the conversion `raw -> Caf (-> value -> Caf) -> raw` to be lossy in the sense that original syntax
 /// won't be preserved.
-fn test_equivalence_lossy_impl<T: Loadable + Debug>(
+fn test_equivalence_lossy_impl<T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>>(
     w: &World,
     caf_raw: &str,
     caf_raw_reserialized: &str,
@@ -169,7 +180,10 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug>(
 
     // Rust value to caf loadable
     let mut loadable_from_rust = CafLoadable::extract(&value, &type_registry).unwrap();
+    let mut loadable_from_rust_reflect = CafLoadable::extract_reflect(&value, &type_registry).unwrap();
     loadable_from_rust.recover_fill(&loadable_parsed);
+    loadable_from_rust_reflect.recover_fill(&loadable_parsed);
+    assert_eq!(loadable_from_rust, loadable_from_rust_reflect);
     //assert_eq!(loadable_from_rust, loadable_parsed); // possibly not true e.g. in the case of builtin
     // conversions
 
@@ -204,7 +218,9 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+pub fn test_equivalence_lossy<T>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+where
+    T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>,
 {
     test_equivalence_lossy_impl(w, caf_raw, caf_raw_reserialized, value, true);
 }
@@ -214,12 +230,9 @@ pub fn test_equivalence_lossy<T: Loadable + Debug>(w: &World, caf_raw: &str, caf
 /// The original caf value will only be deserialized via reflection.
 ///
 /// Useful when `T` has reflect-defaulted fields.
-pub fn test_equivalence_lossy_reflection<T: Loadable + Debug>(
-    w: &World,
-    caf_raw: &str,
-    caf_raw_reserialized: &str,
-    value: T,
-)
+pub fn test_equivalence_lossy_reflection<T>(w: &World, caf_raw: &str, caf_raw_reserialized: &str, value: T)
+where
+    T: Loadable + Debug + Serialize + for<'de> Deserialize<'de>,
 {
     test_equivalence_lossy_impl(w, caf_raw, caf_raw_reserialized, value, false);
 }

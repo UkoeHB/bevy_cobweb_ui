@@ -1,3 +1,5 @@
+use bevy::reflect::serde::TypedReflectSerializer;
+use bevy::reflect::{Reflect, TypeRegistry};
 use serde::Serialize;
 
 use crate::prelude::*;
@@ -173,6 +175,12 @@ impl CafValue
     pub fn extract<T: ?Sized + Serialize>(value: &T) -> CafResult<Self>
     {
         value.serialize(CafValueSerializer)
+    }
+
+    pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CafResult<Self>
+    {
+        let wrapper = TypedReflectSerializer::new(value, registry);
+        wrapper.serialize(CafValueSerializer)
     }
 }
 

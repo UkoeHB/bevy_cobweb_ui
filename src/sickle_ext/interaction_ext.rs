@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
+use crate::sickle_ext::attributes::pseudo_state::{PseudoState, PseudoStates};
 use crate::sickle_ext::prelude::*;
-use crate::sickle_ext::theme::pseudo_state::{PseudoState, PseudoStates};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -138,7 +137,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Interactive;
 
 impl Instruction for Interactive

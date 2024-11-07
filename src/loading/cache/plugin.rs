@@ -1,20 +1,20 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 
+use super::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn preprocess_cobweb_asset_files(
-    mut manifest_buffer: Local<HashMap<CafFile, ManifestKey>>,
     asset_server: Res<AssetServer>,
     mut events: EventReader<AssetEvent<CobwebAssetFile>>,
     mut caf_files: ResMut<LoadedCobwebAssetFiles>,
     mut assets: ResMut<Assets<CobwebAssetFile>>,
     mut caf_cache: ResMut<CobwebAssetCache>,
+    mut commands_buffer: ResMut<CommandsBuffer>,
 )
 {
     for event in events.read() {
@@ -37,10 +37,10 @@ fn preprocess_cobweb_asset_files(
         };
 
         preprocess_caf_file(
-            &mut manifest_buffer,
             &asset_server,
             &mut caf_files,
             &mut caf_cache,
+            &mut commands_buffer,
             asset.0,
         );
     }
@@ -55,21 +55,29 @@ fn process_cobweb_asset_files(
     types: Res<AppTypeRegistry>,
     mut caf_cache: ResMut<CobwebAssetCache>,
     mut c: Commands,
+    mut commands_buffer: ResMut<CommandsBuffer>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
 )
 {
     let type_registry = types.read();
 
-    if caf_cache.process_cobweb_asset_files(&type_registry, &mut c, &mut scene_loader) {
+    if caf_cache.process_cobweb_asset_files(
+        &type_registry,
+        &mut c,
+        &mut commands_buffer,
+        &mut scene_buffer,
+        &mut scene_loader,
+    ) {
         c.react().broadcast(CafCacheUpdated);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_pending_commands(mut c: Commands, mut caf_cache: ResMut<CobwebAssetCache>, loaders: Res<LoaderCallbacks>)
+fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, loaders: Res<LoaderCallbacks>)
 {
-    caf_cache.apply_pending_commands(&mut c, &loaders);
+    buffer.apply_pending_commands(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -79,24 +87,24 @@ fn apply_pending_commands(mut c: Commands, mut caf_cache: ResMut<CobwebAssetCach
 #[cfg(feature = "hot_reload")]
 fn apply_pending_node_updates(
     mut c: Commands,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     loaders: Res<LoaderCallbacks>,
 )
 {
-    caf_cache.apply_pending_node_updates(&mut c, &loaders);
+    scene_buffer.apply_pending_node_updates(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "hot_reload")]
 fn cleanup_cobweb_asset_cache(
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
     mut removed: RemovedComponents<HasLoadables>,
 )
 {
     for removed in removed.read() {
-        caf_cache.remove_entity(&mut scene_loader, removed);
+        scene_buffer.remove_entity(&mut scene_loader, removed);
     }
 }
 
@@ -123,6 +131,8 @@ impl Plugin for CobwebAssetCachePlugin
         let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
         app.insert_resource(CobwebAssetCache::new(manifest_map.clone()))
             .register_asset_tracker::<CobwebAssetCache>()
+            .insert_resource(CommandsBuffer::new())
+            .insert_resource(SceneBuffer::new(manifest_map))
             .add_systems(
                 First,
                 (
@@ -135,6 +145,14 @@ impl Plugin for CobwebAssetCachePlugin
                     .chain()
                     .in_set(FileProcessingSet),
             );
+
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            app.configure_sets(First, FileProcessingSet.run_if(in_state(LoadState::Loading)))
+                .add_systems(OnExit(LoadState::Loading), |mut c: Commands| {
+                    c.remove_resource::<CommandsBuffer>();
+                });
+        }
 
         #[cfg(feature = "hot_reload")]
         app.add_systems(Last, cleanup_cobweb_asset_cache);

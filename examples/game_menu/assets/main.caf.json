@@ -56,7 +56,7 @@
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
     },
-    "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
+    "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
 
     "menu": {
         "FlexStyle": {
@@ -67,8 +67,8 @@
             },
             "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "Center"}
         },
-        "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.25, "alpha": 1.0}}],
-        "BrColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}],
+        "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.25, "alpha": 1.0}}],
+        "BorderColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}],
 
         "title": {
             "FlexStyle": {
@@ -114,7 +114,7 @@
             "interaction_barrier": {
                 "FlexStyle": {"dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}}},
                 "Interactive": [],
-                "SetFocusPolicy": "Block"
+                "FocusPolicy": "Block"
             }
         },
 
@@ -122,7 +122,7 @@
             "Width": [{"Percent": 75.0}],
             "Height": [{"Px": 3.0}],
             "Margin": [{"bottom": {"Px": 21.0}, "top": {"Px": 10.0}}],
-            "BgColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
+            "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}]
         },
 
         "options": {
@@ -234,7 +234,7 @@
     "@base_justify_main": "Center",
     "!base_dims": {"min_width": {"Percent": 100.0}},
     "!base": {
-        "Multi<Responsive<BgColor>>": [[
+        "Multi<Responsive<BackgroundColor>>": [[
             {
                 "values": {
                     "idle": {"Hsla": {"hue": 34.0, "saturation": 0.63, "lightness": 0.55, "alpha": 1.0}}
@@ -250,7 +250,7 @@
         "Margin": [{"top": {"Px": 10.0}, "bottom": {"Px": 10.0}, "left": {"Px": 5.0}, "right": {"Px": 5.0}}],
         "Splat<Border>": [{"Px": 2.0}],
         "BrRadius": [{"Px": 12.0}],
-        "BrColor": [{"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.1, "alpha": 1.0}}]
+        "BorderColor": [{"Hsla": {"hue": 34.0, "saturation": 0.55, "lightness": 0.1, "alpha": 1.0}}]
     }
 },
 
