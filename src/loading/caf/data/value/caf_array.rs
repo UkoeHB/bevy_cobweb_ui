@@ -47,7 +47,7 @@ impl CafArray
 
         let end_fill = loop {
             let fill_len = item_fill.len();
-            match CafValue::try_parse(item_fill, remaining)? {
+            match rc(remaining, |rm| CafValue::try_parse(item_fill, rm))? {
                 (Some(entry), next_fill, after_entry) => {
                     if entries.len() > 0 {
                         if fill_len == 0 {

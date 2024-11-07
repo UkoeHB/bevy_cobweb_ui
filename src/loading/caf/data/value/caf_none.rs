@@ -24,6 +24,8 @@ impl CafNone
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
+        // NOTE: recursion not tested here (not vulnerable)
+
         let Ok((remaining, maybe_none)) = snake_identifier(content) else { return Ok((None, fill, content)) };
         if *maybe_none.fragment() != "none" {
             return Ok((None, fill, content));

@@ -143,16 +143,19 @@ impl CafGenericItem
     /// Nomlike means the ok value is `(remaining, result)`.
     pub fn parse_nomlike(content: Span) -> IResult<Span, Self>
     {
-        alt((
-            Self::parse_struct_nomlike,
-            Self::parse_tuple_nomlike,
-            map(CafRustPrimitive::parse_nomlike, |p| Self::RustPrimitive(p)),
-        ))
-        .parse(content)
+        rc(content, |c| {
+            alt((
+                Self::parse_struct_nomlike,
+                Self::parse_tuple_nomlike,
+                map(CafRustPrimitive::parse_nomlike, |p| Self::RustPrimitive(p)),
+            ))
+            .parse(c)
+        })
     }
 
     fn parse_struct_nomlike(content: Span) -> IResult<Span, Self>
     {
+        // NOTE: for simplicity, don't check recursion here (see Self::parse_nomlike)
         let (fill, remaining) = CafFill::parse(content);
         let (remaining, id) = camel_identifier(remaining)?;
         let (generics, remaining) = CafGenerics::try_parse(remaining)?;
@@ -164,6 +167,7 @@ impl CafGenericItem
 
     fn parse_tuple_nomlike(content: Span) -> IResult<Span, Self>
     {
+        // NOTE: for simplicity, don't check recursion here (see Self::parse_nomlike)
         let (fill, remaining) = CafFill::parse(content);
         let (remaining, _) = char('(').parse(remaining)?;
         let (remaining, values) = many0(CafGenericValue::parse_nomlike).parse(remaining)?;
@@ -264,6 +268,7 @@ impl CafGenericValue
     /// Nomlike means the ok value is `(remaining, result)`.
     pub fn parse_nomlike(content: Span) -> IResult<Span, Self>
     {
+        // NOTE: for simplicity, don't test recursion here (items internally check recursion)
         alt((
             map(CafGenericItem::parse_nomlike, |i| Self::Item(i)),
             // TODO: require special macro param type for generic items?
@@ -348,6 +353,7 @@ impl CafGenerics
 
     pub fn try_parse(content: Span) -> Result<(Option<Self>, Span), SpanError>
     {
+        // NOTE: for simplicity, don't test recursion here (value internally checks recursion)
         let Ok((remaining, _)) = char::<_, ()>('<').parse(content) else { return Ok((None, content)) };
         let (remaining, values) = many1(CafGenericValue::parse_nomlike).parse(remaining)?;
         let (close_fill, remaining) = CafFill::parse(remaining);

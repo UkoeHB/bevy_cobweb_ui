@@ -209,6 +209,8 @@ impl CafBuiltin
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
+        // NOTE: recursion not tested here (not vulnerable)
+
         // Hex color
         let fill = match CafHexColor::try_parse(fill, content)? {
             (Some(color), next_fill, remaining) => return Ok((Some(Self::Color(color)), next_fill, remaining)),

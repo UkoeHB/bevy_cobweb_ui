@@ -461,6 +461,7 @@ impl CafNumber
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
+        // NOTE: recursion not tested here (not vulnerable)
         let Ok((number, remaining)) = CafNumberValue::parse(content) else { return Ok((None, fill, content)) };
         let (next_fill, remaining) = CafFill::parse(remaining);
         Ok((Some(Self { fill, number }), next_fill, remaining))

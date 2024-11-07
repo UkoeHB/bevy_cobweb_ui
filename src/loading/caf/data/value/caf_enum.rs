@@ -18,6 +18,7 @@ impl CafEnumVariantIdentifier
 
     pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
     {
+        // NOTE: recursion not tested here (not vulnerable)
         let (remaining, id) = camel_identifier(content)?;
         Ok((Self::from(*id.fragment()), remaining))
     }
@@ -64,13 +65,13 @@ impl CafEnumVariant
 
     pub fn parse(content: Span) -> Result<(Self, CafFill, Span), SpanError>
     {
-        if let (Some(tuple), next_fill, remaining) = CafTuple::try_parse(CafFill::default(), content)? {
+        if let (Some(tuple), next_fill, remaining) = rc(content, |c| CafTuple::try_parse(CafFill::default(), c))? {
             return Ok((Self::Tuple(tuple), next_fill, remaining));
         }
-        if let (Some(array), next_fill, remaining) = CafArray::try_parse(CafFill::default(), content)? {
+        if let (Some(array), next_fill, remaining) = rc(content, |c| CafArray::try_parse(CafFill::default(), c))? {
             return Ok((Self::Array(array), next_fill, remaining));
         }
-        if let (Some(map), next_fill, remaining) = CafMap::try_parse(CafFill::default(), content)? {
+        if let (Some(map), next_fill, remaining) = rc(content, |c| CafMap::try_parse(CafFill::default(), c))? {
             if !map.is_structlike() {
                 tracing::warn!("failed parsing enum struct variant at {}, map is not structlike",
                     get_location(remaining));
@@ -127,10 +128,10 @@ impl CafEnum
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let Ok((id, remaining)) = CafEnumVariantIdentifier::parse(content) else {
+        let Ok((id, remaining)) = rc(content, |c| CafEnumVariantIdentifier::parse(c)) else {
             return Ok((None, fill, content));
         };
-        let (variant, next_fill, remaining) = CafEnumVariant::parse(remaining)?;
+        let (variant, next_fill, remaining) = rc(remaining, |rm| CafEnumVariant::parse(rm))?;
         Ok((Some(Self { fill, id, variant }), next_fill, remaining))
     }
 

@@ -70,7 +70,7 @@ impl CafDefs
             return Err(span_verify_error(content));
         }
 
-        // TODO
+        // TODO (with recursion testing)
 
         let defs = CafDefs { start_fill, defs: vec![] };
         Ok((Some(defs), CafFill::default(), remaining))

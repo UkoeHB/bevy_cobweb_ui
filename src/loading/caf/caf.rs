@@ -42,15 +42,15 @@ impl CafSection
             (Some(section), fill, remaining) => return Ok((Some(Self::Using(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafDefs::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafDefs::try_parse(fill, c))? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Defs(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafCommands::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafCommands::try_parse(fill, c))? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Commands(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafScenes::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafScenes::try_parse(fill, c))? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Scenes(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
@@ -97,11 +97,13 @@ impl Caf
             return Err(span_verify_error(span));
         };
 
+        debug_assert_eq!(get_local_recursion_count(), 0);
+
         let mut sections = vec![];
         let (mut fill, mut remaining) = CafFill::parse(span);
 
         let end_fill = loop {
-            match CafSection::try_parse(fill, remaining)? {
+            match rc(remaining, move |rm| CafSection::try_parse(fill, rm))? {
                 (Some(section), next_fill, after_section) => {
                     sections.push(section);
                     fill = next_fill;
@@ -117,6 +119,8 @@ impl Caf
                 }
             }
         };
+
+        debug_assert_eq!(get_local_recursion_count(), 0);
 
         Ok(Self { file, sections, end_fill })
     }

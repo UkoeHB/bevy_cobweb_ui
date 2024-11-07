@@ -68,6 +68,8 @@ impl CafFill
     /// Parses a fill sequence from the input string. The fill may be empty.
     pub fn parse(input: Span) -> (CafFill, Span)
     {
+        // NOTE: recursion not tested here (not vulnerable)
+
         // Get fill.
         let (remaining, fill) = map(
             recognize(many0_count(alt((

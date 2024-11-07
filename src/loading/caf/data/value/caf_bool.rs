@@ -29,6 +29,8 @@ impl CafBool
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
+        // NOTE: recursion not tested here (not vulnerable)
+
         let Ok((remaining, maybe_bool)) = snake_identifier(content) else { return Ok((None, fill, content)) };
         let value = match *maybe_bool.fragment() {
             "true" => true,

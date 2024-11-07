@@ -111,23 +111,23 @@ impl CafSceneLayerEntry
 
         // Parse item.
         // - Parse loadable macro calls before loadables to avoid conflicts.
-        let fill = match CafLoadableMacroCall::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafLoadableMacroCall::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::LoadableMacroCall(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafLoadable::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafLoadable::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::Loadable(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafSceneMacroCall::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafSceneMacroCall::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCall(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafSceneLayer::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafSceneLayer::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::Layer(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafSceneMacroParam::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafSceneMacroParam::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroParam(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
@@ -213,7 +213,9 @@ impl CafSceneLayer
         let mut entries = vec![];
         let end_fill = loop {
             // Note: this will properly handle the case where content_indent <= layer_indent.
-            match CafSceneLayerEntry::try_parse(layer_indent, content_indent, item_fill, remaining)? {
+            match rc(remaining, move |rm| {
+                CafSceneLayerEntry::try_parse(layer_indent, content_indent, item_fill, rm)
+            })? {
                 (Some(entry), next_fill, after_entry) => {
                     entries.push(entry);
                     item_fill = next_fill;
@@ -277,7 +279,7 @@ impl CafScenes
 
         let end_fill = loop {
             let item_depth = item_fill.ends_newline_then_num_spaces();
-            match CafSceneLayer::try_parse(item_fill, remaining)? {
+            match rc(remaining, move |rm| CafSceneLayer::try_parse(item_fill, rm))? {
                 (Some(entry), next_fill, after_entry) => {
                     if item_depth != Some(0) {
                         tracing::warn!("failed parsing scene at {}; scene is assessed to be on base layer \

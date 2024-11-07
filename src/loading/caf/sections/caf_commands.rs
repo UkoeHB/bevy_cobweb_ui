@@ -31,7 +31,7 @@ impl CafCommandEntry
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
         let starts_newline = fill.ends_with_newline();
-        let fill = match CafLoadable::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafLoadable::try_parse(fill, c))? {
             (Some(loadable), next_fill, remaining) => {
                 if !starts_newline {
                     tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
@@ -45,7 +45,7 @@ impl CafCommandEntry
             }
             (None, fill, _) => fill,
         };
-        let fill = match CafLoadableMacroCall::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafLoadableMacroCall::try_parse(fill, c))? {
             (Some(call), next_fill, remaining) => {
                 if !starts_newline {
                     tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
@@ -98,7 +98,7 @@ impl CafCommands
         let mut entries = vec![];
 
         let end_fill = loop {
-            match CafCommandEntry::try_parse(item_fill, remaining)? {
+            match rc(remaining, move |rm| CafCommandEntry::try_parse(item_fill, rm))? {
                 (Some(entry), next_fill, after_entry) => {
                     entries.push(entry);
                     item_fill = next_fill;

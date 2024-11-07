@@ -293,6 +293,8 @@ impl CobwebAssetCache
         self.processed.insert(preprocessed.file.clone(), processed);
 
         // Check for already-processed files that need to rebuild since they depend on this file.
+        // TODO: It may be more efficient to cache a map of [file : importers]. Below will be quite expensive
+        // if there are many files.
         #[cfg(feature = "hot_reload")]
         {
             if let Some(manifest_key) = self

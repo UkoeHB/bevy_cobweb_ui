@@ -77,51 +77,51 @@ impl CafValue
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let fill = match CafEnum::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafEnum::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Enum(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafBuiltin::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafBuiltin::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Builtin(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafArray::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafArray::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Array(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafTuple::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafTuple::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Tuple(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafMap::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafMap::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Map(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafNumber::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafNumber::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Number(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafBool::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafBool::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Bool(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafNone::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafNone::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::None(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafString::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafString::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::String(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafConstant::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafConstant::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Constant(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafDataMacroCall::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafDataMacroCall::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::DataMacro(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match CafMacroParam::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafMacroParam::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::MacroParam(value)), fill, remaining)),
             (None, fill, _) => fill,
         };

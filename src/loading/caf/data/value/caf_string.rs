@@ -263,6 +263,7 @@ impl CafString
         }
 
         // Parse segments
+        // NOTE: recursion not tested here (not vulnerable)
         let (remaining, mut segments) = parse_string(content)?;
 
         // Cache all segments concatenated

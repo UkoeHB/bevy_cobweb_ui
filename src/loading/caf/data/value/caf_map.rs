@@ -189,11 +189,11 @@ impl CafMapEntry
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let fill = match CafMapKeyValue::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafMapKeyValue::try_parse(fill, c))? {
             (Some(kv), next_fill, remaining) => return Ok((Some(Self::KeyValue(kv)), next_fill, remaining)),
             (None, next_fill, _) => next_fill,
         };
-        let fill = match CafMacroParam::try_parse(fill, content)? {
+        let fill = match rc(content, move |c| CafMacroParam::try_parse(fill, c))? {
             (Some(param), next_fill, remaining) => {
                 if !param.is_catch_all() {
                     tracing::warn!("failed parsing map entry at {}; found macro param that isn't a 'catch all'",
@@ -290,7 +290,7 @@ impl CafMap
 
         let end_fill = loop {
             let fill_len = item_fill.len();
-            match CafMapEntry::try_parse(item_fill, remaining)? {
+            match rc(remaining, move |rm| CafMapEntry::try_parse(item_fill, rm))? {
                 (Some(entry), next_fill, after_entry) => {
                     if entries.len() > 0 {
                         if fill_len == 0 {

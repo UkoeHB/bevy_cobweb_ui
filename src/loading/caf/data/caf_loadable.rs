@@ -44,7 +44,7 @@ impl CafLoadableIdentifier
     pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
     {
         let (remaining, id) = camel_identifier(content)?;
-        let (generics, remaining) = CafGenerics::try_parse(remaining)?;
+        let (generics, remaining) = rc(remaining, |rm| CafGenerics::try_parse(rm))?;
         Ok((Self { name: SmolStr::from(*id.fragment()), generics }, remaining))
     }
 
@@ -131,19 +131,19 @@ impl CafLoadableVariant
 
     pub fn parse(content: Span) -> Result<(Self, CafFill, Span), SpanError>
     {
-        if let (Some(tuple), next_fill, remaining) = CafTuple::try_parse(CafFill::default(), content)? {
+        if let (Some(tuple), next_fill, remaining) = rc(content, |c| CafTuple::try_parse(CafFill::default(), c))? {
             return Ok((Self::Tuple(tuple), next_fill, remaining));
         }
-        if let (Some(array), next_fill, remaining) = CafArray::try_parse(CafFill::default(), content)? {
+        if let (Some(array), next_fill, remaining) = rc(content, |c| CafArray::try_parse(CafFill::default(), c))? {
             return Ok((Self::Array(array), next_fill, remaining));
         }
-        if let (Some(map), next_fill, remaining) = CafMap::try_parse(CafFill::default(), content)? {
+        if let (Some(map), next_fill, remaining) = rc(content, |c| CafMap::try_parse(CafFill::default(), c))? {
             // Note: we don't test if the map is struct-like here since it may *not* be a struct if a data map
             // was flattened into a newtype loadable.
             return Ok((Self::Map(map), next_fill, remaining));
         }
         if let Ok((remaining, _)) = tag::<_, _, ()>("::").parse(content) {
-            match CafEnum::try_parse(CafFill::default(), remaining)? {
+            match rc(remaining, |rm| CafEnum::try_parse(CafFill::default(), rm))? {
                 (Some(variant), next_fill, remaining) => return Ok((Self::Enum(variant), next_fill, remaining)),
                 _ => {
                     tracing::warn!("failed parsing loadable enum at {}; no valid variant name",
@@ -199,10 +199,10 @@ impl CafLoadable
 
     pub fn try_parse(fill: CafFill, content: Span) -> Result<(Option<Self>, CafFill, Span), SpanError>
     {
-        let Ok((id, remaining)) = CafLoadableIdentifier::parse(content) else {
+        let Ok((id, remaining)) = rc(content, |c| CafLoadableIdentifier::parse(c)) else {
             return Ok((None, fill, content));
         };
-        let (variant, post_fill, remaining) = CafLoadableVariant::parse(remaining)?;
+        let (variant, post_fill, remaining) = rc(remaining, |rm| CafLoadableVariant::parse(rm))?;
         Ok((Some(Self { fill, id, variant }), post_fill, remaining))
     }
 
