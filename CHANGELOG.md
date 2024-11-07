@@ -2,6 +2,10 @@
 
 ## WIP
 
+- Introduce custom Cobweb Asset Format (CAF) to replace JSON-based format.
+- Miscellaneous updates and improvements.
+- Update to Bevy 0.15.
+
 
 ## 0.4.1
 

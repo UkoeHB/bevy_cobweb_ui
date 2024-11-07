@@ -79,7 +79,7 @@
             },
             "Interactive": [],
             "LoadedUiImage": {
-                "texture": "$title_texture",
+                "image": "$title_texture",
                 "atlas": {"index": 0, "alias": "$title_texture_alias"},
                 "size": "$title_tile_size"
             },

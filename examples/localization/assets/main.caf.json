@@ -90,7 +90,7 @@
                 "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}}
             },
             "LoadedUiImage": {
-                "texture": "$title_texture",
+                "image": "$title_texture",
                 "size": "$title_tile_size"
             }
         }

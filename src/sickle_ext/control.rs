@@ -62,7 +62,7 @@ impl Instruction for ControlRoot
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add control map if missing.
         if !emut.contains::<ControlMap>() {
@@ -121,7 +121,7 @@ impl Instruction for ControlRoot
     fn revert(entity: Entity, world: &mut World)
     {
         // Set map to dying. If the control root is re-applied then the dying state will be cleared.
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         if emut.contains::<ControlMap>() {
             emut.insert(ControlMapDying);
         }
@@ -165,7 +165,7 @@ impl Instruction for ControlLabel
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add entry to nearest control map.
         if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
@@ -204,7 +204,7 @@ impl Instruction for ControlLabel
 
     fn revert(entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Clean up dynamic style.
         // TODO: in dynamic style system, remove DynamicStyleStopwatch if DynamicStyle is empty or non-existent

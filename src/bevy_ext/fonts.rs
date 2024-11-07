@@ -2,7 +2,6 @@ use std::cmp::Ordering;
 use std::ops::Add;
 
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -23,7 +22,12 @@ pub trait UpdateFontRequest
 /// font names can be used.
 ///
 /// [generic-families]: https://drafts.csswg.org/css-fonts-4/#generic-family-name-syntax
-#[derive(Reflect, Default, Deref, Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Reflect, Default, Deref, Debug, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FontFamily(pub SmolStr);
 
 impl FontFamily
@@ -32,6 +36,12 @@ impl FontFamily
     pub fn new(s: impl Into<SmolStr>) -> Self
     {
         Self(s.into())
+    }
+
+    /// Makes a new font family from a static string.
+    pub const fn new_static(s: &'static str) -> Self
+    {
+        Self(SmolStr::new_static(s))
     }
 
     /// Converts the family into a [`FontRequest`].
@@ -77,7 +87,12 @@ impl<T: Into<FontRequest>> FontFamilyExt for T
 /// Font widths from [CSS][css-spec].
 ///
 /// [css-spec]: https://drafts.csswg.org/css-fonts-4/#propdef-font-width
-#[derive(Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum FontWidth
 {
     /// 0.5
@@ -266,11 +281,16 @@ impl<T: Into<FontRequest>> FontWidthExt for T
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Style of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
+/// Node of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
 ///
 /// Take precedence over [`FontWeight`] when negotiating a [`FontRequest`] against available fonts (see
 /// [`FontMap`](crate::prelude::FontMap)).
-#[derive(Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum FontStyle
 {
     /// Font classified as normal in the font family.
@@ -479,7 +499,12 @@ impl<T: Into<FontRequest>> FontStyleExt for T
 /// Font weights from the OpenType [specification][open-type-spec].
 ///
 /// [open-type-spec]: https://learn.microsoft.com/en-us/typography/opentype/spec/os2#usweightclass
-#[derive(Reflect, Default, Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum FontWeight
 {
     /// 100
@@ -766,7 +791,12 @@ impl<T: Into<FontRequest>> FontWeightExt for T
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Font attributes that combine with a [`FontFamily`] to make a [`FontRequest`].
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FontAttributes
 {
     #[reflect(default)]
@@ -790,7 +820,12 @@ impl UpdateFontRequest for FontAttributes
 /// A font request.
 ///
 /// Can be used with [`FontMap`](crate::prelude::FontMap) to get a handle to the closest matching font.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FontRequest
 {
     pub family: FontFamily,
@@ -809,6 +844,17 @@ impl FontRequest
     {
         Self {
             family: family.into(),
+            width: FontWidth::Normal,
+            style: FontStyle::Normal,
+            weight: FontWeight::Normal,
+        }
+    }
+
+    /// Makes a new request with normal attributes from a static family name.
+    pub const fn new_static(family: &'static str) -> Self
+    {
+        Self {
+            family: FontFamily::new_static(family),
             width: FontWidth::Normal,
             style: FontStyle::Normal,
             weight: FontWeight::Normal,

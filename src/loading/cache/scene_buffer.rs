@@ -335,7 +335,7 @@ impl SceneBuffer
                 continue;
             };
 
-            c.add(NodeLoadCommand {
+            c.queue(NodeLoadCommand {
                 callback,
                 entity: subscription.entity,
                 loadable_ref: loadable_ref.clone(),
@@ -445,7 +445,7 @@ impl SceneBuffer
         for (entity, type_ids) in self.refresh_ctx.reverts() {
             for type_id in type_ids {
                 let Some(reverter) = callbacks.get_for_revert(type_id) else { continue };
-                c.add(RevertCommand { entity, reverter });
+                c.queue(RevertCommand { entity, reverter });
             }
         }
 

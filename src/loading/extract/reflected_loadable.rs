@@ -20,7 +20,7 @@ pub(crate) struct ErasedLoadable
 #[derive(Clone, Debug)]
 pub(crate) enum ReflectedLoadable
 {
-    Value(Arc<Box<dyn Reflect + 'static>>),
+    Value(Arc<Box<dyn PartialReflect + 'static>>),
     DeserializationFailed(Arc<CafError>),
 }
 
@@ -32,14 +32,14 @@ impl ReflectedLoadable
             return Some(false);
         };
 
-        this.reflect_partial_eq(other.as_reflect())
+        this.reflect_partial_eq(other.as_partial_reflect())
     }
 
     pub(crate) fn get_value<T: Loadable>(&self, loadable_ref: &SceneRef, registry: &TypeRegistry) -> Option<T>
     {
         match self {
             ReflectedLoadable::Value(loadable) => {
-                let Some(new_value) = T::from_reflect(loadable.as_reflect()) else {
+                let Some(new_value) = T::from_reflect(loadable.as_partial_reflect()) else {
                     let hint = Self::make_hint::<T>(registry);
                     tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
                         serialization hint: {}",

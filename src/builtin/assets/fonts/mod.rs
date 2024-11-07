@@ -7,7 +7,7 @@ use crate::prelude::*;
 
 fn load_sickle_ui_default_fonts(mut c: Commands)
 {
-    c.add(RegisterFontFamilies(vec![
+    c.queue(RegisterFontFamilies(vec![
         RegisterFontFamily {
             family: "Fira Sans".into(),
             fonts: vec![
@@ -75,7 +75,7 @@ fn load_sickle_ui_default_fonts(mut c: Commands)
         },
     ]));
     // Now actually load the registered font family.
-    c.add(LoadFonts(vec!["Fira Sans".into()]));
+    c.queue(LoadFonts(vec!["Fira Sans".into()]));
 }
 
 //-------------------------------------------------------------------------------------------------------------------

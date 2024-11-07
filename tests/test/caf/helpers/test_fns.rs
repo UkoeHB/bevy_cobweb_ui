@@ -60,8 +60,8 @@ fn test_equivalence_impl<T: Loadable + Debug + Serialize + for<'de> Deserialize<
     let reflected_val = deserializer.deserialize(&cafvalue_parsed).unwrap();
 
     // Reflect to rust value
-    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
-    let extracted_val = T::from_reflect(reflected_val.as_reflect()).unwrap();
+    let extracted_inst = T::from_reflect(reflected_inst.as_partial_reflect()).unwrap();
+    let extracted_val = T::from_reflect(reflected_val.as_partial_reflect()).unwrap();
     if check_vals {
         assert_eq!(value, extracted_inst);
         assert_eq!(value, extracted_val);
@@ -175,7 +175,7 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug + Serialize + for<'de> Deseri
     let reflected_inst = deserializer.deserialize(&loadable_parsed).unwrap();
 
     // Reflect to rust value
-    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
+    let extracted_inst = T::from_reflect(reflected_inst.as_partial_reflect()).unwrap();
     assert_eq!(value, extracted_inst);
 
     // Rust value to caf loadable
@@ -201,7 +201,7 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug + Serialize + for<'de> Deseri
     // - Need to make sure the 'canonical' representation can be deserialized with reflection.
     let deserializer = TypedReflectDeserializer::new(registration, &type_registry);
     let reflected_inst = deserializer.deserialize(&loadable_from_rust).unwrap();
-    let extracted_inst = T::from_reflect(reflected_inst.as_reflect()).unwrap();
+    let extracted_inst = T::from_reflect(reflected_inst.as_partial_reflect()).unwrap();
     assert_eq!(value, extracted_inst);
 
     // Caf loadable-from-raw to caf raw

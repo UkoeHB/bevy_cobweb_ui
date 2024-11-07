@@ -55,7 +55,7 @@ impl InteractiveStyleAttribute
     {
         ui_style
             .entity_commands()
-            .add(ApplyInteractiveStyleAttribute { callback: self.clone(), flux_interaction });
+            .queue(ApplyInteractiveStyleAttribute { callback: self.clone(), flux_interaction });
     }
 }
 
@@ -100,7 +100,7 @@ impl AnimatedStyleAttribute
     {
         ui_style
             .entity_commands()
-            .add(ApplyAnimatadStyleAttribute { callback: self.clone(), current_state: current_state.clone() });
+            .queue(ApplyAnimatadStyleAttribute { callback: self.clone(), current_state: current_state.clone() });
     }
 }
 

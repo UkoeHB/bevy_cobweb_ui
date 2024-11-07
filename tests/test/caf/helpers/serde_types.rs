@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
-use bevy::reflect::GetTypeRegistration;
+use bevy::reflect::{GetTypeRegistration, Typed};
 use bevy_cobweb_ui::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -97,7 +97,7 @@ pub struct NewtypeStruct<T>(pub T);
 
 impl<T> Instruction for NewtypeStruct<T>
 where
-    T: TypePath + Loadable + Reflect + GetTypeRegistration,
+    T: Typed + Loadable + Reflect + GetTypeRegistration,
 {
     fn apply(self, _: Entity, _: &mut World) {}
     fn revert(_: Entity, _: &mut World) {}
@@ -240,7 +240,7 @@ pub struct SingleGenericTuple<A>(pub A);
 
 impl<A> Instruction for SingleGenericTuple<A>
 where
-    A: TypePath + Loadable + Reflect + GetTypeRegistration,
+    A: Typed + Loadable + GetTypeRegistration,
 {
     fn apply(self, _: Entity, _: &mut World) {}
     fn revert(_: Entity, _: &mut World) {}

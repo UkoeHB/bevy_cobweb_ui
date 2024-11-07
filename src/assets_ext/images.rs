@@ -69,17 +69,17 @@ fn check_loaded_images(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// System that runs when the app needs to replace existing images with updated localized images.
-fn relocalize_images(
-    images: Res<ImageMap>,
-    mut raw_imgs: Query<&mut Handle<Image>>,
-    mut ui_imgs: Query<&mut UiImage>,
-)
+fn relocalize_images(images: Res<ImageMap>, mut sprite_imgs: Query<&mut Sprite>, mut ui_imgs: Query<&mut UiImage>)
 {
-    for mut handle in raw_imgs.iter_mut().map(|img| img.into_inner()).chain(
-        ui_imgs
-            .iter_mut()
-            .map(|ui_img| &mut ui_img.into_inner().texture),
-    ) {
+    for mut handle in sprite_imgs
+        .iter_mut()
+        .map(|img| &mut img.into_inner().image)
+        .chain(
+            ui_imgs
+                .iter_mut()
+                .map(|ui_img| &mut ui_img.into_inner().image),
+        )
+    {
         images.localize_image(&mut handle);
     }
 }

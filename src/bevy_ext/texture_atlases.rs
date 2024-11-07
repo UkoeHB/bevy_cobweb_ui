@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 
 #[allow(unused_imports)]
 use crate::prelude::*;
@@ -7,7 +6,12 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BorderRect`] for serialization.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct SliceRect
 {
     pub top: f32,
@@ -32,7 +36,12 @@ impl Into<BorderRect> for SliceRect
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SliceScaleMode`] for serialization.
-#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub enum LoadedSliceScaleMode
 {
     /// Slices stretch to fill space.
@@ -62,7 +71,12 @@ impl Into<SliceScaleMode> for LoadedSliceScaleMode
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`TextureSlicer`] for serialization.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LoadedTextureSlicer
 {
     /// The sprite borders, defining the 9 sections of the image.
@@ -114,10 +128,19 @@ impl Into<TextureSlicer> for LoadedTextureSlicer
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ImageScaleMode`] for serialization.
-#[derive(Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum LoadedImageScaleMode
+/// Mirrors [`NodeImageMode`] and [`SpriteImageMode`] for serialization.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub enum LoadedImageMode
 {
+    #[default]
+    Auto,
+    /// Falls back to [`Self::Auto`] when converting to [`SpriteImageMode`].
+    Stretch,
     Sliced(LoadedTextureSlicer),
     Tiled
     {
@@ -127,22 +150,31 @@ pub enum LoadedImageScaleMode
     },
 }
 
-impl Default for LoadedImageScaleMode
+impl Into<NodeImageMode> for LoadedImageMode
 {
-    fn default() -> Self
+    fn into(self) -> NodeImageMode
     {
-        Self::Sliced(LoadedTextureSlicer::default())
+        match self {
+            Self::Auto => NodeImageMode::Auto,
+            Self::Stretch => NodeImageMode::Stretch,
+            Self::Sliced(slicer) => NodeImageMode::Sliced(slicer.into()),
+            Self::Tiled { tile_x, tile_y, stretch_value } => {
+                NodeImageMode::Tiled { tile_x, tile_y, stretch_value }
+            }
+        }
     }
 }
 
-impl Into<ImageScaleMode> for LoadedImageScaleMode
+impl Into<SpriteImageMode> for LoadedImageMode
 {
-    fn into(self) -> ImageScaleMode
+    fn into(self) -> SpriteImageMode
     {
         match self {
-            Self::Sliced(slicer) => ImageScaleMode::Sliced(slicer.into()),
+            Self::Auto => SpriteImageMode::Auto,
+            Self::Stretch => SpriteImageMode::Auto,
+            Self::Sliced(slicer) => SpriteImageMode::Sliced(slicer.into()),
             Self::Tiled { tile_x, tile_y, stretch_value } => {
-                ImageScaleMode::Tiled { tile_x, tile_y, stretch_value }
+                SpriteImageMode::Tiled { tile_x, tile_y, stretch_value }
             }
         }
     }
@@ -154,7 +186,12 @@ impl Into<ImageScaleMode> for LoadedImageScaleMode
 /// [`TextureAtlasLayoutMap`].
 ///
 /// See [`LoadedTextureAtlasLayout`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct TextureAtlasReference
 {
     /// The identifier for this texture atlas map, which can be used to reference this atlas
@@ -178,7 +215,7 @@ impl Plugin for TextureAtlasExtPlugin
         app.register_type::<SliceRect>()
             .register_type::<LoadedSliceScaleMode>()
             .register_type::<LoadedTextureSlicer>()
-            .register_type::<LoadedImageScaleMode>()
+            .register_type::<LoadedImageMode>()
             .register_type::<TextureAtlasReference>();
     }
 }

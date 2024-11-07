@@ -76,8 +76,8 @@ fn initialize_flex_style(
 
 fn remove_styles(entity: Entity, world: &mut World)
 {
-    world.get_entity_mut(entity).map(|mut e| {
-        e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+    let _ = world.get_entity_mut(entity).map(|mut e| {
+        e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
     });
 }
 
@@ -85,17 +85,17 @@ fn remove_styles(entity: Entity, world: &mut World)
 
 fn apply_to_dims<T: ApplyToDims>(param: T, entity: Entity, world: &mut World)
 {
-    let Some(mut ec) = world.get_entity_mut(entity) else { return };
+    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
     // Check flex style.
-    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+    if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
         param.apply_to_dims(&mut flex.get_noreact().dims);
         React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Check absolute style.
-    if let Some(mut absolute) = ec.get_mut::<React<AbsoluteStyle>>() {
+    if let Some(mut absolute) = emut.get_mut::<React<AbsoluteStyle>>() {
         param.apply_to_dims(&mut absolute.get_noreact().dims);
         React::<AbsoluteStyle>::trigger_mutation(entity, world);
         return;
@@ -111,17 +111,17 @@ fn apply_to_dims<T: ApplyToDims>(param: T, entity: Entity, world: &mut World)
 
 fn apply_to_content_flex<T: ApplyToContentFlex>(param: T, entity: Entity, world: &mut World)
 {
-    let Some(mut ec) = world.get_entity_mut(entity) else { return };
+    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
     // Check flex style.
-    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+    if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
         param.apply_to_content_flex(&mut flex.get_noreact().content);
         React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Check absolute style.
-    if let Some(mut absolute) = ec.get_mut::<React<AbsoluteStyle>>() {
+    if let Some(mut absolute) = emut.get_mut::<React<AbsoluteStyle>>() {
         param.apply_to_content_flex(&mut absolute.get_noreact().content);
         React::<AbsoluteStyle>::trigger_mutation(entity, world);
         return;
@@ -137,17 +137,17 @@ fn apply_to_content_flex<T: ApplyToContentFlex>(param: T, entity: Entity, world:
 
 fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut World)
 {
-    let Some(mut ec) = world.get_entity_mut(entity) else { return };
+    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
     // Check flex style.
-    if let Some(mut flex) = ec.get_mut::<React<FlexStyle>>() {
+    if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
         param.apply_to_self_flex(&mut flex.get_noreact().flex);
         React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Check absolute style.
-    if ec.get::<React<AbsoluteStyle>>().is_some() {
+    if emut.get::<React<AbsoluteStyle>>().is_some() {
         tracing::warn!("tried to apply {} to {:?} that has AbsoluteStyle; only FlexStyle is supported",
             type_name::<T>(), entity);
         return;
@@ -1058,48 +1058,6 @@ impl ResponsiveAttribute for SetJustifyCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::text_direction`], can be loaded as an instruction.
-#[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
-pub struct SetTextDirection(pub Direction);
-
-impl ApplyToContentFlex for SetTextDirection
-{
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
-    {
-        content.text_direction = self.0;
-    }
-}
-
-impl Instruction for SetTextDirection
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        apply_to_content_flex(self, entity, world);
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        remove_styles(entity, world);
-    }
-}
-
-impl ThemedAttribute for SetTextDirection
-{
-    type Value = Direction;
-    fn construct(value: Self::Value) -> Self
-    {
-        Self(value)
-    }
-}
-impl ResponsiveAttribute for SetTextDirection {}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Mirrors [`ContentFlex::column_gap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
@@ -1442,7 +1400,6 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_responsive::<SetJustifyLines>()
             .register_responsive::<SetJustifyMain>()
             .register_responsive::<SetJustifyCross>()
-            .register_responsive::<SetTextDirection>()
             .register_animatable::<ColumnGap>()
             .register_animatable::<RowGap>();
 

@@ -61,7 +61,7 @@ fn set_color_alpha(color: &mut Color, new_alpha: f32)
 struct RestorableOpacity
 {
     ui_image: f32,
-    // Record for each section.
+    // Record for each span.
     text: SmallVec<[f32; 1]>,
     border_color: f32,
     background_color: f32,
@@ -75,13 +75,14 @@ fn recursively_propagate_opacity_value(
     seen_propagators: &mut EntityHashSet,
     insertion_first_traversal_vals: &mut EntityHashMap<RestorableOpacity>,
     c: &mut Commands,
+    writer: &mut TextUiWriter,
     children_query: &Query<&Children>,
     nodes: &mut Query<
         (
             Option<&PropagateOpacity>,
             Option<&mut RestorableOpacity>,
             Option<&mut UiImage>,
-            Option<&mut Text>,
+            Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
         ),
@@ -90,7 +91,7 @@ fn recursively_propagate_opacity_value(
     entity: Entity,
 )
 {
-    let Ok((maybe_propagator, maybe_restorable, maybe_img, maybe_text, maybe_br_color, maybe_bg_color)) =
+    let Ok((maybe_propagator, maybe_restorable, maybe_img, has_text, maybe_br_color, maybe_bg_color)) =
         nodes.get_mut(entity)
     else {
         return;
@@ -121,7 +122,7 @@ fn recursively_propagate_opacity_value(
     }
 
     // Update restorable value.
-    if maybe_img.is_some() || maybe_text.is_some() || maybe_br_color.is_some() || maybe_bg_color.is_some() {
+    if maybe_img.is_some() || has_text || maybe_br_color.is_some() || maybe_bg_color.is_some() {
         let update_restorable = |restorable: &mut RestorableOpacity| {
             if let Some(mut img) = maybe_img {
                 if first_traversal {
@@ -132,23 +133,22 @@ fn recursively_propagate_opacity_value(
                     set_color_alpha(&mut img.color, computed);
                 }
             }
-            if let Some(mut text) = maybe_text {
+            if has_text {
                 if first_traversal {
                     restorable.text.clear();
                 }
-                text.sections
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, section)| {
-                        if first_traversal {
-                            restorable.text.push(color_alpha(&section.style.color));
-                        }
-                        let original = restorable.text[idx];
-                        let computed = original * accumulated_opacity;
-                        if (color_alpha(&section.style.color) - computed).abs() > ALPHA_ROUNDING_ERROR {
-                            set_color_alpha(&mut section.style.color, computed);
-                        }
-                    });
+                let mut idx = 0;
+                writer.for_each_color(entity, |mut color| {
+                    if first_traversal {
+                        restorable.text.push(color_alpha(&color));
+                    }
+                    let original = restorable.text[idx];
+                    let computed = original * accumulated_opacity;
+                    if (color_alpha(&color) - computed).abs() > ALPHA_ROUNDING_ERROR {
+                        set_color_alpha(&mut color, computed);
+                    }
+                    idx += 1;
+                });
             }
             if let Some(mut br_color) = maybe_br_color {
                 if first_traversal {
@@ -195,6 +195,7 @@ fn recursively_propagate_opacity_value(
             seen_propagators,
             insertion_first_traversal_vals,
             c,
+            writer,
             children_query,
             nodes,
             *child,
@@ -211,6 +212,7 @@ fn propagate_opacity_values(
     mut seen_propagators: Local<EntityHashSet>,
     mut insertion_first_traversal_vals: Local<EntityHashMap<RestorableOpacity>>,
     mut c: Commands,
+    mut writer: TextUiWriter,
     propagators: Query<Entity, With<PropagateOpacity>>,
     children: Query<&Children>,
     mut nodes: Query<
@@ -219,7 +221,7 @@ fn propagate_opacity_values(
             Option<&PropagateOpacity>,
             Option<&mut RestorableOpacity>,
             Option<&mut UiImage>,
-            Option<&mut Text>,
+            Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
         ),
@@ -242,6 +244,7 @@ fn propagate_opacity_values(
             &mut *seen_propagators,
             &mut *insertion_first_traversal_vals,
             &mut c,
+            &mut writer,
             &children,
             &mut nodes,
             propagator,
@@ -258,36 +261,38 @@ fn propagate_opacity_values(
 fn restore_opacity(
     mut nodes: Query<
         (
+            Entity,
             &RestorableOpacity,
             Option<&mut UiImage>,
-            Option<&mut Text>,
+            Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
         ),
         Changed<RestorableOpacity>,
     >,
+    mut text_writer: TextUiWriter,
 )
 {
     // Restore alphas while avoiding excess change detection.
-    for (restorable, maybe_img, maybe_text, maybe_br_color, maybe_bg_color) in nodes.iter_mut() {
+    for (entity, restorable, maybe_img, has_text, maybe_br_color, maybe_bg_color) in nodes.iter_mut() {
         if let Some(mut img) = maybe_img {
             if color_alpha(&img.color) != restorable.ui_image {
                 set_color_alpha(&mut img.color, restorable.ui_image);
             }
         }
-        if let Some(mut text) = maybe_text {
-            if text.sections.iter().enumerate().any(|(idx, section)| {
-                let Some(restorable) = restorable.text.get(idx) else { return false };
-                color_alpha(&section.style.color) != *restorable
-            }) {
-                text.sections
-                    .iter_mut()
-                    .enumerate()
-                    .for_each(|(idx, section)| {
-                        let Some(restorable) = restorable.text.get(idx) else { return };
-                        set_color_alpha(&mut section.style.color, *restorable);
-                    });
-            }
+        if has_text {
+            let mut idx = 0;
+            text_writer.for_each_until(entity, |_, _, _, _, mut color| {
+                let Some(restorable) = restorable.text.get(idx) else {
+                    return false;
+                };
+                if color_alpha(&*color) != *restorable {
+                    return false;
+                }
+                set_color_alpha(&mut color, *restorable);
+                idx += 1;
+                true
+            });
         }
         if let Some(mut br_color) = maybe_br_color {
             if color_alpha(&br_color.0) != restorable.border_color {
@@ -318,7 +323,7 @@ fn restore_opacity(
 /// ## Performance
 ///
 /// This is a convenient tool for fading in/fading out pop-ups like on-hover help text. However, it may not be
-/// efficient to *hide* those popups using inherited opacity, because it does require hierarchy traversal.
+/// efficient to *hide* those popups using opacity, because opacity does require hierarchy traversal every tick.
 /// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
@@ -333,13 +338,13 @@ impl Instruction for PropagateOpacity
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut ec) = world.get_entity_mut(entity) else { return };
-        ec.insert(self);
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        emut.insert(self);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
         });
     }

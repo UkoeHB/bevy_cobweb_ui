@@ -133,12 +133,12 @@ pub enum JustifyLines
 {
     /// Pack lines toward the start of the cross axis.
     ///
-    /// Affected by [`ContentFlex::text_direction`] for [`FlexDirection::Column`].
+    /// Affected by `text_direction` (unimplemented) for [`FlexDirection::Column`].
     #[default]
     FlexStart,
     /// Pack lines toward the end of the cross axis.
     ///
-    /// Affected by [`ContentFlex::text_direction`] for [`FlexDirection::Column`].
+    /// Affected by `text_direction` (unimplemented) for [`FlexDirection::Column`].
     FlexEnd,
     /// Pack lines toward the center of the cross axis.
     Center,
@@ -203,28 +203,28 @@ pub enum JustifyMain
 {
     /*
     /// Cluster items at the start of the main axis.
-    /// - [`FlexDirection::Row`]: Start according to [`ContentFlex::text_direction`].
-    /// - [`FlexDirection::ReverseRow`]: Start according to [`ContentFlex::text_direction`]. ** difference
+    /// - [`FlexDirection::Row`]: Start according to `text_direction` (unimplemented).
+    /// - [`FlexDirection::ReverseRow`]: Start according to `text_direction` (unimplemented). ** difference
     /// - [`FlexDirection::Column`]: Top.
     /// - [`FlexDirection::ColumnReverse`]: Bottom.
     Start,
     /// Cluster items at the end of the main axis.
-    /// - [`FlexDirection::Row`]: End according to [`ContentFlex::text_direction`].
-    /// - [`FlexDirection::ReverseRow`]: End according to [`ContentFlex::text_direction`]. ** difference
+    /// - [`FlexDirection::Row`]: End according to `text_direction` (unimplemented).
+    /// - [`FlexDirection::ReverseRow`]: End according to `text_direction` (unimplemented). ** difference
     /// - [`FlexDirection::Column`]: Bottom.
     /// - [`FlexDirection::ColumnReverse`]: Top.
     End,
     */
     /// Cluster items at the start of the main axis.
-    /// - [`FlexDirection::Row`]: Start according to [`ContentFlex::text_direction`].
-    /// - [`FlexDirection::RowReverse`]: End according to [`ContentFlex::text_direction`].
+    /// - [`FlexDirection::Row`]: Start according to `text_direction` (unimplemented).
+    /// - [`FlexDirection::RowReverse`]: End according to `text_direction` (unimplemented).
     /// - [`FlexDirection::Column`]: Top.
     /// - [`FlexDirection::ColumnReverse`]: Bottom.
     #[default]
     FlexStart,
     /// Cluster items at the end of the main axis.
-    /// - [`FlexDirection::Row`]: End according to [`ContentFlex::text_direction`].
-    /// - [`FlexDirection::RowReverse`]: Start according to [`ContentFlex::text_direction`].
+    /// - [`FlexDirection::Row`]: End according to `text_direction` (unimplemented).
+    /// - [`FlexDirection::RowReverse`]: Start according to `text_direction` (unimplemented).
     /// - [`FlexDirection::Column`]: Bottom.
     /// - [`FlexDirection::ColumnReverse`]: Top.
     FlexEnd,
@@ -360,7 +360,7 @@ impl Into<AlignSelf> for JustifySelfCross
 
 /// Controls a node's size and offset.
 ///
-/// Mirrors fields in [`Style`].
+/// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -471,21 +471,21 @@ pub struct Dims
 
 impl Dims
 {
-    /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
+    /// Adds this struct's contents to [`Node`].
+    pub fn set_in_node(&self, node: &mut Node)
     {
-        style.width = self.width;
-        style.height = self.height;
-        style.max_width = self.max_width;
-        style.max_height = self.max_height;
-        style.min_width = self.min_width;
-        style.min_height = self.min_height;
-        style.aspect_ratio = self.aspect_ratio;
-        style.border = self.border.into();
-        style.left = self.left;
-        style.right = self.right;
-        style.top = self.top;
-        style.bottom = self.bottom;
+        node.width = self.width;
+        node.height = self.height;
+        node.max_width = self.max_width;
+        node.max_height = self.max_height;
+        node.min_width = self.min_width;
+        node.min_height = self.min_height;
+        node.aspect_ratio = self.aspect_ratio;
+        node.border = self.border.into();
+        node.left = self.left;
+        node.right = self.right;
+        node.top = self.top;
+        node.bottom = self.bottom;
     }
 
     fn default_top() -> Val
@@ -523,7 +523,7 @@ impl Default for Dims
 
 /// Controls the layout of a node's children.
 ///
-/// Mirrors fields in [`Style`].
+/// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -537,6 +537,9 @@ pub struct ContentFlex
     /// Defaults to no clipping.
     #[reflect(default)]
     pub clipping: Clipping,
+    /// Controls the boundaries of [`Self::clipping`]. See [`OverflowClipMargin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
     /// Inserts space between the node's [`Dims::border`] and its contents.
     ///
     /// All padding sizes with [`Val::Percent`] are computed with respect to the *width* of the node.
@@ -559,7 +562,7 @@ pub struct ContentFlex
     ///
     /// It is not recommended to use [`FlexWrap::WrapReverse`] unless you are prepared for the added complexity of
     /// figuring out how
-    /// [`JustifyMain`]/[`JustifyCross`]/[`JustifyLines`]/[`ContentFlex::text_direction`]/[`FlexDirection`]
+    /// [`JustifyMain`]/[`JustifyCross`]/[`JustifyLines`]/`text_direction` (unimplemented)/[`FlexDirection`]
     /// interlace with it to produce the final layout.
     ///
     /// Defaults to [`FlexWrap::NoWrap`].
@@ -595,11 +598,6 @@ pub struct ContentFlex
     /// Mirrors [`Style::align_items`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
-    /// Controls the direction of text (left-to-right (e.g. English) or right-to-left (e.g. Arabic)).
-    ///
-    /// Defaults to [`Direction::Inherit`] with fallback to [`Direction::LeftToRight`].
-    #[reflect(default)]
-    pub text_direction: Direction,
     /// Gap applied between columns when organizing children.
     ///
     /// This is essentially a fixed gap inserted between children on the main axis, or lines on the cross axis.
@@ -614,18 +612,18 @@ pub struct ContentFlex
 
 impl ContentFlex
 {
-    /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
+    /// Adds this struct's contents to [`Node`].
+    pub fn set_in_node(&self, node: &mut Node)
     {
-        style.overflow = self.clipping.into();
-        style.padding = self.padding.into();
-        style.flex_direction = self.flex_direction;
-        style.align_content = self.justify_lines.into();
-        style.justify_content = self.justify_main.into();
-        style.align_items = self.justify_cross.into();
-        style.direction = self.text_direction;
-        style.column_gap = self.column_gap;
-        style.row_gap = self.row_gap;
+        node.overflow = self.clipping.into();
+        node.overflow_clip_margin = self.clip_margin;
+        node.padding = self.padding.into();
+        node.flex_direction = self.flex_direction;
+        node.align_content = self.justify_lines.into();
+        node.justify_content = self.justify_main.into();
+        node.align_items = self.justify_cross.into();
+        node.column_gap = self.column_gap;
+        node.row_gap = self.row_gap;
     }
 
     fn default_flex_wrap() -> FlexWrap
@@ -642,12 +640,12 @@ impl Default for ContentFlex
             flex_wrap: Self::default_flex_wrap(),
 
             clipping: Default::default(),
+            clip_margin: Default::default(),
             padding: Default::default(),
             flex_direction: Default::default(),
             justify_lines: Default::default(),
             justify_main: Default::default(),
             justify_cross: Default::default(),
-            text_direction: Default::default(),
             column_gap: Default::default(),
             row_gap: Default::default(),
         }
@@ -658,7 +656,7 @@ impl Default for ContentFlex
 
 /// Controls a node's flex behavior in its parent.
 ///
-/// Mirrors fields in [`Style`].
+/// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -719,14 +717,14 @@ pub struct SelfFlex
 
 impl SelfFlex
 {
-    /// Adds this struct's contents to [`Style`].
-    pub fn set_in_style(&self, style: &mut Style)
+    /// Adds this struct's contents to [`Node`].
+    pub fn set_in_node(&self, node: &mut Node)
     {
-        style.margin = self.margin.into();
-        style.flex_basis = self.flex_basis;
-        style.flex_grow = self.flex_grow;
-        style.flex_shrink = self.flex_shrink;
-        style.align_self = self.justify_self_cross.into();
+        node.margin = self.margin.into();
+        node.flex_basis = self.flex_basis;
+        node.flex_grow = self.flex_grow;
+        node.flex_shrink = self.flex_shrink;
+        node.align_self = self.justify_self_cross.into();
     }
 }
 
@@ -748,7 +746,7 @@ impl Default for SelfFlex
 
 /// UI style for absolute-positioned nodes.
 ///
-/// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Absolute`].
+/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Absolute`].
 /// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
@@ -767,16 +765,16 @@ pub struct AbsoluteStyle
     pub content: ContentFlex,
 }
 
-impl Into<Style> for AbsoluteStyle
+impl Into<Node> for AbsoluteStyle
 {
-    fn into(self) -> Style
+    fn into(self) -> Node
     {
-        let mut style = Style::default();
-        style.display = Display::Flex;
-        style.position_type = PositionType::Absolute;
-        self.dims.set_in_style(&mut style);
-        self.content.set_in_style(&mut style);
-        style
+        let mut node = Node::default();
+        node.display = Display::Flex;
+        node.position_type = PositionType::Absolute;
+        self.dims.set_in_node(&mut node);
+        self.content.set_in_node(&mut node);
+        node
     }
 }
 
@@ -784,7 +782,7 @@ impl Instruction for AbsoluteStyle
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<AbsoluteStyle>>() {
             Some(mut component) => {
                 *component.get_noreact() = self;
@@ -798,8 +796,8 @@ impl Instruction for AbsoluteStyle
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
         });
     }
 }
@@ -808,7 +806,7 @@ impl Instruction for AbsoluteStyle
 
 /// UI style for flexbox-controlled nodes.
 ///
-/// Represents a [`Style`] with [`Display::Flex`] and [`PositionType::Relative`].
+/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
 /// See [`AbsoluteStyle`] for absolute-positioned nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
@@ -827,17 +825,17 @@ pub struct FlexStyle
     pub flex: SelfFlex,
 }
 
-impl Into<Style> for FlexStyle
+impl Into<Node> for FlexStyle
 {
-    fn into(self) -> Style
+    fn into(self) -> Node
     {
-        let mut style = Style::default();
-        style.display = Display::Flex;
-        style.position_type = PositionType::Relative;
-        self.dims.set_in_style(&mut style);
-        self.content.set_in_style(&mut style);
-        self.flex.set_in_style(&mut style);
-        style
+        let mut node = Node::default();
+        node.display = Display::Flex;
+        node.position_type = PositionType::Relative;
+        self.dims.set_in_node(&mut node);
+        self.content.set_in_node(&mut node);
+        self.flex.set_in_node(&mut node);
+        node
     }
 }
 
@@ -845,7 +843,7 @@ impl Instruction for FlexStyle
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<FlexStyle>>() {
             Some(mut component) => {
                 *component.get_noreact() = self;
@@ -859,8 +857,8 @@ impl Instruction for FlexStyle
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Style)>();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
         });
     }
 }
@@ -898,7 +896,7 @@ impl Instruction for DisplayControl
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         match emut.get_mut::<React<DisplayControl>>() {
             Some(mut component) => {
                 *component.get_noreact() = self;
@@ -912,10 +910,10 @@ impl Instruction for DisplayControl
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<React<DisplayControl>>();
-            if let Some(mut style) = e.get_mut::<Style>() {
-                style.display = Self::Display.into();
+            if let Some(mut node) = e.get_mut::<Node>() {
+                node.display = Self::Display.into();
             }
         });
     }
@@ -932,11 +930,11 @@ fn detect_absolute_style(
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut style: Style = (*style).clone().into();
+    let mut node: Node = (*style).clone().into();
     if let Some(control) = maybe_display_control {
-        style.display = (**control).into();
+        node.display = (**control).into();
     }
-    commands.entity(entity).try_insert(style.clone());
+    commands.entity(entity).try_insert(node.clone());
 }
 
 struct DetectAbsoluteStyle;
@@ -961,11 +959,11 @@ fn detect_flex_style(
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
     let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut style: Style = (*style).clone().into();
+    let mut node: Node = (*style).clone().into();
     if let Some(control) = maybe_display_control {
-        style.display = (**control).into();
+        node.display = (**control).into();
     }
-    commands.entity(entity).try_insert(style.clone());
+    commands.entity(entity).try_insert(node.clone());
 }
 
 struct DetectFlexStyle;
@@ -984,12 +982,12 @@ impl WorldReactor for DetectFlexStyle
 fn detect_display_control(
     insertion: InsertionEvent<DisplayControl>,
     mutation: MutationEvent<DisplayControl>,
-    mut node: Query<(&mut Style, &React<DisplayControl>)>,
+    mut node: Query<(&mut Node, &React<DisplayControl>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((mut style, control)) = node.get_mut(entity) else { return };
-    style.display = (**control).into();
+    let Ok((mut node, control)) = node.get_mut(entity) else { return };
+    node.display = (**control).into();
 }
 
 struct DetectDisplayControl;

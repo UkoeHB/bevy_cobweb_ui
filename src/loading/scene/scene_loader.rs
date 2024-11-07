@@ -412,15 +412,15 @@ impl SceneLoader
             let scene_inner = scene.clone();
             let root_entity = scene_instance.root_entity();
             let inserted_inner = inserted.clone();
-            c.add(move |world: &mut World| {
+            c.queue(move |world: &mut World| {
                 let position = find_scene_child_pos(world, parent_entity, insertion_index);
 
-                let Some(mut ec) = world.get_entity_mut(parent_entity) else {
+                let Ok(mut emut) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
                         parent {:?} was despawned", scene_inner, root_entity, inserted_inner, parent_entity);
                     return;
                 };
-                ec.insert_children(position, &[node_entity]);
+                emut.insert_children(position, &[node_entity]);
             });
 
             // Load the scene node to the entity.
@@ -477,15 +477,15 @@ impl SceneLoader
             let scene = scene.clone();
             let root_entity = scene_instance.root_entity();
             let moved = moved.clone();
-            c.add(move |world: &mut World| {
+            c.queue(move |world: &mut World| {
                 let position = find_scene_child_pos(world, parent_entity, new_index);
 
-                let Some(mut ec) = world.get_entity_mut(parent_entity) else {
+                let Ok(mut emut) = world.get_entity_mut(parent_entity) else {
                     tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
                         parent {:?} was despawned", scene, root_entity, moved, parent_entity);
                     return;
                 };
-                ec.insert_children(position, &[node_entity]);
+                emut.insert_children(position, &[node_entity]);
             });
         }
     }

@@ -67,7 +67,7 @@ fn build_ui(mut c: Commands)
         "1", "2", "3", "-", "0", ".", "=", "+",
     ];
 
-    c.ui_root().container(NodeBundle::default(), |ui| {
+    c.ui_root().container(Node::default(), |ui| {
         ui.style()
             .display(Display::Grid)
             .grid_template_columns(RepeatedGridTrack::auto(4))
@@ -82,7 +82,7 @@ fn build_ui(mut c: Commands)
                 false => (1, Val::Px(5.), BORDER_BUTTON.into()),
             };
 
-            ui.container(NodeBundle::default(), |ui| {
+            ui.container(Node::default(), |ui| {
                 ui.style()
                     .grid_column(GridPlacement::span(span))
                     .border(UiRect::all(Val::Px(1.)))
@@ -111,7 +111,7 @@ fn build_ui(mut c: Commands)
                         });
                 }
 
-                ui.container(NodeBundle::default(), |ui| {
+                ui.container(Node::default(), |ui| {
                     ui.apply(TextLine { text: item.into(), size: 30.0, ..default() });
 
                     if is_display {
@@ -132,7 +132,7 @@ fn build_ui(mut c: Commands)
 
 fn setup(mut commands: Commands)
 {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

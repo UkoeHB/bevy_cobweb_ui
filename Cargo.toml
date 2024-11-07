@@ -50,8 +50,8 @@ hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
 dev = ["hot_reload", "bevy/dynamic_linking"]
 
 [dependencies]
-bevy = { version = "0.14", default-features = true }
-bevy_cobweb = { version = ">=0.11.1" }
+bevy = { version = "0.15.0-rc.3", default-features = true }
+bevy_cobweb = { version = "0.13.0-rc.3" }
 memchr = { version = "2.7" }
 nom = { version = "7.1" }
 nom_locate = { version = "4.2" }
@@ -79,7 +79,7 @@ sickle_macros = { path = "crates/sickle_macros", version = "0.4.0" }
 sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.4.0" }
 
 [dev-dependencies]
-bevy = { version = "0.14", default-features = true, features = ["serialize"] }
+bevy = { version = "0.15.0-rc.3", default-features = true, features = ["serialize"] }
 tracing-subscriber = { version = "0.3" }
 
 [profile.dev.package."*"]

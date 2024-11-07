@@ -19,8 +19,8 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     // If there are no triggers then we should despawn the reactor immediately.
     let is_loaded = loaded.contains(entity);
     if !is_loaded && (TypeId::of::<Triggers>() == TypeId::of::<()>()) {
-        c.add(syscommand);
-        c.add(move |world: &mut World| {
+        c.queue(syscommand);
+        c.queue(move |world: &mut World| {
             world.despawn(*syscommand);
         });
         return;
@@ -43,7 +43,7 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     cleanup_reactor_on_despawn(&mut c, entity, revoke_token);
 
     // Run the system to apply it.
-    c.add(syscommand);
+    c.queue(syscommand);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -58,8 +58,8 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 {
     // If there are no triggers then we should despawn the reactor immediately after running it.
     if TypeId::of::<Triggers>() == TypeId::of::<()>() {
-        c.add(syscommand);
-        c.add(move |world: &mut World| {
+        c.queue(syscommand);
+        c.queue(move |world: &mut World| {
             world.despawn(*syscommand);
         });
         return;
@@ -75,7 +75,7 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     cleanup_reactor_on_despawn(c, entity, revoke_token);
 
     // Run the system to apply it.
-    c.add(syscommand);
+    c.queue(syscommand);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

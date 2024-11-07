@@ -1,6 +1,6 @@
-// Re-export this for `TextEditor::write`.
 use std::fmt::Debug;
-pub use std::fmt::Write;
+pub use std::fmt::Write; // Re-export this for `TextEditor::write`.
+use std::ops::DerefMut;
 
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
@@ -18,99 +18,89 @@ use crate::prelude::{FontMap, FontRequest, LocalizedText, TextLocalizer};
 #[derive(SystemParam)]
 pub struct TextEditor<'w, 's>
 {
-    text: Query<'w, 's, (&'static mut Text, Option<&'static mut LocalizedText>)>,
+    localized: Query<'w, 's, &'static mut LocalizedText>,
+    writer: TextUiWriter<'w, 's>,
     localizer: Res<'w, TextLocalizer>,
     fonts: Res<'w, FontMap>,
 }
 
 impl<'w, 's> TextEditor<'w, 's>
 {
-    /// Gets a [`TextSection`] on an entity.
+    /// Gets information for the first text span in a text block.
     ///
-    /// Returns `Err` if the text section could not be found or the text is empty.
-    pub fn section(&self, text_entity: Entity, section: usize) -> Option<&TextSection>
+    /// Returns `Err` if the text block could not be found.
+    pub fn root(&mut self, root_entity: Entity) -> Option<(&mut String, &mut TextFont, &mut Color)>
     {
-        let Ok((text, _)) = self.text.get(text_entity) else { return None };
-        text.sections.get(section)
+        self.span(root_entity, 0).map(|(_, t, f, c)| (t, f, c))
     }
 
-    /// Gets the style on the first text section on an entity.
+    /// Gets information for a text span in a text block.
     ///
-    /// Returns `None` if the text section could not be found or the text is empty.
-    pub fn style(&self, text_entity: Entity) -> Option<&TextStyle>
+    /// Returns `Err` if the text span could not be found.
+    pub fn span(
+        &mut self,
+        root_entity: Entity,
+        span: usize,
+    ) -> Option<(Entity, &mut String, &mut TextFont, &mut Color)>
     {
-        self.section_style(text_entity, 0)
+        self.writer
+            .get(root_entity, span)
+            .map(|(e, _, t, f, c)| (e, t.into_inner(), f.into_inner(), c.into_inner().deref_mut()))
     }
 
-    /// Gets the style on a text section on an entity.
+    /// Overwrites the text on the first text span in a text block.
     ///
-    /// Returns `None` if the text section could not be found or the text is empty.
-    pub fn section_style(&self, text_entity: Entity, section: usize) -> Option<&TextStyle>
-    {
-        let text = self.section(text_entity, section)?;
-        Some(&text.style)
-    }
-
-    /// Overwrites the text on the first text section on an entity.
-    ///
-    /// See [`Self::write_section`].
+    /// See [`Self::write_span`].
     ///
     /// This is used in the [`write_text`](crate::write_text) helper macro.
     pub fn write<E: Debug>(
         &mut self,
-        text_entity: Entity,
+        root_entity: Entity,
         writer: impl FnOnce(&mut String) -> Result<(), E>,
     ) -> bool
     {
-        self.write_section(text_entity, 0, writer)
+        self.write_span(root_entity, 0, writer)
     }
 
-    /// Overwrites the text on a text section on an entity.
+    /// Overwrites the text on a text span in a text block.
     ///
     /// This will automatically localize the text and its font if the entity has the [`LocalizedText`] component.
     ///
-    /// Returns `false` if the text section could not be accessed, if the writer fails, or if localization fails.
+    /// Returns `false` if the text span could not be accessed, if the writer fails, or if localization fails.
     ///
-    /// This is used in the [`write_text_section`](crate::write_text_section) helper macro.
-    pub fn write_section<E: Debug>(
+    /// This is used in the [`write_text_span`](crate::write_text_span) helper macro.
+    pub fn write_span<E: Debug>(
         &mut self,
-        text_entity: Entity,
-        section: usize,
+        root_entity: Entity,
+        span: usize,
         writer: impl FnOnce(&mut String) -> Result<(), E>,
     ) -> bool
     {
-        let Ok((text, maybe_localized)) = self.text.get_mut(text_entity) else {
-            tracing::warn!("failed writing to text section {section} of {text_entity:?}, entity not found");
+        let Some((_, _, mut text, mut text_font, _)) = self.writer.get(root_entity, span) else {
+            tracing::warn!("failed writing to text span {span} of text block {root_entity:?}, entity not found");
             return false;
         };
-        let Some(text_section) = text.into_inner().sections.get_mut(section) else {
-            tracing::warn!("failed writing to text section {section} of {text_entity:?}, section doesn't exist");
-            return false;
-        };
-        let text = &mut text_section.value;
-        let font = &mut text_section.style.font;
 
-        if let Some(mut localized) = maybe_localized {
+        if let Ok(mut localized) = self.localized.get_mut(root_entity) {
             // Clear the localization string then write to it.
-            localized.set_localization_for_section("", section);
-            let localization_section = localized.localization_for_section_mut(section).unwrap();
-            let result = match (writer)(&mut localization_section.template) {
+            localized.set_localization_for_span("", span);
+            let localization_span = localized.localization_for_span_mut(span).unwrap();
+            let result = match (writer)(&mut localization_span.template) {
                 Ok(()) => true,
                 Err(err) => {
-                    tracing::warn!("failed writing to localized text section {section} of {text_entity:?}, \
+                    tracing::warn!("failed writing to localized text span {span} of text block {root_entity:?}, \
                         write callback error {err:?}");
                     false
                 }
             };
             // Localize the target string and its font.
-            let result = result && localized.localize_section(&self.localizer, &self.fonts, text, font, section);
-            result
+            result && localized.localize_span(&self.localizer, &self.fonts, &mut text, &mut text_font.font, span)
         } else {
             text.clear();
-            match (writer)(text) {
+            match (writer)(&mut *text) {
                 Ok(()) => true,
                 Err(err) => {
-                    tracing::warn!("failed writing to text section {section} of {text_entity:?}, \
+                    tracing::warn!("failed writing to text span {span} of text block {root_entity:?}, \
                         write callback error {err:?}");
                     false
                 }
@@ -118,104 +108,96 @@ impl<'w, 's> TextEditor<'w, 's>
         }
     }
 
-    /// Sets the font on the first text section of an entity.
+    /// Sets the font on the first text span of a text block.
     ///
-    /// See [`Self::set_section_font`].
+    /// See [`Self::set_span_font`].
     ///
-    /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
+    /// Returns `false` if the text span could not be accessed or if the font was not registered in [`FontMap`].
     pub fn set_font(&mut self, entity: Entity, font: impl Into<FontRequest>) -> bool
     {
-        self.set_section_font(entity, 0, font)
+        self.set_span_font(entity, 0, font)
     }
 
-    /// Sets the font on a text section of an entity.
+    /// Sets the font on a text span of a text block.
     ///
     /// If the entity has [`LocalizedText`] then the font will be automatically localized.
     ///
-    /// Returns `false` if the text section could not be accessed or if the font was not registered in [`FontMap`].
-    pub fn set_section_font(&mut self, entity: Entity, section: usize, font: impl Into<FontRequest>) -> bool
+    /// Returns `false` if the text span could not be accessed or if the font was not registered in [`FontMap`].
+    pub fn set_span_font(&mut self, root_entity: Entity, span: usize, font: impl Into<FontRequest>) -> bool
     {
         let font = font.into();
-        let Ok((text, maybe_localized)) = self.text.get_mut(entity) else {
-            tracing::warn!("failed setting font {font:?} on text section {section} of {entity:?}, entity \
-                not found");
-            return false;
-        };
-        let Some(text) = text.into_inner().sections.get_mut(section) else {
-            tracing::warn!("failed setting font {font:?} on text section {section} of {entity:?}, section \
-                doesn't exist");
+        let Some((_, _, _, mut text_font, _)) = self.writer.get(root_entity, span) else {
+            tracing::warn!("failed setting font {font:?} on text span {span} of text block {root_entity:?}, \
+                root entity not found");
             return false;
         };
         let font = self.fonts.get(&font);
         if font == Handle::default() {
-            tracing::warn!("failed setting font {font:?} on text section {section} of {entity:?}, font \
+            tracing::warn!("failed setting font {font:?} on text span {span} of text block {root_entity:?}, font \
                 not found in FontMap");
             return false;
         }
-        let text_font = &mut text.style.font;
 
         // Set the requested font.
-        *text_font = font.clone();
+        text_font.font = font.clone();
 
         // Handle localization.
-        if let Some(mut localized) = maybe_localized {
-            // Prep text section if missing.
-            if localized.localization_for_section_mut(section).is_none() {
-                localized.set_localization_for_section("", section);
+        if let Ok(mut localized) = self.localized.get_mut(root_entity) {
+            // Prep text span if missing.
+            if localized.localization_for_span_mut(span).is_none() {
+                localized.set_localization_for_span("", span);
             }
 
             // Update the font backup to the requested font.
-            let loc_section = localized.localization_for_section_mut(section).unwrap();
-            loc_section.set_font_backup(font.clone());
+            let loc_span = localized.localization_for_span_mut(span).unwrap();
+            loc_span.set_font_backup(font.clone());
 
             // If text has not been localized yet, then early-out since we don't know what language is needed.
             // - We assume that when the text is eventually localized, the font will be properly updated via
-            //   `LocalizedText::localize_section`.
-            if loc_section.lang().is_none() {
+            //   `LocalizedText::localize_span`.
+            if loc_span.lang().is_none() {
                 return true;
             }
 
             // Update the font.
-            loc_section.update_font(&self.fonts, text_font);
+            loc_span.update_font(&self.fonts, &mut text_font.font);
         }
 
         true
     }
 
-    /// Sets the font size on the first text section of an entity.
+    /// Sets the font size on the first text span of a text block.
     pub fn set_font_size(&mut self, entity: Entity, size: f32)
     {
-        self.set_section_font_size(entity, 0, size);
+        self.set_span_font_size(entity, 0, size);
     }
 
-    /// Sets the font size on a text section of an entity.
-    pub fn set_section_font_size(&mut self, entity: Entity, section: usize, size: f32)
+    /// Sets the font size on a text span of a text block.
+    pub fn set_span_font_size(&mut self, root_entity: Entity, span: usize, size: f32)
     {
-        self.text
-            .get_mut(entity)
-            .ok()
-            .and_then(|(text, _)| text.into_inner().sections.get_mut(section))
-            .map(|section| {
-                section.style.font_size = size;
-            });
+        let Some((_, _, _, mut text_font, _)) = self.writer.get(root_entity, span) else {
+            tracing::warn!("failed setting font size {size:?} on text span {span} of text block {root_entity:?}, \
+                root entity not found");
+            return;
+        };
+        text_font.font_size = size;
     }
 
-    /// Sets the font color on the first text section of an entity.
-    pub fn set_font_color(&mut self, entity: Entity, color: Color)
+    /// Sets the font color on the first text span of a text block.
+    pub fn set_font_color(&mut self, root_entity: Entity, color: Color)
     {
-        self.set_section_font_color(entity, 0, color);
+        self.set_span_font_color(root_entity, 0, color);
     }
 
-    /// Sets the font color on a text section of an entity.
-    pub fn set_section_font_color(&mut self, entity: Entity, section: usize, color: Color)
+    /// Sets the font color on a text span of a text block.
+    pub fn set_span_font_color(&mut self, root_entity: Entity, span: usize, color: Color)
     {
-        self.text
-            .get_mut(entity)
-            .ok()
-            .and_then(|(text, _)| text.into_inner().sections.get_mut(section))
-            .map(|section| {
-                section.style.color = color;
-            });
+        let Some((_, _, _, _, mut text_color)) = self.writer.get(root_entity, span) else {
+            tracing::warn!("failed setting font color {color:?} on text span {span} of text block {root_entity:?}, \
+                root entity not found");
+            return;
+        };
+        *text_color = TextColor(color);
     }
 }
 
@@ -247,7 +229,7 @@ macro_rules! write_text {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper for writing text to a text section with a [`TextEditor`].
+/// Helper for writing text to a text span with a [`TextEditor`].
 ///
 /// Example
 /*
@@ -257,17 +239,17 @@ fn example(mut commands: Commands, mut text_editor: TextEditor)
     let entity = commands.spawn(TextBundle::default()).ie();
 
     // Macro call:
-    write_text_section!(text_editor, entity, 0, "Count: {}", 42);
+    write_text_span!(text_editor, entity, 0, "Count: {}", 42);
 
     // Expands to:
-    text_editor.write_section(entity, 0, |text| write!(text, "Count: {}", 42));
+    text_editor.write_span(entity, 0, |text| write!(text, "Count: {}", 42));
 }
 ```
 */
 #[macro_export]
-macro_rules! write_text_section {
-    ($editor: ident, $entity: expr, $section: expr, $($arg:tt)*) => {{
-        $editor.write_section($entity, $section, |text| write!(text, $($arg)*))
+macro_rules! write_text_span {
+    ($editor: ident, $entity: expr, $span: expr, $($arg:tt)*) => {{
+        $editor.write_span($entity, $span, |text| write!(text, $($arg)*))
     }};
 }
 

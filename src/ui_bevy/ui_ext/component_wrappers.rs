@@ -77,14 +77,14 @@ impl Instruction for BackgroundColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
         });
     }
@@ -108,14 +108,14 @@ impl Instruction for BorderColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
         });
     }
@@ -151,14 +151,14 @@ impl Instruction for BrRadius
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(BorderRadius::all(self.0));
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
@@ -198,7 +198,7 @@ impl Instruction for BrRadiusTopLeft
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
@@ -238,7 +238,7 @@ impl Instruction for BrRadiusTopRight
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
@@ -278,7 +278,7 @@ impl Instruction for BrRadiusBottomLeft
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
@@ -318,7 +318,7 @@ impl Instruction for BrRadiusBottomRight
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<BorderRadius>();
         });
     }
@@ -380,14 +380,14 @@ impl Instruction for NodeOutline
     fn apply(self, entity: Entity, world: &mut World)
     {
         let outline: Outline = self.into();
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(outline);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Outline>();
         });
     }
@@ -412,14 +412,14 @@ impl Instruction for FocusPolicy
     fn apply(self, entity: Entity, world: &mut World)
     {
         let policy: FocusPolicy = self.into();
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(policy);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<FocusPolicy>();
         });
     }
@@ -441,14 +441,14 @@ impl Instruction for ZIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<ZIndex>();
         });
     }

@@ -11,7 +11,7 @@ pub trait NodeLoadingExt
 {
     /// Spawns a new node registered to load styles from `loadable_ref`.
     ///
-    /// Inserts a [`NodeBundle::default()`] to the entity.
+    /// Inserts a [`Node::default()`] to the entity.
     ///
     /// Includes a `callback` for interacting with the entity.
     ///
@@ -32,7 +32,7 @@ impl NodeLoadingExt for UiBuilder<'_, UiRoot>
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
-        let mut node = self.spawn(NodeBundle::default());
+        let mut node = self.spawn(Node::default());
         node.entity_commands().load(loadable_ref.clone());
         (callback)(&mut node, loadable_ref);
         node
@@ -47,7 +47,7 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
-        let mut child = self.spawn(NodeBundle::default());
+        let mut child = self.spawn(Node::default());
         child.entity_commands().load(loadable_ref.clone());
         (callback)(&mut child, loadable_ref);
         let id = self.id();
@@ -82,7 +82,7 @@ impl ControlBuilderExt for UiBuilder<'_, Entity>
     ) -> &mut Self
     {
         let entity = self.id();
-        self.commands().add(move |world: &mut World| {
+        self.commands().queue(move |world: &mut World| {
             let Some(control_map) = world.get::<ControlMap>(entity) else {
                 tracing::warn!(
                     "failed editing child {child} of entity {entity:?}, \
@@ -125,7 +125,8 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
 
     fn initialize_scene_node(ec: &mut EntityCommands)
     {
-        ec.insert(NodeBundle::default());
+        tracing::error!("initializing {:?}", ec.id());
+        ec.insert(Node::default());
     }
 
     fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
@@ -157,7 +158,7 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
 
     fn initialize_scene_node(ec: &mut EntityCommands)
     {
-        ec.insert(NodeBundle::default());
+        ec.insert(Node::default());
     }
 
     fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>

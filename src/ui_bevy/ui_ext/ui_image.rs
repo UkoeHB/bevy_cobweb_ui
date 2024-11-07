@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::ui::widget::UiImageSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
@@ -9,46 +8,24 @@ use crate::prelude::*;
 
 /// Inserts a UiImage to an entity.
 fn insert_ui_image(
-    In((entity, mut img)): In<(Entity, LoadedUiImage)>,
+    In((entity, img)): In<(Entity, LoadedUiImage)>,
     mut commands: Commands,
     img_map: Res<ImageMap>,
     layout_map: Res<TextureAtlasLayoutMap>,
 )
 {
+    let Some(mut ec) = commands.get_entity(entity) else { return };
+
     // Extract
     let content_size = match img.size {
         Some(size) => ContentSize::fixed_size(size),
         None => ContentSize::default(),
     };
-    let maybe_atlas = img.atlas.take().map(|a| TextureAtlas {
-        layout: layout_map.get(&img.texture, &a.alias),
-        index: a.index,
-    });
-    let maybe_scale_mode = img.scale_mode.take();
-    let ui_image = img.to_ui_image(&img_map);
+    let ui_image = img.to_ui_image(&img_map, &layout_map);
 
     // Insert
     // - Note this is a bit messy to avoid archetype moves on insert.
-    //todo: simplify when Bevy has batched ECS commands
-    let mut ec = commands.entity(entity);
-    let bundle = (ui_image, UiImageSize::default(), content_size);
-
-    match (maybe_atlas, maybe_scale_mode) {
-        (Some(atlas), Some(scale_mode)) => {
-            let scale_mode: ImageScaleMode = scale_mode.into();
-            ec.try_insert((atlas, scale_mode, bundle));
-        }
-        (Some(atlas), None) => {
-            ec.try_insert((atlas, bundle));
-        }
-        (None, Some(scale_mode)) => {
-            let scale_mode: ImageScaleMode = scale_mode.into();
-            ec.try_insert((scale_mode, bundle));
-        }
-        _ => {
-            ec.try_insert(bundle);
-        }
-    }
+    ec.try_insert((ui_image, content_size));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -61,10 +38,10 @@ fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut TextureAtlas, With<UiImage>>)
+fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut UiImage>)
 {
-    let Ok(mut atlas) = q.get_mut(entity) else { return };
-    atlas.index = index;
+    let Ok(mut img) = q.get_mut(entity) else { return };
+    img.texture_atlas.as_mut().map(|a| a.index = index);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -81,7 +58,7 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 pub struct LoadedUiImage
 {
     /// The location of the UiImage.
-    pub texture: String,
+    pub image: String,
     /// A reference to the [`TextureAtlas`] to process this image with.
     ///
     /// The image can be animated using the referenced texture atlas with [`Animated<UiImageIndex>`].
@@ -91,17 +68,22 @@ pub struct LoadedUiImage
     pub atlas: Option<TextureAtlasReference>,
     /// The scale mode for this image.
     ///
-    /// [`LoadedImageScaleMode::Sliced`] can be used for nine-slicing.
+    /// [`LoadedImageMode::Sliced`] can be used for nine-slicing.
     #[reflect(default)]
-    pub scale_mode: Option<LoadedImageScaleMode>,
+    pub mode: Option<LoadedImageMode>,
     /// The color of the image.
     #[reflect(default = "LoadedUiImage::default_color")]
     pub color: Color,
     /// The size of the image.
     ///
-    /// Set this if you want to force the node to match the image size.
+    /// Set this if you want to force the node to stretch to a specific size.
+    ///
+    /// When the default [`LoadedImageMode`] is used, the node will automatically size itself to fit the image.
     #[reflect(default)]
     pub size: Option<Vec2>,
+    /// Allows specifying a rectangle on the image to render. A cheap alternative to [`Self::atlas`].
+    #[reflect(default)]
+    pub rect: Option<Rect>,
     /// Whether to flip the image on its x axis.
     #[reflect(default)]
     pub flip_x: bool,
@@ -113,13 +95,19 @@ pub struct LoadedUiImage
 impl LoadedUiImage
 {
     /// Converts to a [`UiImage`].
-    pub fn to_ui_image(self, map: &ImageMap) -> UiImage
+    pub fn to_ui_image(self, map: &ImageMap, layout_map: &TextureAtlasLayoutMap) -> UiImage
     {
         UiImage {
             color: self.color,
-            texture: map.get(&self.texture),
+            image: map.get(&self.image),
+            texture_atlas: self.atlas.map(|a| TextureAtlas {
+                layout: layout_map.get(&self.image, &a.alias),
+                index: a.index,
+            }),
             flip_x: self.flip_x,
             flip_y: self.flip_y,
+            rect: self.rect,
+            image_mode: self.mode.unwrap_or_default().into(),
         }
     }
 
@@ -139,8 +127,8 @@ impl Instruction for LoadedUiImage
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(UiImage, UiImageSize, ContentSize, ImageScaleMode, TextureAtlas)>();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<UiImage>();
         });
     }
 }

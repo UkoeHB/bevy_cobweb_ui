@@ -28,7 +28,7 @@ impl Plugin for PseudoStatePlugin
 pub struct RefreshPseudoStates;
 
 fn propagate_flex_direction_to_pseudo_state(
-    q_nodes: Query<(Entity, &Style), (With<FlexDirectionToPseudoState>, Changed<Style>)>,
+    q_nodes: Query<(Entity, &Node), (With<FlexDirectionToPseudoState>, Changed<Node>)>,
     mut commands: Commands,
 )
 {

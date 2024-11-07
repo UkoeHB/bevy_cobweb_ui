@@ -26,10 +26,6 @@ enum _StyleAttributes
     {
         overflow: Overflow
     },
-    Direction
-    {
-        direction: Direction
-    },
     Left
     {
         left: Val
@@ -207,9 +203,9 @@ enum _StyleAttributes
         image_flip: BVec2
     },
     #[skip_enity_command]
-    ImageScaleMode
+    NodeImageMode
     {
-        image_scale_mode: Option<ImageScaleMode>
+        image_scale_mode: Option<NodeImageMode>
     },
     #[static_style_only]
     #[skip_ui_style_ext]
@@ -312,12 +308,5 @@ enum _StyleAttributes
     OutlineColor
     {
         outline_color: Color
-    },
-    #[skip_lockable_enum]
-    #[target_component(TextureAtlas)]
-    #[target_component_attr(index)]
-    TextureAtlasIndex
-    {
-        atlas_index: usize
     },
 }

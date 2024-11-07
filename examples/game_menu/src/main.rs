@@ -34,7 +34,7 @@ fn detect_dropdown_change(mut c: Commands, query: Query<Entity, Changed<Dropdown
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Style override for the `sickle_ui` `Slider` widget.
+/// Node override for the `sickle_ui` `Slider` widget.
 fn adjusted_slider_style(style_builder: &mut StyleBuilder, slider: &Slider, theme_data: &ThemeData)
 {
     // This is styling for a horizontal slider.
@@ -371,10 +371,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
 fn setup(mut commands: Commands)
 {
-    commands.spawn(Camera2dBundle {
-        transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
-        ..default()
-    });
+    commands.spawn(default_color);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

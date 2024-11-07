@@ -174,10 +174,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
 fn setup(mut commands: Commands)
 {
-    commands.spawn(Camera2dBundle {
-        transform: Transform { translation: Vec3 { x: 0., y: 0., z: 1000. }, ..default() },
-        ..default()
-    });
+    commands.spawn(Camera2d);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

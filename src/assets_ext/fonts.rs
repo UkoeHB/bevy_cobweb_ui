@@ -6,7 +6,6 @@ use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::LanguageIdentifier;
-use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 use crate::prelude::*;
@@ -742,7 +741,12 @@ impl AssetLoadProgress for FontMap
 /// Contains information for a font fallback.
 ///
 /// See [`LocalizedFont`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LocalizedFontFallback
 {
     /// The language id for the fallback.
@@ -760,7 +764,12 @@ pub struct LocalizedFontFallback
 //-------------------------------------------------------------------------------------------------------------------
 
 /// See [`LoadLocalizedFonts`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LocalizedFont
 {
     /// Family of the font to localize.
@@ -785,7 +794,12 @@ pub struct LocalizedFont
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A member of a font family, with path for loading the asset.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct FontVariant
 {
     /// Path to the font asset.
@@ -810,7 +824,12 @@ impl FontVariant
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A font family with all its font variants.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct RegisterFontFamily
 {
     pub family: FontFamily,
@@ -822,7 +841,12 @@ pub struct RegisterFontFamily
 /// Loadable command for registering localized fonts.
 ///
 /// The loaded fonts can be accessed via [`FontMap`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LoadLocalizedFonts(pub Vec<LocalizedFont>);
 
 impl Command for LoadLocalizedFonts
@@ -838,7 +862,12 @@ impl Command for LoadLocalizedFonts
 /// Loadable command for registering font families that need to be pre-loaded.
 ///
 /// The loaded fonts can be accessed via [`FontMap`].
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct LoadFonts(pub Vec<SmolStr>);
 
 impl Command for LoadFonts
@@ -857,7 +886,12 @@ impl Command for LoadFonts
 ///
 /// Font assets added here are *not* automatically loaded. Use [`LoadFonts`], [`LoadLocalizedFonts`], or
 /// [`FontMap::get_or_load`] to actually load the fonts you want to use.
-#[derive(Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
 pub struct RegisterFontFamilies(pub Vec<RegisterFontFamily>);
 
 impl Command for RegisterFontFamilies

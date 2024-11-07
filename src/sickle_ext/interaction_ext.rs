@@ -144,14 +144,14 @@ impl Instruction for Interactive
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert((Interaction::default(), TrackedInteraction::default()));
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<(Interaction, TrackedInteraction)>();
         });
     }

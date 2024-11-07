@@ -1,7 +1,7 @@
 use attributes::custom_attrs::CustomStaticStyleAttribute;
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
-use bevy::reflect::GetTypeRegistration;
+use bevy::reflect::{GetTypeRegistration, Typed};
 use bevy_cobweb::prelude::*;
 use sickle_ui_scaffold::attributes::custom_attrs::{AnimatedStyleAttribute, InteractiveStyleAttribute};
 use smallvec::SmallVec;
@@ -207,10 +207,10 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that specify a value for a theme.
-pub trait ThemedAttribute: Instruction + TypePath
+pub trait ThemedAttribute: Instruction + Typed
 {
     /// Specifies the value-type of the theme attribute.
-    type Value: Loadable + TypePath + Clone;
+    type Value: Loadable + Typed + Clone;
 
     /// Converts [`Self::Value`] into `Self`.
     fn construct(value: Self::Value) -> Self;
@@ -221,14 +221,14 @@ pub trait ThemedAttribute: Instruction + TypePath
 /// Trait for loadable types that respond to interactions.
 ///
 /// Use [`Interactive`] to make an entity interactable.
-pub trait ResponsiveAttribute: Loadable + TypePath {}
+pub trait ResponsiveAttribute: Loadable + Typed {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that can be animated in response to interactions.
 ///
 /// Use [`Interactive`] to make an entity interactable.
-pub trait AnimatableAttribute: Loadable + TypePath {}
+pub trait AnimatableAttribute: Loadable + Typed {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

@@ -69,10 +69,10 @@ fn check_loaded_audios(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// System that runs when the app needs to replace existing audio sources with updated localized audio sources.
-fn relocalize_audios(audios: Res<AudioMap>, mut query: Query<&mut Handle<AudioSource>>)
+fn relocalize_audios(audios: Res<AudioMap>, mut query: Query<&mut AudioPlayer>)
 {
-    for mut handle in query.iter_mut() {
-        audios.localize_audio(&mut handle);
+    for mut player in query.iter_mut() {
+        audios.localize_audio(&mut player.0);
     }
 }
 

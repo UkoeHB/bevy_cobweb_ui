@@ -293,7 +293,7 @@ fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDyi
     // re-applied).
     for entity in dying.iter() {
         c.entity(entity)
-            .add(RemoveDeadControlMap)
+            .queue(RemoveDeadControlMap)
             .remove::<ControlMapDying>();
     }
 }
@@ -320,7 +320,7 @@ fn refresh_controlled_styles(
         map.cleanup_references(&entities);
 
         // Queue styles update.
-        c.entity(entity).add(RefreshControlledStyles);
+        c.entity(entity).queue(RefreshControlledStyles);
     }
 }
 
@@ -336,6 +336,7 @@ impl EntityCommand for RemoveDeadControlMap
     {
         let Some(mut old_control_map) = world
             .get_entity_mut(entity)
+            .ok()
             .and_then(|mut emut| emut.take::<ControlMap>())
         else {
             tracing::error!("failed removing ControlMap");
@@ -348,7 +349,7 @@ impl EntityCommand for RemoveDeadControlMap
         for (label, label_entity) in old_control_map.remove_all_labels() {
             // Clean up dynamic style on all label entities in case they were targets for placement.
             // - We expect there aren't any stale labels in this map, so removing DynamicStyle is safe here.
-            world.get_entity_mut(label_entity).map(|mut e| {
+            let _ = world.get_entity_mut(label_entity).map(|mut e| {
                 e.remove::<(DynamicStyle, DynamicStyleStopwatch)>();
             });
 

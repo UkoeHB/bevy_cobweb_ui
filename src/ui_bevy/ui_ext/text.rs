@@ -1,14 +1,12 @@
 use bevy::prelude::*;
-use bevy::text::{BreakLineOn, TextLayoutInfo};
-use bevy::ui::widget::TextFlags;
-use bevy::ui::ContentSize;
+use bevy::text::LineBreak;
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-const TEXT_LINE_DEFAULT_TEXT: &str = "[text line]";
+const TEXT_LINE_DEFAULT_TEXT: &str = "[[text line]]";
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -25,7 +23,7 @@ fn insert_text_line(
     let color = color
         .get(entity)
         .map(|c| c.0)
-        .unwrap_or_else(|_| TextLine::default_font_color());
+        .unwrap_or_else(|_| TextLine::default_color());
 
     // Get font.
     let mut font = line.font.map(|f| font_map.get(&f)).unwrap_or_default();
@@ -42,24 +40,19 @@ fn insert_text_line(
         }
     }
 
-    // Set up text.
-    let mut text = Text::from_section(line.text, TextStyle { font, font_size: line.size, color });
-    text.justify = line.justify;
-    text.linebreak_behavior = line.linebreak;
-
     // Add text to entity.
-    let mut ec = commands.entity(entity);
+    let Some(mut ec) = commands.get_entity(entity) else { return };
     ec.try_insert((
-        text,
-        TextLayoutInfo::default(),
-        TextFlags::default(),
-        ContentSize::default(),
+        Text(line.text),
+        TextLayout { justify: line.justify, linebreak: line.linebreak },
+        TextFont { font, font_size: line.size, ..default() },
+        TextColor(color),
     ));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Sets up an entity with a [`Text`] component and one text section.
+/// Sets up an entity with a [`Text`] component and one text span.
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -79,11 +72,11 @@ pub struct TextLine
     /// The desired font size.
     #[reflect(default = "TextLine::default_font_size")]
     pub size: f32,
-    /// The line's [`BreakLineOn`] behavior.
+    /// The line's [`LineBreak`] behavior.
     ///
-    /// Defaults to [`BreakLineOn::NoWrap`].
+    /// Defaults to [`LineBreak::NoWrap`].
     #[reflect(default = "TextLine::default_line_break")]
-    pub linebreak: BreakLineOn,
+    pub linebreak: LineBreak,
     /// The line's [`JustifyText`] behavior.
     ///
     /// Defaults to [`JustifyText::Left`].
@@ -111,7 +104,7 @@ impl TextLine
 
     fn default_font() -> Option<FontRequest>
     {
-        Some(FontRequest::new("Fira Sans").medium())
+        Some(FontRequest::new_static("Fira Sans").medium())
     }
 
     fn default_font_size() -> f32
@@ -119,14 +112,14 @@ impl TextLine
         25.
     }
 
-    fn default_font_color() -> Color
+    fn default_color() -> Color
     {
         Color::WHITE
     }
 
-    fn default_line_break() -> BreakLineOn
+    fn default_line_break() -> LineBreak
     {
-        BreakLineOn::NoWrap
+        LineBreak::NoWrap
     }
 
     fn default_justify_text() -> JustifyText
@@ -139,13 +132,15 @@ impl Instruction for TextLine
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
+        tracing::error!("apply line {entity:?}");
         world.syscall((entity, self), insert_text_line);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(Text, TextLayoutInfo, TextFlags, ContentSize)>();
+        tracing::error!("revert line {entity:?}");
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<Text>();
         });
     }
 }
@@ -186,7 +181,7 @@ impl Instruction for TextLineSize
                 editor.set_font_size(id, size);
             },
         );
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
     }
@@ -227,14 +222,14 @@ impl Instruction for TextLineColor
                 editor.set_font_color(id, color);
             },
         );
-        world.get_entity_mut(entity).map(|mut e| {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(self);
         });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        Instruction::apply(Self(TextLine::default_font_color()), entity, world);
+        Instruction::apply(Self(TextLine::default_color()), entity, world);
     }
 }
 
@@ -259,9 +254,7 @@ impl Plugin for UiTextExtPlugin
     fn build(&self, app: &mut App)
     {
         app.register_instruction_type::<TextLine>()
-            // IMPORTANT: This must be added after TextLine so the line size will overwrite TextLine defaults.
             .register_themed::<TextLineSize>()
-            // IMPORTANT: This must be added after TextLine so the line color will overwrite TextLine defaults.
             .register_animatable::<TextLineColor>();
     }
 }

@@ -861,7 +861,7 @@ impl CommandsBuffer
                         continue;
                     };
 
-                    c.add(CommandLoadCommand {
+                    c.queue(CommandLoadCommand {
                         callback,
                         loadable_ref: dummy_loadable_ref.clone(),
                         loadable: cached.command.loadable.clone(),

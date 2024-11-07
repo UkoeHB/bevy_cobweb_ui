@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
-use bevy::reflect::GetTypeRegistration;
+use bevy::reflect::{GetTypeRegistration, Typed};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -51,13 +51,13 @@ impl InstructionExt for EntityCommands<'_>
 {
     fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
-        self.add(move |e: Entity, w: &mut World| instruction.apply(e, w));
+        self.queue(move |e: Entity, w: &mut World| instruction.apply(e, w));
         self
     }
 
     fn revert<T: Instruction>(&mut self) -> &mut Self
     {
-        self.add(|e: Entity, w: &mut World| T::revert(e, w));
+        self.queue(|e: Entity, w: &mut World| T::revert(e, w));
         self
     }
 }
@@ -71,7 +71,7 @@ impl InstructionExt for EntityCommands<'_>
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Multi<T>(Vec<T>);
 
-impl<T: Instruction + TypePath + FromReflect + GetTypeRegistration> Instruction for Multi<T>
+impl<T: Instruction + Typed + FromReflect + GetTypeRegistration> Instruction for Multi<T>
 {
     fn apply(mut self, entity: Entity, world: &mut World)
     {
@@ -104,7 +104,7 @@ impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Mult
 pub trait Splattable
 {
     /// The inner value used to splat-construct `Self`.
-    type Splat: TypePath + FromReflect + GetTypeRegistration + Default + Debug + Clone + PartialEq;
+    type Splat: Typed + FromReflect + GetTypeRegistration + Default + Debug + Clone + PartialEq;
 
     /// Constructs a full `Self` from a single inner `splat` value.
     fn splat(splat: Self::Splat) -> Self;
@@ -119,7 +119,7 @@ pub struct Splat<T: Splattable>(pub T::Splat);
 
 impl<T> Instruction for Splat<T>
 where
-    T: Splattable + Instruction + TypePath + FromReflect + GetTypeRegistration,
+    T: Splattable + Instruction + Typed + FromReflect + GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

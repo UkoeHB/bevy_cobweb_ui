@@ -75,9 +75,9 @@ fn bundle_loader<T: Bundle + Loadable>(
 )
 {
     w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
-        let Some(mut ec) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         let Some(bundle) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
-        ec.insert(bundle);
+        emut.insert(bundle);
     });
 }
 
@@ -92,7 +92,7 @@ fn reactive_loader<T: ReactComponent + Loadable>(
 )
 {
     w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
-        let Some(mut emut) = world.get_entity_mut(entity) else { return };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         let Some(new_val) = loadable.get_value(&loadable_ref, &registry.read()) else { return };
         match emut.get_mut::<React<T>>() {
             Some(mut component) => {
@@ -147,7 +147,7 @@ fn load_from_ref(
 // TODO (bevy v0.15): need to use `remove_with_requires`
 fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 {
-    let Some(mut emut) = world.get_entity_mut(entity) else { return };
+    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
     emut.remove::<T>();
 }
 
@@ -155,7 +155,7 @@ fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 
 fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 {
-    let Some(mut emut) = world.get_entity_mut(entity) else { return };
+    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
     emut.remove::<React<T>>();
 }
 

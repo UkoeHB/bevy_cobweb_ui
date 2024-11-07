@@ -30,7 +30,7 @@ fn main()
         .add_plugins(CobwebUiPlugin)
         .load("main.caf.json")
         .add_systems(PreStartup, |mut c: Commands| {
-            c.spawn(Camera2dBundle::default());
+            c.spawn(Camera2d);
         })
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

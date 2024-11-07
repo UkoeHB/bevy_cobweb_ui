@@ -16,14 +16,18 @@ use crate::prelude::*;
 fn relocalize_text(
     localizer: Res<TextLocalizer>,
     fonts: Res<FontMap>,
-    mut text: Query<(&mut LocalizedText, &mut Text)>,
+    mut localized_text: Query<(Entity, &mut LocalizedText)>,
+    mut writer: TextUiWriter,
 )
 {
     // Re-localize all text and fonts.
-    for (mut localized, mut text) in text.iter_mut() {
-        for (idx, section) in text.sections.iter_mut().enumerate() {
-            localized.localize_section(&localizer, &fonts, &mut section.value, &mut section.style.font, idx);
-        }
+    for (entity, mut localized) in localized_text.iter_mut() {
+        let mut idx = 0;
+
+        writer.for_each(entity, |_, _, mut text, mut font, _| {
+            localized.localize_span(&localizer, &fonts, &mut *text, &mut font.font, idx);
+            idx += 1;
+        });
     }
 }
 
@@ -32,14 +36,22 @@ fn relocalize_text(
 /// System that runs whenever `FontMap` is reloaded via `LoadFonts`.
 ///
 /// Handles changes to font fallbacks when there is existing text.
-fn handle_font_refresh(fonts: Res<FontMap>, mut text: Query<(&mut LocalizedText, &mut Text)>)
+fn handle_font_refresh(
+    fonts: Res<FontMap>,
+    mut localized_text: Query<(Entity, &mut LocalizedText)>,
+    mut writer: TextUiWriter,
+)
 {
     // Re-localize all fonts.
-    for (mut localized, mut text) in text.iter_mut() {
-        for (idx, section) in text.sections.iter_mut().enumerate() {
-            let Some(loc_section) = localized.localization_for_section_mut(idx) else { continue };
-            loc_section.update_font(&fonts, &mut section.style.font);
-        }
+    for (entity, mut localized) in localized_text.iter_mut() {
+        let mut idx = 0;
+
+        writer.for_each_font(entity, |mut font| {
+            let this_idx = idx;
+            idx += 1;
+            let Some(loc_span) = localized.localization_for_span_mut(this_idx) else { return };
+            loc_span.update_font(&fonts, &mut font.font);
+        });
     }
 }
 
@@ -52,38 +64,44 @@ fn handle_font_refresh(fonts: Res<FontMap>, mut text: Query<(&mut LocalizedText,
 fn handle_new_localized_text(
     localizer: Res<TextLocalizer>,
     fonts: Res<FontMap>,
-    mut text: Query<(&mut LocalizedText, &mut Text), Added<LocalizedText>>,
+    mut localized_text: Query<(Entity, &mut LocalizedText), Added<LocalizedText>>,
+    mut writer: TextUiWriter,
 )
 {
-    for (mut localized, mut text) in text.iter_mut() {
-        for (idx, section) in text.sections.iter_mut().enumerate() {
-            // Ignore empty sections.
-            // - We assume if empty sections need to be localized, it will be handled by `TextEditor` when the user
-            //   writes to those sections.
-            if section.value.is_empty() {
-                continue;
+    for (entity, mut localized) in localized_text.iter_mut() {
+        let mut idx = 0;
+
+        writer.for_each(entity, |_, _, mut text, mut font, _| {
+            let this_idx = idx;
+            idx += 1;
+
+            // Ignore empty spans.
+            // - We assume if empty spans need to be localized, it will be handled by `TextEditor` when the user
+            //   writes to those spans.
+            if text.is_empty() {
+                return;
             }
 
-            // Ignore sections if the associated localization template is non-empty.
-            // - These text sections have already been localized.
+            // Ignore spans if the associated localization template is non-empty.
+            // - These text spans have already been localized.
             // - NOTE: Normally we don't repair partially-localized text, but in this case we look through all the
-            //   sections regardless of if other sections have been localized.
-            if let Some(section_loc) = localized.localization_for_section(idx) {
-                if section_loc.lang().is_some() {
-                    continue;
+            //   spans regardless of if other spans have been localized.
+            if let Some(span_loc) = localized.localization_for_span(this_idx) {
+                if span_loc.lang().is_some() {
+                    return;
                 }
             }
 
-            // Now localize the section.
-            localized.set_localization_for_section(&section.value, idx);
-            localized.localize_section(&localizer, &fonts, &mut section.value, &mut section.style.font, idx);
-        }
+            // Now localize the span.
+            localized.set_localization_for_span(text.as_str(), this_idx);
+            localized.localize_span(&localizer, &fonts, &mut *text, &mut font.font, this_idx);
+        });
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Result returned by [`LocalizedTextSection::localize`].
+/// Result returned by [`LocalizedTextspan::localize`].
 pub enum TextLocalizationResult
 {
     /// The text was localized to a different language from what it had before.
@@ -96,12 +114,12 @@ pub enum TextLocalizationResult
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Localization templates for a specific [`TextSection`] in a [`Text`] component on an entity.
+/// Localization templates for a specific [`Textspan`] in a [`Text`] component on an entity.
 ///
-/// Includes the language currently loaded to each section, which can be used to accurately set fallback
+/// Includes the language currently loaded to each span, which can be used to accurately set fallback
 /// fonts.
 #[derive(Reflect, Clone, Default, Debug, PartialEq)]
-pub struct LocalizedTextSection
+pub struct LocalizedTextspan
 {
     #[reflect(ignore)]
     id: Option<LanguageIdentifier>,
@@ -112,21 +130,21 @@ pub struct LocalizedTextSection
     pub template: String,
 }
 
-impl LocalizedTextSection
+impl LocalizedTextspan
 {
-    /// Gets the language currently applied to the associated text section on the entity.
+    /// Gets the language currently applied to the associated text span on the entity.
     ///
-    /// This will be `None` if the text section has not been localized yet. See
-    /// [`LocalizedText::localize_section`].
+    /// This will be `None` if the text span has not been localized yet. See
+    /// [`LocalizedText::localize_span`].
     pub fn lang(&self) -> &Option<LanguageIdentifier>
     {
         &self.id
     }
 
-    /// Gets the main font associated with this text section.
+    /// Gets the main font associated with this text span.
     ///
-    /// If this is `None` then the current font on the text section is associated with the app's default
-    /// language. See [`LocalizedText::localize_section`].
+    /// If this is `None` then the current font on the text span is associated with the app's default
+    /// language. See [`LocalizedText::localize_span`].
     ///
     /// Used to coordinate switching to a new fallback font if the language changes.
     pub fn font_backup(&self) -> &Option<Handle<Font>>
@@ -134,7 +152,7 @@ impl LocalizedTextSection
         &self.font_backup
     }
 
-    /// Localizes this text section.
+    /// Localizes this text span.
     pub fn localize(&mut self, localizer: &TextLocalizer, target: &mut String) -> TextLocalizationResult
     {
         let Some(lang) = localizer.localize(&self.template, target) else { return TextLocalizationResult::Fail };
@@ -151,8 +169,8 @@ impl LocalizedTextSection
         self.font_backup = Some(backup);
     }
 
-    /// Updates the text section's font to use a fallback if the current font is not supported by the
-    /// text section's currently-set language.
+    /// Updates the text span's font to use a fallback if the current font is not supported by the
+    /// text span's currently-set language.
     ///
     /// If there is no current font backup, then the initial value in `target` will be set as the backup.
     pub fn update_font(&mut self, fonts: &FontMap, target: &mut Handle<Font>)
@@ -164,8 +182,8 @@ impl LocalizedTextSection
 
         // Get the correct localized font derived from the main font.
         let Some(lang_id) = &self.id else {
-            tracing::warn!("failed setting localized font on a text section, the \
-                section has not been localized yet; current font is {:?}", target.path());
+            tracing::warn!("failed setting localized font on a text span, the \
+                span has not been localized yet; current font is {:?}", target.path());
             return;
         };
         let backup = self.font_backup.as_ref().unwrap();
@@ -196,65 +214,65 @@ impl LocalizedTextSection
 #[derive(Component, Reflect, Clone, Debug, PartialEq)]
 pub struct LocalizedText
 {
-    /// Localization templates for each [`TextSection`] in the [`Text`] component on this entity.
+    /// Localization templates for each [`Textspan`] in the [`Text`] component on this entity.
     ///
     /// This should be updated before calling [`LocalizedText::localize`] if the localization template has
     /// changed.
     #[reflect(ignore, default = "LocalizedText::default_loc")]
-    localization: SmallVec<[LocalizedTextSection; 1]>,
+    localization: SmallVec<[LocalizedTextspan; 1]>,
 }
 
 impl LocalizedText
 {
-    /// Sets the cached localization template for the first section in the entity's [`Text`].
+    /// Sets the cached localization template for the first span in the entity's [`Text`].
     pub fn set_localization(&mut self, data: impl AsRef<str>)
     {
-        self.set_localization_for_section(data, 0);
+        self.set_localization_for_span(data, 0);
     }
 
-    /// Sets the cached localization template for a specific section in the entity's [`Text`].
-    pub fn set_localization_for_section(&mut self, data: impl AsRef<str>, section: usize)
+    /// Sets the cached localization template for a specific span in the entity's [`Text`].
+    pub fn set_localization_for_span(&mut self, data: impl AsRef<str>, span: usize)
     {
-        if self.localization.len() <= section {
+        if self.localization.len() <= span {
             self.localization
-                .resize(section + 1, LocalizedTextSection::default());
+                .resize(span + 1, LocalizedTextspan::default());
         }
-        let localized_section = &mut self.localization[section];
-        localized_section.template.clear();
-        localized_section.template.push_str(data.as_ref());
+        let localized_span = &mut self.localization[span];
+        localized_span.template.clear();
+        localized_span.template.push_str(data.as_ref());
     }
 
-    /// Gets a reference to the cached localization template for the first section in the entity's [`Text`].
-    pub fn localization(&self) -> &LocalizedTextSection
+    /// Gets a reference to the cached localization template for the first span in the entity's [`Text`].
+    pub fn localization(&self) -> &LocalizedTextspan
     {
-        // Safe unwrap: struct can't be constructed with 0 sections.
-        self.localization_for_section(0).unwrap()
+        // Safe unwrap: struct can't be constructed with 0 spans.
+        self.localization_for_span(0).unwrap()
     }
 
-    /// Gets a mutable reference to the cached localization template for the first section in the entity's
+    /// Gets a mutable reference to the cached localization template for the first span in the entity's
     /// [`Text`].
-    pub fn localization_mut(&mut self) -> &mut LocalizedTextSection
+    pub fn localization_mut(&mut self) -> &mut LocalizedTextspan
     {
-        // Safe unwrap: struct can't be constructed with 0 sections.
-        self.localization_for_section_mut(0).unwrap()
+        // Safe unwrap: struct can't be constructed with 0 spans.
+        self.localization_for_span_mut(0).unwrap()
     }
 
-    /// Gets a reference to the cached localization template for the first section in the entity's [`Text`].
-    pub fn localization_for_section(&self, section: usize) -> Option<&LocalizedTextSection>
+    /// Gets a reference to the cached localization template for the first span in the entity's [`Text`].
+    pub fn localization_for_span(&self, span: usize) -> Option<&LocalizedTextspan>
     {
-        self.localization.get(section)
+        self.localization.get(span)
     }
 
-    /// Gets a mutable reference to the cached localization template for the first section in the entity's
+    /// Gets a mutable reference to the cached localization template for the first span in the entity's
     /// [`Text`].
-    pub fn localization_for_section_mut(&mut self, section: usize) -> Option<&mut LocalizedTextSection>
+    pub fn localization_for_span_mut(&mut self, span: usize) -> Option<&mut LocalizedTextspan>
     {
-        self.localization.get_mut(section)
+        self.localization.get_mut(span)
     }
 
-    /// Localizes the first text section on an entity.
+    /// Localizes the first text span on an entity.
     ///
-    /// See [`Self::localize_section`].
+    /// See [`Self::localize_span`].
     pub fn localize(
         &mut self,
         localizer: &TextLocalizer,
@@ -263,40 +281,40 @@ impl LocalizedText
         font: &mut Handle<Font>,
     ) -> bool
     {
-        self.localize_section(localizer, fonts, target, font, 0)
+        self.localize_span(localizer, fonts, target, font, 0)
     }
 
-    /// Uses the localization template in `section` to set `target` with a string localized via [`TextLocalizer`].
+    /// Uses the localization template in `span` to set `target` with a string localized via [`TextLocalizer`].
     ///
     /// Will update the text's font if the text's language changes (including when localization is initialized).
     ///
     /// Returns `false` if localization failed, which can happen if no language is loaded yet.
-    pub fn localize_section(
+    pub fn localize_span(
         &mut self,
         localizer: &TextLocalizer,
         fonts: &FontMap,
         target: &mut String,
         font: &mut Handle<Font>,
-        section: usize,
+        span: usize,
     ) -> bool
     {
-        let Some(loc_section) = self.localization_for_section_mut(section) else {
-            tracing::warn!("tried to localize text section {section} of an entity, but no localization template is \
-                available for this section");
+        let Some(loc_span) = self.localization_for_span_mut(span) else {
+            tracing::warn!("tried to localize text span {span} of an entity, but no localization template is \
+                available for this span");
             return false;
         };
 
         // Localize it.
-        match loc_section.localize(localizer, target) {
+        match loc_span.localize(localizer, target) {
             TextLocalizationResult::Fail => {
-                tracing::warn!("failed localizing {:?} template for text section {section} on an entity",
-                    loc_section.template);
+                tracing::warn!("failed localizing {:?} template for text span {span} on an entity",
+                    loc_span.template);
                 return false;
             }
             TextLocalizationResult::NewLang => {
                 // Update font.
                 // - We assume we only need to update the font when the language changes.
-                loc_section.update_font(fonts, font);
+                loc_span.update_font(fonts, font);
             }
             TextLocalizationResult::SameLang => (),
         }
@@ -304,9 +322,9 @@ impl LocalizedText
         true
     }
 
-    fn default_loc() -> SmallVec<[LocalizedTextSection; 1]>
+    fn default_loc() -> SmallVec<[LocalizedTextspan; 1]>
     {
-        SmallVec::from_buf([LocalizedTextSection::default()])
+        SmallVec::from_buf([LocalizedTextspan::default()])
     }
 }
 
