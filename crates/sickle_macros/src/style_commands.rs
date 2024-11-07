@@ -5,8 +5,7 @@ use syn::spanned::Spanned;
 use syn::{AttrStyle, Attribute, Data, DataEnum, Fields, Meta, Type, TypePath, Variant};
 
 #[derive(Clone, Copy, Debug)]
-enum ParseError
-{
+enum ParseError {
     InvalidVariant,
     NoFields,
     TooManyFields,
@@ -18,8 +17,7 @@ enum ParseError
 }
 
 #[derive(Clone, Debug)]
-struct StyleAttribute
-{
+struct StyleAttribute {
     ident: Ident,
     command: Ident,
     type_path: TypePath,
@@ -37,10 +35,8 @@ struct StyleAttribute
     target_attr_name: String,
 }
 
-impl StyleAttribute
-{
-    fn new(ident: Ident, command: Ident, type_path: TypePath) -> Self
-    {
+impl StyleAttribute {
+    fn new(ident: Ident, command: Ident, type_path: TypePath) -> Self {
         let cmd_struct_name = format!("Set{}", ident);
         let cmd_struct_ident = Ident::new(cmd_struct_name.as_str(), ident.span().clone());
         let target_attr_name = command.to_string();
@@ -65,8 +61,7 @@ impl StyleAttribute
     }
 }
 
-pub(crate) fn derive_style_commands_macro(ast: &syn::DeriveInput) -> TokenStream
-{
+pub(crate) fn derive_style_commands_macro(ast: &syn::DeriveInput) -> TokenStream {
     let name_ident = &ast.ident;
     let Data::Enum(enum_data) = &ast.data else {
         return quote_spanned! {
@@ -100,8 +95,7 @@ pub(crate) fn derive_style_commands_macro(ast: &syn::DeriveInput) -> TokenStream
     .into()
 }
 
-fn match_error(span: proc_macro2::Span, error: ParseError) -> proc_macro2::TokenStream
-{
+fn match_error(span: proc_macro2::Span, error: ParseError) -> proc_macro2::TokenStream {
     match error {
         ParseError::InvalidVariant => {
             return quote_spanned! {
@@ -146,14 +140,12 @@ fn match_error(span: proc_macro2::Span, error: ParseError) -> proc_macro2::Token
     }
 }
 
-fn parse_variants(data: &DataEnum) -> Result<Vec<StyleAttribute>, (proc_macro2::Span, ParseError)>
-{
+fn parse_variants(data: &DataEnum) -> Result<Vec<StyleAttribute>, (proc_macro2::Span, ParseError)> {
     let attributes: Result<Vec<_>, _> = data.variants.iter().map(parse_variant).collect();
     attributes
 }
 
-fn parse_variant(variant: &Variant) -> Result<StyleAttribute, (proc_macro2::Span, ParseError)>
-{
+fn parse_variant(variant: &Variant) -> Result<StyleAttribute, (proc_macro2::Span, ParseError)> {
     let variant_ident = variant.ident.clone();
 
     let Fields::Named(fields) = variant.fields.clone() else {
@@ -215,8 +207,7 @@ fn parse_variant(variant: &Variant) -> Result<StyleAttribute, (proc_macro2::Span
 fn target_component(
     attr: &Attribute,
     error: ParseError,
-) -> Result<proc_macro2::TokenStream, (proc_macro2::Span, ParseError)>
-{
+) -> Result<proc_macro2::TokenStream, (proc_macro2::Span, ParseError)> {
     let attr_span = attr.path().get_ident().unwrap().span();
     let Meta::List(list) = &attr.meta else {
         return Err((attr_span, error));
@@ -241,8 +232,7 @@ fn target_component(
     Ok(list.tokens.clone())
 }
 
-fn target_component_attr(attr: &Attribute) -> Result<Ident, (proc_macro2::Span, ParseError)>
-{
+fn target_component_attr(attr: &Attribute) -> Result<Ident, (proc_macro2::Span, ParseError)> {
     let attr_span = attr.path().get_ident().unwrap().span();
     let Meta::List(list) = &attr.meta else {
         return Err((attr_span, ParseError::InvalidTargetComponentAttrType));
@@ -291,8 +281,7 @@ fn target_component_attr(attr: &Attribute) -> Result<Ident, (proc_macro2::Span, 
     }
 }
 
-fn prepare_stylable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_stylable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let base_variants: Vec<proc_macro2::TokenStream> = style_attributes
         .iter()
         .map(to_base_attribute_variant)
@@ -306,8 +295,7 @@ fn prepare_stylable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_ma
     }
 }
 
-fn prepare_lockable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_lockable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let base_variants: Vec<proc_macro2::TokenStream> = style_attributes
         .iter()
         .filter(|v| !v.skip_lockable_enum)
@@ -322,8 +310,7 @@ fn prepare_lockable_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_ma
     }
 }
 
-fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let variants = style_attributes.iter();
     let base_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_static_style_variant).collect();
     let eq_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_eq_style_variant).collect();
@@ -355,7 +342,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
                 match self {
                     #(#apply_variants)*
                     Self::Custom(callback) => {
-                        ui_style.entity_commands().add(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
+                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
                     }
                 }
             }
@@ -367,8 +354,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
     }
 }
 
-fn prepare_interactive_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_interactive_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let variants = style_attributes.iter().filter(|v| !v.static_style_only);
     let base_variants: Vec<proc_macro2::TokenStream> =
         variants.clone().map(to_interactive_style_variant).collect();
@@ -412,7 +398,7 @@ fn prepare_interactive_style_attribute(style_attributes: &Vec<StyleAttribute>) -
                     Self::Custom(callback) => {
                         ui_style
                             .entity_commands()
-                            .add(ApplyCustomInteractiveStyleAttribute {
+                            .queue(ApplyCustomInteractiveStyleAttribute {
                                 callback: callback.clone(),
                                 flux_interaction,
                             });
@@ -430,8 +416,7 @@ fn prepare_interactive_style_attribute(style_attributes: &Vec<StyleAttribute>) -
     }
 }
 
-fn prepare_animated_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_animated_style_attribute(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let variants = style_attributes.iter().filter(|v| v.animatable);
     let base_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_animated_style_variant).collect();
     let eq_variants: Vec<proc_macro2::TokenStream> = variants.clone().map(to_eq_style_variant).collect();
@@ -478,7 +463,7 @@ fn prepare_animated_style_attribute(style_attributes: &Vec<StyleAttribute>) -> p
                     Self::Custom(callback) => {
                         ui_style
                             .entity_commands()
-                            .add(ApplyCustomAnimatadStyleAttribute {
+                            .queue(ApplyCustomAnimatadStyleAttribute {
                                 callback: callback.clone(),
                                 current_state: current_state.clone(),
                             });
@@ -498,8 +483,7 @@ fn prepare_animated_style_attribute(style_attributes: &Vec<StyleAttribute>) -> p
     }
 }
 
-fn prepare_enum_equivalence(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_enum_equivalence(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let interactive_to_static: Vec<proc_macro2::TokenStream> = style_attributes
         .iter()
         .filter(|v| !v.static_style_only)
@@ -585,8 +569,7 @@ fn prepare_enum_equivalence(style_attributes: &Vec<StyleAttribute>) -> proc_macr
     }
 }
 
-fn prepare_style_commands(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream
-{
+fn prepare_style_commands(style_attributes: &Vec<StyleAttribute>) -> proc_macro2::TokenStream {
     let extensions: Vec<proc_macro2::TokenStream> = style_attributes
         .iter()
         .filter(|v| !v.skip_ui_style_ext)
@@ -605,48 +588,42 @@ fn prepare_style_commands(style_attributes: &Vec<StyleAttribute>) -> proc_macro2
     }
 }
 
-fn to_eq_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_eq_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         (Self::#ident(_), Self::#ident(_)) => true,
     }
 }
 
-fn to_eq_static_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_eq_static_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         (Self::#ident(_), StaticStyleAttribute::#ident(_)) => true,
     }
 }
 
-fn to_eq_interactive_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_eq_interactive_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         (Self::#ident(_), InteractiveStyleAttribute::#ident(_)) => true,
     }
 }
 
-fn to_eq_animated_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_eq_animated_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         (Self::#ident(_), AnimatedStyleAttribute::#ident(_)) => true,
     }
 }
 
-fn to_base_attribute_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_base_attribute_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         #ident,
     }
 }
 
-fn to_static_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_static_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     quote! {
@@ -654,8 +631,7 @@ fn to_static_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::Tok
     }
 }
 
-fn to_interactive_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_interactive_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     quote! {
@@ -663,8 +639,7 @@ fn to_interactive_style_variant(style_attribute: &StyleAttribute) -> proc_macro2
     }
 }
 
-fn to_animated_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_animated_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     quote! {
@@ -672,8 +647,7 @@ fn to_animated_style_variant(style_attribute: &StyleAttribute) -> proc_macro2::T
     }
 }
 
-fn to_static_style_apply_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_static_style_apply_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let command = &style_attribute.command;
     quote! {
@@ -683,8 +657,7 @@ fn to_static_style_apply_variant(style_attribute: &StyleAttribute) -> proc_macro
     }
 }
 
-fn to_interactive_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_interactive_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         Self::#ident(bundle) => {
@@ -693,8 +666,7 @@ fn to_interactive_style_appl_variant(style_attribute: &StyleAttribute) -> proc_m
     }
 }
 
-fn to_animated_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_animated_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     quote! {
         Self::#ident(bundle) => StaticStyleAttribute::#ident(
@@ -703,8 +675,7 @@ fn to_animated_style_appl_variant(style_attribute: &StyleAttribute) -> proc_macr
     }
 }
 
-fn to_static_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_static_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     let command = &style_attribute.command;
@@ -719,8 +690,7 @@ fn to_static_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::
     }
 }
 
-fn to_interactive_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_interactive_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     let command = &style_attribute.command;
@@ -735,8 +705,7 @@ fn to_interactive_style_builder_fn(style_attribute: &StyleAttribute) -> proc_mac
     }
 }
 
-fn to_animated_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_animated_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let type_path = &style_attribute.type_path;
     let command = &style_attribute.command;
@@ -755,8 +724,7 @@ fn to_animated_style_builder_fn(style_attribute: &StyleAttribute) -> proc_macro2
     }
 }
 
-fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let cmd_struct_name = &style_attribute.cmd_struct_name.clone();
     let cmd_struct_ident = &style_attribute.cmd_struct_ident.clone();
     let target_attr = &style_attribute.command;
@@ -779,7 +747,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_ident for UiStyle<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().add(#cmd_struct_ident {
+                self.entity_commands().queue(#cmd_struct_ident {
                     #target_attr,
                     check_lock: true
                 });
@@ -793,7 +761,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
 
         impl #extension_unchecked_ident for UiStyleUnchecked<'_> {
             fn #target_attr(&mut self, #target_attr: #target_type) -> &mut Self {
-                self.entity_commands().add(#cmd_struct_ident {
+                self.entity_commands().queue(#cmd_struct_ident {
                     #target_attr,
                     check_lock: false
                 });
@@ -803,8 +771,7 @@ fn to_ui_style_extensions(style_attribute: &StyleAttribute) -> proc_macro2::Toke
     }
 }
 
-fn to_ui_style_command_impl(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_ui_style_command_impl(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let ident = &style_attribute.ident;
     let cmd_struct_ident = &style_attribute.cmd_struct_ident.clone();
     let target_attr_name = &style_attribute.target_attr_name;
@@ -838,8 +805,7 @@ fn to_ui_style_command_impl(style_attribute: &StyleAttribute) -> proc_macro2::To
     }
 }
 
-fn to_setter_entity_command_frag(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream
-{
+fn to_setter_entity_command_frag(style_attribute: &StyleAttribute) -> proc_macro2::TokenStream {
     let target_attr = &style_attribute.command;
     let target_type = &style_attribute.type_path;
     let target_attr_name = &style_attribute.target_attr_name;

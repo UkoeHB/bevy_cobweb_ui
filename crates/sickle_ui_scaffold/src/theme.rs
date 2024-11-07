@@ -316,7 +316,7 @@ impl InsertThemedComponentExt for UiBuilder<'_, Entity>
     fn insert_themed_component<C: DefaultTheme + Component>(&mut self, component: C) -> &mut Self
     {
         self.insert(component);
-        self.commands().add(|world: &mut World| {
+        self.commands().queue(|world: &mut World| {
             if !world.resource::<ThemeRegistry>().contains_by_id(TypeId::of::<C>()) {
                 warn!("themed component {} was not registered; add its ComponentThemePlugin to your app", type_name::<C>());
             }

@@ -1,5 +1,9 @@
 use std::marker::PhantomData;
 
+use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
+use crate::prelude::UiUtils;
+use crate::theme::prelude::*;
+use crate::ui_style::builder::StyleBuilder;
 use bevy::core::Name;
 use bevy::ecs::component::ComponentInfo;
 use bevy::ecs::entity::Entity;
@@ -8,164 +12,140 @@ use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
 use bevy::ecs::world::{Command, World};
 use bevy::hierarchy::{Children, Parent};
 use bevy::log::{info, warn};
+use bevy::prelude::Color;
+use bevy::prelude::Component;
+use bevy::prelude::Mut;
+use bevy::prelude::Text;
+use bevy::prelude::TextColor;
+use bevy::prelude::TextFont;
 use bevy::state::state::{FreelyMutableState, NextState, States};
 use bevy::ui::Interaction;
-use bevy::window::{SystemCursorIcon, PrimaryWindow};
-use bevy::prelude::TextFont;
-use bevy::prelude::Color;
-use bevy::prelude::TextColor;
-use bevy::prelude::Text;
-use crate::flux_interaction::{FluxInteraction, FluxInteractionStopwatchLock, StopwatchLock, TrackedInteraction};
-use crate::prelude::UiUtils;
-use crate::theme::prelude::*;
-use crate::ui_style::builder::StyleBuilder;
+use bevy::window::{PrimaryWindow, SystemCursorIcon};
+use bevy::winit::cursor::CursorIcon;
 
-struct SetText
-{
+struct SetText {
     text: String,
     font: TextFont,
-    color: Color
+    color: Color,
 }
 
-fn get_component_or_warn<T>(entity: Entity, world: &mut World) -> Option<T> {
+fn get_component_or_warn<T: Component>(entity: Entity, world: &mut World) -> Option<Mut<T>> {
     let Some(mut comp) = world.get_mut::<T>(entity) else {
-        warn!(
-            "Expected component not found on entity {}!",
-            entity
-        );
-        return;
+        warn!("Expected component not found on entity {}!", entity);
+        return None;
     };
 
     Some(comp)
 }
 
-impl EntityCommand for SetText
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let Some(text) = get_component_or_warn(entity, world) else {
+impl EntityCommand for SetText {
+    fn apply(self, entity: Entity, world: &mut World) {
+        let Some(text) = get_component_or_warn::<Text>(entity, world) else {
             return;
         };
-        text.text = self.text;
-        let Some(font) = get_component_or_warn(entity, world) else {
+        text.0 = self.text;
+        let Some(mut font) = get_component_or_warn::<TextFont>(entity, world) else {
             return;
         };
-        text.font = self.font;
-        let Some(color) = get_component_or_warn(entity, world) else {
+        *font = self.font;
+        let Some(mut color) = get_component_or_warn::<TextColor>(entity, world) else {
             return;
         };
-        text.color = TextColor(color);
+        *color = TextColor(self.color);
     }
 }
 
-pub trait SetTextExt
-{
+pub trait SetTextExt {
     /// Set text for a UI entity with the given [`TextStyle`]
     ///
     /// The [`Text`] component must already exist on the target entity.
     fn set_text(&mut self, text: impl Into<String>, font: Option<TextFont>, color: Option<Color>) -> &mut Self;
 }
 
-impl SetTextExt for EntityCommands<'_>
-{
-    fn set_text(&mut self, text: impl Into<String>, font: Option<TextFont>, color: Option<Color>) -> &mut Self
-    {
-        self.add(SetText { text: text.into(), font: font.unwrap_or_default(), color: color.unwrap_or_default() });
+impl SetTextExt for EntityCommands<'_> {
+    fn set_text(&mut self, text: impl Into<String>, font: Option<TextFont>, color: Option<Color>) -> &mut Self {
+        self.queue(SetText {
+            text: text.into(),
+            font: font.unwrap_or_default(),
+            color: color.unwrap_or_default(),
+        });
 
         self
     }
 }
 
-struct UpdateText
-{
+struct UpdateText {
     text: String,
 }
 
-impl EntityCommand for UpdateText
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl EntityCommand for UpdateText {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Some(mut text) = world.get_mut::<Text>(entity) else {
-            warn!(
-                "Failed to set text on entity {}: No Text component found!",
-                entity
-            );
+            warn!("Failed to set text on entity {}: No Text component found!", entity);
             return;
         };
 
-        text.text = self.text;
+        text.0 = self.text;
     }
 }
 
-pub trait UpdateTextExt
-{
+pub trait UpdateTextExt {
     /// Update an entity's [`Text`]
     ///
     /// The [`Text`] component must already exist.
     fn update_text(&mut self, text: impl Into<String>) -> &mut Self;
 }
 
-impl UpdateTextExt for EntityCommands<'_>
-{
-    fn update_text(&mut self, text: impl Into<String>) -> &mut Self
-    {
-        self.add(UpdateText { text: text.into() });
+impl UpdateTextExt for EntityCommands<'_> {
+    fn update_text(&mut self, text: impl Into<String>) -> &mut Self {
+        self.queue(UpdateText { text: text.into() });
 
         self
     }
 }
 
 // TODO: Move to style and apply to Node's window
-struct SetCursor
-{
+struct SetCursor {
     cursor: SystemCursorIcon,
 }
 
-impl Command for SetCursor
-{
-    fn apply(self, world: &mut World)
-    {
+impl Command for SetCursor {
+    fn apply(self, world: &mut World) {
         let mut q_window = world.query_filtered::<Entity, With<PrimaryWindow>>();
         let Ok(mut window_ent) = q_window.get_single_mut(world) else {
             return;
         };
-        let Some(ec) = world.commands().get_entity_mut(window_ent) else {
+        let Some(ec) = world.commands().get_entity(window_ent) else {
             return;
         };
 
-        ec.insert(self.cursor);
+        ec.insert(CursorIcon::from(self.cursor));
         // if window.cursor.icon != self.cursor {
         //     window.cursor.icon = self.cursor;
         // }
     }
 }
 
-pub trait SetCursorExt<'w, 's, 'a>
-{
+pub trait SetCursorExt<'w, 's, 'a> {
     /// Set the [`PrimaryWindow`]'s cursor
     fn set_cursor(&mut self, cursor: SystemCursorIcon);
 }
 
-impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's>
-{
-    fn set_cursor(&mut self, cursor: SystemCursorIcon)
-    {
-        self.add(SetCursor { cursor });
+impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's> {
+    fn set_cursor(&mut self, cursor: SystemCursorIcon) {
+        self.queue(SetCursor { cursor });
     }
 }
 
-struct LogHierarchy
-{
+struct LogHierarchy {
     level: usize,
     is_last: bool,
     trace_levels: Vec<usize>,
     component_filter: Option<fn(ComponentInfo) -> bool>,
 }
 
-impl EntityCommand for LogHierarchy
-{
-    fn apply(self, id: Entity, world: &mut World)
-    {
+impl EntityCommand for LogHierarchy {
+    fn apply(self, id: Entity, world: &mut World) {
         let mut children_ids: Vec<Entity> = Vec::new();
         if let Some(children) = world.get::<Children>(id) {
             children_ids = children.iter().map(|child| *child).collect();
@@ -221,10 +201,7 @@ impl EntityCommand for LogHierarchy
                     "  ║          "
                 }
             };
-            info!(
-                "{}{}{}── {}",
-                padding, child_pipe, component_pipe, debug_infos[i]
-            );
+            info!("{}{}{}── {}", padding, child_pipe, component_pipe, debug_infos[i]);
         }
 
         if children_ids.len() > 0 {
@@ -250,8 +227,7 @@ impl EntityCommand for LogHierarchy
     }
 }
 
-pub trait LogHierarchyExt
-{
+pub trait LogHierarchyExt {
     /// Logs the hierarchy of the entity along with the component of each entity in the tree.
     /// Components listed can be optionally filtered by supplying a `component_filter`
     ///
@@ -281,11 +257,9 @@ pub trait LogHierarchyExt
     fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self;
 }
 
-impl LogHierarchyExt for EntityCommands<'_>
-{
-    fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self
-    {
-        self.add(LogHierarchy {
+impl LogHierarchyExt for EntityCommands<'_> {
+    fn log_hierarchy(&mut self, component_filter: Option<fn(ComponentInfo) -> bool>) -> &mut Self {
+        self.queue(LogHierarchy {
             level: 0,
             is_last: true,
             trace_levels: vec![],
@@ -296,22 +270,18 @@ impl LogHierarchyExt for EntityCommands<'_>
 }
 
 // Adopted from @brandonreinhart
-pub trait EntityCommandsNamedExt
-{
+pub trait EntityCommandsNamedExt {
     /// Name the entity by inserting a [`Name`] component with the given string
     fn named(&mut self, name: impl Into<String>) -> &mut Self;
 }
 
-impl EntityCommandsNamedExt for EntityCommands<'_>
-{
-    fn named(&mut self, name: impl Into<String>) -> &mut Self
-    {
+impl EntityCommandsNamedExt for EntityCommands<'_> {
+    fn named(&mut self, name: impl Into<String>) -> &mut Self {
         self.insert(Name::new(name.into()))
     }
 }
 
-pub trait RefreshThemeExt
-{
+pub trait RefreshThemeExt {
     /// Refresh the entity's theme, based on the `C` component
     ///
     /// This requires `C` to implement [`DefaultTheme`] as described in the readme.
@@ -320,13 +290,12 @@ pub trait RefreshThemeExt
         C: DefaultTheme;
 }
 
-impl RefreshThemeExt for EntityCommands<'_>
-{
+impl RefreshThemeExt for EntityCommands<'_> {
     fn refresh_theme<C>(&mut self) -> &mut Self
     where
         C: DefaultTheme,
     {
-        self.add(RefreshEntityTheme::<C> { context: PhantomData });
+        self.queue(RefreshEntityTheme::<C> { context: PhantomData });
         self
     }
 }
@@ -342,8 +311,7 @@ impl<C> EntityCommand for RefreshEntityTheme<C>
 where
     C: DefaultTheme,
 {
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+    fn apply(self, entity: Entity, world: &mut World) {
         let context = world.get::<C>(entity).unwrap();
         let theme_data = world.resource::<ThemeData>();
         let pseudo_states = world.get::<PseudoStates>(entity);
@@ -511,8 +479,7 @@ where
 fn fold_dynamic_styles(
     mut acc: Vec<(Option<Entity>, DynamicStyle)>,
     mut context_style: (Option<Entity>, DynamicStyle),
-) -> Vec<(Option<Entity>, DynamicStyle)>
-{
+) -> Vec<(Option<Entity>, DynamicStyle)> {
     let index = acc.iter().position(|entry| entry.0 == context_style.0);
     match index {
         Some(index) => {
@@ -524,8 +491,7 @@ fn fold_dynamic_styles(
     acc
 }
 
-pub trait ManageFluxInteractionStopwatchLockExt
-{
+pub trait ManageFluxInteractionStopwatchLockExt {
     /// Set the [`FluxInteractionStopwatchLock`] of the entity to the given duration
     ///
     /// This in turn will keep the [`crate::flux_interaction::FluxInteractionStopwatch`] for the given period.
@@ -537,11 +503,9 @@ pub trait ManageFluxInteractionStopwatchLockExt
     fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self;
 }
 
-impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
-{
-    fn lock_stopwatch(&mut self, owner: &'static str, duration: StopwatchLock) -> &mut Self
-    {
-        self.add(move |entity, world: &mut World| {
+impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_> {
+    fn lock_stopwatch(&mut self, owner: &'static str, duration: StopwatchLock) -> &mut Self {
+        self.queue(move |entity, world: &mut World| {
             if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
                 lock.lock(owner, duration);
             } else {
@@ -553,9 +517,8 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
         self
     }
 
-    fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self
-    {
-        self.add(move |entity, world: &mut World| {
+    fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self {
+        self.queue(move |entity, world: &mut World| {
             if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
                 lock.release(lock_of);
             }
@@ -564,8 +527,7 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
     }
 }
 
-pub trait ManagePseudoStateExt
-{
+pub trait ManagePseudoStateExt {
     /// Add a [`PseudoState`] to the entity if it doesn't have it already
     ///
     /// Will insert the carrier [`PseudoStates`] component if necessary.
@@ -578,11 +540,9 @@ pub trait ManagePseudoStateExt
     fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self;
 }
 
-impl ManagePseudoStateExt for EntityCommands<'_>
-{
-    fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self
-    {
-        self.add(move |entity, world: &mut World| {
+impl ManagePseudoStateExt for EntityCommands<'_> {
+    fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self {
+        self.queue(move |entity, world: &mut World| {
             let pseudo_states = world.get_mut::<PseudoStates>(entity);
 
             if let Some(mut pseudo_states) = pseudo_states {
@@ -600,9 +560,8 @@ impl ManagePseudoStateExt for EntityCommands<'_>
         self
     }
 
-    fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self
-    {
-        self.add(move |entity, world: &mut World| {
+    fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self {
+        self.queue(move |entity, world: &mut World| {
             let Some(mut pseudo_states) = world.get_mut::<PseudoStates>(entity) else {
                 return;
             };
@@ -617,8 +576,7 @@ impl ManagePseudoStateExt for EntityCommands<'_>
     }
 }
 
-pub trait UpdateStatesExt<'w, 's, 'a>
-{
+pub trait UpdateStatesExt<'w, 's, 'a> {
     // TODO: deprecate in favor of bevy's own
     // #[deprecated(
     //     since = "0.3.0",
@@ -628,11 +586,9 @@ pub trait UpdateStatesExt<'w, 's, 'a>
     fn next_state<C: States + FreelyMutableState>(&mut self, state: C);
 }
 
-impl<'w, 's, 'a> UpdateStatesExt<'w, 's, 'a> for Commands<'w, 's>
-{
-    fn next_state<C: States + FreelyMutableState>(&mut self, state: C)
-    {
-        self.add(|world: &mut World| {
+impl<'w, 's, 'a> UpdateStatesExt<'w, 's, 'a> for Commands<'w, 's> {
+    fn next_state<C: States + FreelyMutableState>(&mut self, state: C) {
+        self.queue(|world: &mut World| {
             if let Some(mut old_state) = world.get_resource_mut::<NextState<C>>() {
                 old_state.set(state);
             } else {
