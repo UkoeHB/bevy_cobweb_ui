@@ -33,11 +33,8 @@ pub mod scene_traits
         fn initialize_scene_node(ec: &mut EntityCommands);
         /// Gets a [`LoadedSceneBuilder`] instance in order to edit a node in the loaded scene.
         fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>;
-        // TODO: try again in bevy 0.15
-        // Gets a [`LoadedSceneBuilder`] instance in order to edit a node in the loaded scene.
-        // fn new_with(&mut self, entity: Entity) -> Self::Loaded<'a>;
-        // Gets a reborrowed copy of self.
-        // fn reborrow(&mut self) -> Self;
+        /// Gets a [`LoadedSceneBuilder`] instance in order to edit a node in the loaded scene.
+        fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>;
     }
 
     /// Helper trait for editing nodes in a loaded scene. See [`LoadedScene`] and
@@ -66,8 +63,7 @@ impl<'a, 'b, T> LoadedScene<'a, 'b, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
-    /*
-    fn get_impl(&mut self, scene: SceneRef) -> LoadedScene
+    fn get_impl(&mut self, scene: SceneRef) -> LoadedScene<T::Loaded<'_>>
     {
         let Some(entity) = self
             .scene_loader
@@ -86,10 +82,10 @@ where
             }
             return LoadedScene {
                 scene_loader: self.scene_loader,
-                builder: self.builder.reborrow(),
+                builder: self.builder.new_with(Entity::PLACEHOLDER),
                 scene: self.scene.clone(),
                 _p: PhantomData::default(),
-            }
+            };
         };
 
         LoadedScene {
@@ -99,7 +95,6 @@ where
             _p: PhantomData::default(),
         }
     }
-    */
 
     fn edit_impl<C>(&mut self, scene: SceneRef, callback: C) -> &mut Self
     where
@@ -138,6 +133,20 @@ where
         self
     }
 
+    /// Gets a specific child in order to edit it directly.
+    pub fn get(&mut self, child: impl AsRef<str>) -> LoadedScene<T::Loaded<'_>>
+    {
+        let scene = self.scene.e(child);
+        self.get_impl(scene)
+    }
+
+    /// Gets a specific child positioned relative to the root node in order to edit it directly.
+    pub fn get_from_root(&mut self, path: impl AsRef<str>) -> LoadedScene<T::Loaded<'_>>
+    {
+        let scene = self.scene.extend_from_index(0, path);
+        self.get_impl(scene)
+    }
+
     /// Calls `callback` on the `child` of the current scene node.
     ///
     /// Prints a warning and does nothing if `child` does not point to a child of the current node in the scene
@@ -165,15 +174,6 @@ where
         let scene = self.scene.extend_from_index(0, path);
         self.edit_impl(scene, callback)
     }
-
-    /*
-    /// Gets a [`LoadedScene`] for the specified child of the current node.
-    pub fn get(&mut self, child: impl AsRef<str>, callback: C) -> LoadedScene
-    {
-        let scene = self.scene.e(child);
-        self.get_impl(scene)
-    }
-    */
 
     /// Gets an entity relative to the current node.
     ///
@@ -331,15 +331,10 @@ impl<'w, 's> scene_traits::SceneNodeLoader for Commands<'w, 's>
         commands.entity(entity)
     }
 
-    // fn new_with(&mut self, entity: Entity) -> Self::Loaded<'a>
-    // {
-    //     self.entity(entity)
-    // }
-
-    // fn reborrow(&mut self) -> Commands<'w, '_>
-    // {
-    //     self.reborrow()
-    // }
+    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    {
+        self.entity(entity)
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -365,16 +360,10 @@ impl scene_traits::SceneNodeLoader for EntityCommands<'_>
         commands.entity(entity)
     }
 
-    // TODO: this depends on bevy 0.15
-    // fn new_with(&mut self, entity: Entity) -> Self::Loaded<'a>
-    // {
-    //     self.commands_mut().entity(entity)
-    // }
-
-    // fn reborrow(&mut self) -> EntityCommands
-    // {
-    //     self.reborrow()
-    // }
+    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    {
+        self.commands_mut().entity(entity)
+    }
 }
 
 impl<'a> scene_traits::LoadedSceneBuilder<'a> for EntityCommands<'a> {}

@@ -19,10 +19,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
     c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         // Get the display text's entity.
-        let mut display_text = Entity::PLACEHOLDER;
-        l.edit("display::text", |l| {
-            display_text = l.id();
-        });
+        let display_text = l.get("display::text").id();
 
         // Insert radio buttons.
         l.edit("radio_frame", |l| {

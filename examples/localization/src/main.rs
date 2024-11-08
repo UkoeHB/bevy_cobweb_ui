@@ -20,9 +20,9 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         // Content
         l.edit("content", |l| {
             // Language selection list.
-            l.edit("selection_section::selection_box", |l| {
+            l.get("selection_section::selection_box")
                 // Update the selection whenever the manifest is updated with a new base language list.
-                l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
+                .update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
                     move |mut c: Commands, manifest: Res<LocalizationManifest>| {
                         // Despawn existing buttons.
                         c.entity(id).despawn_descendants();
@@ -50,51 +50,44 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         }
                     }
                 });
-            });
 
             l.edit("text_section", |l| {
                 // Unlocalized text.
-                l.edit("unlocalized", |l| {
-                    l.apply(TextLine::from_text("This text is not localized."));
-                });
+                l.get("unlocalized")
+                    .apply(TextLine::from_text("This text is not localized."));
 
                 // Untranslated text (only localized in the default language).
-                l.edit("untranslated", |l| {
-                    l.insert(LocalizedText::default());
-                    l.apply(TextLine::from_text("untranslated"));
-                });
+                l.get("untranslated")
+                    .insert(LocalizedText::default())
+                    .apply(TextLine::from_text("untranslated"));
 
                 // Localized and partly translated text (localized in only some, but not all, alternate
                 // languages).
-                l.edit("partially_translated", |l| {
-                    l.insert(LocalizedText::default());
-                    l.apply(TextLine::from_text("partly-translated"));
-                });
+                l.get("partially_translated")
+                    .insert(LocalizedText::default())
+                    .apply(TextLine::from_text("partly-translated"));
 
                 // Localized and fully translated text.
-                l.edit("fully_translated", |l| {
-                    l.insert(LocalizedText::default());
-                    l.apply(TextLine::from_text("fully-translated"));
-                });
+                l.get("fully_translated")
+                    .insert(LocalizedText::default())
+                    .apply(TextLine::from_text("fully-translated"));
 
                 // Localized text with different font fallbacks for different languages.
-                l.edit("font_fallbacks", |l| {
-                    l.insert(LocalizedText::default());
-                    l.apply(TextLine::from_text("font-fallbacks").with_font(FontFamily::new("Fira Sans").bold()));
-                });
+                l.get("font_fallbacks")
+                    .insert(LocalizedText::default())
+                    .apply(TextLine::from_text("font-fallbacks").with_font(FontFamily::new("Fira Sans").bold()));
 
                 // Localized dynamic text.
-                l.edit("dynamic", |l| {
-                    l.insert(LocalizedText::default());
-                    l.apply(TextLine::default());
-                    l.update_on(broadcast::<RelocalizeApp>(), |id| {
+                l.get("dynamic")
+                    .insert(LocalizedText::default())
+                    .apply(TextLine::default())
+                    .update_on(broadcast::<RelocalizeApp>(), |id| {
                         move |mut count: Local<usize>, mut e: TextEditor| {
                             // Displays count for the number of times the app was localized.
                             write_text!(e, id, "locale-counter?count={:?}", *count);
                             *count += 1;
                         }
                     });
-                });
 
                 // Localized text from file (see `assets/main.caf.json`).
             });
