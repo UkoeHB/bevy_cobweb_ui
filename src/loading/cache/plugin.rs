@@ -86,20 +86,37 @@ fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, l
 /// to a loadable ref.
 #[cfg(feature = "hot_reload")]
 fn apply_pending_node_updates(
+    types: Res<AppTypeRegistry>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
     mut c: Commands,
-    mut scene_buffer: ResMut<SceneBuffer>,
     commands_buffer: Res<CommandsBuffer>,
+    mut scene_buffer: ResMut<SceneBuffer>,
+    mut scene_loader: ResMut<SceneLoader>,
     loaders: Res<LoaderCallbacks>,
 )
 {
-    scene_buffer.apply_pending_node_updates(&mut c, &commands_buffer, &loaders);
+    // Check if blocked.
+    if commands_buffer.is_blocked() {
+        return;
+    }
+
+    // Apply current pending updates. This handles spawns that occurred while blocked.
+    scene_buffer.apply_pending_node_updates(&mut c, &loaders);
+
+    // Extract scenes from recently loaded files.
+    let type_registry = types.read();
+    caf_cache.handle_pending_scene_extraction(&type_registry, &mut c, &mut scene_buffer, &mut scene_loader);
+
+    // Apply current pending updates again. Doing this here ensures updates occur in an order that is valid based
+    // on the current structure of all scenes.
+    scene_buffer.apply_pending_node_updates(&mut c, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// `HasLoadables` is only removed when the entity is despawned.
 #[cfg(feature = "hot_reload")]
-fn cleanup_cobweb_asset_cache(
+fn cleanup_despawned_loaded_entities(
     mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
     mut removed: RemovedComponents<HasLoadables>,
@@ -157,7 +174,7 @@ impl Plugin for CobwebAssetCachePlugin
         }
 
         #[cfg(feature = "hot_reload")]
-        app.add_systems(Last, cleanup_cobweb_asset_cache);
+        app.add_systems(Last, cleanup_despawned_loaded_entities);
     }
 }
 

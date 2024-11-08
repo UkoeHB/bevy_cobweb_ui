@@ -33,10 +33,9 @@ struct ProcessedSceneFile
     /// Specs that can be imported into other files.
     specs: SpecsMap,
     /// Imports for detecting when a re-load is required.
-    /// - Can include both manifest keys and file paths.
     #[cfg(feature = "hot_reload")]
     imports: HashMap<ManifestKey, CafImportAlias>,
-    /// Data cached for re-loading when dependencies are reloaded.
+    /// Un-extracted data cached for re-loading when imports are reloaded.
     #[cfg(feature = "hot_reload")]
     data: Caf,
 }
@@ -75,6 +74,10 @@ pub(crate) struct CobwebAssetCache
 
     /// Records processed files.
     processed: HashMap<CafFile, ProcessedSceneFile>,
+
+    /// Tracks files that have been processed but not scene-extracted.
+    #[cfg(feature = "hot_reload")]
+    needs_scene_extraction: HashMap<CafFile, Caf>,
 }
 
 impl CobwebAssetCache
@@ -229,12 +232,12 @@ impl CobwebAssetCache
     /// Assumes all imports are available.
     fn process_cobweb_asset_file(
         &mut self,
-        preprocessed: PreprocessedSceneFile,
+        mut preprocessed: PreprocessedSceneFile,
         type_registry: &TypeRegistry,
-        c: &mut Commands,
+        _c: &mut Commands,
         commands_buffer: &mut CommandsBuffer,
-        scene_buffer: &mut SceneBuffer,
-        scene_loader: &mut SceneLoader,
+        _scene_buffer: &mut SceneBuffer,
+        _scene_loader: &mut SceneLoader,
     )
     {
         // Initialize using/constants maps from dependencies.
@@ -272,18 +275,46 @@ impl CobwebAssetCache
 
         // Process the file.
         // - This updates the using/constants/specs maps with info extracted from the file.
-        extract_caf_data(
+        extract_caf_importables(
             type_registry,
-            c,
-            commands_buffer,
-            scene_buffer,
-            scene_loader,
             preprocessed.file.clone(),
-            preprocessed.data,
+            &mut preprocessed.data,
             &mut name_shortcuts,
             &mut constants_buff,
             &mut specs,
         );
+
+        extract_caf_commands(
+            type_registry,
+            commands_buffer,
+            preprocessed.file.clone(),
+            &mut preprocessed.data,
+            &mut name_shortcuts,
+            &constants_buff,
+            &specs,
+        );
+
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            // Extract scenes immediately.
+            extract_caf_scenes(
+                type_registry,
+                _c,
+                _scene_buffer,
+                _scene_loader,
+                preprocessed.file.clone(),
+                preprocessed.data,
+                &mut name_shortcuts,
+                &constants_buff,
+                &specs,
+            );
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            // Defer scene extraction until it can be synchronized with loading entities.
+            self.needs_scene_extraction
+                .insert(preprocessed.file.clone(), preprocessed.data);
+        }
 
         // Save final maps.
         processed.using = name_shortcuts;
@@ -398,6 +429,33 @@ impl CobwebAssetCache
         }
 
         num_processed > 0
+    }
+
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn handle_pending_scene_extraction(
+        &mut self,
+        type_registry: &TypeRegistry,
+        c: &mut Commands,
+        scene_buffer: &mut SceneBuffer,
+        scene_loader: &mut SceneLoader,
+    )
+    {
+        // Note: We assume it doesn't matter what file order scenes are extracted in.
+        for (file, data) in self.needs_scene_extraction.drain() {
+            let Some(processed) = self.processed.get_mut(&file) else { continue };
+
+            extract_caf_scenes(
+                type_registry,
+                c,
+                scene_buffer,
+                scene_loader,
+                file,
+                data,
+                &mut processed.using,
+                &processed.constants_buff,
+                &processed.specs,
+            );
+        }
     }
 }
 

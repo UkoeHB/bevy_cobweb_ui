@@ -446,21 +446,8 @@ impl SceneBuffer
     }
 
     #[cfg(feature = "hot_reload")]
-    pub(super) fn apply_pending_node_updates(
-        &mut self,
-        c: &mut Commands,
-        commands_buffer: &CommandsBuffer,
-        callbacks: &LoaderCallbacks,
-    )
+    pub(super) fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
     {
-        // Hold off on applying updates until the commands buffer is unblocked.
-        // - Note: Blocking here does not introduce race conditions for the re-load step because the re-load step
-        // always queries the current loadable list *at the moment of load*, rather than when queuing. So any
-        // loadable removals will not cause problems even if there is a pending update from before the removal.
-        if commands_buffer.is_blocked() {
-            return;
-        }
-
         // Revert loadables as needed.
         // - Note: We currently assume the order of reverts doesn't matter.
         for (entity, type_ids) in self.refresh_ctx.reverts() {

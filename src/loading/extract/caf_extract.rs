@@ -60,15 +60,11 @@ pub(crate) fn preprocess_caf_file(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Consumes a cobweb asset file's data and loads it into [`CobwebAssetCache`].
-pub(crate) fn extract_caf_data(
+/// Extracts importable values (using and defs sections).
+pub(crate) fn extract_caf_importables(
     type_registry: &TypeRegistry,
-    c: &mut Commands,
-    commands_buffer: &mut CommandsBuffer,
-    scene_buffer: &mut SceneBuffer,
-    scene_loader: &mut SceneLoader,
     file: CafFile,
-    mut data: Caf,
+    data: &mut Caf,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
     _constants_buffer: &mut ConstantsBuffer,
@@ -78,8 +74,6 @@ pub(crate) fn extract_caf_data(
 {
     tracing::info!("extracting cobweb asset file {:?}", file.as_str());
 
-    let mut commands = vec![];
-
     for section in data.sections.iter_mut() {
         match section {
             CafSection::Using(section) => extract_using_section(type_registry, &file, section, name_shortcuts),
@@ -87,13 +81,62 @@ pub(crate) fn extract_caf_data(
                 // TODO
                 // extract_constants_section(&file, &mut data, constants_buffer)
                 // extract_specs_section(&file, &mut data, specs)
-                ()
             }
+            _ => (),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Extracts commands from a `Caf`. Commands are updated in-place when applying defs.
+pub(crate) fn extract_caf_commands(
+    type_registry: &TypeRegistry,
+    commands_buffer: &mut CommandsBuffer,
+    file: CafFile,
+    data: &mut Caf,
+    // [ shortname : longname ]
+    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    _constants_buffer: &ConstantsBuffer,
+    // tracks specs
+    _specs: &SpecsMap,
+)
+{
+    let mut commands = vec![];
+
+    for section in data.sections.iter_mut() {
+        match section {
             CafSection::Commands(section) => {
                 // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
                 // insert_specs(&file, &mut data, specs);
                 extract_commands_section(type_registry, &mut commands, &file, section, name_shortcuts);
             }
+            _ => (),
+        }
+    }
+
+    commands_buffer.set_file_commands(file, commands);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Extracts scenes from a `Caf`. Scene nodes are updated in-place when applying defs.
+pub(crate) fn extract_caf_scenes(
+    type_registry: &TypeRegistry,
+    c: &mut Commands,
+    scene_buffer: &mut SceneBuffer,
+    scene_loader: &mut SceneLoader,
+    file: CafFile,
+    mut data: Caf,
+    // [ shortname : longname ]
+    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    _constants_buffer: &ConstantsBuffer,
+    // tracks specs
+    _specs: &SpecsMap,
+)
+{
+    for section in data.sections.iter_mut() {
+        match section {
             CafSection::Scenes(section) => {
                 // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
                 // insert_specs(&file, &mut data, specs);
@@ -110,8 +153,6 @@ pub(crate) fn extract_caf_data(
             _ => (),
         }
     }
-
-    commands_buffer.set_file_commands(file, commands);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
