@@ -125,7 +125,6 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
 
     fn initialize_scene_node(ec: &mut EntityCommands)
     {
-        tracing::error!("initializing {:?}", ec.id());
         ec.insert(Node::default());
     }
 

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::text::LineBreak;
+use bevy::text::{ComputedTextBlock, LineBreak};
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
@@ -132,15 +132,15 @@ impl Instruction for TextLine
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        tracing::error!("apply line {entity:?}");
         world.syscall((entity, self), insert_text_line);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        tracing::error!("revert line {entity:?}");
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Text>();
+            // TODO: requires https://github.com/bevyengine/bevy/pull/16288
+            //e.remove_with_requires::<Text>();
+            e.remove::<(Text, TextFont, TextColor, TextLayout, ComputedTextBlock)>();
         });
     }
 }

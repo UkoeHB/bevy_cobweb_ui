@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::ui::widget::UiImageSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
@@ -128,7 +129,9 @@ impl Instruction for LoadedUiImage
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<UiImage>();
+            // TODO: requires https://github.com/bevyengine/bevy/pull/16288
+            //e.remove_with_requires::<UiImage>();
+            e.remove::<(UiImage, ContentSize, UiImageSize)>();
         });
     }
 }

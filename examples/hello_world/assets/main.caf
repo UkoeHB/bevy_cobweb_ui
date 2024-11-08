@@ -3,4 +3,4 @@ TestCommand("main")
 
 #scenes
 "scene"
-    TextLine{ size: 51.0 text: "Hello, World!" }
+    TextLine{ size: 50.0 text: "Hello, World!" }
