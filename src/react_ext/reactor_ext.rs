@@ -128,6 +128,17 @@ pub trait UiReactEntityCommandsExt
     /// Recursively despawns the current entity on broadcast event `T`.
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
+    /// Updates an entity with a oneshot system.
+    ///
+    /// The system runs:
+    /// - Immediately after being registered.
+    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
+    ///   only).
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self;
+
     /// Updates an entity with a reactor system.
     ///
     /// The system runs:
@@ -140,17 +151,6 @@ pub trait UiReactEntityCommandsExt
         C: IntoSystem<(), (), M> + Send + Sync + 'static,
         T: ReactionTriggerBundle,
         R: FnOnce(Entity) -> C;
-
-    /// Updates an entity with a oneshot system.
-    ///
-    /// The system runs:
-    /// - Immediately after being registered.
-    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
-    ///   only).
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self;
 
     /// Provides access to entity commands for the entity.
     ///
@@ -200,6 +200,14 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
+    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: impl FnOnce(Entity) -> C,
+    ) -> &mut Self
+    {
+        self.update_on((), reactor)
+    }
+
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
     where
         C: IntoSystem<(), (), M> + Send + Sync + 'static,
@@ -220,14 +228,6 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         }
 
         self
-    }
-
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self
-    {
-        self.update_on((), reactor)
     }
 
     fn modify(&mut self, mut callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self

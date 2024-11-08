@@ -24,7 +24,7 @@ fn get_current_time() -> Duration
 struct CommandLoadCommand
 {
     callback: fn(&mut World, ReflectedLoadable, SceneRef),
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
     loadable: ReflectedLoadable,
 }
 
@@ -32,7 +32,7 @@ impl Command for CommandLoadCommand
 {
     fn apply(self, world: &mut World)
     {
-        (self.callback)(world, self.loadable, self.loadable_ref);
+        (self.callback)(world, self.loadable, self.scene_ref);
     }
 }
 
@@ -238,6 +238,32 @@ impl CommandsBuffer
     fn global_file() -> CafFile
     {
         CafFile::try_new(GLOBAL_PSEUDO_FILE).unwrap()
+    }
+
+    /// Returns `true` if the buffer has been refreshed and there are any pending files or commands, or if the
+    /// orphan timer is running.
+    ///
+    /// Used in the `SceneBuffer` to prevent scene reloads when there might be unapplied commands.
+    ///
+    /// Note that we filter on `any_files_refreshed` because this is only used in a hot reloading environment.
+    /// Users are expected to only spawn scenes in `LoadState::Done`, which will ensure scene loads and commands
+    /// are ordered properly when "hot_reload" is not enabled.
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn is_blocked(&self) -> bool
+    {
+        if !self.any_files_refreshed {
+            return false;
+        }
+        if self.file_counter.get() > 0 {
+            return true;
+        }
+        if self.command_counter.get() > 0 {
+            return true;
+        }
+        if self.commands_unlock_time > get_current_time() {
+            return true;
+        }
+        false
     }
 
     /// Sets descendants of the 'global root'. These should be files manually loaded in the app.
@@ -732,7 +758,7 @@ impl CommandsBuffer
 
         // Do nothing if there is no traversal point.
         let Some(traversal_point) = self.traversal_point.take() else { return };
-        let mut dummy_loadable_ref = SceneRef {
+        let mut dummy_scene_ref = SceneRef {
             file: SceneFile::File(traversal_point.clone()),
             path: self.dummy_commands_path.clone(),
         };
@@ -849,7 +875,7 @@ impl CommandsBuffer
                 }
 
                 // Apply pending commands.
-                dummy_loadable_ref.file = SceneFile::File(file.clone());
+                dummy_scene_ref.file = SceneFile::File(file.clone());
 
                 for cached in info.commands.iter_mut().filter(|c| c.is_pending) {
                     cached.is_pending = false;
@@ -863,7 +889,7 @@ impl CommandsBuffer
 
                     c.queue(CommandLoadCommand {
                         callback,
-                        loadable_ref: dummy_loadable_ref.clone(),
+                        scene_ref: dummy_scene_ref.clone(),
                         loadable: cached.command.loadable.clone(),
                     });
                 }

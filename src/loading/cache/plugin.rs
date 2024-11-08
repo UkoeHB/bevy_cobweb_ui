@@ -88,14 +88,16 @@ fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, l
 fn apply_pending_node_updates(
     mut c: Commands,
     mut scene_buffer: ResMut<SceneBuffer>,
+    commands_buffer: Res<CommandsBuffer>,
     loaders: Res<LoaderCallbacks>,
 )
 {
-    scene_buffer.apply_pending_node_updates(&mut c, &loaders);
+    scene_buffer.apply_pending_node_updates(&mut c, &commands_buffer, &loaders);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// `HasLoadables` is only removed when the entity is despawned.
 #[cfg(feature = "hot_reload")]
 fn cleanup_cobweb_asset_cache(
     mut scene_buffer: ResMut<SceneBuffer>,

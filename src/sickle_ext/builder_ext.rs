@@ -9,7 +9,7 @@ use crate::sickle_ext::ui_builder::*;
 /// Helper trait for building node entities with style loading.
 pub trait NodeLoadingExt
 {
-    /// Spawns a new node registered to load styles from `loadable_ref`.
+    /// Spawns a new node registered to load from `scene_ref`.
     ///
     /// Inserts a [`Node::default()`] to the entity.
     ///
@@ -19,7 +19,7 @@ pub trait NodeLoadingExt
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     fn load(
         &mut self,
-        loadable_ref: SceneRef,
+        scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>;
 }
@@ -28,13 +28,13 @@ impl NodeLoadingExt for UiBuilder<'_, UiRoot>
 {
     fn load(
         &mut self,
-        loadable_ref: SceneRef,
+        scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
         let mut node = self.spawn(Node::default());
-        node.entity_commands().load(loadable_ref.clone());
-        (callback)(&mut node, loadable_ref);
+        node.entity_commands().load(scene_ref.clone());
+        (callback)(&mut node, scene_ref);
         node
     }
 }
@@ -43,13 +43,13 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
 {
     fn load(
         &mut self,
-        loadable_ref: SceneRef,
+        scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
         let mut child = self.spawn(Node::default());
-        child.entity_commands().load(loadable_ref.clone());
-        (callback)(&mut child, loadable_ref);
+        child.entity_commands().load(scene_ref.clone());
+        (callback)(&mut child, scene_ref);
         let id = self.id();
         self.commands().ui_builder(id)
     }

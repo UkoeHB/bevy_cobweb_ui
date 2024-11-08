@@ -18,18 +18,18 @@ use crate::prelude::*;
 // This function assumes loadables are unique within a scene node.
 fn insert_node_loadable_entry(
     loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
-    loadable_ref: &SceneRef,
+    scene_ref: &SceneRef,
     index: usize,
     loadable: ReflectedLoadable,
     type_id: TypeId,
     full_type_name: &str,
 ) -> InsertNodeResult
 {
-    match loadables.entry(loadable_ref.clone()) {
+    match loadables.entry(scene_ref.clone()) {
         Vacant(entry) => {
             if index != 0 {
                 tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
-                    the current loadables length is 0", full_type_name, loadable_ref, index);
+                    the current loadables length is 0", full_type_name, scene_ref, index);
                 return InsertNodeResult::NoChange;
             }
             let mut vec = SmallVec::default();
@@ -51,7 +51,7 @@ fn insert_node_loadable_entry(
                             if pos < index {
                                 tracing::error!("error updating loadable {:?} at {:?}, detected previous instance of loadable \
                                     at index {} which is lower than the target index {} indicating there's a duplicate in the \
-                                    scene node list (this is a bug)", full_type_name, loadable_ref, pos, index);
+                                    scene node list (this is a bug)", full_type_name, scene_ref, pos, index);
                             }
                             entry.get_mut().swap(pos, index);
                             InsertNodeResult::Rearranged
@@ -62,7 +62,7 @@ fn insert_node_loadable_entry(
                         if pos < index {
                             tracing::error!("error updating loadable {:?} at {:?}, detected previous instance of loadable \
                                 at index {} which is lower than the target index {} indicating there's a duplicate in the \
-                                scene node list (this is a bug)", full_type_name, loadable_ref, pos, index);
+                                scene node list (this is a bug)", full_type_name, scene_ref, pos, index);
                         }
                         *erased_loadable = ErasedLoadable { type_id, loadable };
                         entry.get_mut().swap(pos, index);
@@ -70,7 +70,7 @@ fn insert_node_loadable_entry(
                     }
                     None => {
                         tracing::error!("failed updating loadable {:?} at {:?}, its reflected value doesn't implement \
-                            PartialEq", full_type_name, loadable_ref);
+                            PartialEq", full_type_name, scene_ref);
                         InsertNodeResult::NoChange
                     }
                 }
@@ -81,7 +81,7 @@ fn insert_node_loadable_entry(
                 InsertNodeResult::Added
             } else {
                 tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
-                    the current loadables' length is {}", full_type_name, loadable_ref, index, entry.get().len());
+                    the current loadables' length is {}", full_type_name, scene_ref, index, entry.get().len());
                 InsertNodeResult::NoChange
             }
         }
@@ -123,7 +123,7 @@ struct NodeLoadCommand
 {
     callback: fn(&mut World, Entity, ReflectedLoadable, SceneRef),
     entity: Entity,
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
     loadable: ReflectedLoadable,
 }
 
@@ -131,7 +131,7 @@ impl Command for NodeLoadCommand
 {
     fn apply(self, world: &mut World)
     {
-        (self.callback)(world, self.entity, self.loadable, self.loadable_ref);
+        (self.callback)(world, self.entity, self.loadable, self.scene_ref);
     }
 }
 
@@ -165,8 +165,9 @@ impl RefreshCtx
                 .push((subscription.entity, HashSet::from_iter([type_id]))),
         }
     }
-    fn add_update(&mut self, subscription: SubscriptionRef, loadable_ref: SceneRef)
+    fn add_update(&mut self, subscription: SubscriptionRef, scene_ref: SceneRef)
     {
+        // NOTE: We assume an entity's subscribed scene ref never changes.
         if self
             .needs_updates
             .iter()
@@ -175,7 +176,7 @@ impl RefreshCtx
             return;
         };
         self.needs_updates
-            .push((subscription.entity, subscription.initializer, loadable_ref.clone()));
+            .push((subscription.entity, subscription.initializer, scene_ref.clone()));
     }
 
     fn reverts(&mut self) -> impl Iterator<Item = (Entity, HashSet<TypeId>)> + '_
@@ -238,15 +239,15 @@ impl SceneBuffer
     /// Prepares a scene node.
     ///
     /// We need to prepare scene nodes because they may be empty.
-    pub(crate) fn prepare_scene_node(&mut self, loadable_ref: SceneRef)
+    pub(crate) fn prepare_scene_node(&mut self, scene_ref: SceneRef)
     {
-        self.loadables.entry(loadable_ref).or_default();
+        self.loadables.entry(scene_ref).or_default();
     }
 
     /// Inserts a loadable at the specified path and index if its value will change.
     pub(crate) fn insert_loadable(
         &mut self,
-        loadable_ref: &SceneRef,
+        scene_ref: &SceneRef,
         index: usize,
         loadable: ReflectedLoadable,
         type_id: TypeId,
@@ -255,7 +256,7 @@ impl SceneBuffer
     {
         let res = insert_node_loadable_entry(
             &mut self.loadables,
-            loadable_ref,
+            scene_ref,
             index,
             loadable.clone(),
             type_id,
@@ -268,7 +269,7 @@ impl SceneBuffer
         // Identify entites that should update.
         #[cfg(feature = "hot_reload")]
         {
-            let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return };
+            let Some(subscriptions) = self.subscriptions.get(scene_ref) else { return };
             if subscriptions.is_empty() {
                 return;
             }
@@ -278,7 +279,7 @@ impl SceneBuffer
                     self.refresh_ctx.add_revert(*subscription, type_id);
                 }
                 self.refresh_ctx
-                    .add_update(*subscription, loadable_ref.clone());
+                    .add_update(*subscription, scene_ref.clone());
             }
         }
     }
@@ -287,9 +288,9 @@ impl SceneBuffer
     ///
     /// Runs after all loadables in a scene node have been inserted.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn end_loadable_insertion(&mut self, loadable_ref: &SceneRef, count: usize)
+    pub(crate) fn end_loadable_insertion(&mut self, scene_ref: &SceneRef, count: usize)
     {
-        let Some(subscriptions) = self.subscriptions.get(loadable_ref) else { return };
+        let Some(subscriptions) = self.subscriptions.get(scene_ref) else { return };
         if subscriptions.is_empty() {
             return;
         }
@@ -297,14 +298,14 @@ impl SceneBuffer
         // Revert trailing removals
         for removed in self
             .loadables
-            .get_mut(loadable_ref)
+            .get_mut(scene_ref)
             .into_iter()
             .flat_map(|l| l.drain(count..))
         {
             for subscription in subscriptions {
                 self.refresh_ctx.add_revert(*subscription, removed.type_id);
                 self.refresh_ctx
-                    .add_update(*subscription, loadable_ref.clone());
+                    .add_update(*subscription, scene_ref.clone());
             }
         }
     }
@@ -312,7 +313,7 @@ impl SceneBuffer
     fn load_entity(
         &self,
         subscription: SubscriptionRef,
-        loadable_ref: SceneRef,
+        scene_ref: SceneRef,
         callbacks: &LoaderCallbacks,
         c: &mut Commands,
     )
@@ -322,8 +323,8 @@ impl SceneBuffer
         (subscription.initializer.initializer)(&mut ec);
 
         // Queue loadables
-        let Some(loadables) = self.loadables.get(&loadable_ref) else {
-            tracing::warn!("failed loading {loadable_ref:?} into {:?}, path is unknown; either the path is \
+        let Some(loadables) = self.loadables.get(&scene_ref) else {
+            tracing::warn!("failed loading {scene_ref:?} into {:?}, path is unknown; either the path is \
                 invalid or you loaded the entity before LoadState::Done", subscription.entity);
             return;
         };
@@ -331,14 +332,14 @@ impl SceneBuffer
         for loadable in loadables.iter() {
             let Some(callback) = callbacks.get_for_node(loadable.type_id) else {
                 tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
-                    loadable_ref);
+                    scene_ref);
                 continue;
             };
 
             c.queue(NodeLoadCommand {
                 callback,
                 entity: subscription.entity,
-                loadable_ref: loadable_ref.clone(),
+                scene_ref: scene_ref.clone(),
                 loadable: loadable.loadable.clone(),
             });
         }
@@ -358,34 +359,44 @@ impl SceneBuffer
     pub(crate) fn track_entity(
         &mut self,
         entity: Entity,
-        mut loadable_ref: SceneRef,
+        mut scene_ref: SceneRef,
         initializer: NodeInitializer,
         callbacks: &LoaderCallbacks,
         c: &mut Commands,
+        _commands_buffer: &CommandsBuffer,
     )
     {
+        // Queue the entity if blocked by the commands buffer.
+        #[cfg(feature = "hot_reload")]
+        {
+            if _commands_buffer.is_blocked() {
+                self.track_entity_queued(entity, scene_ref, initializer);
+                return;
+            }
+        }
+
         // Replace manifest key in the requested loadable.
-        self.manifest_map().swap_for_file(&mut loadable_ref.file);
+        self.manifest_map().swap_for_file(&mut scene_ref.file);
 
         // Add to subscriptions.
         let subscription = SubscriptionRef { entity, initializer };
         #[cfg(feature = "hot_reload")]
         {
             self.subscriptions
-                .entry(loadable_ref.clone())
+                .entry(scene_ref.clone())
                 .or_default()
                 .push(subscription);
-            if let Some((prev_loadable_ref, _)) = self.subscriptions_rev.get(&entity) {
+            if let Some((prev_scene_ref, _)) = self.subscriptions_rev.get(&entity) {
                 // Prints if multiple scene nodes are loaded to the same entity.
                 tracing::warn!("overwriting scene node tracking for entity {:?}; prev: {:?}, new {:?}",
-                    entity, prev_loadable_ref, loadable_ref);
+                    entity, prev_scene_ref, scene_ref);
             }
             self.subscriptions_rev
-                .insert(entity, (loadable_ref.clone(), initializer));
+                .insert(entity, (scene_ref.clone(), initializer));
         }
 
         // Load the entity immediately.
-        self.load_entity(subscription, loadable_ref, callbacks, c);
+        self.load_entity(subscription, scene_ref, callbacks, c);
     }
 
     /// Adds an entity to the tracking context.
@@ -397,51 +408,61 @@ impl SceneBuffer
     pub(crate) fn track_entity_queued(
         &mut self,
         entity: Entity,
-        mut loadable_ref: SceneRef,
+        mut scene_ref: SceneRef,
         initializer: NodeInitializer,
     )
     {
         // Replace manifest key in the requested loadable.
-        self.manifest_map().swap_for_file(&mut loadable_ref.file);
+        self.manifest_map().swap_for_file(&mut scene_ref.file);
 
         // Add to subscriptions.
         let subscription = SubscriptionRef { entity, initializer };
         self.subscriptions
-            .entry(loadable_ref.clone())
+            .entry(scene_ref.clone())
             .or_default()
             .push(subscription);
-        if let Some((prev_loadable_ref, _)) = self.subscriptions_rev.get(&entity) {
+        if let Some((prev_scene_ref, _)) = self.subscriptions_rev.get(&entity) {
             // Prints if multiple scene nodes are loaded to the same entity.
             tracing::warn!("overwriting scene node tracking for entity {:?}; prev: {:?}, new {:?}",
-                entity, prev_loadable_ref, loadable_ref);
+                entity, prev_scene_ref, scene_ref);
         }
         self.subscriptions_rev
-            .insert(entity, (loadable_ref.clone(), initializer));
+            .insert(entity, (scene_ref.clone(), initializer));
 
         // Queue the entity to be loaded.
-        self.refresh_ctx
-            .add_update(subscription, loadable_ref.clone());
+        self.refresh_ctx.add_update(subscription, scene_ref.clone());
     }
 
     /// Requests that the scene node an entity is subscribed to be reloaded on that entity.
     #[cfg(feature = "hot_reload")]
     pub fn request_reload(&mut self, entity: Entity)
     {
-        let Some((loadable_ref, initializer)) = self.subscriptions_rev.get(&entity) else {
+        let Some((scene_ref, initializer)) = self.subscriptions_rev.get(&entity) else {
             tracing::warn!("requested reload of entity {entity:?} that is not subscribed to any loadables");
             return;
         };
-        self.refresh_ctx.add_update(
-            SubscriptionRef { entity, initializer: *initializer },
-            loadable_ref.clone(),
-        );
+        self.refresh_ctx
+            .add_update(SubscriptionRef { entity, initializer: *initializer }, scene_ref.clone());
     }
 
     #[cfg(feature = "hot_reload")]
-    pub(super) fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    pub(super) fn apply_pending_node_updates(
+        &mut self,
+        c: &mut Commands,
+        commands_buffer: &CommandsBuffer,
+        callbacks: &LoaderCallbacks,
+    )
     {
+        // Hold off on applying updates until the commands buffer is unblocked.
+        // - Note: Blocking here does not introduce race conditions for the re-load step because the re-load step
+        // always queries the current loadable list *at the moment of load*, rather than when queuing. So any
+        // loadable removals will not cause problems even if there is a pending update from before the removal.
+        if commands_buffer.is_blocked() {
+            return;
+        }
+
         // Revert loadables as needed.
-        // - Note: we currently assume the order of reverts doesn't matter.
+        // - Note: We currently assume the order of reverts doesn't matter.
         for (entity, type_ids) in self.refresh_ctx.reverts() {
             for type_id in type_ids {
                 let Some(reverter) = callbacks.get_for_revert(type_id) else { continue };
@@ -451,8 +472,8 @@ impl SceneBuffer
 
         // Reload entities.
         let needs_updates = self.refresh_ctx.updates().collect::<Vec<_>>();
-        for (entity, initializer, loadable_ref) in needs_updates {
-            self.load_entity(SubscriptionRef { entity, initializer }, loadable_ref, callbacks, c);
+        for (entity, initializer, scene_ref) in needs_updates {
+            self.load_entity(SubscriptionRef { entity, initializer }, scene_ref, callbacks, c);
         }
     }
 
@@ -460,13 +481,13 @@ impl SceneBuffer
     #[cfg(feature = "hot_reload")]
     pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
     {
-        let Some((loadable_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
+        let Some((scene_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
 
         // Clean up scenes.
-        scene_loader.cleanup_dead_entity(&loadable_ref, dead_entity);
+        scene_loader.cleanup_dead_entity(&scene_ref, dead_entity);
 
         // Clean up subscription.
-        let Some(subscribed) = self.subscriptions.get_mut(&loadable_ref) else { return };
+        let Some(subscribed) = self.subscriptions.get_mut(&scene_ref) else { return };
         let Some(dead) = subscribed.iter().position(|s| s.entity == dead_entity) else { return };
         subscribed.swap_remove(dead);
     }

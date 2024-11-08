@@ -57,10 +57,10 @@ fn register_node_loadable<T: 'static>(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Applies a loadable command of type `T`.
-fn command_loader<T: Command + Loadable>(w: &mut World, loadable: ReflectedLoadable, loadable_ref: SceneRef)
+fn command_loader<T: Command + Loadable>(w: &mut World, loadable: ReflectedLoadable, scene_ref: SceneRef)
 {
     let registry = w.resource::<AppTypeRegistry>();
-    let Some(command) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
+    let Some(command) = loadable.get_value::<T>(&scene_ref, &registry.read()) else { return };
     command.apply(w);
 }
 
@@ -71,12 +71,12 @@ fn bundle_loader<T: Bundle + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
 )
 {
     w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        let Some(bundle) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
+        let Some(bundle) = loadable.get_value::<T>(&scene_ref, &registry.read()) else { return };
         emut.insert(bundle);
     });
 }
@@ -88,12 +88,12 @@ fn reactive_loader<T: ReactComponent + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
 )
 {
     w.resource_scope(|world, registry: Mut<AppTypeRegistry>| {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        let Some(new_val) = loadable.get_value(&loadable_ref, &registry.read()) else { return };
+        let Some(new_val) = loadable.get_value(&scene_ref, &registry.read()) else { return };
         match emut.get_mut::<React<T>>() {
             Some(mut component) => {
                 *component.get_noreact() = new_val;
@@ -113,38 +113,40 @@ fn instruction_loader<T: Instruction + Loadable>(
     w: &mut World,
     entity: Entity,
     loadable: ReflectedLoadable,
-    loadable_ref: SceneRef,
+    scene_ref: SceneRef,
 )
 {
     if !w.entities().contains(entity) {
         return;
     }
     let registry = w.resource::<AppTypeRegistry>();
-    let Some(value) = loadable.get_value::<T>(&loadable_ref, &registry.read()) else { return };
+    let Some(value) = loadable.get_value::<T>(&scene_ref, &registry.read()) else { return };
     value.apply(entity, w);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn load_from_ref(
-    In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
+    In((id, scene_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
     mut c: Commands,
     loaders: Res<LoaderCallbacks>,
     mut scene_buffer: ResMut<SceneBuffer>,
+    commands_buffer: Res<CommandsBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
     if *load_state.get() != LoadState::Done {
-        tracing::error!("failed loading scene node {loadable_ref:?} into {id:?}, app state is not LoadState::Done");
+        tracing::error!("failed loading scene node {scene_ref:?} into {id:?}, app state is not LoadState::Done");
         return;
     }
 
-    scene_buffer.track_entity(id, loadable_ref, initializer, &loaders, &mut c);
+    scene_buffer.track_entity(id, scene_ref, initializer, &loaders, &mut c, &commands_buffer);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// TODO (bevy v0.15): need to use `remove_with_requires`
+// TODO: use `remove_with_requires`
+// - need https://github.com/bevyengine/bevy/pull/16288
 fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 {
     let Ok(mut emut) = world.get_entity_mut(entity) else { return };
@@ -164,17 +166,17 @@ fn revert_reactive<T: ReactComponent>(entity: Entity, world: &mut World)
 /// Same as `load_from_ref` except loads are queued instead of immediately executed.
 #[cfg(feature = "hot_reload")]
 pub(crate) fn load_queued_from_ref(
-    In((id, loadable_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
+    In((id, scene_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
     mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
 )
 {
     if *load_state.get() != LoadState::Done {
-        tracing::error!("failed loading scene node {loadable_ref:?} into {id:?}, app state is not LoadState::Done");
+        tracing::error!("failed loading scene node {scene_ref:?} into {id:?}, app state is not LoadState::Done");
         return;
     }
 
-    scene_buffer.track_entity_queued(id, loadable_ref, initializer);
+    scene_buffer.track_entity_queued(id, scene_ref, initializer);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -296,37 +298,35 @@ impl CobwebAssetRegistrationAppExt for App
 /// Helper trait for registering entities for loadable loading.
 pub trait CafLoadingEntityCommandsExt
 {
-    /// Registers the current entity to load loadables from `loadable_ref`.
+    /// Registers the current entity to load loadables from `scene_ref`.
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load(&mut self, loadable_ref: SceneRef) -> &mut Self;
+    fn load(&mut self, scene_ref: SceneRef) -> &mut Self;
 
-    /// Registers the current entity to load loadables from `loadable_ref`.
+    /// Registers the current entity to load loadables from `scene_ref`.
     ///
-    /// The `initializer` callback will be called before refreshing the `loadable_ref` loadable set on the entity.
+    /// The `initializer` callback will be called before refreshing the `scene_ref` loadable set on the entity.
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands))
-        -> &mut Self;
+    fn load_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self;
 }
 
 impl CafLoadingEntityCommandsExt for EntityCommands<'_>
 {
-    fn load(&mut self, loadable_ref: SceneRef) -> &mut Self
+    fn load(&mut self, scene_ref: SceneRef) -> &mut Self
     {
-        self.load_with_initializer(loadable_ref, |_| {})
+        self.load_with_initializer(scene_ref, |_| {})
     }
 
-    fn load_with_initializer(&mut self, loadable_ref: SceneRef, initializer: fn(&mut EntityCommands))
-        -> &mut Self
+    fn load_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self
     {
         self.insert(HasLoadables);
 
         let id = self.id();
         self.commands()
-            .syscall((id, loadable_ref, NodeInitializer { initializer }), load_from_ref);
+            .syscall((id, scene_ref, NodeInitializer { initializer }), load_from_ref);
         self
     }
 }

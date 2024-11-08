@@ -6,6 +6,7 @@ use crate::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`BorderRect`] for serialization.
+// TODO: use `BorderRect` when it has Serialize/Deserialize
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -36,6 +37,7 @@ impl Into<BorderRect> for SliceRect
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`SliceScaleMode`] for serialization.
+// TODO: use `SliceScaleMode` when it has Serialize/Deserialize
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -194,7 +196,6 @@ impl Into<SpriteImageMode> for LoadedImageMode
 )]
 pub struct TextureAtlasReference
 {
-    /// The identifier for this texture atlas map, which can be used to reference this atlas
     /// The index into the atlas for the desired sprite.
     pub index: usize,
     /// The alias of the [`TextureAtlasLayout`] that is referenced.
