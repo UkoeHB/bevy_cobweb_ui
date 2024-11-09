@@ -34,18 +34,43 @@ impl CursorSource
 /// Iterates available `TempCursors` to extract the current temp cursor.
 fn get_temp_cursor(mut source: ResMut<CursorSource>, temps: Query<(Entity, &TempCursor)>)
 {
-    for (idx, (entity, temp)) in temps
+    // Look for highest priority non-None cursor.
+    let mut found: Option<(u8, &LoadableCursor)> = None;
+    let mut found_second: Option<(u8, Entity, &LoadableCursor)> = None;
+    for (entity, temp) in temps
         .iter()
-        .filter(|(_, t)| !matches!(***t, LoadableCursor::None))
-        .enumerate()
+        .filter(|(_, t)| !matches!(t.cursor, LoadableCursor::None))
     {
-        if idx != 0 {
-            warn_once!("multiple TempCursor instances detected (second: {:?} {:?}); only one can be used at a \
-                time; this warning only prints once", entity, temp);
-            return;
+        let Some((prio, _)) = &found else {
+            found = Some((temp.priority, &temp.cursor));
+            continue;
+        };
+
+        if *prio > temp.priority {
+            continue;
         }
 
-        source.temporary = Some((**temp).clone());
+        if *prio == temp.priority {
+            found_second = Some((temp.priority, entity, &temp.cursor));
+        }
+
+        found = Some((temp.priority, &temp.cursor));
+    }
+
+    // Signal if there is a conflict.
+    if let Some((entity, second)) = found_second.and_then(|(prio, e, s)| {
+        if prio >= found.unwrap().0 {
+            return Some((e, s));
+        }
+        None
+    }) {
+        warn_once!("multiple TempCursor instances detected (second: {:?} {:?}); only one can be used at a \
+            time; this warning only prints once", entity, second);
+    }
+
+    // Set the cursor.
+    if let Some((_, cursor)) = found {
+        source.temporary = Some(cursor.clone());
     }
 }
 
@@ -167,14 +192,21 @@ impl Command for SetPrimaryCursor
 ///
 /// To set a long-term 'primary cursor', use the [`SetPrimaryCursor`] command.
 ///
-/// See [`HoverCursor`] and [`PressCursor`] for easier ways to use this.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Deref, DerefMut)]
+/// See [`Cursor`] for an easy way to use this.
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct TempCursor(pub LoadableCursor);
+pub struct TempCursor
+{
+    /// Higher priority cursors will override lower priority cursors.
+    ///
+    /// Used as a temporary hack so press cursors won't be overridden by hover cursors when moving off an element.
+    pub priority: u8,
+    pub cursor: LoadableCursor,
+}
 
 impl Instruction for TempCursor
 {
@@ -205,59 +237,33 @@ impl ResponsiveAttribute for TempCursor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction that sets [`TempCursor`] on the entity when it is hovered.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Deref, DerefMut)]
+/// Instruction that sets [`TempCursor`] on the entity when it is hovered or pressed.
+// TODO: rework all of this to use a pointer-capture-based approach to controlling press/hover cursors
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct HoverCursor(pub LoadableCursor);
-
-impl Instruction for HoverCursor
+pub struct Cursor
 {
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let responsive = Responsive::<TempCursor> {
-            values: InteractiveVals {
-                idle: TempCursor(LoadableCursor::None),
-                hover: Some(TempCursor(self.0)),
-                ..default()
-            },
-            ..default()
-        };
-        responsive.apply(entity, world);
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        Responsive::<TempCursor>::revert(entity, world);
-    }
+    #[reflect(default)]
+    pub hover: LoadableCursor,
+    #[reflect(default)]
+    pub press: LoadableCursor,
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Instruction that sets [`TempCursor`] on the entity when it is pressed.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Deref, DerefMut)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
-pub struct PressCursor(pub LoadableCursor);
-
-impl Instruction for PressCursor
+impl Instruction for Cursor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let responsive = Responsive::<TempCursor> {
-            values: InteractiveVals {
-                idle: TempCursor(LoadableCursor::None),
-                press: Some(TempCursor(self.0)),
-                ..default()
-            },
+        let values = InteractiveVals {
+            idle: TempCursor { priority: 0, cursor: LoadableCursor::None },
+            hover: Some(TempCursor { priority: 1, cursor: self.hover }),
+            press: Some(TempCursor { priority: 2, cursor: self.press }),
             ..default()
         };
+        let responsive = Responsive::<TempCursor> { values, ..default() };
         responsive.apply(entity, world);
     }
 
@@ -278,8 +284,7 @@ impl Plugin for CursorPlugin
         app.init_resource::<CursorSource>()
             .register_command_type::<SetPrimaryCursor>()
             .register_responsive::<TempCursor>()
-            .register_instruction_type::<HoverCursor>()
-            .register_instruction_type::<PressCursor>()
+            .register_instruction_type::<Cursor>()
             // Note: bevy's cursor_update system runs in Last but doesn't have a system set, so we need to put
             // these in PostUpdate
             .add_systems(PostUpdate, (get_temp_cursor, refresh_cursor_icon).chain());

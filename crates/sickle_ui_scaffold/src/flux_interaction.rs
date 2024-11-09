@@ -220,36 +220,6 @@ pub enum PrevInteraction
     Hovered,
 }
 
-fn tick_flux_interaction_stopwatch(
-    config: Res<FluxInteractionConfig>,
-    time: Res<Time<Real>>,
-    mut q_stopwatches: Query<(
-        Entity,
-        &mut FluxInteractionStopwatch,
-        Option<&FluxInteractionStopwatchLock>,
-    )>,
-    mut commands: Commands,
-)
-{
-    for (entity, mut stopwatch, lock) in &mut q_stopwatches {
-        let remove_stopwatch = if let Some(lock) = lock {
-            match lock.min_duration() {
-                StopwatchLock::None => stopwatch.0.elapsed().as_secs_f32() > config.max_interaction_duration,
-                StopwatchLock::Infinite => false,
-                StopwatchLock::Duration(length) => stopwatch.0.elapsed() > length,
-            }
-        } else {
-            stopwatch.0.elapsed().as_secs_f32() > config.max_interaction_duration
-        };
-
-        if remove_stopwatch {
-            commands.entity(entity).remove::<FluxInteractionStopwatch>();
-        }
-
-        stopwatch.0.tick(time.delta());
-    }
-}
-
 fn update_flux_interaction(
     mut q_interaction: Query<(&PrevInteraction, &Interaction, &mut FluxInteraction), Changed<Interaction>>,
 )
@@ -299,5 +269,35 @@ fn update_prev_interaction(mut q_interaction: Query<(&mut PrevInteraction, &Inte
             Interaction::Hovered => PrevInteraction::Hovered,
             Interaction::None => PrevInteraction::None,
         };
+    }
+}
+
+fn tick_flux_interaction_stopwatch(
+    config: Res<FluxInteractionConfig>,
+    time: Res<Time<Real>>,
+    mut q_stopwatches: Query<(
+        Entity,
+        &mut FluxInteractionStopwatch,
+        Option<&FluxInteractionStopwatchLock>,
+    )>,
+    mut commands: Commands,
+)
+{
+    for (entity, mut stopwatch, lock) in &mut q_stopwatches {
+        let remove_stopwatch = if let Some(lock) = lock {
+            match lock.min_duration() {
+                StopwatchLock::None => stopwatch.0.elapsed().as_secs_f32() > config.max_interaction_duration,
+                StopwatchLock::Infinite => false,
+                StopwatchLock::Duration(length) => stopwatch.0.elapsed() > length,
+            }
+        } else {
+            stopwatch.0.elapsed().as_secs_f32() > config.max_interaction_duration
+        };
+
+        if remove_stopwatch {
+            commands.entity(entity).remove::<FluxInteractionStopwatch>();
+        }
+
+        stopwatch.0.tick(time.delta());
     }
 }
