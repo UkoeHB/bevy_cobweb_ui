@@ -85,13 +85,10 @@ fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, l
 /// Only enabled for hot_reload because normally entities are loaded only once, the first time they subscribe
 /// to a loadable ref.
 #[cfg(feature = "hot_reload")]
-fn apply_pending_node_updates(
-    types: Res<AppTypeRegistry>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+fn apply_pending_node_updates_pre(
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
-    mut scene_loader: ResMut<SceneLoader>,
     loaders: Res<LoaderCallbacks>,
 )
 {
@@ -102,10 +99,46 @@ fn apply_pending_node_updates(
 
     // Apply current pending updates. This handles spawns that occurred while blocked.
     scene_buffer.apply_pending_node_updates(&mut c, &loaders);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Only enabled for hot_reload because normally entities are loaded only once, the first time they subscribe
+/// to a loadable ref.
+#[cfg(feature = "hot_reload")]
+fn apply_pending_node_updates_extract(
+    types: Res<AppTypeRegistry>,
+    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut c: Commands,
+    commands_buffer: Res<CommandsBuffer>,
+    mut scene_buffer: ResMut<SceneBuffer>,
+    mut scene_loader: ResMut<SceneLoader>,
+)
+{
+    // Check if blocked.
+    if commands_buffer.is_blocked() {
+        return;
+    }
 
     // Extract scenes from recently loaded files.
     let type_registry = types.read();
     caf_cache.handle_pending_scene_extraction(&type_registry, &mut c, &mut scene_buffer, &mut scene_loader);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[cfg(feature = "hot_reload")]
+fn apply_pending_node_updates_post(
+    mut c: Commands,
+    commands_buffer: Res<CommandsBuffer>,
+    mut scene_buffer: ResMut<SceneBuffer>,
+    loaders: Res<LoaderCallbacks>,
+)
+{
+    // Check if blocked.
+    if commands_buffer.is_blocked() {
+        return;
+    }
 
     // Apply current pending updates again. Doing this here ensures updates occur in an order that is valid based
     // on the current structure of all scenes.
@@ -159,7 +192,11 @@ impl Plugin for CobwebAssetCachePlugin
                     process_cobweb_asset_files.run_if(|s: Res<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
                     apply_pending_commands,
                     #[cfg(feature = "hot_reload")]
-                    apply_pending_node_updates,
+                    apply_pending_node_updates_pre,
+                    #[cfg(feature = "hot_reload")]
+                    apply_pending_node_updates_extract,
+                    #[cfg(feature = "hot_reload")]
+                    apply_pending_node_updates_post,
                 )
                     .chain()
                     .in_set(FileProcessingSet),
