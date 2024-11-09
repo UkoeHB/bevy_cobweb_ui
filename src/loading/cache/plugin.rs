@@ -10,10 +10,10 @@ use crate::prelude::*;
 
 fn preprocess_cobweb_asset_files(
     asset_server: Res<AssetServer>,
-    mut events: EventReader<AssetEvent<CobwebAssetFile>>,
-    mut caf_files: ResMut<LoadedCobwebAssetFiles>,
-    mut assets: ResMut<Assets<CobwebAssetFile>>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut events: EventReader<AssetEvent<CobAssetFile>>,
+    mut cob_files: ResMut<LoadedCobAssetFiles>,
+    mut assets: ResMut<Assets<CobAssetFile>>,
+    mut cob_cache: ResMut<CobAssetCache>,
     mut commands_buffer: ResMut<CommandsBuffer>,
 )
 {
@@ -21,25 +21,25 @@ fn preprocess_cobweb_asset_files(
         let id = match event {
             AssetEvent::Added { id } | AssetEvent::Modified { id } => id,
             _ => {
-                tracing::debug!("ignoring CobwebAssetCache asset event {:?}", event);
+                tracing::debug!("ignoring CobAssetCache asset event {:?}", event);
                 continue;
             }
         };
 
-        let Some(handle) = caf_files.get_handle(*id) else {
-            tracing::warn!("encountered CobwebAssetCache asset event {:?} for an untracked asset", id);
+        let Some(handle) = cob_files.get_handle(*id) else {
+            tracing::warn!("encountered CobAssetCache asset event {:?} for an untracked asset", id);
             continue;
         };
 
         let Some(asset) = assets.remove(&handle) else {
-            tracing::error!("failed to remove CobwebAssetCache asset {:?}", handle);
+            tracing::error!("failed to remove CobAssetCache asset {:?}", handle);
             continue;
         };
 
-        preprocess_caf_file(
+        preprocess_cob_file(
             &asset_server,
-            &mut caf_files,
-            &mut caf_cache,
+            &mut cob_files,
+            &mut cob_cache,
             &mut commands_buffer,
             asset.0,
         );
@@ -53,7 +53,7 @@ fn preprocess_cobweb_asset_files(
 
 fn process_cobweb_asset_files(
     types: Res<AppTypeRegistry>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut cob_cache: ResMut<CobAssetCache>,
     mut c: Commands,
     mut commands_buffer: ResMut<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
@@ -62,14 +62,14 @@ fn process_cobweb_asset_files(
 {
     let type_registry = types.read();
 
-    if caf_cache.process_cobweb_asset_files(
+    if cob_cache.process_cobweb_asset_files(
         &type_registry,
         &mut c,
         &mut commands_buffer,
         &mut scene_buffer,
         &mut scene_loader,
     ) {
-        c.react().broadcast(CafCacheUpdated);
+        c.react().broadcast(CobCacheUpdated);
     }
 }
 
@@ -108,7 +108,7 @@ fn apply_pending_node_updates_pre(
 #[cfg(feature = "hot_reload")]
 fn apply_pending_node_updates_extract(
     types: Res<AppTypeRegistry>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut cob_cache: ResMut<CobAssetCache>,
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
@@ -122,7 +122,7 @@ fn apply_pending_node_updates_extract(
 
     // Extract scenes from recently loaded files.
     let type_registry = types.read();
-    caf_cache.handle_pending_scene_extraction(&type_registry, &mut c, &mut scene_buffer, &mut scene_loader);
+    cob_cache.handle_pending_scene_extraction(&type_registry, &mut c, &mut scene_buffer, &mut scene_loader);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -162,8 +162,8 @@ fn cleanup_despawned_loaded_entities(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when the [`CobwebAssetCache`] has been updated with CAF asset data.
-pub struct CafCacheUpdated;
+/// Reactive event broadcasted when the [`CobAssetCache`] has been updated with COB asset data.
+pub struct CobCacheUpdated;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -174,22 +174,22 @@ pub struct FileProcessingSet;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that enables loading.
-pub(crate) struct CobwebAssetCachePlugin;
+pub(crate) struct CobAssetCachePlugin;
 
-impl Plugin for CobwebAssetCachePlugin
+impl Plugin for CobAssetCachePlugin
 {
     fn build(&self, app: &mut App)
     {
         let manifest_map = Arc::new(Mutex::new(ManifestMap::default()));
-        app.insert_resource(CobwebAssetCache::new(manifest_map.clone()))
-            .register_asset_tracker::<CobwebAssetCache>()
+        app.insert_resource(CobAssetCache::new(manifest_map.clone()))
+            .register_asset_tracker::<CobAssetCache>()
             .insert_resource(CommandsBuffer::new())
             .insert_resource(SceneBuffer::new(manifest_map))
             .add_systems(
                 First,
                 (
                     preprocess_cobweb_asset_files,
-                    process_cobweb_asset_files.run_if(|s: Res<CobwebAssetCache>| s.num_preprocessed_pending() > 0),
+                    process_cobweb_asset_files.run_if(|s: Res<CobAssetCache>| s.num_preprocessed_pending() > 0),
                     apply_pending_commands,
                     #[cfg(feature = "hot_reload")]
                     apply_pending_node_updates_pre,

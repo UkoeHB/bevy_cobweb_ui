@@ -4,7 +4,7 @@ use std::sync::Arc;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-pub use crate::prelude::caf::{CafFile, ManifestKey};
+pub use crate::prelude::cob::{CobFile, ManifestKey};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -19,20 +19,20 @@ pub const SCENE_PATH_SEPARATOR: &str = "::";
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum SceneFile
 {
-    File(CafFile),
+    File(CobFile),
     ManifestKey(ManifestKey),
 }
 
 impl SceneFile
 {
-    /// Creates a new CAF file reference from a file name.
+    /// Creates a new COB file reference from a file name.
     ///
-    /// If the file name does not include the `.caf` file extension, then it will be treated as a
+    /// If the file name does not include the `.cob` file extension, then it will be treated as a
     /// manifest key.
     pub fn new(file: impl AsRef<str>) -> Self
     {
         let file = file.as_ref();
-        if let Some(file) = CafFile::try_new(file) {
+        if let Some(file) = CobFile::try_new(file) {
             Self::File(file)
         } else {
             Self::ManifestKey(ManifestKey::new(file))
@@ -57,7 +57,7 @@ impl SceneFile
         }
     }
 
-    /// Returns `true` if this file reference is a file path (i.e. it ends with `.caf`).
+    /// Returns `true` if this file reference is a file path (i.e. it ends with `.cob`).
     pub fn is_file_path(&self) -> bool
     {
         matches!(*self, Self::File(_))
@@ -70,7 +70,7 @@ impl SceneFile
     }
 
     /// Gets the internal file if there is one.
-    pub fn file(&self) -> Option<&CafFile>
+    pub fn file(&self) -> Option<&CobFile>
     {
         match self {
             Self::File(file) => Some(file),
@@ -87,10 +87,10 @@ impl SceneFile
         }
     }
 
-    /// Returns `true` if the string ends in `.caf`.
+    /// Returns `true` if the string ends in `.cob`.
     pub fn str_is_file_path(string: impl AsRef<str>) -> bool
     {
-        string.as_ref().ends_with(".caf")
+        string.as_ref().ends_with(".cob")
     }
 
     /// Extends an existing scene file with a path extension.
@@ -245,7 +245,7 @@ impl Default for ScenePath
 /// Represents a complete reference to a scene node in a cobweb asset asset.
 ///
 /// Example:
-/// - **File**: `ui/home.caf` for a `home` cobweb asset in `assets/ui`.
+/// - **File**: `ui/home.cob` for a `home` cobweb asset in `assets/ui`.
 /// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
 /// asset.
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]

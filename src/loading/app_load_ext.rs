@@ -7,10 +7,10 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instructs the asset server to load all pre-set CobwebAssetCache files.
+/// Instructs the asset server to load all pre-set CobAssetCache files.
 fn load_cobweb_assets(
-    mut files: ResMut<LoadedCobwebAssetFiles>,
-    mut caf_cache: ResMut<CobwebAssetCache>,
+    mut files: ResMut<LoadedCobAssetFiles>,
+    mut cob_cache: ResMut<CobAssetCache>,
     mut commands_buffer: ResMut<CommandsBuffer>,
     asset_server: Res<AssetServer>,
 )
@@ -19,7 +19,7 @@ fn load_cobweb_assets(
 
     // Loads presets.
     for file in presets.iter().cloned() {
-        files.start_loading(file, &mut caf_cache, &asset_server);
+        files.start_loading(file, &mut cob_cache, &asset_server);
     }
 
     // Initialize commands buffer.
@@ -30,54 +30,54 @@ fn load_cobweb_assets(
 
 /// Stores asset paths for all pre-registered cobweb asset files that should be loaded.
 #[derive(Resource, Default)]
-pub(crate) struct LoadedCobwebAssetFiles
+pub(crate) struct LoadedCobAssetFiles
 {
-    preset_files: Vec<CafFile>,
-    handles: HashMap<AssetId<CobwebAssetFile>, Handle<CobwebAssetFile>>,
+    preset_files: Vec<CobFile>,
+    handles: HashMap<AssetId<CobAssetFile>, Handle<CobAssetFile>>,
 }
 
-impl LoadedCobwebAssetFiles
+impl LoadedCobAssetFiles
 {
     fn add_preset_file(&mut self, file: &str)
     {
-        match CafFile::try_new(file) {
+        match CobFile::try_new(file) {
             Some(file) => {
-                tracing::info!("registered CAF file {}", file.as_str());
+                tracing::info!("registered COB file {}", file.as_str());
                 self.preset_files.push(file);
             }
             None => {
-                tracing::warn!("failed registering CAF file {}; does not have '.caf' extension", file)
+                tracing::warn!("failed registering COB file {}; does not have '.cob' extension", file)
             }
         }
     }
 
-    fn take_preset_files(&mut self) -> Vec<CafFile>
+    fn take_preset_files(&mut self) -> Vec<CobFile>
     {
         std::mem::take(&mut self.preset_files)
     }
 
     pub(crate) fn start_loading(
         &mut self,
-        file: CafFile,
-        caf_cache: &mut CobwebAssetCache,
+        file: CobFile,
+        cob_cache: &mut CobAssetCache,
         asset_server: &AssetServer,
     )
     {
         let handle = asset_server.load(String::from(file.as_str()));
         self.handles.insert(handle.id(), handle);
-        caf_cache.prepare_file(file);
+        cob_cache.prepare_file(file);
     }
 
     /// Does not remove the handle in case the asset gets reloaded.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn get_handle(&self, id: AssetId<CobwebAssetFile>) -> Option<Handle<CobwebAssetFile>>
+    pub(crate) fn get_handle(&self, id: AssetId<CobAssetFile>) -> Option<Handle<CobAssetFile>>
     {
         self.handles.get(&id).cloned()
     }
 
     /// Removes the handle to clean it up properly.
     #[cfg(not(feature = "hot_reload"))]
-    pub(crate) fn get_handle(&mut self, id: AssetId<CobwebAssetFile>) -> Option<Handle<CobwebAssetFile>>
+    pub(crate) fn get_handle(&mut self, id: AssetId<CobAssetFile>) -> Option<Handle<CobAssetFile>>
     {
         self.handles.remove(&id)
     }
@@ -85,23 +85,23 @@ impl LoadedCobwebAssetFiles
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`CobwebAssetCache`] use.
-pub trait LoadedCobwebAssetFilesAppExt
+/// Extends `App` with methods supporting [`CobAssetCache`] use.
+pub trait LoadedCobAssetFilesAppExt
 {
     /// Registers a cobweb asset file to be loaded.
     fn load(&mut self, file: impl AsRef<str>) -> &mut Self;
 }
 
-impl LoadedCobwebAssetFilesAppExt for App
+impl LoadedCobAssetFilesAppExt for App
 {
     fn load(&mut self, file: impl AsRef<str>) -> &mut Self
     {
-        if !self.world().contains_resource::<LoadedCobwebAssetFiles>() {
-            self.init_resource::<LoadedCobwebAssetFiles>();
+        if !self.world().contains_resource::<LoadedCobAssetFiles>() {
+            self.init_resource::<LoadedCobAssetFiles>();
         }
 
         self.world_mut()
-            .resource_mut::<LoadedCobwebAssetFiles>()
+            .resource_mut::<LoadedCobAssetFiles>()
             .add_preset_file(file.as_ref());
         self
     }
@@ -115,11 +115,11 @@ impl Plugin for AppLoadExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        if !app.world().contains_resource::<LoadedCobwebAssetFiles>() {
-            app.init_resource::<LoadedCobwebAssetFiles>();
+        if !app.world().contains_resource::<LoadedCobAssetFiles>() {
+            app.init_resource::<LoadedCobAssetFiles>();
         }
 
-        app.init_asset::<CobwebAssetFile>()
+        app.init_asset::<CobAssetFile>()
             .add_systems(PreStartup, load_cobweb_assets);
     }
 }

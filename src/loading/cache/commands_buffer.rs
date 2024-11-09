@@ -90,7 +90,7 @@ enum FileParent
     SelfIsRoot,
     #[cfg(feature = "hot_reload")]
     SelfIsOrphan,
-    Parent(CafFile),
+    Parent(CobFile),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ struct FileCommandsInfo
     /// Used to traverse down the tree to descendants.
     ///
     /// We use an `Arc` so we can use a stack-based approach to traverse the hierarchy, avoiding lifetime issues.
-    descendants: Arc<[CafFile]>,
+    descendants: Arc<[CobFile]>,
 
     /// Index into flattened hierarchy. If `CommandsBuffer::file_order` vec position doesn't
     /// match this file at `idx`, then the index is stale.
@@ -132,11 +132,11 @@ struct FileCommandsInfo
 
 //-------------------------------------------------------------------------------------------------------------------
 
-const GLOBAL_PSEUDO_FILE: &'static str = "__g.caf";
+const GLOBAL_PSEUDO_FILE: &'static str = "__g.cob";
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Manages commands loaded from CAF files to ensure they are applied in global order.
+/// Manages commands loaded from COB files to ensure they are applied in global order.
 ///
 /// When the `hot_reload` feature is not enabled, this resource will be removed in schedule
 /// `OnExit(LoadState::Loading)`.
@@ -146,17 +146,17 @@ pub(crate) struct CommandsBuffer
     /// 'Earliest' file in the hierarchy with un-applied commands.
     ///
     /// If `None` then no file is targeted for pending commands.
-    traversal_point: Option<CafFile>,
+    traversal_point: Option<CobFile>,
 
     /// Flattened file hierarchy.
-    hierarchy: HashMap<CafFile, FileCommandsInfo>,
+    hierarchy: HashMap<CobFile, FileCommandsInfo>,
 
     /// Cached file list.
     ///
     /// Used to disambiguate orphaned files from loaded files when their internally-tracked indices might
     /// overlap.
     #[cfg(feature = "hot_reload")]
-    file_order: Vec<CafFile>,
+    file_order: Vec<CobFile>,
 
     /// Number of unapplied commands in non-orphaned files. Used to short-circuit traversal when refreshing
     /// commands.
@@ -178,18 +178,18 @@ pub(crate) struct CommandsBuffer
     /// Cached for reuse.
     dummy_commands_path: ScenePath,
     /// Cached for reuse.
-    empty_descendants: Arc<[CafFile]>,
+    empty_descendants: Arc<[CobFile]>,
     /// Cached for reuse.
-    root_descendents: Arc<[CafFile]>,
+    root_descendents: Arc<[CobFile]>,
 
     /// Cached for memory reuse.
     #[cfg(feature = "hot_reload")]
     seen_cached: Vec<bool>,
     /// Cached for memory reuse.
     #[cfg(feature = "hot_reload")]
-    stack_cached: Vec<(usize, Arc<[CafFile]>)>,
+    stack_cached: Vec<(usize, Arc<[CobFile]>)>,
     /// Cached for memory reuse.
-    inverted_stack_cached: Vec<(usize, Arc<[CafFile]>, bool)>,
+    inverted_stack_cached: Vec<(usize, Arc<[CobFile]>, bool)>,
 }
 
 impl CommandsBuffer
@@ -235,9 +235,9 @@ impl CommandsBuffer
         buffer
     }
 
-    fn global_file() -> CafFile
+    fn global_file() -> CobFile
     {
-        CafFile::try_new(GLOBAL_PSEUDO_FILE).unwrap()
+        CobFile::try_new(GLOBAL_PSEUDO_FILE).unwrap()
     }
 
     /// Returns `true` if the buffer has been refreshed and there are any pending files or commands, or if the
@@ -267,7 +267,7 @@ impl CommandsBuffer
     }
 
     /// Sets descendants of the 'global root'. These should be files manually loaded in the app.
-    pub(crate) fn set_root_file(&mut self, descendants: Vec<CafFile>)
+    pub(crate) fn set_root_file(&mut self, descendants: Vec<CobFile>)
     {
         let file = Self::global_file();
         self.set_file_descendants(file.clone(), descendants);
@@ -278,7 +278,7 @@ impl CommandsBuffer
     ///
     /// Will truncate `self.file_order` to the new traversal point.
     #[cfg(feature = "hot_reload")]
-    fn update_traversal_point(&mut self, target: CafFile, target_idx: usize)
+    fn update_traversal_point(&mut self, target: CobFile, target_idx: usize)
     {
         // Try to get current target from file order list. If not in the list at `target_idx`, then the target
         // must be *after* the end of the current `file_order` vec. And therefore is *after* the current traversal
@@ -309,7 +309,7 @@ impl CommandsBuffer
 
     /// Tries to update the traversal point to the file before the requested file.
     #[cfg(feature = "hot_reload")]
-    fn update_traversal_point_to_prev(&mut self, target: CafFile, target_idx: usize)
+    fn update_traversal_point_to_prev(&mut self, target: CobFile, target_idx: usize)
     {
         let Some(maybe_target) = self.file_order.get(target_idx) else {
             self.traversal_point = self
@@ -347,7 +347,7 @@ impl CommandsBuffer
     ///   after extracting a manifest section. This way when manifest loads show up (which can occur out of order),
     ///   they will have a pre-existing slot to land in.
     #[cfg(not(feature = "hot_reload"))]
-    pub(crate) fn set_file_descendants(&mut self, file: CafFile, descendants: Vec<CafFile>)
+    pub(crate) fn set_file_descendants(&mut self, file: CobFile, descendants: Vec<CobFile>)
     {
         let Some(info) = self.hierarchy.get_mut(&file) else {
             tracing::error!("failed setting file descendants for unknown file {:?}; all files should be pre-registered \
@@ -397,7 +397,7 @@ impl CommandsBuffer
     ///   shouldn't be applied.
     ///     - This is solved by tracking orphaned branches.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn set_file_descendants(&mut self, file: CafFile, descendants: Vec<CafFile>)
+    pub(crate) fn set_file_descendants(&mut self, file: CobFile, descendants: Vec<CobFile>)
     {
         let Some(info) = self.hierarchy.get_mut(&file) else {
             tracing::error!("failed setting file descendants for unknown file {:?}; all files should be pre-registered \
@@ -642,7 +642,7 @@ impl CommandsBuffer
     /// Adds commands to a file.
     ///
     /// The incoming commands are expected to be deduplicated.
-    pub(crate) fn set_file_commands(&mut self, file: CafFile, commands: Vec<(&'static str, ErasedLoadable)>)
+    pub(crate) fn set_file_commands(&mut self, file: CobFile, commands: Vec<(&'static str, ErasedLoadable)>)
     {
         let Some(info) = self.hierarchy.get_mut(&file) else {
             tracing::error!("failed setting file commands for unknown file {:?}; all files should be pre-registered \
@@ -882,7 +882,7 @@ impl CommandsBuffer
                     buff.command_counter.remove(1);
 
                     let Some(callback) = callbacks.get_for_command(cached.command.type_id) else {
-                        tracing::warn!("ignoring command in {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
+                        tracing::warn!("ignoring command in {:?} that wasn't registered with CobAssetRegistrationAppExt",
                             file);
                         continue;
                     };
@@ -914,8 +914,8 @@ impl CommandsBuffer
     fn iter_hierarchy_mut(
         &mut self,
         action: &str,
-        mut stack: Vec<(usize, Arc<[CafFile]>)>,
-        mut callback: impl FnMut(&mut Self, &CafFile, &mut FileCommandsInfo) -> bool,
+        mut stack: Vec<(usize, Arc<[CobFile]>)>,
+        mut callback: impl FnMut(&mut Self, &CobFile, &mut FileCommandsInfo) -> bool,
     )
     {
         let mut recursion_count = 0;
@@ -962,8 +962,8 @@ impl CommandsBuffer
     fn iter_hierarchy_inverted_mut(
         &mut self,
         action: &str,
-        mut stack: Vec<(usize, Arc<[CafFile]>, bool)>,
-        mut callback: impl FnMut(&mut Self, &CafFile, &mut FileCommandsInfo) -> bool,
+        mut stack: Vec<(usize, Arc<[CobFile]>, bool)>,
+        mut callback: impl FnMut(&mut Self, &CobFile, &mut FileCommandsInfo) -> bool,
     )
     {
         let mut recursion_count = 0;

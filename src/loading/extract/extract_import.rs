@@ -4,7 +4,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn extract_import_section(section: &CafImport, imports: &mut HashMap<ManifestKey, CafImportAlias>)
+pub(super) fn extract_import_section(section: &CobImport, imports: &mut HashMap<ManifestKey, CobImportAlias>)
 {
     for entry in section.entries.iter() {
         imports.insert(entry.key.clone(), entry.alias.clone());

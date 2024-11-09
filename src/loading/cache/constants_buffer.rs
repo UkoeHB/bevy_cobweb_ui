@@ -4,7 +4,7 @@ use std::sync::Arc;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-use crate::prelude::CafImportAlias;
+use crate::prelude::CobImportAlias;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -87,7 +87,7 @@ impl ConstantsBuffer
         })
     }
 
-    pub(crate) fn append(&mut self, alias: &CafImportAlias, to_append: &Self)
+    pub(crate) fn append(&mut self, alias: &CobImportAlias, to_append: &Self)
     {
         let alias = alias.as_str();
 

@@ -1,6 +1,6 @@
 //! A trivial hello world using a cobweb asset file.
 //!
-//! You can experiment with hot reloading by running the app and modifying the `assets/main.caf` file.
+//! You can experiment with hot reloading by running the app and modifying the `assets/main.cob` file.
 //! Hot-reloading is enabled by default in examples.
 
 use bevy::ecs::world::Command;
@@ -26,7 +26,7 @@ impl Command for TestCommand
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("main.caf", "scene");
+    let scene = SceneRef::new("main.cob", "scene");
     c.ui_root().load_scene(&mut s, scene);
 }
 
@@ -41,7 +41,7 @@ fn main()
         }))
         .add_plugins(CobwebUiPlugin)
         .register_command_type::<TestCommand>()
-        .load("main.caf")
+        .load("main.cob")
         .add_systems(PreStartup, |mut c: Commands| {
             c.spawn(Camera2d);
         })

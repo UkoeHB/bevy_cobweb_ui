@@ -15,7 +15,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
     c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         // Header
-        // - Localized image from file (see `assets/main.caf.json`).
+        // - Localized image from file (see `assets/main.cob.json`).
 
         // Content
         l.edit("content", |l| {
@@ -89,7 +89,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         }
                     });
 
-                // Localized text from file (see `assets/main.caf.json`).
+                // Localized text from file (see `assets/main.cob.json`).
             });
         });
     });
@@ -112,7 +112,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.cob.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

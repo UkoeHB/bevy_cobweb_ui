@@ -16,30 +16,30 @@ A framework for building UI and managing assets in a `bevy` app. Built on [bevy_
 
 ## Getting Started
 
-1. (Optional) Install syntax highlighting for the CAF asset format.
-    - [VSCode](https://github.com/UkoeHB/vscode-caf/)
-    - [vim](https://github.com/UkoeHB/vim-caf/)
-    - [SublimeText](https://github.com/UkoeHB/sublime-caf/)
+1. (Optional) Install syntax highlighting for the COB asset format.
+    - [VSCode](https://github.com/UkoeHB/vscode-cob/)
+    - [vim](https://github.com/UkoeHB/vim-cob/)
+    - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
 1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
-1. Load a CAF file if you have one. Usually these are stored in your assets directory.
-1. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading CAF files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
+1. Load a COB file if you have one. Usually these are stored in your assets directory.
+1. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading COB files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
 
 ```rust
 app
     .add_plugins(bevy::DefaultPlugins)
     .add_plugins(CobwebUiPlugin)
-    .load("main.caf")
+    .load("main.cob")
     .add_systems(OnEnter(LoadState::Done), build_ui);
 ```
 
-Check the [`loading`](bevy_cobweb_ui::loading) module for how to write CAF files.
+Check the [`loading`](bevy_cobweb_ui::loading) module for how to write COB files.
 
 Check the repository examples for how to build different kinds of UI.
 
 
 ## Examples
 
-**NOTICE**: Many examples are not yet migrated to use CAF, which is still in development to reach feature parity with the previous JSON format.
+**NOTICE**: Many examples are not yet migrated to use COB, which is still in development to reach feature parity with the previous JSON format.
 
 - [`hello_world`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/hello_world): Bare-bones hello world.
 - [`counter`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter): Simple counter button. Shows how [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) can be used to transfer interactions within a widget. Also demonstrates updating text dynamically on the code side.
@@ -49,7 +49,7 @@ Check the repository examples for how to build different kinds of UI.
 - [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
 - [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization): Showcases localized text and font.
 - [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix normal `sickle_ui` UI construction with `bevy_cobweb_ui` convenience tools for interactions.
-- [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, localization, non-interactive animations, integration with `sickle_ui` built-in widgets (a slider and drop-down), and how to manage localized image assets using CAF files as manifests.
+- [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, localization, non-interactive animations, integration with `sickle_ui` built-in widgets (a slider and drop-down), and how to manage localized image assets using COB files as manifests.
 
 
 ## `bevy` compatability

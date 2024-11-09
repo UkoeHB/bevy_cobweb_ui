@@ -13,9 +13,9 @@ fn handle_loadable(
     seen_shortnames: &mut Vec<&'static str>,
     type_registry: &TypeRegistry,
     scene_buffer: &mut SceneBuffer,
-    file: &CafFile,
+    file: &CobFile,
     current_path: &ScenePath,
-    loadable: &CafLoadable,
+    loadable: &CobLoadable,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> String
 {
@@ -67,19 +67,19 @@ fn handle_scene_node(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     parent_path: &ScenePath,
-    caf_layer: &CafSceneLayer,
+    cob_layer: &CobSceneLayer,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
     anonymous_count: &mut usize,
 ) -> String
 {
     // If node is anonymous, give it a unique name.
-    let layer_name = if caf_layer.name.as_str() == "" {
+    let layer_name = if cob_layer.name.as_str() == "" {
         id_scratch.clear();
         let _ = write!(&mut id_scratch, "_{}", *anonymous_count);
         *anonymous_count += 1;
         id_scratch.as_str()
     } else {
-        caf_layer.name.as_str()
+        cob_layer.name.as_str()
     };
 
     let Some(node_path) = parent_path.extend_single(layer_name) else {
@@ -117,7 +117,7 @@ fn handle_scene_node(
         child_layer,
         scene,
         &node_path,
-        caf_layer,
+        cob_layer,
         name_shortcuts,
     )
 }
@@ -134,7 +134,7 @@ fn extract_scene_layer(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     current_path: &ScenePath,
-    caf_layer: &CafSceneLayer,
+    cob_layer: &CobSceneLayer,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 ) -> String
 {
@@ -143,14 +143,14 @@ fn extract_scene_layer(
     scene_buffer.prepare_scene_node(scene_location.clone());
 
     // Begin layer update.
-    scene_layer.start_update(caf_layer.entries.len());
+    scene_layer.start_update(cob_layer.entries.len());
 
     // Add loadables.
     seen_shortnames.clear();
 
-    for entry in caf_layer.entries.iter() {
+    for entry in cob_layer.entries.iter() {
         match entry {
-            CafSceneLayerEntry::Loadable(loadable) => {
+            CobSceneLayerEntry::Loadable(loadable) => {
                 id_scratch = handle_loadable(
                     id_scratch,
                     seen_shortnames,
@@ -159,21 +159,21 @@ fn extract_scene_layer(
                     scene
                         .file
                         .file()
-                        .expect("all SceneFile should contain CafFile in scene extraction"),
+                        .expect("all SceneFile should contain CobFile in scene extraction"),
                     current_path,
                     loadable,
                     name_shortcuts,
                 );
             }
             // Do this one after we are done using the `seen_shortnames` buffer.
-            CafSceneLayerEntry::Layer(_) => (),
-            CafSceneLayerEntry::LoadableMacroCall(_) => {
+            CobSceneLayerEntry::Layer(_) => (),
+            CobSceneLayerEntry::LoadableMacroCall(_) => {
                 tracing::warn!("ignoring loadable macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
-            CafSceneLayerEntry::SceneMacroCall(_) => {
+            CobSceneLayerEntry::SceneMacroCall(_) => {
                 tracing::warn!("ignoring scene macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
-            CafSceneLayerEntry::SceneMacroParam(_) => {
+            CobSceneLayerEntry::SceneMacroParam(_) => {
                 tracing::warn!("ignoring scene macro param in scene node {:?} in {:?}", current_path, scene.file);
             }
         }
@@ -184,9 +184,9 @@ fn extract_scene_layer(
 
     // Add layers.
     let mut anonymous_count = 0;
-    for entry in caf_layer.entries.iter() {
+    for entry in cob_layer.entries.iter() {
         match entry {
-            CafSceneLayerEntry::Layer(next_caf_layer) => {
+            CobSceneLayerEntry::Layer(next_cob_layer) => {
                 id_scratch = handle_scene_node(
                     id_scratch,
                     seen_shortnames,
@@ -197,7 +197,7 @@ fn extract_scene_layer(
                     scene_layer,
                     scene,
                     current_path,
-                    next_caf_layer,
+                    next_cob_layer,
                     name_shortcuts,
                     &mut anonymous_count,
                 );
@@ -231,8 +231,8 @@ pub(super) fn extract_scenes(
     c: &mut Commands,
     scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
-    file: &CafFile,
-    section: &CafScenes,
+    file: &CobFile,
+    section: &CobScenes,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
@@ -240,11 +240,11 @@ pub(super) fn extract_scenes(
     let mut id_scratch = String::default();
     let mut seen_shortnames = vec![];
 
-    for caf_layer in section.scenes.iter() {
+    for cob_layer in section.scenes.iter() {
         // Get this scene for editing.
-        let Some(path) = ScenePath::parse_single(&*caf_layer.name) else {
+        let Some(path) = ScenePath::parse_single(&*cob_layer.name) else {
             tracing::error!("failed parsing scene {:?} in {:?}, scene root ID is a multi-segment path, only \
-                single-segment node ids are allowed in scene definitions", *caf_layer.name, file);
+                single-segment node ids are allowed in scene definitions", *cob_layer.name, file);
             continue;
         };
         let scene_ref = SceneRef { file: SceneFile::File(file.clone()), path };
@@ -261,7 +261,7 @@ pub(super) fn extract_scenes(
             scene_layer,
             &scene_ref,
             &scene_ref.path,
-            caf_layer,
+            cob_layer,
             name_shortcuts,
         );
     }

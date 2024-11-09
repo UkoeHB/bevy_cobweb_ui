@@ -222,8 +222,8 @@ pub(crate) struct NodeInitializer
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`CobwebAssetCache`] use.
-pub trait CobwebAssetRegistrationAppExt
+/// Extends `App` with methods supporting [`CobAssetCache`] use.
+pub trait CobAssetRegistrationAppExt
 {
     /// Registers a command that will be applied to the Bevy world when it is loaded.
     fn register_command<T: Command + Loadable>(&mut self) -> &mut Self;
@@ -231,16 +231,16 @@ pub trait CobwebAssetRegistrationAppExt
     /// Combines [`App::register_type`] with [`Self::register_command`].
     fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a bundle that can be inserted on entities via CAF loadables.
+    /// Registers a bundle that can be inserted on entities via COB loadables.
     fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
     /// Combines [`App::register_type`] with [`Self::register_bundle`].
     fn register_bundle_type<T: TypePath + GetTypeRegistration + Bundle + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers a [`React<T>`] component that can be inserted on entities via CAF loadables.
+    /// Registers a [`React<T>`] component that can be inserted on entities via COB loadables.
     fn register_reactive<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
 
-    /// Registers an instruction that can be applied to entities via CAF loadables.
+    /// Registers an instruction that can be applied to entities via COB loadables.
     fn register_instruction<T: Instruction + Loadable>(&mut self) -> &mut Self;
 
     /// Combines [`App::register_type`] with [`Self::register_instruction`].
@@ -249,7 +249,7 @@ pub trait CobwebAssetRegistrationAppExt
     ) -> &mut Self;
 }
 
-impl CobwebAssetRegistrationAppExt for App
+impl CobAssetRegistrationAppExt for App
 {
     fn register_command<T: Command + Loadable>(&mut self) -> &mut Self
     {
@@ -296,7 +296,7 @@ impl CobwebAssetRegistrationAppExt for App
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering entities for loadable loading.
-pub trait CafLoadingEntityCommandsExt
+pub trait CobLoadingEntityCommandsExt
 {
     /// Registers the current entity to load loadables from `scene_ref`.
     ///
@@ -313,7 +313,7 @@ pub trait CafLoadingEntityCommandsExt
     fn load_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self;
 }
 
-impl CafLoadingEntityCommandsExt for EntityCommands<'_>
+impl CobLoadingEntityCommandsExt for EntityCommands<'_>
 {
     fn load(&mut self, scene_ref: SceneRef) -> &mut Self
     {

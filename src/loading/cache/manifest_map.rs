@@ -8,17 +8,17 @@ use crate::prelude::*;
 #[derive(Default, Debug)]
 pub(crate) struct ManifestMap
 {
-    map: HashMap<ManifestKey, CafFile>,
+    map: HashMap<ManifestKey, CobFile>,
 }
 
 impl ManifestMap
 {
-    pub(crate) fn insert(&mut self, key: ManifestKey, file: CafFile) -> Option<CafFile>
+    pub(crate) fn insert(&mut self, key: ManifestKey, file: CobFile) -> Option<CobFile>
     {
         self.map.insert(key, file)
     }
 
-    pub(crate) fn remove(&mut self, key: &ManifestKey) -> Option<CafFile>
+    pub(crate) fn remove(&mut self, key: &ManifestKey) -> Option<CobFile>
     {
         self.map.remove(key)
     }
@@ -26,7 +26,7 @@ impl ManifestMap
     /// Gets a file reference from a scene file reference.
     ///
     /// Returns `None` if the requested file is [`SceneFile::ManifestKey`] and lookup failed.
-    pub(crate) fn get(&self, key: &ManifestKey) -> Option<CafFile>
+    pub(crate) fn get(&self, key: &ManifestKey) -> Option<CobFile>
     {
         self.map.get(key).cloned()
     }

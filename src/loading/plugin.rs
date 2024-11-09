@@ -12,10 +12,10 @@ impl Plugin for LoadingPlugin
     {
         app.add_plugins(LoadProgressPlugin)
             .add_plugins(LoadExtPlugin)
-            .add_plugins(CobwebAssetLoaderPlugin)
+            .add_plugins(CobAssetLoaderPlugin)
             .add_plugins(AppLoadExtPlugin)
-            .add_plugins(CobwebAssetCachePlugin)
-            .add_plugins(SceneLoaderPlugin) // Must be after the CAF cache plugin.
+            .add_plugins(CobAssetCachePlugin)
+            .add_plugins(SceneLoaderPlugin) // Must be after the COB cache plugin.
             ;
     }
 }

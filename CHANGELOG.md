@@ -2,8 +2,9 @@
 
 ## WIP
 
-- Introduce custom Cobweb Asset Format (CAF) to replace JSON-based format.
-- Miscellaneous updates and improvements.
+- Introduce custom Cobweb Asset Format (COB) to replace JSON-based format.
+- Many updates and improvements throughout the crate.
+- Remove `sickle_ui` dependency. We now vendor a subset of the sickle functionality as subcrates.
 - Update to Bevy 0.15.
 
 

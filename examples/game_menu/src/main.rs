@@ -330,7 +330,7 @@ fn add_menu_option<'a>(
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = &SceneFile::new("main.caf.json");
+    let file = &SceneFile::new("main.cob.json");
     let scene = file + "menu_scene";
 
     c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
@@ -384,7 +384,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.cob.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         // temporary hack for interop

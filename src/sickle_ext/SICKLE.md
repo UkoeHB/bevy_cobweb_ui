@@ -156,7 +156,7 @@ In this framework *structure* and *styling* are merged, and you customize widget
 Now we construct a `spec` for the widget containing default structure and styling.
 
 ```rust
-// assets/widgets/counter.caf.json
+// assets/widgets/counter.cob.json
 {
 "#specs" : {
     "counter_widget": {
@@ -209,9 +209,9 @@ This example doesn't actually use any `PseudoStates` or interaction propagation.
 
 Customizing the widget is as simple as redefining params or adding inserts:
 ```json
-// assets/main.caf.json
+// assets/main.cob.json
 {
-"#import": {"widgets/counter.caf.json": ""},
+"#import": {"widgets/counter.cob.json": ""},
 
 "counter_widget_bigtext(#spec:counter_widget)": {"@text_size": 100.0}
 }
@@ -228,7 +228,7 @@ fn build_ui(mut c: Commands)
 
         // Add customized widget.
         CounterWidgetBuilder::default()
-            .customize(SceneRef::new("main.caf.json", "counter_widget_bigtext"))
+            .customize(SceneRef::new("main.cob.json", "counter_widget_bigtext"))
             .build(n);
     });
 }

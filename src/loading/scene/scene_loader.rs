@@ -324,7 +324,7 @@ impl Default for SceneInstance
 pub struct SceneLoader
 {
     /// Tracks manifest data.
-    /// - Inside an arc/mutex so the CobwebAssetCache can also use it.
+    /// - Inside an arc/mutex so the CobAssetCache can also use it.
     manifest_map: Arc<Mutex<ManifestMap>>,
 
     /// Tracks the currently active scenes.
@@ -623,7 +623,7 @@ impl SceneLoader
         root_ec.load_with_initializer(scene_ref.clone(), T::initialize_scene_node);
 
         // Spawn hierarchy, loading all child paths.
-        // - Hierarchy spawn order matches the order in caf files.
+        // - Hierarchy spawn order matches the order in cob files.
         // - NOTE: We do not use ChildBuilder here, even though it would be more efficient, because node parents
         //   must be set before we call `.load()` on them. ChildBuilder defers parent assignment.
         let parent_stack = &mut self.scene_parent_stack_cached;
@@ -715,10 +715,7 @@ impl Plugin for SceneLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        let manifest_map = app
-            .world()
-            .resource::<CobwebAssetCache>()
-            .manifest_map_clone();
+        let manifest_map = app.world().resource::<CobAssetCache>().manifest_map_clone();
         app.insert_resource(SceneLoader::new(manifest_map));
     }
 }

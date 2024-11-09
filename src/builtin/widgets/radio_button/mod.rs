@@ -307,9 +307,9 @@ impl Plugin for CobwebRadioButtonPlugin
 {
     fn build(&self, _app: &mut App)
     {
-        // TODO: re-enable once CAF scene macros are implemented
+        // TODO: re-enable once COB scene macros are implemented
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
-        // "radio_button.caf.json");
+        // "radio_button.cob.json");
     }
 }
 

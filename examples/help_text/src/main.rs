@@ -14,7 +14,7 @@ use bevy_cobweb_ui::sickle_ext::prelude::*;
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("main.caf", "scene");
+    let scene = SceneRef::new("main.cob", "scene");
     c.ui_root().load_scene(&mut s, scene);
 }
 
@@ -28,7 +28,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf")
+        .load("main.cob")
         .add_systems(PreStartup, |mut c: Commands| {
             c.spawn(Camera2d);
         })

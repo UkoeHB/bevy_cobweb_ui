@@ -21,7 +21,7 @@ pub(crate) struct ErasedLoadable
 pub(crate) enum ReflectedLoadable
 {
     Value(Arc<Box<dyn PartialReflect + 'static>>),
-    DeserializationFailed(Arc<CafError>),
+    DeserializationFailed(Arc<CobError>),
 }
 
 impl ReflectedLoadable
@@ -61,7 +61,7 @@ impl ReflectedLoadable
     fn make_hint<T: Loadable>(registry: &TypeRegistry) -> String
     {
         let temp = T::default();
-        match CafLoadable::extract_reflect(&temp, registry) {
+        match CobLoadable::extract_reflect(&temp, registry) {
             Ok(value) => {
                 let mut buff = Vec::<u8>::default();
                 let mut serializer = DefaultRawSerializer::new(&mut buff);

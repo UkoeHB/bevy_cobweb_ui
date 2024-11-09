@@ -12,7 +12,7 @@ use crate::prelude::*;
 
 pub(super) fn get_loadable_meta<'a>(
     type_registry: &'a TypeRegistry,
-    file: &CafFile,
+    file: &CobFile,
     current_path: &ScenePath,
     short_name: &str,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
@@ -52,7 +52,7 @@ pub(super) fn get_loadable_meta<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn get_loadable_value(deserializer: TypedReflectDeserializer, value: &CafLoadable)
+pub(super) fn get_loadable_value(deserializer: TypedReflectDeserializer, value: &CobLoadable)
     -> ReflectedLoadable
 {
     match deserializer.deserialize(value) {

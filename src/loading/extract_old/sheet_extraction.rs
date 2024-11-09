@@ -10,20 +10,20 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Preprocesses a cobweb asset file and adds it to [`CobwebAssetCache`] for processing.
+/// Preprocesses a cobweb asset file and adds it to [`CobAssetCache`] for processing.
 ///
 /// Only the manifest and imports sections of the file are parsed here.
-pub(crate) fn preprocess_caf_file(
+pub(crate) fn preprocess_cob_file(
     manifest: &mut HashMap<String, Arc<str>>,
     imports: &mut Vec<(String, SmolStr)>,
     asset_server: &AssetServer,
-    caf_files: &mut LoadedCobwebAssetFiles,
-    caf_cache: &mut CobwebAssetCache,
+    cob_files: &mut LoadedCobAssetFiles,
+    cob_cache: &mut CobAssetCache,
     file: SceneFile,
     data: Value,
 )
 {
-    caf_cache.initialize_file(&file);
+    cob_cache.initialize_file(&file);
 
     let Value::Object(data) = data else {
         tracing::error!("failed preprocessing cobweb asset file {:?}, data base layer is not an Object", file);
@@ -48,7 +48,7 @@ pub(crate) fn preprocess_caf_file(
     // - We also register imported files for loading to ensure they are tracked properly and to reduce
     //   duplication/race conditions/complexity between manifest loading and imports.
     // - NOTE: We start with String keys and then convert to SceneFiles because files may target a specific asset
-    //   loader (e.g. `embedded://my_file.caf.json`), but we strip that information when converting to a SceneFile.
+    //   loader (e.g. `embedded://my_file.cob.json`), but we strip that information when converting to a SceneFile.
     for (file, scenefile, manifest_key) in manifest
         .drain()
         .map(|(f, m)| {
@@ -67,25 +67,25 @@ pub(crate) fn preprocess_caf_file(
         )
     {
         // Continue if this file has been registered before.
-        if !caf_cache.register_manifest_key(scenefile, manifest_key) {
+        if !cob_cache.register_manifest_key(scenefile, manifest_key) {
             continue;
         }
 
         // Load this manifest entry.
-        caf_files.start_loading(file, caf_cache, asset_server);
+        cob_files.start_loading(file, cob_cache, asset_server);
     }
 
     // Save this file for processing once its import dependencies are ready.
-    caf_cache.add_preprocessed_file(file, imports_to_save, data);
+    cob_cache.add_preprocessed_file(file, imports_to_save, data);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Consumes a cobweb asset file's data and loads it into [`CobwebAssetCache`].
-pub(crate) fn parse_caf_file(
+/// Consumes a cobweb asset file's data and loads it into [`CobAssetCache`].
+pub(crate) fn parse_cob_file(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    cob_cache: &mut CobAssetCache,
     scene_loader: &mut SceneLoader,
     file: SceneFile,
     mut data: Map<String, Value>,
@@ -115,10 +115,10 @@ pub(crate) fn parse_caf_file(
     insert_specs(&file, &mut data, specs);
 
     // Extract commands section.
-    parse_commands_section(type_registry, caf_cache, &file, &mut data, name_shortcuts);
+    parse_commands_section(type_registry, cob_cache, &file, &mut data, name_shortcuts);
 
     // Parse scenes from the file.
-    parse_scenes(type_registry, c, caf_cache, scene_loader, &file, data, name_shortcuts);
+    parse_scenes(type_registry, c, cob_cache, scene_loader, &file, data, name_shortcuts);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

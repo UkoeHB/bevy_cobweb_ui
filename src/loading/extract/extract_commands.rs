@@ -10,8 +10,8 @@ use crate::prelude::*;
 pub(super) fn extract_commands_section(
     type_registry: &TypeRegistry,
     commands: &mut Vec<(&'static str, ErasedLoadable)>,
-    file: &CafFile,
-    section: &CafCommands,
+    file: &CobFile,
+    section: &CobCommands,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
@@ -25,7 +25,7 @@ pub(super) fn extract_commands_section(
 
     for entry in section.entries.iter() {
         match entry {
-            CafCommandEntry::Loadable(loadable) => {
+            CobCommandEntry::Loadable(loadable) => {
                 // Get the shortname.
                 shortname = loadable.id.to_canonical(Some(shortname));
 
@@ -51,8 +51,8 @@ pub(super) fn extract_commands_section(
                 // Save the command.
                 commands.push((long_name, ErasedLoadable { type_id, loadable: command_value }));
             }
-            CafCommandEntry::LoadableMacroCall(_) => {
-                tracing::error!("ignoring unresolved loadable macro in CAF file command section {:?}", file);
+            CobCommandEntry::LoadableMacroCall(_) => {
+                tracing::error!("ignoring unresolved loadable macro in COB file command section {:?}", file);
             }
         }
     }

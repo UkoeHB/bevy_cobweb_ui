@@ -4,8 +4,8 @@ use crate as bevy_cobweb_ui;
 
 mod app_load_ext;
 mod cache;
-pub mod caf;
-mod cobweb_asset_loader;
+pub mod cob;
+mod cob_asset_loader;
 mod extract;
 mod load_ext;
 mod load_progress;
@@ -16,9 +16,9 @@ mod scene;
 
 pub use app_load_ext::*;
 pub use cache::*;
-pub use caf::Caf;
-pub(crate) use caf::*;
-pub(crate) use cobweb_asset_loader::*;
+pub use cob::Cob;
+pub(crate) use cob::*;
+pub(crate) use cob_asset_loader::*;
 pub(crate) use extract::*;
 pub use load_ext::*;
 pub use load_progress::*;

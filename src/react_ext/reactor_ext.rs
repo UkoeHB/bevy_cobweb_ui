@@ -108,7 +108,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for managing CAF scene node entities.
+/// Helper trait for managing COB scene node entities.
 pub trait UiReactEntityCommandsExt
 {
     /// Inserts a reactive component to the entity.
@@ -154,8 +154,8 @@ pub trait UiReactEntityCommandsExt
 
     /// Provides access to entity commands for the entity.
     ///
-    /// Useful if you need to insert/modify components or instructions on an entity that has CAF instructions that
-    /// overlap with those components/instructions. For example, you might have a CAF instruction
+    /// Useful if you need to insert/modify components or instructions on an entity that has COB instructions that
+    /// overlap with those components/instructions. For example, you might have a COB instruction
     /// [`FlexStyle`], and then in rust manually apply the instruction [`Width`] (which will modify
     /// `FlexStyle`). If the `FlexStyle` instruction is changed and hot reloaded, then the `Width`
     /// instruction's effects will be erased. However, if you use `modify` to apply the `Width` instruction,

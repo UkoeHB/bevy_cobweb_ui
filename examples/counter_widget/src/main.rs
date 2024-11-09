@@ -187,7 +187,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.cob.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

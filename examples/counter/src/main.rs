@@ -23,7 +23,7 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("main.caf.json", "root");
+    let scene = SceneRef::new("main.cob.json", "root");
 
     c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
         l.edit("button", |l| {
@@ -62,7 +62,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.cob.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

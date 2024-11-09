@@ -10,7 +10,7 @@ use crate::prelude::*;
 
 fn handle_loadable(
     type_registry: &TypeRegistry,
-    caf_cache: &mut CobwebAssetCache,
+    cob_cache: &mut CobAssetCache,
     file: &SceneFile,
     current_path: &ScenePath,
     short_name: &str,
@@ -29,7 +29,7 @@ fn handle_loadable(
     let loadable_value = get_loadable_value(deserializer, value);
 
     // Save this loadable.
-    caf_cache.insert_loadable(
+    cob_cache.insert_loadable(
         &SceneRef { file: file.clone(), path: current_path.clone() },
         loadable_value,
         type_id,
@@ -42,7 +42,7 @@ fn handle_loadable(
 fn handle_scene_node(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    cob_cache: &mut CobAssetCache,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
@@ -86,7 +86,7 @@ fn handle_scene_node(
     parse_scene_layer(
         type_registry,
         c,
-        caf_cache,
+        cob_cache,
         scene_loader,
         child_layer,
         scene,
@@ -101,7 +101,7 @@ fn handle_scene_node(
 fn parse_scene_layer(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    cob_cache: &mut CobAssetCache,
     scene_loader: &mut SceneLoader,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
@@ -111,7 +111,7 @@ fn parse_scene_layer(
 )
 {
     // Prep the node.
-    caf_cache.prepare_scene_node(SceneRef { file: scene.file.clone(), path: current_path.clone() });
+    cob_cache.prepare_scene_node(SceneRef { file: scene.file.clone(), path: current_path.clone() });
 
     // Begin layer update.
     scene_layer.start_update(data.len());
@@ -133,7 +133,7 @@ fn parse_scene_layer(
         if is_loadable_entry(key) {
             handle_loadable(
                 type_registry,
-                caf_cache,
+                cob_cache,
                 &scene.file,
                 current_path,
                 key,
@@ -144,7 +144,7 @@ fn parse_scene_layer(
             handle_scene_node(
                 type_registry,
                 c,
-                caf_cache,
+                cob_cache,
                 scene_loader,
                 scene_layer,
                 scene,
@@ -175,7 +175,7 @@ fn parse_scene_layer(
 pub(crate) fn parse_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
-    caf_cache: &mut CobwebAssetCache,
+    cob_cache: &mut CobAssetCache,
     scene_loader: &mut SceneLoader,
     file: &SceneFile,
     mut data: Map<String, Value>,
@@ -223,7 +223,7 @@ pub(crate) fn parse_scenes(
         parse_scene_layer(
             type_registry,
             c,
-            caf_cache,
+            cob_cache,
             scene_loader,
             scene_layer,
             &scene_ref,

@@ -43,7 +43,7 @@ pub(crate) fn extract_manifest_section(
             _ => {
                 if !SceneFile::str_is_file_path(manifest_file) {
                     tracing::error!("ignoring manifest entry in {:?} with invalid file path {:?} (key: {:?}); \
-                        cobweb asset files should terminate with `.caf.json`",
+                        cobweb asset files should terminate with `.cob.json`",
                         file.as_str(), manifest_file.as_str(), manifest_key);
                     continue;
                 }

@@ -331,7 +331,7 @@ impl SceneBuffer
 
         for loadable in loadables.iter() {
             let Some(callback) = callbacks.get_for_node(loadable.type_id) else {
-                tracing::warn!("found loadable at {:?} that wasn't registered with CobwebAssetRegistrationAppExt",
+                tracing::warn!("found loadable at {:?} that wasn't registered with CobAssetRegistrationAppExt",
                     scene_ref);
                 continue;
             };

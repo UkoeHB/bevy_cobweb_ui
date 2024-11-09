@@ -1,19 +1,19 @@
 ## Cobweb asset format
 
-**TODO: These docs are out of date! We now have a custom format CAF instead of JSON.**
+**TODO: These docs are out of date! We now have a custom format COB instead of JSON.**
 
-Cobweb assets are written as JSON files with the extension `.caf.json`.
+Cobweb assets are written as JSON files with the extension `.cob.json`.
 
 
 ### Loading files
 
-In order for a cobweb asset file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load) the file into your app.
+In order for a cobweb asset file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::LoadedCobAssetFilesAppExt::load) the file into your app.
 
 ```rust
-app.load("path/to/file.caf.json");
+app.load("path/to/file.cob.json");
 ```
 
-You always need to load at least one `caf` file directly. The `#manifest` keyword can be used to transitively load other files (see below for details).
+You always need to load at least one `cob` file directly. The `#manifest` keyword can be used to transitively load other files (see below for details).
 
 
 ### Base layer
@@ -47,7 +47,7 @@ A path can be written out by combining segments with "::", such as `root::a::inn
 
 For example:
 ```rust
-let file = SceneFile::new("example.caf.json");
+let file = SceneFile::new("example.cob.json");
 
 // Loads an individual root node into the spawned entity.
 commands.spawn_empty().load(file + "root");
@@ -64,11 +64,11 @@ Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude
 
 ### Loadable values
 
-A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobwebAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobwebAssetRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
+A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobAssetRegistrationAppExt). It can be added to a scene node by writing its short type name in a path tree, followed by the value that will be deserialized in your app.
 
 For example, with the [`BackgroundColor`](bevy::prelude::BackgroundColor) component from `bevy`:
 
-```caf
+```cob
 #scenes
 "root"
     "a"
@@ -122,7 +122,7 @@ To load a full scene, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cob
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let file = &SceneFile::new("path/to/file.caf.json");
+    let file = &SceneFile::new("path/to/file.cob.json");
 
     c.load_scene_and_edit(&mut s, file + "game_menu_scene", |loaded_scene: &mut LoadedScene<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
@@ -165,11 +165,11 @@ pub struct CustomInt(pub usize);
 
 ### Keywords
 
-Several keywords are supported in `caf` files.
+Several keywords are supported in `cob` files.
 
 #### Comments: `#c:`
 
-Comments can be added as map entries throughout `caf` files (except inside loadable values).
+Comments can be added as map entries throughout `cob` files (except inside loadable values).
 
 ```json
 {
@@ -184,9 +184,9 @@ We need to add `:0` here because the comment is a map entry, which means it need
 Scene nodes must be loaded onto specific entities. If you want a 'world-scoped' loadable, i.e. data that is applied automatically when loaded in, then you can add a `#commands` section with types that implement [`Command`](bevy::ecs::world::Command).
 
 Commands are globally ordered by:
-1. Files manually registered to an app with [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
+1. Files manually registered to an app with [`LoadedCobAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobAssetFilesAppExt::load).
 2. Commands in a file's `#commands` section(s).
-3. Files loaded recursively via CAF manifests. Commands in file A will be applied before any commands in 
+3. Files loaded recursively via COB manifests. Commands in file A will be applied before any commands in 
 manifest files in file A. All `self as xxx` manifest entries are ignored for command ordering.
 
 ```json
@@ -372,7 +372,7 @@ You can override an existing spec by adding a spec definition-override like `new
 
 Here is our trivial text spec again:
 ```json
-// file_a.caf.json
+// file_a.cob.json
 {
     "#specs": {
         "text": {
@@ -392,10 +392,10 @@ Here is our trivial text spec again:
 
 And here we first override the text spec and then add a new spec derived from our overridden value. Note that specs are processed from top to bottom, which means an override in the specs section will be used by all references below the override.
 ```json
-// file_b.caf.json
+// file_b.cob.json
 {
     "#import": {
-        "file_a.caf.json": ""
+        "file_a.cob.json": ""
     },
 
     "#specs": {
@@ -506,7 +506,7 @@ Specs can reference other specs internally. This allows making complex widget st
 
 In this example we use the `text` spec as a component of a simple `button` spec:
 ```json
-// file_a.caf.json
+// file_a.cob.json
 {
     "#specs": {
         "text": {
@@ -548,10 +548,10 @@ In this example we use the `text` spec as a component of a simple `button` spec:
 If you provide an override definition for `button_text` when requesting the `button` spec, then the *override* definition will be used when the nested `button` is expanded.
 
 ```json
-// file_b.caf.json
+// file_b.cob.json
 {
     "#import": {
-        "file_a.caf.json": ""
+        "file_a.cob.json": ""
     },
 
     "#specs": {
@@ -573,7 +573,7 @@ You can import `#using`, `#constants`, and `#specs` sections from other files wi
 Add the `#import` section to the base map in a file. It should be a map between file names or manifest keys and file aliases. The aliases can be used to access constants imported from each file. Note that specs do *not* use the aliases, because specs can be nested and we want spec overrides to apply to spec requests that are inside spec content.
 
 ```json
-// my_constants.caf.json
+// my_constants.cob.json
 {
     "#constants": {
         "$standard":{
@@ -585,10 +585,10 @@ Add the `#import` section to the base map in a file. It should be a map between 
     },
 }
 
-// my_app.caf.json
+// my_app.cob.json
 {
     "#import": {
-        "my_constants.caf.json": "constants"
+        "my_constants.cob.json": "constants"
     },
 
     "my_node": {
@@ -605,29 +605,29 @@ Cobweb asset files can be transitively loaded by specifying them in a `#manifest
 
 Add the `#manifest` section to the base map in a file. It should be a map between file names and manifest keys. The manifest keys can be used in [`SceneFile`](bevy_cobweb_ui::prelude::SceneFile) references in place of explicit file paths.
 
-An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`LoadedCobwebAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobwebAssetFilesAppExt::load).
+An empty map key `""` can be used to set a manifest key for the current file. This is mainly useful for the root-level file which must be loaded via [`LoadedCobAssetFilesAppExt::load`](bevy_cobweb_ui::prelude::LoadedCobAssetFilesAppExt::load).
 
 ```json
-// button_widget.caf.json
+// button_widget.cob.json
 {
     "widget": {
         // ...
     }
 }
 
-// app.caf.json
+// app.cob.json
 {
     "my_scene": {
         // ...
     }
 }
 
-// manifest.caf.json
+// manifest.cob.json
 {
     "#manifest": {
         "": "manifest",
-        "button_widget.caf.json": "widgets.button",
-        "app.caf.json": "app"
+        "button_widget.cob.json": "widgets.button",
+        "app.cob.json": "app"
     },
 
     "demo_scene_in_manifest_file": {
@@ -638,7 +638,7 @@ An empty map key `""` can be used to set a manifest key for the current file. Th
 
 Then you only need to load the manifest to get the other files loaded automatically:
 ```rust
-app.load("manifest.caf.json");
+app.load("manifest.cob.json");
 ```
 
 And now manifest keys can be used instead of file paths to reference files:
@@ -670,7 +670,7 @@ We enable global customization through import overrides. Since it is allowed to 
 
 Define a reference file for the global constants:
 
-`embedded://my_widget_crate/global_constants_ref.caf.json`
+`embedded://my_widget_crate/global_constants_ref.cob.json`
 ```json
 {
 "#manifest": {
@@ -685,7 +685,7 @@ Define a reference file for the global constants:
 
 Add a re-export shim that will be used by default:
 
-`embedded://my_widget_crate/global_constants.caf.json`
+`embedded://my_widget_crate/global_constants.cob.json`
 ```json
 {
 "#manifest": {
@@ -699,7 +699,7 @@ Add a re-export shim that will be used by default:
 
 Write your built-in widget:
 
-`embedded://my_widget_crate/example_widget.caf.json`
+`embedded://my_widget_crate/example_widget.cob.json`
 ```json
 {
 "#manifest": {
@@ -728,15 +728,15 @@ impl Plugin for MyWidgetsPlugin
     fn build(&self, app: &mut App)
     {
         // Load constants reference.
-        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants_ref.caf.json");
+        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants_ref.cob.json");
 
         // Conditionally load re-export shim.
         if self.with_default_constants {
-            load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants.caf.json");
+            load_embedded_scene_file!(app, "my_widget_crate", "src/widgets", "global_constants.cob.json");
         }
 
         // Load widget.
-        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets/example_widget", "example_widget.caf.json");
+        load_embedded_scene_file!(app, "my_widget_crate", "src/widgets/example_widget", "example_widget.cob.json");
     }
 }
 ```
@@ -745,7 +745,7 @@ impl Plugin for MyWidgetsPlugin
 
 Write your override for the external crate's constants. In this example we override only one of the original file's constants. Note that to override a constant you *can't* use an import alias for the file where the values to override originate.
 
-`global_constants_override.caf.json`
+`global_constants_override.cob.json`
 ```json
 {
 "#manifest": {
@@ -773,7 +773,7 @@ impl Plugin for MyAppPlugin
             .add_plugins(ReactPlugin)
             .add_plugins(CobwebUiPlugin)
             .add_plugins(my_widget_crate::MyWidgetsPlugin{ with_default_constants: false })
-            .load("global_constants_override.caf.json")
+            .load("global_constants_override.cob.json")
             .add_systems(OnEnter(LoadState::Done), build_scene);
     }
 }

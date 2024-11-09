@@ -16,10 +16,10 @@ impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default {}
 
 /// Trait for converting `Self` into entity modifications.
 ///
-/// An instruction can be written in a CAF file, or applied directly with
+/// An instruction can be written in a COB file, or applied directly with
 /// [`apply`](InstructionExt::apply).
 ///
-/// See [`register_instruction`](crate::prelude::CobwebAssetRegistrationAppExt::register_instruction).
+/// See [`register_instruction`](crate::prelude::CobAssetRegistrationAppExt::register_instruction).
 pub trait Instruction: Loadable
 {
     /// Applies the instruction to the entity.

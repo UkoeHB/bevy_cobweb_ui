@@ -1,7 +1,7 @@
 //! A simple radio button example using the built-in RadioButton widget.
 //!
 //! Note that in this example we override the default widget spec with some spacing adjustments. Check out
-//! the `radio_button` scene in `assets/main.caf.json`.
+//! the `radio_button` scene in `assets/main.cob.json`.
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
@@ -62,7 +62,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.cob.json")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

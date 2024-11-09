@@ -8,8 +8,8 @@ use crate::prelude::*;
 
 pub(super) fn extract_using_section(
     type_registry: &TypeRegistry,
-    file: &CafFile,
-    section: &CafUsing,
+    file: &CobFile,
+    section: &CobUsing,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
 )
 {
