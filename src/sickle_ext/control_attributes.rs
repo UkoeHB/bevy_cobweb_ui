@@ -42,6 +42,7 @@ fn add_attribute_to_dynamic_style(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Returns `true` if the attribute is added directly, without a control map.
 pub(super) fn add_attribute(
     In((origin, mut source, mut target, state, attribute)): In<(
         Entity,
@@ -56,10 +57,10 @@ pub(super) fn add_attribute(
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
     mut dynamic_styles: Query<Option<&mut DynamicStyle>>,
-)
+) -> bool
 {
     if !entities.contains(origin) {
-        return;
+        return false;
     }
 
     // Get the current entity's control label.
@@ -71,7 +72,7 @@ pub(super) fn add_attribute(
                     non-controlled dynamic sytle attributes (state: {:?})",
                     state
                 );
-                return;
+                return false;
             }
         }
 
@@ -92,7 +93,7 @@ pub(super) fn add_attribute(
         // Fall back to inserting as a plain dynamic style attribute.
         tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute to dynamic style instead");
         add_attribute_to_dynamic_style(origin, attribute, &mut c, &mut dynamic_styles);
-        return;
+        return true;
     };
 
     // Check if self has ControlMap.
@@ -114,7 +115,7 @@ pub(super) fn add_attribute(
         }
 
         control_map.set_attribute(origin, state, source, target, attribute);
-        return;
+        return false;
     }
 
     // Find ancestor with ControlMap.
@@ -123,13 +124,14 @@ pub(super) fn add_attribute(
         // Target falls back to self.
         target = target.or_else(|| Some(label.deref().clone()));
         control_map.set_attribute(origin, state, source, target, attribute);
-        return;
+        return false;
     }
 
     tracing::error!(
         "failed adding controlled dynamic attribute to {origin:?} with {label:?}, \
         no ancestor with ControlRoot"
     );
+    false
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -343,7 +345,10 @@ where
             extract_responsive_value::<T>(self.values),
         ));
 
-        world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
+        if world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute) {
+            // Interactive if the attribute was applied directly to self.
+            Interactive.apply(entity, world);
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -353,6 +358,7 @@ where
 
         // Revert attributes.
         world.syscall(entity, revert_attributes);
+        Interactive::revert(entity, world);
     }
 }
 
@@ -407,7 +413,10 @@ where
             controller: DynamicStyleController::new(self.settings, AnimationState::default()),
         };
 
-        world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute);
+        if world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute) {
+            // Interactive if the attribute was applied directly to self.
+            Interactive.apply(entity, world);
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -417,6 +426,7 @@ where
 
         // Revert attributes.
         world.syscall(entity, revert_attributes);
+        Interactive::revert(entity, world);
     }
 }
 

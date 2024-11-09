@@ -286,9 +286,6 @@ fn restore_opacity(
                 let Some(restorable) = restorable.text.get(idx) else {
                     return false;
                 };
-                if color_alpha(&*color) != *restorable {
-                    return false;
-                }
                 set_color_alpha(&mut color, *restorable);
                 idx += 1;
                 true
