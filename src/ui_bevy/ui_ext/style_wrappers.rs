@@ -797,7 +797,10 @@ impl Instruction for AbsoluteStyle
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            //e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>)>();
+            e.insert(Node::default());
         });
     }
 }
@@ -858,7 +861,10 @@ impl Instruction for FlexStyle
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            //e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
+            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>)>();
+            e.insert(Node::default());
         });
     }
 }
