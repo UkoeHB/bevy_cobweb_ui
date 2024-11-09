@@ -21,6 +21,7 @@
             }
         }
         "inner_rect"
+            ControlRoot("Text")
             FlexStyle{
                 dims: {min_width: 100px, min_height: 75px},
             }
@@ -51,6 +52,7 @@
                         content: {justify_main: Center, justify_cross: Center}
                     }
                     "content"
+                        ControlLabel("Label")
                         FlexStyle{
                             dims: {left:7px, bottom:5px, right: auto, top: auto},
                         }
