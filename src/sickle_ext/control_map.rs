@@ -531,7 +531,7 @@ impl Plugin for ControlMapPlugin
                 ControlSet
                     .after(RefreshPseudoStates)
                     .before(DynamicStylePostUpdate)
-                    .before(UiSystem::Layout),
+                    .before(UiSystem::Prepare),
             )
             .add_systems(
                 PostUpdate,

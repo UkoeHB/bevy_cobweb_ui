@@ -12,25 +12,20 @@ impl Plugin for DynamicStylePlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.configure_sets(
-            PostUpdate,
-            DynamicStylePostUpdate
-                //todo: use UiSystem::Prepare in bevy v0.15
-                .before(UiSystem::Layout),
-        )
-        .add_systems(
-            PostUpdate,
-            (
-                update_dynamic_style_static_attributes,
-                update_dynamic_style_on_flux_change,
-                tick_dynamic_style_stopwatch,
-                update_dynamic_style_on_stopwatch_change,
-                // Cleanup in a separate step in case of stopwatches that only exist for 1 tick.
-                cleanup_dynamic_style_stopwatch,
-            )
-                .chain()
-                .in_set(DynamicStylePostUpdate),
-        );
+        app.configure_sets(PostUpdate, DynamicStylePostUpdate.before(UiSystem::Prepare))
+            .add_systems(
+                PostUpdate,
+                (
+                    update_dynamic_style_static_attributes,
+                    update_dynamic_style_on_flux_change,
+                    tick_dynamic_style_stopwatch,
+                    update_dynamic_style_on_stopwatch_change,
+                    // Cleanup in a separate step in case of stopwatches that only exist for 1 tick.
+                    cleanup_dynamic_style_stopwatch,
+                )
+                    .chain()
+                    .in_set(DynamicStylePostUpdate),
+            );
     }
 }
 

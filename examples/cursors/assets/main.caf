@@ -1,4 +1,5 @@
 #commands
+LoadImages["cursor.png"]
 SetPrimaryCursor(Custom{image:"cursor.png" hotspot:(9, 9)})
 
 #scenes

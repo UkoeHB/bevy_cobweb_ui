@@ -349,13 +349,7 @@ impl Plugin for LocalizedTextPlugin
             .react(|rc| rc.on_persistent(broadcast::<RelocalizeApp>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<TextLocalizerLoaded>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<FontMapLoaded>(), handle_font_refresh))
-            .configure_sets(
-                PostUpdate,
-                LocalizationSet::Update
-                    //todo: .before(UiSystem::Prepare) in bevy v0.15, see https://github.com/bevyengine/bevy/pull/14228
-                    .before(bevy::ui::widget::measure_text_system)
-                    .before(UiSystem::Layout),
-            )
+            .configure_sets(PostUpdate, LocalizationSet::Update.before(UiSystem::Prepare))
             .add_systems(PostUpdate, handle_new_localized_text.in_set(LocalizationSet::Update));
     }
 }

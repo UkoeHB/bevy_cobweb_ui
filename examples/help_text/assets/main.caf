@@ -64,8 +64,7 @@
                                 hover: 1
                             }
                             settings: {
-                                pointer_enter: { duration: 0.05 easing: OutExpo delay: 0.75}
-                                press: { duration: 0.35 easing: Linear delay: 0.5}
+                                pointer_enter: { duration: 0.05 easing: OutExpo delay: 0.5}
                             }
                         }
                         "text_elem"
