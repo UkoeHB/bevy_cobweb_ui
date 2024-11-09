@@ -1,14 +1,9 @@
-//! Demonstrates using `PropagateOpacity` to show/hide help text. Also demonstrates opacity layering.
-//!
-//! Note that this is a fairly unsophisticated help text. It's inserted in-line to the node tree, whereas a mature
-//! widget would have precise positioning and reusable styling, would be able to adjust its position based
-//! on available screen-space, may adjust its position in response to detected cursor size (when possible),
-//! and may have a little arrow pointing from the text to the source.
+//! Demonstrates setting custom cursors that respond to interactions on UI elements.
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle_ext::prelude::*;
+use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

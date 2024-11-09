@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use smol_str::SmolStr;
@@ -20,6 +22,7 @@ impl Plugin for CobwebUiPlugin
         app
             //todo: remove in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
             .register_type_data::<SmolStr, ReflectDeserialize>()
+            .register_type_data::<Cow<str>, ReflectDeserialize>()
             .add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)

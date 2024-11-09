@@ -9,11 +9,11 @@
             dims: {width: 275px, height: 200px},
             content: {justify_main: Center, justify_cross: Center}
         }
-        BackgroundColor(Hsla{hue: 0.0, saturation: 0.0, lightness: 0.4, alpha: 1.0})
+        BackgroundColor(Hsla{hue: 0, saturation: 0, lightness: 0.4, alpha: 1})
         Animated<PropagateOpacity>{
             values: {
                 idle: 0.4
-                hover: 1.0
+                hover: 1
             }
             settings: {
                 pointer_enter: { duration: 0.75 easing: OutExpo delay: 0.05}
@@ -25,11 +25,11 @@
             FlexStyle{
                 dims: {min_width: 100px, min_height: 75px},
             }
-            BackgroundColor(Hsla{hue: 0.0, saturation: 0.0, lightness: 0.65, alpha: 1.0})
+            BackgroundColor(Hsla{hue: 0, saturation: 0, lightness: 0.65, alpha: 1})
             Animated<PropagateOpacity>{
                 values: {
                     idle: 0.4
-                    hover: 1.0
+                    hover: 1
                 }
                 settings: {
                     pointer_enter: { duration: 0.75 easing: OutExpo delay: 0.05}
@@ -42,9 +42,10 @@
                 },
 
                 "inner"
-                    TextLine{ size: 50.0 text: "Hover me!" },
+                    TextLine{ size: 50 text: "Hover me!" },
 
                 "help_text"
+                    // Use a shim to push the help text element into position
                     AbsoluteStyle{
                         dims:{
                             left: 100%, bottom: 100%, right: auto, top: auto
@@ -56,11 +57,11 @@
                         FlexStyle{
                             dims: {left:7px, bottom:5px, right: auto, top: auto},
                         }
-                        BackgroundColor(Hsla{hue: 0.0, saturation: 0.0, lightness: 0.0, alpha: 1.0}),
+                        BackgroundColor(Hsla{hue: 0, saturation: 0, lightness: 0, alpha: 1}),
                         Animated<PropagateOpacity>{
                             values:{
-                                idle: 0.0,
-                                hover: 1.0
+                                idle: 0,
+                                hover: 1
                             }
                             settings: {
                                 pointer_enter: { duration: 0.05 easing: OutExpo delay: 0.75}
@@ -71,4 +72,4 @@
                             FlexStyle{
                                 flex: {margin: {top: 10px, bottom: 10px, left: 18px, right: 18px}},
                             },
-                            TextLine{ size: 20.0 text: "Nice!" },
+                            TextLine{ size: 20 text: "Nice!" },
