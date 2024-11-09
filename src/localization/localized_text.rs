@@ -206,8 +206,8 @@ impl LocalizedTextspan
 /// Then to update localization templates on entities you should use the [`TextEditor`] helper, which uses this
 /// component to auto-localize text.
 ///
-/// **NOTE**: Automatic directional isolation of parameters is not supported until `bevy` v0.15 when `cosmic-text`
-/// will be integrated. See [here][fluent-isolation] and [here][directional-isolates].
+/// **NOTE**: Automatic directional isolation of parameters is supported
+/// See [here][fluent-isolation] and [here][directional-isolates].
 ///
 /// [fluent-isolation](https://docs.rs/fluent-bundle/0.15.3/fluent_bundle/bundle/struct.FluentBundle.html#method.set_use_isolating)
 /// [directional-isolates](https://unicode.org/reports/tr9/#Explicit_Directional_Isolates)
