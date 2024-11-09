@@ -18,6 +18,7 @@ A framework for building UI and managing assets in a `bevy` app. Built on [bevy_
 
 1. (Optional) Install syntax highlighting for the CAF asset format.
     - [VSCode](https://github.com/UkoeHB/vscode-caf/)
+    - [vim](https://github.com/UkoeHB/vim-caf/)
     - [SublimeText](https://github.com/UkoeHB/sublime-caf/)
 1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
 1. Load a CAF file if you have one. Usually these are stored in your assets directory.
