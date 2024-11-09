@@ -12,23 +12,21 @@ use bevy_cobweb_ui::sickle_ext::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
-{
-    let scene = SceneRef::new("main.caf.json", "scene");
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>) {
+    let scene = SceneRef::new("main.caf", "scene");
     c.ui_root().load_scene(&mut s, scene);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn main()
-{
+fn main() {
     App::new()
         .add_plugins(bevy::DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window { window_theme: Some(WindowTheme::Dark), ..default() }),
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.caf.json")
+        .load("main.caf")
         .add_systems(PreStartup, |mut c: Commands| {
             c.spawn(Camera2d);
         })
