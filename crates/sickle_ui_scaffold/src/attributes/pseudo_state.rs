@@ -228,6 +228,7 @@ pub enum CardinalDirection
     NorthWest,
 }
 
+// TODO: why not SmolStr for custom? or Cow<str> maybe?
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]
 pub enum PseudoState
 {

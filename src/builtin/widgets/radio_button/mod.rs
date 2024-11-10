@@ -240,14 +240,8 @@ impl RadioButtonBuilder
                 // Select this button.
                 // TODO: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
-                .on_pressed(move |mut c: Commands, states: Query<&PseudoStates>| {
-                    if let Ok(states) = states.get(base_entity) {
-                        if states.has(&PseudoState::Selected) {
-                            return;
-                        }
-                    }
-
-                    c.react().entity_event(base_entity, Select);
+                .on_pressed(move |mut c: Commands, states: PseudoStateReader| {
+                    states.try_select(base_entity, &mut c);
                 })
                 // Save the newly-selected button and deselect the previously selected.
                 .on_select(move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>| {

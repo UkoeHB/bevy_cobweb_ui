@@ -30,9 +30,7 @@ app
     .add_plugins(CobwebUiPlugin);
 ```
 
-3. Add a COB asset file called `main.cob` to your `assets` directory.
-
-Here is a COB file with a hello world scene:
+3. Add a COB file to your `assets` directory. Use the `.cob` file extension.
 
 ```rust
 // File: my_project/assets/main.cob
@@ -40,6 +38,8 @@ Here is a COB file with a hello world scene:
 "hello"
     TextLine{ text: "Hello, World!" }
 ```
+
+This file has a scene with one node (the root node `"hello"`) and one loadable (`TextLine`). `TextLine` is an instruction that will insert a `Text` component to the scene node entity on spawn.
 
 4. Load the COB file to your app.
 
@@ -57,20 +57,21 @@ fn build_ui(mut commands: Commands, mut s: ResMut<SceneLoader>)
     commands
         // Converts Commands to UiBuilder<UiRoot>
         .ui_root()
-        // Loads the scene "hello" from file "main.cob"
+        // Loads the scene "hello" from file "main.cob".
+        // This spawns new entities for the scene.
         .load_scene(("main.cob", "hello"), &mut s);
 }
 ```
 
 6. Add the system to your app.
 
-We put the system in `OnEnter(LoadState::Done)` so it runs after all COB files and assets loaded into this crate's [asset managers](bevy_cobweb_ui::assets_ext) have been loaded.
-
 ```rust
 app.add_systems(OnEnter(LoadState::Done), build_ui);
 ```
 
-Check the loading [`docs`](bevy_cobweb_ui::loading) for how to write COB files.
+We put the system in `OnEnter(LoadState::Done)` so it runs after all COB files and assets loaded into this crate's [asset managers](bevy_cobweb_ui::assets_ext) have been loaded.
+
+Check the loading [`docs`](bevy_cobweb_ui::loading) for how to write COB files. COB files can be hot reloaded with the `hot_reload` feature, which will refresh commands and scenes if they change. Hot-reloading is minimally destructive. Entities are only despawned when you delete scene nodes from a COB file.
 
 Check the repository examples for how to build different kinds of UI.
 

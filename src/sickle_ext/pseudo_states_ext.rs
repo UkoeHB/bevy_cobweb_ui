@@ -1,5 +1,7 @@
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
+use sickle_ui_scaffold::prelude::PseudoStates;
 
 use crate::prelude::*;
 use crate::sickle_ext::attributes::pseudo_state::PseudoState;
@@ -212,6 +214,129 @@ impl PseudoStateExt for UiBuilder<'_, Entity>
     {
         self.on_event::<Close>().r(callback);
         self
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// System param for reading [`PseudoStates`] and sending events to change states.
+//TODO: come up with a better name, this param does both reading and attempting to send entity events to change
+// state
+#[derive(SystemParam)]
+pub struct PseudoStateReader<'w, 's>
+{
+    states: Query<'w, 's, &'static PseudoStates>,
+}
+
+impl PseudoStateReader<'_, '_>
+{
+    /// Returns `true` if `entity` has the requested [`PseudoState`].
+    pub fn entity_has(&self, entity: Entity, req: &PseudoState) -> bool
+    {
+        let Ok(states) = self.states.get(entity) else { return false };
+        states.has(req)
+    }
+
+    /// Returns `true` if `entity` has any of the requested [`PseudoState`]s.
+    pub fn entity_has_any<'a>(&'a self, entity: Entity, req: impl IntoIterator<Item = &'a PseudoState>) -> bool
+    {
+        let Ok(states) = self.states.get(entity) else { return false };
+        req.into_iter().any(|s| states.has(s))
+    }
+
+    /// Returns `true` if `entity` has all of the requested [`PseudoState`]s.
+    pub fn entity_has_all<'a>(&'a self, entity: Entity, req: impl IntoIterator<Item = &'a PseudoState>) -> bool
+    {
+        let Ok(states) = self.states.get(entity) else { return false };
+        req.into_iter().any(|s| !states.has(s))
+    }
+
+    /// Queues the [`Enable`] entity event if the entity does not have [`PseudoState::Enabled`].
+    pub fn try_enable(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Enabled) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Enable);
+        true
+    }
+
+    /// Queues the [`Disable`] entity event if the entity does not have [`PseudoState::Disabled`].
+    pub fn try_disable(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Disabled) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Disable);
+        true
+    }
+
+    /// Queues the [`Select`] entity event if the entity does not have [`PseudoState::Selected`].
+    pub fn try_select(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Selected) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Select);
+        true
+    }
+
+    /// Queues the [`Deselect`] entity event if the entity has [`PseudoState::Selected`].
+    pub fn try_deselect(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if !self.entity_has(entity, &PseudoState::Selected) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Deselect);
+        true
+    }
+
+    /// Queues the [`Check`] entity event if the entity does not have [`PseudoState::Checked`].
+    pub fn try_check(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Checked) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Check);
+        true
+    }
+
+    /// Queues the [`Uncheck`] entity event if the entity has [`PseudoState::Checked`].
+    pub fn try_uncheck(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if !self.entity_has(entity, &PseudoState::Checked) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Uncheck);
+        true
+    }
+
+    /// Queues the [`Open`] entity event if the entity does not have [`PseudoState::Open`].
+    pub fn try_open(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Open) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Open);
+        true
+    }
+
+    /// Queues the [`Close`] entity event if the entity does not have [`PseudoState::Closed`].
+    pub fn try_close(&self, entity: Entity, c: &mut Commands) -> bool
+    {
+        if self.entity_has(entity, &PseudoState::Closed) {
+            return false;
+        }
+
+        c.react().entity_event(entity, Close);
+        true
     }
 }
 
