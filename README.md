@@ -1,22 +1,23 @@
 # Bevy Cobweb UI
 
-A framework for building UI and managing assets in a `bevy` app. Built on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb) and `bevy_ui`/`bevy_assets`/etc.
+A framework for building UI and managing assets in a `bevy` app.
+
+Depends on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), `bevy_ui`. and `bevy_assets`.
 
 
 ## Features
 
-- [Custom asset format](bevy_cobweb_ui::loading) for specifying scenes and loading commands to be applied on startup, with seamless fine-grained hot reloading and thorough error handling.
-- Powerful extension-based reactivity API for adding logic to UI scenes (e.g. `.on_pressed(your_system)`).
-- Standardized API for accessing fonts with families, weights, styles, and widths (e.g. `Fira Sans + Bold + Italic + Condensed`).
-- Robust [localization](bevy_cobweb_ui::localization) support for text, fonts, images, and audio, with extensibility to other assets.
-- [Asset manager resources](bevy_cobweb_ui::assets_ext) that keep track of asset handles, take care of localization automatically, and are easily populated using asset manifests specified in cobweb asset files.
-- [Wrappers](bevy_cobweb_ui::ui_bevy) around `bevy_ui` for loading UI into scenes via cobweb asset files.
-- [Built-in](bevy_cobweb_ui::builtin) UI widgets, color palettes, and assets (e.g. fonts). Note that the `widgets` and `colors` features are enabled by default.
+- [Custom scene format](bevy_cobweb_ui::loading) called COB
+- [Font family](bevy_cobweb_ui::prelude::FontRequest) API
+- [Localization](bevy_cobweb_ui::localization) framework (text, fonts, images, audio)
+- [Asset management](bevy_cobweb_ui::assets_ext) tools
+- [Built-in](bevy_cobweb_ui::builtin) UI widgets and color palettes
+- And many small quality of life features supporting UI development.
 
 
 ## Getting Started
 
-1. (Optional) Install syntax highlighting for the COB asset format.
+1. *(Optional)* Install syntax highlighting for the COB asset format.
     - [VSCode](https://github.com/UkoeHB/vscode-cob/)
     - [vim](https://github.com/UkoeHB/vim-cob/)
     - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
