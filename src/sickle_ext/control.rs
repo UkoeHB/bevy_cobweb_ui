@@ -91,8 +91,9 @@ impl Instruction for ControlRoot
                     }
 
                     // Attrs
-                    for (origin, source, target, state, attribute) in attrs {
-                        world.syscall((origin, source, target, state, attribute), super::add_attribute);
+                    // Note: target not needed, it is always set to self.
+                    for (origin, source, _target, state, attribute) in attrs {
+                        world.syscall((origin, source, state, attribute), super::add_attribute);
                     }
                     break;
                 }

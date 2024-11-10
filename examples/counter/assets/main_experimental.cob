@@ -413,8 +413,8 @@ The scene section must be the *last* section in a cob file.
             Text!(s: 50.0)
             Animate!(TextLineColor #000000 h:#112345 p:#F01111AA on_over{0.15 OutExpo} on_press{0.2 OutExpo})
             MultiAnimate!(DimsTop
-                animate!([] 20px on_over{0.3 InExpo})
-                animate!([Selected] 20px on_over{0.3 InExpo}))
+                animate!([] 20px h:30px on_over{0.3 InExpo})
+                animate!([Selected] 20px h:30px on_over{0.3 InExpo}))
 
             "inserted"
                 +spec_in_tree(num: 42)

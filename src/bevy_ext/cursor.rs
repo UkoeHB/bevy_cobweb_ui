@@ -3,6 +3,8 @@ use std::borrow::Cow;
 use bevy::prelude::*;
 use bevy::window::{PrimaryWindow, SystemCursorIcon};
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
+use sickle_ui_scaffold::prelude::PseudoState;
+use smallvec::SmallVec;
 use ui_style::prelude::InteractiveVals;
 
 use crate::prelude::*;
@@ -57,7 +59,7 @@ fn get_temp_cursor(mut source: ResMut<CursorSource>, temps: Query<(Entity, &Temp
         found = Some((temp.priority, &temp.cursor));
     }
 
-    // Signal if there is a conflict.
+    // Warn if there is a conflict.
     if let Some((entity, second)) = found_second.and_then(|(prio, e, s)| {
         if prio >= found.unwrap().0 {
             return Some((e, s));
@@ -187,12 +189,12 @@ impl Command for SetPrimaryCursor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that refreshes [`CursorIcon`] on the [`PrimaryWindow`] every tick. Set the value to
+/// Component that tries to set [`CursorIcon`] on the [`PrimaryWindow`] every tick. Set the value to
 /// [`LoadableCursor::None`]` to disable it.
 ///
 /// To set a long-term 'primary cursor', use the [`SetPrimaryCursor`] command.
 ///
-/// See [`Cursor`] for an easy way to use this.
+/// See [`ResponsiveCursor`] for an easy way to use this.
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -203,7 +205,7 @@ pub struct TempCursor
 {
     /// Higher priority cursors will override lower priority cursors.
     ///
-    /// Used as a temporary hack so press cursors won't be overridden by hover cursors when moving off an element.
+    /// Used as a hack so press cursors won't be overridden by hover cursors when moving off an element.
     pub priority: u8,
     pub cursor: LoadableCursor,
 }
@@ -238,32 +240,49 @@ impl ResponsiveAttribute for TempCursor {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction that sets [`TempCursor`] on the entity when it is hovered or pressed.
-// TODO: rework all of this to use a pointer-capture-based approach to controlling press/hover cursors
+// TODO: There is a bug where if you only have `hover` set, then the hover cursor will be maintained when you
+// press and drag away from the entity until you release.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct Cursor
+pub struct ResponsiveCursor
 {
+    /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for these cursor settings to be
+    /// active.
+    ///
+    /// Only used if this instruction is applied to an entity with a [`ControlLabel`].
     #[reflect(default)]
-    pub hover: LoadableCursor,
+    pub state: Option<SmallVec<[PseudoState; 3]>>,
+    /// The cursor to display when the entity is hovered.
     #[reflect(default)]
-    pub press: LoadableCursor,
+    pub hover: Option<LoadableCursor>,
+    /// The cursor to display when the entity is pressed.
+    #[reflect(default)]
+    pub press: Option<LoadableCursor>,
 }
 
-impl Instruction for Cursor
+impl Instruction for ResponsiveCursor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
+        // Get the cursor values to set.
+        let hover = self.hover.map(|cursor| TempCursor { priority: 1, cursor });
+        let press = self.press.map(|cursor| TempCursor { priority: 2, cursor });
         let values = InteractiveVals {
             idle: TempCursor { priority: 0, cursor: LoadableCursor::None },
-            hover: Some(TempCursor { priority: 1, cursor: self.hover }),
-            press: Some(TempCursor { priority: 2, cursor: self.press }),
+            hover,
+            press,
             ..default()
         };
-        let responsive = Responsive::<TempCursor> { values, ..default() };
+
+        // Get the label if this entity has one. We always want the interaction source to be self.
+        let source = world.get::<ControlLabel>(entity).map(|l| (**l).clone());
+
+        // Make a Responsive instruction and apply it.
+        let responsive = Responsive::<TempCursor> { state: self.state, values, source };
         responsive.apply(entity, world);
     }
 
@@ -284,7 +303,7 @@ impl Plugin for CursorPlugin
         app.init_resource::<CursorSource>()
             .register_command_type::<SetPrimaryCursor>()
             .register_responsive::<TempCursor>()
-            .register_instruction_type::<Cursor>()
+            .register_instruction_type::<ResponsiveCursor>()
             // Note: bevy's cursor_update system runs in Last but doesn't have a system set, so we need to put
             // these in PostUpdate
             .add_systems(PostUpdate, (get_temp_cursor, refresh_cursor_icon).chain());

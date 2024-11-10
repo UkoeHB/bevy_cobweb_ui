@@ -356,8 +356,9 @@ impl EntityCommand for RemoveDeadControlMap
             ControlLabel(label).apply(label_entity, world);
         }
 
-        for (origin, source, target, state, attribute) in old_control_map.remove_all_attrs() {
-            world.syscall((origin, source, target, state, attribute), add_attribute);
+        // Note: target not needed, we always set it to self.
+        for (origin, source, _target, state, attribute) in old_control_map.remove_all_attrs() {
+            world.syscall((origin, source, state, attribute), add_attribute);
         }
     }
 }

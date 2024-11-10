@@ -43,10 +43,12 @@ fn add_attribute_to_dynamic_style(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Returns `true` if the attribute is added directly, without a control map.
+///
+/// We do *not* support setting the 'target' of an attribute because it is not easy to correctly revert
+/// attribute instructions when they are applied to other entities. It's also not clear what use the target has.
 pub(super) fn add_attribute(
-    In((origin, mut source, mut target, state, attribute)): In<(
+    In((origin, mut source, state, attribute)): In<(
         Entity,
-        Option<SmolStr>,
         Option<SmolStr>,
         Option<SmallVec<[PseudoState; 3]>>,
         DynamicStyleAttribute,
@@ -83,18 +85,14 @@ pub(super) fn add_attribute(
             );
         }
 
-        if let Some(target) = &target {
-            tracing::warn!(
-                "ignoring control target {target:?} for dynamic style attribute on {origin:?} that doesn't \
-                have a ControlLabel"
-            );
-        }
-
         // Fall back to inserting as a plain dynamic style attribute.
         tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute to dynamic style instead");
         add_attribute_to_dynamic_style(origin, attribute, &mut c, &mut dynamic_styles);
         return true;
     };
+
+    // Always target self.
+    let target = Some((**label).clone());
 
     // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(origin) {
@@ -105,12 +103,6 @@ pub(super) fn add_attribute(
                 // TODO: why is this necessary? Something weird in sickle_ui means if the root node sources itself
                 // then child nodes' attributes won't properly respond to interactions on the root.
                 source = None;
-            } else {
-                // Target self if the source is not self.
-                // TODO: without this, the target is set to be the source by sickle_ui.
-                if target.is_none() {
-                    target = Some((**label).clone());
-                }
             }
         }
 
@@ -121,8 +113,6 @@ pub(super) fn add_attribute(
     // Find ancestor with ControlMap.
     for ancestor in parents.iter_ancestors(origin) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
-        // Target falls back to self.
-        target = target.or_else(|| Some(label.deref().clone()));
         control_map.set_attribute(origin, state, source, target, attribute);
         return false;
     }
@@ -266,12 +256,6 @@ where
     pub state: Option<SmallVec<[PseudoState; 3]>>,
     /// The value that will be applied to the entity with `T`.
     pub value: T::Value,
-
-    /// The [`ControlLabel`] of an entity in the current widget. The value will be applied to that entity.
-    ///
-    /// If `None`, then the value will be applied to the current entity.
-    #[reflect(default)]
-    pub target: Option<SmolStr>,
 }
 
 impl<T: ThemedAttribute> Instruction for Themed<T>
@@ -285,7 +269,7 @@ where
             CustomStaticStyleAttribute::new(extract_static_value::<T>(self.value)),
         ));
 
-        world.syscall((entity, None, self.target, self.state, attribute), add_attribute);
+        world.syscall((entity, None, self.state, attribute), add_attribute);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -327,11 +311,6 @@ where
     ///   entity will control the value.
     #[reflect(default)]
     pub source: Option<SmolStr>,
-    /// The [`ControlLabel`] of an entity in the current widget. The value will be applied to that entity.
-    ///
-    /// If `None`, then the value will be applied to the current entity.
-    #[reflect(default)]
-    pub target: Option<SmolStr>,
 }
 
 impl<T: ResponsiveAttribute + ThemedAttribute> Instruction for Responsive<T>
@@ -345,7 +324,7 @@ where
             extract_responsive_value::<T>(self.values),
         ));
 
-        if world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute) {
+        if world.syscall((entity, self.source, self.state, attribute), add_attribute) {
             // Interactive if the attribute was applied directly to self.
             Interactive.apply(entity, world);
         }
@@ -394,11 +373,6 @@ where
     ///   entity will control the value.
     #[reflect(default)]
     pub source: Option<SmolStr>,
-    /// The [`ControlLabel`] of an entity in the current widget. The value will be applied to that entity.
-    ///
-    /// If `None`, then the value will be applied to the current entity.
-    #[reflect(default)]
-    pub target: Option<SmolStr>,
 }
 
 impl<T: AnimatableAttribute + ThemedAttribute> Instruction for Animated<T>
@@ -413,7 +387,7 @@ where
             controller: DynamicStyleController::new(self.settings, AnimationState::default()),
         };
 
-        if world.syscall((entity, self.source, self.target, self.state, attribute), add_attribute) {
+        if world.syscall((entity, self.source, self.state, attribute), add_attribute) {
             // Interactive if the attribute was applied directly to self.
             Interactive.apply(entity, world);
         }
