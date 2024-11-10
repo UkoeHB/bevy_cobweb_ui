@@ -26,8 +26,7 @@ impl Command for TestCommand
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("main.cob", "scene");
-    c.ui_root().load_scene(&mut s, scene);
+    c.ui_root().load_scene(("main.cob", "scene"), &mut s);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

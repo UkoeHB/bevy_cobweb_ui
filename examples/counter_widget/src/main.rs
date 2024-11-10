@@ -139,7 +139,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     let file = &SceneFile::new("examples.counter_widget");
     let scene = file + "root";
 
-    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
+    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         let n = l.deref_mut();
 
         // Default widget

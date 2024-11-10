@@ -14,10 +14,10 @@ use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     let file = &SceneFile::new("examples.radio_buttons");
-    let scene = file + "scene";
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
-    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
+    let scene = file + "scene";
+    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         // Get the display text's entity.
         let display_text = l.get("display::text").id();
 

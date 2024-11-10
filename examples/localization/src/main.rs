@@ -11,9 +11,8 @@ use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("localization", "root");
-
-    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
+    let scene = ("localization", "root");
+    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         // Header
         // - Localized image from file (see `assets/main.cob.json`).
 

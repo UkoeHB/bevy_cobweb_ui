@@ -37,26 +37,27 @@ impl CursorSource
 fn get_temp_cursor(mut source: ResMut<CursorSource>, temps: Query<(Entity, &TempCursor)>)
 {
     // Look for highest priority non-None cursor.
-    let mut found: Option<(u8, &LoadableCursor)> = None;
+    let mut found: Option<(u8, Entity, &LoadableCursor)> = None;
     let mut found_second: Option<(u8, Entity, &LoadableCursor)> = None;
     for (entity, temp) in temps
         .iter()
         .filter(|(_, t)| !matches!(t.cursor, LoadableCursor::None))
     {
-        let Some((prio, _)) = &found else {
-            found = Some((temp.priority, &temp.cursor));
+        let Some((prio, _, _)) = &found else {
+            found = Some((temp.priority, entity, &temp.cursor));
             continue;
         };
 
-        if *prio > temp.priority {
+        if temp.priority < *prio {
             continue;
         }
 
-        if *prio == temp.priority {
+        if temp.priority == *prio {
             found_second = Some((temp.priority, entity, &temp.cursor));
+            continue;
         }
 
-        found = Some((temp.priority, &temp.cursor));
+        found = Some((temp.priority, entity, &temp.cursor));
     }
 
     // Warn if there is a conflict.
@@ -66,12 +67,12 @@ fn get_temp_cursor(mut source: ResMut<CursorSource>, temps: Query<(Entity, &Temp
         }
         None
     }) {
-        warn_once!("multiple TempCursor instances detected (second: {:?} {:?}); only one can be used at a \
-            time; this warning only prints once", entity, second);
+        warn_once!("multiple TempCursor instances detected (first: {:?} {:?}, second: {:?} {:?}); only one can be used at a \
+            time; this warning only prints once", found.unwrap().1, found.unwrap().2, entity, second);
     }
 
     // Set the cursor.
-    if let Some((_, cursor)) = found {
+    if let Some((_, _, cursor)) = found {
         source.temporary = Some(cursor.clone());
     }
 }
@@ -269,8 +270,14 @@ impl Instruction for ResponsiveCursor
     fn apply(self, entity: Entity, world: &mut World)
     {
         // Get the cursor values to set.
+        // - The press falls back to 'hover' to make sure the cursor priority gets bumped up when we have pointer
+        // lock on this entity. Otherwise hovers on other entities during a pointer lock may contend with the
+        // hover cursor from this entity (which would get repurposed for the press value if press is not set).
+        let press = self
+            .press
+            .or_else(|| self.hover.clone())
+            .map(|cursor| TempCursor { priority: 2, cursor });
         let hover = self.hover.map(|cursor| TempCursor { priority: 1, cursor });
-        let press = self.press.map(|cursor| TempCursor { priority: 2, cursor });
         let values = InteractiveVals {
             idle: TempCursor { priority: 0, cursor: LoadableCursor::None },
             hover,

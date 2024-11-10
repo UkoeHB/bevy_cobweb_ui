@@ -2,7 +2,7 @@
 
 A framework for building UI and managing assets in a `bevy` app.
 
-Depends on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), `bevy_ui`. and `bevy_assets`.
+Depends on `bevy_ui`, `bevy_assets`, and [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb).
 
 
 ## Features
@@ -12,7 +12,7 @@ Depends on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), `bevy_ui`. and 
 - [Localization](bevy_cobweb_ui::localization) framework (text, fonts, images, audio)
 - [Asset management](bevy_cobweb_ui::assets_ext) tools
 - [Built-in](bevy_cobweb_ui::builtin) UI widgets and color palettes
-- And many small quality of life features supporting UI development.
+- And many small quality of life features.
 
 
 ## Getting Started
@@ -21,19 +21,56 @@ Depends on [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb), `bevy_ui`. and 
     - [VSCode](https://github.com/UkoeHB/vscode-cob/)
     - [vim](https://github.com/UkoeHB/vim-cob/)
     - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
-1. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin).
-1. Load a COB file if you have one. Usually these are stored in your assets directory.
-1. Wait until in state `LoadState::Done` before loading UI. This avoids jank while loading COB files and other assets. You can build UI in-code before then without a problem, as long as you don't reference not-yet-loaded assets.
+
+2. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin) to your app.
 
 ```rust
 app
-    .add_plugins(bevy::DefaultPlugins)
-    .add_plugins(CobwebUiPlugin)
-    .load("main.cob")
-    .add_systems(OnEnter(LoadState::Done), build_ui);
+    .add_plugins(bevy::prelude::DefaultPlugins)
+    .add_plugins(CobwebUiPlugin);
 ```
 
-Check the [`loading`](bevy_cobweb_ui::loading) module for how to write COB files.
+3. Add a COB asset file called `main.cob` to your `assets` directory.
+
+Here is a COB file with a hello world scene:
+
+```rust
+// File: my_project/assets/main.cob
+#scenes
+"hello"
+    TextLine{ text: "Hello, World!" }
+```
+
+4. Load the COB file to your app.
+
+```rust
+app.load("main.cob");
+```
+
+You can load other COB files recursively using `#manifest` sections (see the loading [docs](bevy_cobweb_ui::loading)).
+
+5. Add a system for spawning a scene.
+
+```rust
+fn build_ui(mut commands: Commands, mut s: ResMut<SceneLoader>)
+{
+    commands
+        // Converts Commands to UiBuilder<UiRoot>
+        .ui_root()
+        // Loads the scene "hello" from file "main.cob"
+        .load_scene(("main.cob", "hello"), &mut s);
+}
+```
+
+6. Add the system to your app.
+
+We put the system in `OnEnter(LoadState::Done)` so it runs after all COB files and assets loaded into this crate's [asset managers](bevy_cobweb_ui::assets_ext) have been loaded.
+
+```rust
+app.add_systems(OnEnter(LoadState::Done), build_ui);
+```
+
+Check the loading [`docs`](bevy_cobweb_ui::loading) for how to write COB files.
 
 Check the repository examples for how to build different kinds of UI.
 

@@ -317,4 +317,12 @@ impl<T: AsRef<str>> Add<T> for &SceneRef
     }
 }
 
+impl<A: AsRef<str>, B: AsRef<str>> From<(A, B)> for SceneRef
+{
+    fn from((a, b): (A, B)) -> Self
+    {
+        SceneRef::new(a.as_ref(), b.as_ref())
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------

@@ -23,9 +23,8 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = SceneRef::new("main.cob.json", "root");
-
-    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
+    let scene = ("main.cob.json", "root");
+    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         l.edit("button", |l| {
             let button_id = l.id();
             l.insert_reactive(Counter(0)).on_pressed(
