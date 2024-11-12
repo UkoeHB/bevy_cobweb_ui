@@ -9,14 +9,14 @@
 },
 
 "scene": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
     "BackgroundColor": [{"Hsla": {"hue": 30.0, "saturation": 0.09, "lightness": 0.72, "alpha": 1.0}}],
 
     "display": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
@@ -25,7 +25,7 @@
         "BrRadius": [{"Px": 6.0}],
 
         "text": {
-            "FlexStyle": {
+            "FlexNode": {
                 "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}, "left": {"Px": 9.0}, "right": {"Px": 9.0}}}
             },
             "TextLine": {"size": 25.0}
@@ -33,7 +33,7 @@
     },
 
     "radio_frame": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"border": {"top": {"Px": 2.0}, "bottom": {"Px": 2.0}, "left": {"Px": 2.0}, "right": {"Px": 2.0}}},
             "content": {
                 "flex_direction": "Column",

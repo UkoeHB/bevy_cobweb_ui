@@ -11,7 +11,7 @@
     "$title_texture_y_uint": 220,
     "$title_tile_size": {"x": "$$title_texture_x_uint", "y": "$$title_texture_y_uint"},
     "$text_margin": {
-        "FlexStyle": {
+        "FlexNode": {
             "flex": {"margin": {"top": {"Px": 5.0}, "bottom": {"Px": 5.0}}}
         }
     }
@@ -73,20 +73,20 @@
 },
 
 "root": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
     "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
 
     "header": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"width": {"Percent": 100.0}, "min_height": {"Percent": 30.0}},
             "content": {"justify_main": "Center", "justify_cross": "Center"}
         },
 
         "title": {
-            "FlexStyle": {
+            "FlexNode": {
                 "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}}
             },
             "LoadedUiImage": {
@@ -97,19 +97,19 @@
     },
 
     "content": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"width": {"Percent": 100.0}},
             "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
         },
 
         "selection_section": {
-            "FlexStyle": {
+            "FlexNode": {
                 "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}},
                 "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
             },
 
             "selection_box": {
-                "FlexStyle": {
+                "FlexNode": {
                     "content": {
                         "flex_direction": "Column",
                         "justify_main": "SpaceEvenly",
@@ -121,7 +121,7 @@
         },
 
         "text_section": {
-            "FlexStyle": {
+            "FlexNode": {
                 "dims": {"width": {"Percent": 50.0}, "height": {"Percent": 100.0}, "left": {"Percent": -5.0}},
                 "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "FlexStart"}
             },

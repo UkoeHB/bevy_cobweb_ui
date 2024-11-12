@@ -52,14 +52,14 @@
 },
 
 "menu_scene": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"flex_direction": "Row", "justify_main": "Center", "justify_cross": "Center"}
     },
     "BackgroundColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.45, "alpha": 1.0}}],
 
     "menu": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {
                 "min_width": {"Px": 250.0},
                 "height": {"Percent": 100.0},
@@ -71,7 +71,7 @@
         "BorderColor": [{"Hsla": {"hue": 201.0, "saturation": 0.4, "lightness": 0.1, "alpha": 1.0}}],
 
         "title": {
-            "FlexStyle": {
+            "FlexNode": {
                 "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}},
                 "flex": {
                     "margin": {"top": {"Px": 20.0}, "bottom": {"Px": 20.0}, "left": {"Px": 20.0}, "right": {"Px": 20.0}}
@@ -112,7 +112,7 @@
 
             "#c: Add barrier so hovers don't make the animation reset.":0,
             "interaction_barrier": {
-                "FlexStyle": {"dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}}},
+                "FlexNode": {"dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}}},
                 "Interactive": [],
                 "FocusPolicy": "Block"
             }
@@ -126,7 +126,7 @@
         },
 
         "options": {
-            "FlexStyle": {
+            "FlexNode": {
                 "dims": {"min_width": {"Px": 200.0}},
                 "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "Center"},
                 "flex": {
@@ -138,7 +138,7 @@
     },
 
     "content": {
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"height": {"Percent": 100.0}},
             "content": {"flex_direction": "Column", "justify_main": "FlexStart", "justify_cross": "FlexStart"},
             "flex": {"flex_grow": 1.0}
@@ -147,7 +147,7 @@
 },
 
 "home_page": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
@@ -159,7 +159,7 @@
 },
 
 "play_page": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {"flex_direction": "Column", "justify_main": "Center", "justify_cross": "Center"}
     },
@@ -170,7 +170,7 @@
 },
 
 "settings_page": {
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Percent": 100.0}, "height": {"Percent": 100.0}},
         "content": {
             "flex_direction": "Column",
@@ -182,11 +182,11 @@
 
     "vsync": {
         "options": {
-            "FlexStyle": {
+            "FlexNode": {
                 "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
             },
             "message": {
-                "FlexStyle": {
+                "FlexNode": {
                     "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 2.0}}}
                 },
                 "LocalizedText": {},
@@ -196,29 +196,29 @@
     },
 
     "audio": {
-        "FlexStyle": {
+        "FlexNode": {
             "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
         },
 
         "message": {
-            "FlexStyle": {
+            "FlexNode": {
                 "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 5.0}}}
             },
             "LocalizedText": {},
             "TextLine": {"text": "settings-tag-audio", "size": "$settings_text_size"}
         },
         "slider": {
-            "FlexStyle": {},
+            "FlexNode": {},
             "Width": [{"Px": 350.0}]
         }
     },
 
     "localization": {
-        "FlexStyle": {
+        "FlexNode": {
             "content": {"flex_direction": "Row", "justify_main": "FlexStart", "justify_cross": "Center"}
         },
         "message": {
-            "FlexStyle": {
+            "FlexNode": {
                 "flex": {"margin": {"bottom": {"Px": 1.0}, "right": {"Px": 12.0}}}
             },
             "LocalizedText": {},

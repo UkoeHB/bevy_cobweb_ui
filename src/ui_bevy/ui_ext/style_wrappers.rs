@@ -293,7 +293,7 @@ pub enum JustifyCross
     ///
     /// Stretch is applied after other sizing and positioning is calculated. It's a kind of 'bonus sizing'.
     ///
-    /// If using [`AbsoluteStyle`] and [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] are set to
+    /// If using [`AbsoluteNode`] and [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] are set to
     /// all auto, then this falls back to [`JustifyCross::FlexStart`].
     Stretch,
 }
@@ -374,12 +374,12 @@ pub struct Dims
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
     ///
     /// If set to non-[`Val::Auto`], then the desired width will be overriden if:
-    /// - [`FlexStyle`]: If [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] is set and
+    /// - [`FlexNode`]: If [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] is set and
     ///   [`SelfFlex::flex_basis`] is set to non-auto.
     ///
     /// If set to [`Val::Auto`], then the desired width will be overriden if:
-    /// - [`AbsoluteStyle`]: [`Dims::left`] and [`Dims::right`] are set.
-    /// - [`FlexStyle`]: Parent is using [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and
+    /// - [`AbsoluteNode`]: [`Dims::left`] and [`Dims::right`] are set.
+    /// - [`FlexNode`]: Parent is using [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and
     ///   [`JustifyCross::Stretch`]. Or, if parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`]
     ///   and self is using [`SelfFlex::flex_grow`]/[`SelfFlex::flex_shrink`].
     #[reflect(default)]
@@ -389,12 +389,12 @@ pub struct Dims
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
     ///
     /// If set to non-[`Val::Auto`], then the desired height will be overriden if:
-    /// - [`FlexStyle`]: If [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] is set and
+    /// - [`FlexNode`]: If [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] is set and
     ///   [`SelfFlex::flex_basis`] is set to non-auto.
     ///
     /// If set to [`Val::Auto`], then the desired height will be overriden if:
-    /// - [`AbsoluteStyle`]: [`Dims::top`] and [`Dims::bottom`] are set.
-    /// - [`FlexStyle`]: Parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] and
+    /// - [`AbsoluteNode`]: [`Dims::top`] and [`Dims::bottom`] are set.
+    /// - [`FlexNode`]: Parent is using [`FlexDirection::Row`]/[`FlexDirection::RowReverse`] and
     ///   [`JustifyCross::Stretch`]. Or, if the parent is using
     ///   [`FlexDirection::Column`]/[`FlexDirection::ColumnReverse`] and self is using
     ///   [`SelfFlex::flex_grow`]/[`SelfFlex::flex_shrink`].
@@ -424,9 +424,9 @@ pub struct Dims
     ///
     /// Only takes effect if at least one of [`Self::width`] or [`Self::height`] is set to [`Val::Auto`].
     ///
-    /// - [`AbsoluteStyle`]: If `width`/`height` are set to auto and all offset fields are set, then the offset's
+    /// - [`AbsoluteNode`]: If `width`/`height` are set to auto and all offset fields are set, then the offset's
     ///   `bottom` parameter will be ignored and the aspect ratio will use the `left`/`right` controlled width.
-    /// - [`FlexStyle`]: [`SelfFlex::flex_basis`] can override the width/height, which affects whether they are
+    /// - [`FlexNode`]: [`SelfFlex::flex_basis`] can override the width/height, which affects whether they are
     ///   considered 'auto'.
     #[reflect(default)]
     pub aspect_ratio: Option<f32>,
@@ -440,21 +440,21 @@ pub struct Dims
     #[reflect(default)]
     pub border: StyleRect,
     /// Position offsets applied to the edges of a node's margin.
-    /// - [`AbsoluteStyle`] (absolute): Relative to its parent's boundary (ignoring padding). Can be used to
-    ///   resize the node if `width`/`height` is set to auto and both `left`/`right` or `top`/`bottom` are set.
-    /// - [`FlexStyle`] (relative): Relative to the final position of the edges of its margin after layout is
+    /// - [`AbsoluteNode`] (absolute): Relative to its parent's boundary (ignoring padding). Can be used to resize
+    ///   the node if `width`/`height` is set to auto and both `left`/`right` or `top`/`bottom` are set.
+    /// - [`FlexNode`] (relative): Relative to the final position of the edges of its margin after layout is
     ///   calculated. Does not affect the layout of other nodes. Cannot be used to resize the node (see note
     ///   following).
     ///
     /// If both `left` and `right` are set, then `right` will be overridden by the `width` field unless it is
-    /// [`Val::Auto`]. The same goes for `top`/`bottom`/`height`. In practice this means [`FlexStyle`] cannot
+    /// [`Val::Auto`]. The same goes for `top`/`bottom`/`height`. In practice this means [`FlexNode`] cannot
     /// use both `left`/`right` or `top`/`bottom` parameters since if `width`/`height` are auto then the
     /// layout algorithm will control the node size.
     ///
     /// Defaults to `StyleRect{ left: Val::Pixels(0.), top: Val::Pixels(0.), right: Val::Auto, left: Val::Auto }`.
-    /// This ensures [`AbsoluteStyle`] nodes will start in the upper left corner of their parents. If the
+    /// This ensures [`AbsoluteNode`] nodes will start in the upper left corner of their parents. If the
     /// offset is set to all [`Val::Auto`] then the node's position will be controlled by its parent's
-    /// [`ContentFlex`] parameters. You must set the `left`/`top` fields to auto if using [`FlexStyle`] and
+    /// [`ContentFlex`] parameters. You must set the `left`/`top` fields to auto if using [`FlexNode`] and
     /// you want to use `right`/`bottom`.
     #[reflect(default = "Dims::default_top")]
     pub top: Val,
@@ -750,14 +750,14 @@ impl Default for SelfFlex
 /// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
-/// See [`FlexStyle`] for flexbox-controlled nodes.
+/// See [`FlexNode`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct AbsoluteStyle
+pub struct AbsoluteNode
 {
     // TODO: re-enable once #[reflect(flatten)] is available
     // #[reflect(default)]
@@ -836,7 +836,7 @@ pub struct AbsoluteStyle
     pub row_gap: Val,
 }
 
-impl Into<Node> for AbsoluteStyle
+impl Into<Node> for AbsoluteNode
 {
     fn into(self) -> Node
     {
@@ -875,15 +875,15 @@ impl Into<Node> for AbsoluteStyle
     }
 }
 
-impl Instruction for AbsoluteStyle
+impl Instruction for AbsoluteNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        match emut.get_mut::<React<AbsoluteStyle>>() {
+        match emut.get_mut::<React<AbsoluteNode>>() {
             Some(mut component) => {
                 *component.get_noreact() = self;
-                React::<AbsoluteStyle>::trigger_mutation(entity, world);
+                React::<AbsoluteNode>::trigger_mutation(entity, world);
             }
             None => {
                 world.react(|rc| rc.insert(entity, self));
@@ -894,9 +894,9 @@ impl Instruction for AbsoluteStyle
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            //e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            //e.remove::<(React<AbsoluteNode>, React<FlexNode>, Node)>();
             // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>)>();
+            e.remove::<(React<AbsoluteNode>, React<FlexNode>)>();
             e.insert(Node::default());
         });
     }
@@ -908,14 +908,14 @@ impl Instruction for AbsoluteStyle
 ///
 /// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
-/// See [`AbsoluteStyle`] for absolute-positioned nodes.
+/// See [`AbsoluteNode`] for absolute-positioned nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct FlexStyle
+pub struct FlexNode
 {
     // TODO: re-enable once #[reflect(flatten)] is available
     // #[reflect(default)]
@@ -1013,7 +1013,7 @@ pub struct FlexStyle
     pub justify_self_cross: JustifySelfCross,
 }
 
-impl Into<Node> for FlexStyle
+impl Into<Node> for FlexNode
 {
     fn into(self) -> Node
     {
@@ -1060,15 +1060,15 @@ impl Into<Node> for FlexStyle
     }
 }
 
-impl Instruction for FlexStyle
+impl Instruction for FlexNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        match emut.get_mut::<React<FlexStyle>>() {
+        match emut.get_mut::<React<FlexNode>>() {
             Some(mut component) => {
                 *component.get_noreact() = self;
-                React::<FlexStyle>::trigger_mutation(entity, world);
+                React::<FlexNode>::trigger_mutation(entity, world);
             }
             None => {
                 world.react(|rc| rc.insert(entity, self));
@@ -1079,9 +1079,9 @@ impl Instruction for FlexStyle
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            //e.remove::<(React<AbsoluteStyle>, React<FlexStyle>, Node)>();
+            //e.remove::<(React<AbsoluteNode>, React<FlexNode>, Node)>();
             // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
-            e.remove::<(React<AbsoluteStyle>, React<FlexStyle>)>();
+            e.remove::<(React<AbsoluteNode>, React<FlexNode>)>();
             e.insert(Node::default());
         });
     }
@@ -1145,59 +1145,59 @@ impl Instruction for DisplayControl
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_absolute_style(
+fn detect_absolute_node(
     mut commands: Commands,
-    insertion: InsertionEvent<AbsoluteStyle>,
-    mutation: MutationEvent<AbsoluteStyle>,
-    node: Query<(&React<AbsoluteStyle>, Option<&React<DisplayControl>>)>,
+    insertion: InsertionEvent<AbsoluteNode>,
+    mutation: MutationEvent<AbsoluteNode>,
+    absnodes: Query<(&React<AbsoluteNode>, Option<&React<DisplayControl>>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut node: Node = (*style).clone().into();
+    let Ok((absnode, maybe_display_control)) = absnodes.get(entity) else { return };
+    let mut node: Node = (*absnode).clone().into();
     if let Some(control) = maybe_display_control {
         node.display = (**control).into();
     }
     commands.entity(entity).try_insert(node.clone());
 }
 
-struct DetectAbsoluteStyle;
-impl WorldReactor for DetectAbsoluteStyle
+struct DetectAbsoluteNode;
+impl WorldReactor for DetectAbsoluteNode
 {
-    type StartingTriggers = (InsertionTrigger<AbsoluteStyle>, MutationTrigger<AbsoluteStyle>);
+    type StartingTriggers = (InsertionTrigger<AbsoluteNode>, MutationTrigger<AbsoluteNode>);
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback
     {
-        SystemCommandCallback::new(detect_absolute_style)
+        SystemCommandCallback::new(detect_absolute_node)
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_flex_style(
+fn detect_flex_node(
     mut commands: Commands,
-    insertion: InsertionEvent<FlexStyle>,
-    mutation: MutationEvent<FlexStyle>,
-    node: Query<(&React<FlexStyle>, Option<&React<DisplayControl>>)>,
+    insertion: InsertionEvent<FlexNode>,
+    mutation: MutationEvent<FlexNode>,
+    flexnodes: Query<(&React<FlexNode>, Option<&React<DisplayControl>>)>,
 )
 {
     let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((style, maybe_display_control)) = node.get(entity) else { return };
-    let mut node: Node = (*style).clone().into();
+    let Ok((flexnode, maybe_display_control)) = flexnodes.get(entity) else { return };
+    let mut node: Node = (*flexnode).clone().into();
     if let Some(control) = maybe_display_control {
         node.display = (**control).into();
     }
     commands.entity(entity).try_insert(node.clone());
 }
 
-struct DetectFlexStyle;
-impl WorldReactor for DetectFlexStyle
+struct DetectFlexNode;
+impl WorldReactor for DetectFlexNode
 {
-    type StartingTriggers = (InsertionTrigger<FlexStyle>, MutationTrigger<FlexStyle>);
+    type StartingTriggers = (InsertionTrigger<FlexNode>, MutationTrigger<FlexNode>);
     type Triggers = ();
     fn reactor(self) -> SystemCommandCallback
     {
-        SystemCommandCallback::new(detect_flex_style)
+        SystemCommandCallback::new(detect_flex_node)
     }
 }
 
@@ -1234,16 +1234,16 @@ impl Plugin for StyleWrappersPlugin
     fn build(&self, app: &mut App)
     {
         app.add_world_reactor_with(
-            DetectAbsoluteStyle,
-            (insertion::<AbsoluteStyle>(), mutation::<AbsoluteStyle>()),
+            DetectAbsoluteNode,
+            (insertion::<AbsoluteNode>(), mutation::<AbsoluteNode>()),
         )
-        .add_world_reactor_with(DetectFlexStyle, (insertion::<FlexStyle>(), mutation::<FlexStyle>()))
+        .add_world_reactor_with(DetectFlexNode, (insertion::<FlexNode>(), mutation::<FlexNode>()))
         .add_world_reactor_with(
             DetectDisplayControl,
             (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
         )
-        .register_instruction_type::<AbsoluteStyle>()
-        .register_instruction_type::<FlexStyle>()
+        .register_instruction_type::<AbsoluteNode>()
+        .register_instruction_type::<FlexNode>()
         .register_instruction_type::<DisplayControl>();
     }
 }

@@ -285,7 +285,7 @@ Nice!() = TheEnd
     // There is no 'catch all' at the base layer because scene macros are inserted in-line to a scene layer.
     // The user can just add stuff directly to the scene layer where the macro is inserted.
 ) = \
-    FlexStyle{
+    FlexNode{
         dims: {width: ?param1}
         flex: {..flex}
     }

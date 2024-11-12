@@ -50,7 +50,7 @@ To animate `BackgroundColor` on an entity, your COB file could look like this:
 ```rust
 #scenes
 "scene"
-    FlexStyle{width:100px height:100px}
+    FlexNode{width:100px height:100px}
     Animated<BackgroundColor>{
         idle:#123456
         press:#123477
@@ -90,11 +90,11 @@ By default, the `Responsive` and `Animated` attributes will respond to interacti
 ```rust
 #scenes
 "node_a"
-    FlexStyle{width:100px height:100px}
+    FlexNode{width:100px height:100px}
     ControlRoot("a")
 
     "node_b"
-        FlexStyle{width:50px height:50px}
+        FlexNode{width:50px height:50px}
         ControlLabel("b")
         Responsive<BackgroundColor>{idle:#002200 press:#004400}
 ```
@@ -106,18 +106,18 @@ For other behavior, you can manually specify the interaction source that attribu
 ```rust
 #scenes
 "node_a"
-    FlexStyle{width:100px height:100px}
+    FlexNode{width:100px height:100px}
     ControlRoot("a")
     BackgroundColor(#111111)
 
     "node_b"
-        FlexStyle{width:50px height:50px}
+        FlexNode{width:50px height:50px}
         ControlLabel("b")
         // Here the source is set to 'c'.
         Responsive<BackgroundColor>{respond_to:"c" idle:#002200 hover:#004400}
 
     "node_c"
-        FlexStyle{width:50px height:50px}
+        FlexNode{width:50px height:50px}
         ControlLabel("c")
         BackgroundColor(#888888)
 ```

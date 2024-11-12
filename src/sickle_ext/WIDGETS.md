@@ -91,7 +91,7 @@ Now we construct a `spec` for the widget containing default structure and stylin
         "@bg_press": {"Hsla": {"hue": 274.0, "saturation": 0.40, "lightness": 0.35, "alpha": 0.8}},
 
         "!button": {
-            "FlexStyle": {
+            "FlexNode": {
                 "content": {"justify_main": "Center", "justify_cross": "Center"},
                 "dims": {"!button_dims": ""},
                 "flex": {"!button_flex": ""}
@@ -108,7 +108,7 @@ Now we construct a `spec` for the widget containing default structure and stylin
             "Interactive": []
         },
         "!text": {
-            "FlexStyle": {"flex": {"margin": "@text_margin"}},
+            "FlexNode": {"flex": {"margin": "@text_margin"}},
             "TextLine": {"size": "@text_size"}
         },
 

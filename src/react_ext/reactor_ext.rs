@@ -156,8 +156,8 @@ pub trait UiReactEntityCommandsExt
     ///
     /// Useful if you need to insert/modify components or instructions on an entity that has COB instructions that
     /// overlap with those components/instructions. For example, you might have a COB instruction
-    /// [`FlexStyle`], and then in rust manually apply the instruction [`Width`] (which will modify
-    /// `FlexStyle`). If the `FlexStyle` instruction is changed and hot reloaded, then the `Width`
+    /// [`FlexNode`], and then in rust manually apply the instruction [`Width`] (which will modify
+    /// `FlexNode`). If the `FlexNode` instruction is changed and hot reloaded, then the `Width`
     /// instruction's effects will be erased. However, if you use `modify` to apply the `Width` instruction,
     /// then it will be re-applied whenever the entity hot-reloads loaded instructions.
     ///

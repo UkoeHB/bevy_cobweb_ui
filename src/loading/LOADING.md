@@ -277,13 +277,13 @@ Which expands to:
 
 When accessing a constant as a map key, you must end it with `::*`, which means 'paste all contents'.
 
-In this example, the [`BackgroundColor`](bevy_cobweb_ui::prelude::BackgroundColor) and [`AbsoluteStyle`](bevy_cobweb_ui::prelude::AbsoluteStyle) loadables are inserted to the `my_node` path.
+In this example, the [`BackgroundColor`](bevy_cobweb_ui::prelude::BackgroundColor) and [`AbsoluteNode`](bevy_cobweb_ui::prelude::AbsoluteNode) loadables are inserted to the `my_node` path.
 ```json
 {
     "#constants": {
         "$standard":{
             "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-            "AbsoluteStyle": {
+            "AbsoluteNode": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }
         }
@@ -299,7 +299,7 @@ When expanded, the result will be
 {
     "my_node": {
         "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-        "AbsoluteStyle": {
+        "AbsoluteNode": {
             "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
         }
     }
@@ -328,7 +328,7 @@ Here is a spec definition for a trivial `text` widget:
         "text": {
             "@size": 30.0,
             "*": {
-                "FlexStyle": {},
+                "FlexNode": {},
                 "TextLine": {
                     "size": "@size",
                     "!textline": ""
@@ -347,7 +347,7 @@ The spec would be used like this:
 
     "root": {
         "#c: Root entity sets up the UI.":0,
-        "FlexStyle": {
+        "FlexNode": {
             "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
             "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
         },
@@ -378,7 +378,7 @@ Here is our trivial text spec again:
         "text": {
             "@size": 30.0,
             "*": {
-                "FlexStyle": {},
+                "FlexNode": {},
                 "TextLine": {
                     "size": "@size",
                     "!textline": ""
@@ -448,7 +448,7 @@ When the text spec is expanded, the final scene node will look like:
         "..root entity omitted..":0,
 
         "hello_text": {
-            "FlexStyle": {},
+            "FlexNode": {},
             "TextLine": {
                 "size": 50.0,
                 "text": "Hello, World!"
@@ -487,7 +487,7 @@ And then use the spec content to directly fill in the `TextLine` loadable:
         "..root entity omitted..":0,
 
         "hello_text": {
-            "FlexStyle": {},
+            "FlexNode": {},
             "TextLine(#spec:text)": {
                 "@size": 50.0,
                 "!textline": {
@@ -512,7 +512,7 @@ In this example we use the `text` spec as a component of a simple `button` spec:
         "text": {
             "@size": 30.0,
             "*": {
-                "FlexStyle": {},
+                "FlexNode": {},
                 "TextLine": {
                     "size": "@size",
                     "!textline": ""
@@ -531,7 +531,7 @@ In this example we use the `text` spec as a component of a simple `button` spec:
         "button": {
             "*": {
                 "core": {
-                    "FlexStyle": {
+                    "FlexNode": {
                         "dims"    : { "!dims":"" },
                         "content" : { "!content":"" },
                         "flex"    : { "!flex":"" }
@@ -578,7 +578,7 @@ Add the `#import` section to the base map in a file. It should be a map between 
     "#constants": {
         "$standard":{
             "BackgroundColor": {"Hsla": {"hue": 250.0, "saturation": 0.25, "lightness": 0.55, "alpha": 0.8}},
-            "AbsoluteStyle": {
+            "AbsoluteNode": {
                 "dims": {"width": {"Px": 100.0}, "height": {"Px": 100.0}}
             }
         }

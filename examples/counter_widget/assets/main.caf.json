@@ -2,18 +2,18 @@
 
 "#manifest": {
     "": "examples.counter_widget",
-    "widgets/counter.caf.json": "widgets.counter"
+    "widgets/counter.cob.json": "widgets.counter"
 },
 
 "#import": {
-    "widgets/counter.caf.json": "base"
+    "widgets/counter.cob.json": "base"
 },
 
 
 "#c: Custom node structure for the example app.":0,
 "root": {
     "#c: Root node covers the window.":0,
-    "FlexStyle": {
+    "FlexNode": {
         "dims": {"width": {"Vw": 100.0}, "height": {"Vh": 100.0}},
         "content": {"justify_main": "SpaceEvenly", "justify_cross": "Center"}
     }
