@@ -5,7 +5,7 @@ COB is a minimalist custom asset format with the `.cob` file extension. This cra
 
 ### Loading files
 
-In order for a COB file's contents to be available, you need to [load](bevy_cobweb_ui::prelude::LoadedCobAssetFilesAppExt::load) the file into your app.
+COB files are assets and need to be [loaded](bevy_cobweb_ui::prelude::LoadedCobAssetFilesAppExt::load) into your app.
 
 ```rust
 app.load("path/to/file.cob");
@@ -47,7 +47,7 @@ File extraction uses the following overall algorithm.
 
 ### Manifest section
 
-A manifest section is a simple sequence of 'file path : manifest key' pairs.
+A manifest section is a sequence of 'file path : manifest key' pairs.
 
 For example:
 
@@ -58,7 +58,7 @@ For example:
 "widgets/slider.cob" as widgets.slider
 ```
 
-Files loaded directly from the app aren't in any manifest sections, so you can also specify the manifest key of `self`:
+Files loaded directly from the app aren't in any manifest sections, so you can also specify the manifest key of `self` in root files:
 
 ```rust
 // my_project/assets/main.cob
@@ -70,7 +70,7 @@ The manifest key is used by import sections, and is also a shortcut that can be 
 
 ### Import section
 
-An import section is a simple sequence of 'manifest key : import alias' pairs.
+An import section is a sequence of 'manifest key : import alias' pairs.
 
 For example:
 
@@ -83,12 +83,12 @@ widgets.slider as slider
 
 In this example, `home_menu` is given `_`, which means no import alias. Import aliases are prepended to all imported definitions, allowing you to 'namespace' definitions.
 
-For example, in this repository the `builtin.colors.tailwind` file has a constant `$AMBER_500` that is imported to the `builtin.colors` file with the `tailwind` import alias. If you import `builtin.colors as colors`, then the constant will be available with `$colors::tailwind::AMBER_500`. (NOTICE: constants are not yet implemented)
+For example, this crate has built-in constants, including the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`. (NOTICE: constants are not yet implemented)
 
 
 ### Using section
 
-A using section is a simple sequence of 'long type name : short type name' pairs.
+A using section is a sequence of 'long type name : short type name' pairs.
 
 For example:
 
@@ -97,12 +97,12 @@ For example:
 bevy_cobweb_ui::ui_bevy::ui_ext::style_wrappers::FlexNode as FlexNode
 ```
 
-If any command or scene in the file, or any file that imports the file, contains a `FlexNode`, then the type path specified here will be used to reflect the raw data into a concrete rust type.
+If any command or scene in the file, or any file that imports the file, contains a `FlexNode`, then the type path specified here will be used when reflecting the raw data into a concrete rust type.
 
 
 ### Defs section
 
-TODO: definitions are not yet implemented
+TODO: definitions (constants and macros) are not yet implemented
 
 
 ### Commands section
@@ -112,13 +112,13 @@ A command section is a sequence of *command loadables*. Command loadables are ru
 For example:
 
 ```rust
+// my_project/assets/main.cob
 #commands
 Example
 ```
 
-All loadables need to implement `Reflect`, `Default` and `PartialEq`, in addition to traits like `Command` for specific loadable types.
-
 ```rust
+// my_project/src/main.rs
 #[derive(Reflect, Default, PartialEq)]
 struct Example;
 
@@ -131,21 +131,23 @@ impl Command for Example
 }
 ```
 
+All loadables need to implement `Reflect`, `Default` and `PartialEq`.
+
 Finally, command loadables must be registered in your app.
 
 ```rust
 app.register_command_type::<Example>();
 ```
 
-For details about COB value serialization, see [the section below](Value-serialization).
+For details about COB value serialization, see [below](Value-serialization).
 
 **Command ordering**
 
 Commands are applied in a consistent global order, which has four rules:
 
 1. Files loaded to the app with `app.load("{file}.cob")` are ordered by registration order.
-1. Commands found in a file's **`#manifest`** section are ordered before the file's own commands.
 1. Manifest entries are ordered from top to bottom.
+1. Manifest entries' commands are ordered before a file's own commands.
 1. Commands within a file are ordered from top to bottom.
 
 The overall structure is 'leaf-first', which is how imports tend to flow (imports have no strict ordering requirements).
@@ -173,15 +175,17 @@ Scene `"a"` has one node: a root node `"a"`. Scene `"b"` has two nodes: a root n
 
 Node children are created by indenting them relative to their parents.
 
-For details about COB value serialization, see [the section below](Value-serialization).
+Only the root node is required to have a name. Other nodes can be anonymous using `""`.
+
+For details about COB value serialization, see [below](Value-serialization).
 
 **Spawning a scene**
 
-Scenes can be spawned all-at-once, or you can load individual scene nodes into pre-spawned entities. The latter is useful when designing widgets with configurable structures (e.g. the `radio_button` widget lets you configure the indicator dot's location).
+Scenes can be spawned all-at-once, or you can load individual scene nodes into pre-spawned entities. The latter is useful when designing widgets with configurable structures (e.g. the `radio_button` widget lets you configure where indicator dots appear).
 
 For example:
 ```rust
-let file = SceneFile::new("example.cob");
+let file = &SceneFile::new("example.cob");
 
 // Spawns and loads an entire scene (entities: b, b::bb).
 commands.ui_root().load_scene(file + "b");
@@ -218,35 +222,35 @@ For example:
 
 ```rust
 #[derive(Reflect, Default, PartialEq)]
-struct MyInstruction(usize);
+struct MyLoadable(usize);
 
-// Use this if you want MyInstruction to be inserted as a `Bundle`.
+// Use this if you want MyLoadable to be inserted as a `Bundle`.
 // The type must implement `Bundle` (or `Component`).
-app.register_bundle_type::<MyInstruction>();
+app.register_bundle_type::<MyLoadable>();
 
-// Use this if you want MyInstruction to be inserted as a `React` component.
+// Use this if you want MyLoadable to be inserted as a `React` component.
 // The type must implement `ReactComponent`.
-app.register_reactive_type::<MyInstruction>();
+app.register_reactive_type::<MyLoadable>();
 
-// Use this if you want MyInstruction to mutate the entity.
+// Use this if you want MyLoadable to mutate the entity.
 // The type must implement `Instruction`.
-app.register_instruction_type::<MyInstruction>();
+app.register_instruction_type::<MyLoadable>();
 
-impl Instruction for MyInstruction
+impl Instruction for MyLoadable
 {
     fn apply(self, entity: Entity, _: &mut World)
     {
-        println!("MyInstruction({}) applied to entity {:?}", self.0, entity);
+        println!("MyLoadable({}) applied to entity {:?}", self.0, entity);
     }
 
     fn revert(entity: Entity, _: &mut World)
     {
-        println!("MyInstruction reverted on entity {:?}", entity);
+        println!("MyLoadable reverted on entity {:?}", entity);
     }
 }
 ```
 
-The `revert` method on `Instruction` is used when hot-reloading an instruction. When a loadable is changed or removed from a node, then it will be reverted. Components are removed, and instructions call `revert`. After that, all of the nodes loadables are re-applied in order. This two-step process allows best-effort state repair when complex mutations are hot reloaded.
+The `revert` method on `Instruction` is used when hot-reloading an instruction. When a loadable is changed or removed from a node, then it will be reverted. After that, all of the nodes' loadables are re-applied in order. This two-step process allows best-effort state repair when complex mutations are hot reloaded.
 
 To load a full scene and edit it, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene_and_edit` callback.
 
@@ -263,7 +267,7 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
         // Edit a child of the root node directly.
         loaded_scene.get("header")
             .do_something()
-            .do_another_thing();
+            .do_something_else();
 
         // Edit a more deeply nested child.
         loaded_scene.edit("footer::content", |loaded_scene| {
@@ -281,4 +285,198 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
 
 ### Value serialization
 
-TODO
+Loadable values appear in COB files very similar to how they appear in Rust. Since COB is minimalist, there are several simplifications and details to note.
+
+**Comments**
+
+Single-line and block comments are both supported, the same as rust.
+
+```rust
+// Single-line
+/*
+Multi-line
+*/
+```
+
+**Spacing instead of punctuation**
+
+Commas and semicolons are treated as whitespace. They are completely optional, even inside type generics.
+
+Since we don't use commas to separate items, we have one important whitespace rule.
+
+**Important whitespace rule**: All loadables and enum variants with data must have no whitespace between their name (or generics) and their data container (`{}`, `[]`, or `()`).
+
+Example (rust):
+```rust
+let s = MyStruct::<A, B<C, D>> { a: 10.0, b: true };
+```
+
+Example (COB):
+```rust
+MyStruct<A B<C D>>{ a: 10 b: true }
+// No space here..^..
+```
+
+This rule lets us differentiate between a list of 'unit struct/variant, map/array/tuple' and a single 'struct/variant with data'.
+
+**Keywords banned from structs**
+
+Built-in keywords cannot be used as struct field names.
+- `true`/`false`: Boolean true/false.
+- `inf`/`-inf`/`nan`: Float values.
+- `none`: Corresponds to rust `None`.
+- `auto`: Corresponds to enum variant `Val::Auto` (used in UI, see built-in types below).
+
+**`Option<T>`**
+
+If a rust type contains `Option<T>`, then `Some(T)` is elided to `T`, and `None` is represented by the `none` keyword.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: Option<u32>,
+    b: Option<bool>
+}
+
+let s = MyStruct{ a: Some(10), b: None };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:10 b:none }
+```
+
+**Type name ellision**
+
+Type names inside loadable values are elided.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct OtherStruct
+{
+    a: u32
+}
+
+#[derive(Reflect, Default, PartialEq)]
+enum OtherEnum
+{
+    A,
+    B
+}
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: OtherStruct,
+    b: OtherEnum,
+}
+
+let s = MyStruct{ a: OtherStruct{ a: 10 }, b: OtherEnum::B };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:{ a:10 } b:B }
+```
+
+Loadable type names are always required, since they are used to figure out how to deserialize values.
+
+Example loadables (COB):
+```rust
+OtherStruct{ a:10 }
+OtherEnum::A
+```
+
+**Newtype ellision**
+
+When a newtype struct appears inside a loadable, the newtype is 'peeled' to the innermost non-newtype type.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyNewtype(u32);
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: MyNewtype(u32),
+}
+
+let s = MyStruct{ a: MyNewtype(10) };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:10 }
+//          ^
+// MyNewtype(10) simplified to 10
+```
+
+**Newtype collapsing**
+
+Instead of peeling, loadable newtypes and newtype enum variants use *newtype collapsing*. Newtypes are collapsed by discarding 'outer layers'.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: u32,
+}
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyNewtype(MyStruct);
+
+let s = MyNewtype(MyStruct{ a: 10 });
+```
+
+Example (COB):
+```rust
+MyNewtype{ a:10 }
+// Un-collapsed: MyNewtype({ a:10 })
+```
+
+An important use-case for collapsing is bevy's `Color` type.
+
+Rust:
+```rust
+let c = Color::Srgba(Srgba{ red: 1.0, blue: 1.0, green: 1.0, alpha: 1.0 });
+```
+
+COB:
+```rust
+Srgba{ red:1 blue:1 green:1 alpha:1 }
+```
+
+Here we have `Srgba` for the `Color::Srgba` variant, and `{ ... }` for the `Srgba{ ... }` inner struct's value.
+
+**Floats**
+
+Floats are written similar to how they are written in rust.
+
+- Scientific notation: `1.2e3` or `1.2E3`.
+- Integer-to-float conversion: `1` can be written instead of `1.0`.
+- Keywords `inf`/`-inf`/`nan`: infinity, negative infinity, `NaN`.
+
+**String parsing**
+
+Strings are handled similar to how rust string literals are handled.
+
+- Enclosed by double quotes (e.g. `"Hello, World!"`).
+- Escape sequences: standard ASCII escape sequences are supported (`\n`, `\t`, `\r`, `\f`, `\"`, `\\`), in addition to Unicode code points (`\u{..1-6 digit hex..}`).
+- Multi-line strings: a string segment that ends in `\` followed by a newline will be concatenated with the next non-space character on the next line.
+- Can contain raw Unicode characters.
+
+**Built-in types**
+
+Since COB is part of `bevy_cobweb_ui`, we include special support for two common UI types.
+
+- [`Val`](bevy::prelude::Val): `Val` variants can be written with special units (`px`, `%`, `vw`, `vh`, `vmin`, `vmax`) and the keyword `auto`. For example, `10px` is equivalent to `Px(10)`.
+- [`Color`](bevy::prelude::Color): The `Color::Srgba` variant can be written with color-hex in the format `#FFFFFF` (for `alpha = 1.0`) or `#AAFFFFFF` (for custom `alpha`).
+
+
+
+

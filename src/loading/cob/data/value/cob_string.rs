@@ -5,7 +5,7 @@
 //! - Can contain any raw unescaped code point besides \ and "
 //! - Matches the following escape sequences: \b, \f, \n, \r, \t, \", \\,
 //! - Matches code points like Rust: \u{XXXX}, where XXXX can be 1 to 6 hex characters
-//! - an escape followed by whitespace consumes all whitespace between the escape and the next non-whitespace
+//! - an escape followed by a newline consumes all whitespace between the escape and the next non-whitespace
 //!   character, then creates a new string segment
 
 use bevy::prelude::default;
