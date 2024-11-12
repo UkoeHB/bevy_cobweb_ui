@@ -363,13 +363,13 @@ impl SceneBuffer
         initializer: NodeInitializer,
         callbacks: &LoaderCallbacks,
         c: &mut Commands,
-        _commands_buffer: &CommandsBuffer,
+        #[cfg(feature = "hot_reload")] commands_buffer: &CommandsBuffer,
     )
     {
         // Queue the entity if blocked by the commands buffer.
         #[cfg(feature = "hot_reload")]
         {
-            if _commands_buffer.is_blocked() {
+            if commands_buffer.is_blocked() {
                 self.track_entity_queued(entity, scene_ref, initializer);
                 return;
             }
