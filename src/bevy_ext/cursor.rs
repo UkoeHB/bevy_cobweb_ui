@@ -5,7 +5,6 @@ use bevy::window::{PrimaryWindow, SystemCursorIcon};
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
 use sickle_ui_scaffold::prelude::PseudoState;
 use smallvec::SmallVec;
-use ui_style::prelude::InteractiveVals;
 
 use crate::prelude::*;
 
@@ -228,7 +227,7 @@ impl Instruction for TempCursor
     }
 }
 
-impl ThemedAttribute for TempCursor
+impl StaticAttribute for TempCursor
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -278,18 +277,19 @@ impl Instruction for ResponsiveCursor
             .or_else(|| self.hover.clone())
             .map(|cursor| TempCursor { priority: 2, cursor });
         let hover = self.hover.map(|cursor| TempCursor { priority: 1, cursor });
-        let values = InteractiveVals {
+
+        // Get the label if this entity has one. We always want the interaction source to be self.
+        let respond_to = world.get::<ControlLabel>(entity).map(|l| (**l).clone());
+
+        // Make a Responsive instruction and apply it.
+        let responsive = Responsive::<TempCursor> {
+            state: self.state,
+            respond_to,
             idle: TempCursor { priority: 0, cursor: LoadableCursor::None },
             hover,
             press,
-            ..default()
+            ..Default::default()
         };
-
-        // Get the label if this entity has one. We always want the interaction source to be self.
-        let source = world.get::<ControlLabel>(entity).map(|l| (**l).clone());
-
-        // Make a Responsive instruction and apply it.
-        let responsive = Responsive::<TempCursor> { state: self.state, values, source };
         responsive.apply(entity, world);
     }
 

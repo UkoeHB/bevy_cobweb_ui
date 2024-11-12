@@ -93,7 +93,7 @@ impl Instruction for ControlRoot
                     // Attrs
                     // Note: target not needed, it is always set to self.
                     for (origin, source, _target, state, attribute) in attrs {
-                        world.syscall((origin, source, state, attribute), super::add_attribute);
+                        world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
                     }
                     break;
                 }
@@ -140,7 +140,7 @@ impl Instruction for ControlRoot
 /// you want different values to be applied depending on the widget's
 /// [`PseudoStates`](crate::sickle_ext::prelude::PseudoState).
 ///
-/// Values in a multi-entity widget can be controlled with the [`Themed`], [`Responsive`], and [`Animated`]
+/// Values in a multi-entity widget can be controlled with the [`Static`], [`Responsive`], and [`Animated`]
 /// loadables.
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct ControlLabel(pub SmolStr);

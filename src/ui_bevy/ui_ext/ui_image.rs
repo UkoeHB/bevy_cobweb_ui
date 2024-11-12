@@ -136,7 +136,7 @@ impl Instruction for LoadedUiImage
     }
 }
 
-impl ThemedAttribute for LoadedUiImage
+impl StaticAttribute for LoadedUiImage
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -169,7 +169,7 @@ impl Instruction for UiImageColor
     }
 }
 
-impl ThemedAttribute for UiImageColor
+impl StaticAttribute for UiImageColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -207,7 +207,7 @@ impl Instruction for UiImageIndex
     }
 }
 
-impl ThemedAttribute for UiImageIndex
+impl StaticAttribute for UiImageIndex
 {
     type Value = usize;
     fn construct(value: Self::Value) -> Self

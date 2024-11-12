@@ -347,7 +347,7 @@ impl Instruction for PropagateOpacity
     }
 }
 
-impl ThemedAttribute for PropagateOpacity
+impl StaticAttribute for PropagateOpacity
 {
     type Value = f32;
     fn construct(value: Self::Value) -> Self

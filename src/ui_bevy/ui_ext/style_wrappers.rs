@@ -759,10 +759,81 @@ impl Default for SelfFlex
 )]
 pub struct AbsoluteStyle
 {
+    // TODO: re-enable once #[reflect(flatten)] is available
+    // #[reflect(default)]
+    // pub dims: Dims,
+    // #[reflect(default)]
+    // pub content: ContentFlex,
+
+    // DIMS
+    /// See [`Dims::width`].
     #[reflect(default)]
-    pub dims: Dims,
+    pub width: Val,
+    /// See [`Dims::height`].
     #[reflect(default)]
-    pub content: ContentFlex,
+    pub height: Val,
+    /// See [`Dims::max_width`].
+    #[reflect(default)]
+    pub max_width: Val,
+    /// See [`Dims::max_height`].
+    #[reflect(default)]
+    pub max_height: Val,
+    /// See [`Dims::min_width`].
+    #[reflect(default)]
+    pub min_width: Val,
+    /// See [`Dims::min_height`].
+    #[reflect(default)]
+    pub min_height: Val,
+    /// See [`Dims::aspect_ratio`].
+    #[reflect(default)]
+    pub aspect_ratio: Option<f32>,
+    /// See [`Dims::border`].
+    #[reflect(default)]
+    pub border: StyleRect,
+    /// See [`Dims::top`].
+    #[reflect(default = "Dims::default_top")]
+    pub top: Val,
+    /// See [`Dims::bottom`].
+    #[reflect(default)]
+    pub bottom: Val,
+    /// See [`Dims::left`].
+    #[reflect(default = "Dims::default_left")]
+    pub left: Val,
+    /// See [`Dims::right`].
+    #[reflect(default)]
+    pub right: Val,
+
+    // CONTENT
+    /// See [`ContentFlex::clipping`].
+    #[reflect(default)]
+    pub clipping: Clipping,
+    /// See [`ContentFlex::clip_margin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
+    /// See [`ContentFlex::padding`].
+    #[reflect(default)]
+    pub padding: StyleRect,
+    /// See [`ContentFlex::flex_direction`].
+    #[reflect(default)]
+    pub flex_direction: FlexDirection,
+    /// See [`ContentFlex::flex_wrap`].
+    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    pub flex_wrap: FlexWrap,
+    /// See [`ContentFlex::justify_lines`].
+    #[reflect(default)]
+    pub justify_lines: JustifyLines,
+    /// See [`ContentFlex::justify_main`].
+    #[reflect(default)]
+    pub justify_main: JustifyMain,
+    /// See [`ContentFlex::justify_cross`].
+    #[reflect(default)]
+    pub justify_cross: JustifyCross,
+    /// See [`ContentFlex::column_gap`].
+    #[reflect(default)]
+    pub column_gap: Val,
+    /// See [`ContentFlex::row_gap`].
+    #[reflect(default)]
+    pub row_gap: Val,
 }
 
 impl Into<Node> for AbsoluteStyle
@@ -772,8 +843,34 @@ impl Into<Node> for AbsoluteStyle
         let mut node = Node::default();
         node.display = Display::Flex;
         node.position_type = PositionType::Absolute;
-        self.dims.set_in_node(&mut node);
-        self.content.set_in_node(&mut node);
+        Dims {
+            width: self.width,
+            height: self.height,
+            max_width: self.max_width,
+            max_height: self.max_height,
+            min_width: self.min_width,
+            min_height: self.min_height,
+            aspect_ratio: self.aspect_ratio,
+            border: self.border,
+            top: self.top,
+            bottom: self.bottom,
+            left: self.left,
+            right: self.right,
+        }
+        .set_in_node(&mut node);
+        ContentFlex {
+            clipping: self.clipping,
+            clip_margin: self.clip_margin,
+            padding: self.padding,
+            flex_direction: self.flex_direction,
+            flex_wrap: self.flex_wrap,
+            justify_lines: self.justify_lines,
+            justify_main: self.justify_main,
+            justify_cross: self.justify_cross,
+            column_gap: self.column_gap,
+            row_gap: self.row_gap,
+        }
+        .set_in_node(&mut node);
         node
     }
 }
@@ -820,12 +917,100 @@ impl Instruction for AbsoluteStyle
 )]
 pub struct FlexStyle
 {
+    // TODO: re-enable once #[reflect(flatten)] is available
+    // #[reflect(default)]
+    // pub dims: Dims,
+    // #[reflect(default)]
+    // pub content: ContentFlex,
+    // #[reflect(default)]
+    // pub flex: SelfFlex,
+
+    // DIMS
+    /// See [`Dims::width`].
     #[reflect(default)]
-    pub dims: Dims,
+    pub width: Val,
+    /// See [`Dims::height`].
     #[reflect(default)]
-    pub content: ContentFlex,
+    pub height: Val,
+    /// See [`Dims::max_width`].
     #[reflect(default)]
-    pub flex: SelfFlex,
+    pub max_width: Val,
+    /// See [`Dims::max_height`].
+    #[reflect(default)]
+    pub max_height: Val,
+    /// See [`Dims::min_width`].
+    #[reflect(default)]
+    pub min_width: Val,
+    /// See [`Dims::min_height`].
+    #[reflect(default)]
+    pub min_height: Val,
+    /// See [`Dims::aspect_ratio`].
+    #[reflect(default)]
+    pub aspect_ratio: Option<f32>,
+    /// See [`Dims::border`].
+    #[reflect(default)]
+    pub border: StyleRect,
+    /// See [`Dims::top`].
+    #[reflect(default = "Dims::default_top")]
+    pub top: Val,
+    /// See [`Dims::bottom`].
+    #[reflect(default)]
+    pub bottom: Val,
+    /// See [`Dims::left`].
+    #[reflect(default = "Dims::default_left")]
+    pub left: Val,
+    /// See [`Dims::right`].
+    #[reflect(default)]
+    pub right: Val,
+
+    // CONTENT
+    /// See [`ContentFlex::clipping`].
+    #[reflect(default)]
+    pub clipping: Clipping,
+    /// See [`ContentFlex::clip_margin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
+    /// See [`ContentFlex::padding`].
+    #[reflect(default)]
+    pub padding: StyleRect,
+    /// See [`ContentFlex::flex_direction`].
+    #[reflect(default)]
+    pub flex_direction: FlexDirection,
+    /// See [`ContentFlex::flex_wrap`].
+    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    pub flex_wrap: FlexWrap,
+    /// See [`ContentFlex::justify_lines`].
+    #[reflect(default)]
+    pub justify_lines: JustifyLines,
+    /// See [`ContentFlex::justify_main`].
+    #[reflect(default)]
+    pub justify_main: JustifyMain,
+    /// See [`ContentFlex::justify_cross`].
+    #[reflect(default)]
+    pub justify_cross: JustifyCross,
+    /// See [`ContentFlex::column_gap`].
+    #[reflect(default)]
+    pub column_gap: Val,
+    /// See [`ContentFlex::row_gap`].
+    #[reflect(default)]
+    pub row_gap: Val,
+
+    // SELF FLEX
+    /// See [`SelfFlex::margin`].
+    #[reflect(default)]
+    pub margin: StyleRect,
+    /// See [`SelfFlex::flex_basis`].
+    #[reflect(default)]
+    pub flex_basis: Val,
+    /// See [`SelfFlex::flex_grow`].
+    #[reflect(default)]
+    pub flex_grow: f32,
+    /// See [`SelfFlex::flex_shrink`].
+    #[reflect(default)]
+    pub flex_shrink: f32,
+    /// See [`SelfFlex::justify_self_cross`].
+    #[reflect(default)]
+    pub justify_self_cross: JustifySelfCross,
 }
 
 impl Into<Node> for FlexStyle
@@ -835,9 +1020,42 @@ impl Into<Node> for FlexStyle
         let mut node = Node::default();
         node.display = Display::Flex;
         node.position_type = PositionType::Relative;
-        self.dims.set_in_node(&mut node);
-        self.content.set_in_node(&mut node);
-        self.flex.set_in_node(&mut node);
+        Dims {
+            width: self.width,
+            height: self.height,
+            max_width: self.max_width,
+            max_height: self.max_height,
+            min_width: self.min_width,
+            min_height: self.min_height,
+            aspect_ratio: self.aspect_ratio,
+            border: self.border,
+            top: self.top,
+            bottom: self.bottom,
+            left: self.left,
+            right: self.right,
+        }
+        .set_in_node(&mut node);
+        ContentFlex {
+            clipping: self.clipping,
+            clip_margin: self.clip_margin,
+            padding: self.padding,
+            flex_direction: self.flex_direction,
+            flex_wrap: self.flex_wrap,
+            justify_lines: self.justify_lines,
+            justify_main: self.justify_main,
+            justify_cross: self.justify_cross,
+            column_gap: self.column_gap,
+            row_gap: self.row_gap,
+        }
+        .set_in_node(&mut node);
+        SelfFlex {
+            margin: self.margin,
+            flex_basis: self.flex_basis,
+            flex_grow: self.flex_grow,
+            flex_shrink: self.flex_shrink,
+            justify_self_cross: self.justify_self_cross,
+        }
+        .set_in_node(&mut node);
         node
     }
 }

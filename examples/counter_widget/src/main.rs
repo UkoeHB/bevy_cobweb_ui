@@ -165,7 +165,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         // Widget with theme adjustments
         CounterWidgetBuilder::new()
             .spec(file + "counter_widget_flexible_button")
-            .pre_text("Themed: ")
+            .pre_text("Static: ")
             .build(n);
     });
 }

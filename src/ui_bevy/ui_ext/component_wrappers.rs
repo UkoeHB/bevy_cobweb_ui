@@ -90,7 +90,7 @@ impl Instruction for BackgroundColor
     }
 }
 
-impl ThemedAttribute for BackgroundColor
+impl StaticAttribute for BackgroundColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -121,7 +121,7 @@ impl Instruction for BorderColor
     }
 }
 
-impl ThemedAttribute for BorderColor
+impl StaticAttribute for BorderColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -164,7 +164,7 @@ impl Instruction for BrRadius
     }
 }
 
-impl ThemedAttribute for BrRadius
+impl StaticAttribute for BrRadius
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -204,7 +204,7 @@ impl Instruction for BrRadiusTopLeft
     }
 }
 
-impl ThemedAttribute for BrRadiusTopLeft
+impl StaticAttribute for BrRadiusTopLeft
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -244,7 +244,7 @@ impl Instruction for BrRadiusTopRight
     }
 }
 
-impl ThemedAttribute for BrRadiusTopRight
+impl StaticAttribute for BrRadiusTopRight
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -284,7 +284,7 @@ impl Instruction for BrRadiusBottomLeft
     }
 }
 
-impl ThemedAttribute for BrRadiusBottomLeft
+impl StaticAttribute for BrRadiusBottomLeft
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -324,7 +324,7 @@ impl Instruction for BrRadiusBottomRight
     }
 }
 
-impl ThemedAttribute for BrRadiusBottomRight
+impl StaticAttribute for BrRadiusBottomRight
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -393,7 +393,7 @@ impl Instruction for NodeOutline
     }
 }
 
-impl ThemedAttribute for NodeOutline
+impl StaticAttribute for NodeOutline
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -425,7 +425,7 @@ impl Instruction for FocusPolicy
     }
 }
 
-impl ThemedAttribute for FocusPolicy
+impl StaticAttribute for FocusPolicy
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -454,7 +454,7 @@ impl Instruction for ZIndex
     }
 }
 
-impl ThemedAttribute for ZIndex
+impl StaticAttribute for ZIndex
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self

@@ -31,6 +31,7 @@ fn insert_text_line(
     // Prep localization.
     // - We need to manually localize inserted text in case the text line is hot reloaded into an entity that
     //   already has Text (i.e. because auto-localization won't occur).
+    // TODO: future localization rework should make this no longer necessary
     if line.text.as_str() != TEXT_LINE_DEFAULT_TEXT {
         if let Ok(mut localized) = localized.get_mut(entity) {
             localized.set_localization(line.text.as_str());
@@ -192,7 +193,7 @@ impl Instruction for TextLineSize
     }
 }
 
-impl ThemedAttribute for TextLineSize
+impl StaticAttribute for TextLineSize
 {
     type Value = f32;
     fn construct(value: Self::Value) -> Self
@@ -233,7 +234,7 @@ impl Instruction for TextLineColor
     }
 }
 
-impl ThemedAttribute for TextLineColor
+impl StaticAttribute for TextLineColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self

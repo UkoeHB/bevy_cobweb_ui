@@ -358,7 +358,7 @@ impl EntityCommand for RemoveDeadControlMap
 
         // Note: target not needed, we always set it to self.
         for (origin, source, _target, state, attribute) in old_control_map.remove_all_attrs() {
-            world.syscall((origin, source, state, attribute), add_attribute);
+            world.syscall((origin, source, state, attribute, "unknown"), add_attribute);
         }
     }
 }
@@ -399,7 +399,7 @@ impl EntityCommand for RefreshControlledStyles
             .unwrap_or(&empty_pseudo_state);
 
         // Collect eligible pseudo themes.
-        //todo: this has excessive complexity ~ O(S^2*P*T); It would be easier to collect, sort, and dedup
+        //todo: this has excessive complexity ~ O(S^2*P*T); It would be simpler to collect, sort, and dedup
         // pseudo_themes but unstable sorting may cause hard-to-debug order inconsistencies between pseudo themes
         // with the same number of pseudo states.
         let mut pseudo_themes: SmallVec<[&EditablePseudoTheme; 10]> = SmallVec::default();

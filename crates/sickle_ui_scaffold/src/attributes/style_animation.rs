@@ -237,8 +237,9 @@ pub struct AnimationSettings
 {
     #[reflect(default)]
     pub enter: Option<AnimationConfig>,
-    #[reflect(default)]
-    pub non_interacted: Option<AnimationConfig>,
+    // TODO: this does nothing
+    // #[reflect(default)]
+    // pub non_interacted: Option<AnimationConfig>,
     #[reflect(default)]
     pub pointer_enter: Option<AnimationConfig>,
     #[reflect(default)]
@@ -351,7 +352,7 @@ impl AnimationSettings
     pub fn copy_from(&mut self, other: Self) -> &mut Self
     {
         self.enter = other.enter;
-        self.non_interacted = other.non_interacted;
+        //self.non_interacted = other.non_interacted;
         self.pointer_enter = other.pointer_enter;
         self.pointer_leave = other.pointer_leave;
         self.press = other.press;
@@ -368,8 +369,8 @@ impl AnimationSettings
     }
 
     transition_animation_setter!(enter);
-    transition_animation_setter!(non_interacted);
-    transition_from_animation_setter!(non_interacted, non_interacted_from);
+    // transition_animation_setter!(non_interacted);
+    // transition_from_animation_setter!(non_interacted, non_interacted_from);
     transition_animation_setter!(pointer_enter);
     transition_from_animation_setter!(pointer_enter, pointer_enter_from);
     transition_animation_setter!(pointer_leave);

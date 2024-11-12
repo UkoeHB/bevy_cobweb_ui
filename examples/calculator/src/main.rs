@@ -96,12 +96,9 @@ fn build_ui(mut c: Commands)
                 } else {
                     ui.apply(Interactive)
                         .apply(Responsive::<BackgroundColor> {
-                            values: InteractiveVals::<Color> {
-                                idle: NORMAL_BUTTON.into(),
-                                hover: Some(HOVERED_BUTTON.into()),
-                                press: Some(PRESSED_BUTTON.into()),
-                                ..default()
-                            },
+                            idle: NORMAL_BUTTON.into(),
+                            hover: Some(HOVERED_BUTTON.into()),
+                            press: Some(PRESSED_BUTTON.into()),
                             ..default()
                         })
                         .on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {

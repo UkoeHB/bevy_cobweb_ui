@@ -7,19 +7,14 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-trait ApplyToDims: Send + Sync + 'static
+trait ApplyToStyle: Sized + Send + Sync + 'static
 {
-    fn apply_to_dims(self, dims: &mut Dims);
-}
-
-trait ApplyToContentFlex: Send + Sync + 'static
-{
-    fn apply_to_content_flex(self, content: &mut ContentFlex);
-}
-
-trait ApplyToSelfFlex: Send + Sync + 'static
-{
-    fn apply_to_self_flex(self, flex: &mut SelfFlex);
+    fn apply_to_absolute(self, _style: &mut AbsoluteStyle, entity: Entity)
+    {
+        tracing::warn!("tried to apply {} to {:?} that has AbsoluteStyle; only FlexStyle is supported",
+            type_name::<Self>(), entity);
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -86,79 +81,27 @@ fn remove_styles(entity: Entity, world: &mut World)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_to_dims<T: ApplyToDims>(param: T, entity: Entity, world: &mut World)
+fn apply_to_style<T: ApplyToStyle>(param: T, entity: Entity, world: &mut World)
 {
     let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
     // Check flex style.
     if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
-        param.apply_to_dims(&mut flex.get_noreact().dims);
+        param.apply_to_flex(&mut flex.get_noreact());
         React::<FlexStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Check absolute style.
     if let Some(mut absolute) = emut.get_mut::<React<AbsoluteStyle>>() {
-        param.apply_to_dims(&mut absolute.get_noreact().dims);
+        param.apply_to_absolute(&mut absolute.get_noreact(), entity);
         React::<AbsoluteStyle>::trigger_mutation(entity, world);
         return;
     }
 
     // Fall back to inserting flex style.
     let mut style = FlexStyle::default();
-    param.apply_to_dims(&mut style.dims);
-    world.react(|rc| rc.insert(entity, style));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn apply_to_content_flex<T: ApplyToContentFlex>(param: T, entity: Entity, world: &mut World)
-{
-    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-
-    // Check flex style.
-    if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
-        param.apply_to_content_flex(&mut flex.get_noreact().content);
-        React::<FlexStyle>::trigger_mutation(entity, world);
-        return;
-    }
-
-    // Check absolute style.
-    if let Some(mut absolute) = emut.get_mut::<React<AbsoluteStyle>>() {
-        param.apply_to_content_flex(&mut absolute.get_noreact().content);
-        React::<AbsoluteStyle>::trigger_mutation(entity, world);
-        return;
-    }
-
-    // Fall back to inserting flex style.
-    let mut style = FlexStyle::default();
-    param.apply_to_content_flex(&mut style.content);
-    world.react(|rc| rc.insert(entity, style));
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn apply_to_self_flex<T: ApplyToSelfFlex>(param: T, entity: Entity, world: &mut World)
-{
-    let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-
-    // Check flex style.
-    if let Some(mut flex) = emut.get_mut::<React<FlexStyle>>() {
-        param.apply_to_self_flex(&mut flex.get_noreact().flex);
-        React::<FlexStyle>::trigger_mutation(entity, world);
-        return;
-    }
-
-    // Check absolute style.
-    if emut.get::<React<AbsoluteStyle>>().is_some() {
-        tracing::warn!("tried to apply {} to {:?} that has AbsoluteStyle; only FlexStyle is supported",
-            type_name::<T>(), entity);
-        return;
-    }
-
-    // Fall back to inserting flex style.
-    let mut style = FlexStyle::default();
-    param.apply_to_self_flex(&mut style.flex);
+    param.apply_to_flex(&mut style);
     world.react(|rc| rc.insert(entity, style));
 }
 
@@ -187,7 +130,7 @@ impl Instruction for WithAbsoluteStyle
         remove_styles(entity, world);
     }
 }
-impl ThemedAttribute for WithAbsoluteStyle
+impl StaticAttribute for WithAbsoluteStyle
 {
     type Value = ();
     fn construct(_: Self::Value) -> Self
@@ -221,7 +164,7 @@ impl Instruction for WithFlexStyle
         remove_styles(entity, world);
     }
 }
-impl ThemedAttribute for WithFlexStyle
+impl StaticAttribute for WithFlexStyle
 {
     type Value = ();
     fn construct(_: Self::Value) -> Self
@@ -241,11 +184,15 @@ impl ThemedAttribute for WithFlexStyle
 )]
 pub struct Width(pub Val);
 
-impl ApplyToDims for Width
+impl ApplyToStyle for Width
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.width = self.0;
+        style.width = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.width = self.0;
     }
 }
 
@@ -253,7 +200,7 @@ impl Instruction for Width
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -262,7 +209,7 @@ impl Instruction for Width
     }
 }
 
-impl ThemedAttribute for Width
+impl StaticAttribute for Width
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -284,11 +231,15 @@ impl AnimatableAttribute for Width {}
 )]
 pub struct Height(pub Val);
 
-impl ApplyToDims for Height
+impl ApplyToStyle for Height
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.height = self.0;
+        style.height = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.height = self.0;
     }
 }
 
@@ -296,7 +247,7 @@ impl Instruction for Height
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -305,7 +256,7 @@ impl Instruction for Height
     }
 }
 
-impl ThemedAttribute for Height
+impl StaticAttribute for Height
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -327,11 +278,15 @@ impl AnimatableAttribute for Height {}
 )]
 pub struct MinWidth(pub Val);
 
-impl ApplyToDims for MinWidth
+impl ApplyToStyle for MinWidth
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.min_width = self.0;
+        style.min_width = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.min_width = self.0;
     }
 }
 
@@ -339,7 +294,7 @@ impl Instruction for MinWidth
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -348,7 +303,7 @@ impl Instruction for MinWidth
     }
 }
 
-impl ThemedAttribute for MinWidth
+impl StaticAttribute for MinWidth
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -370,11 +325,15 @@ impl AnimatableAttribute for MinWidth {}
 )]
 pub struct MinHeight(pub Val);
 
-impl ApplyToDims for MinHeight
+impl ApplyToStyle for MinHeight
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.min_height = self.0;
+        style.min_height = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.min_height = self.0;
     }
 }
 
@@ -382,7 +341,7 @@ impl Instruction for MinHeight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -391,7 +350,7 @@ impl Instruction for MinHeight
     }
 }
 
-impl ThemedAttribute for MinHeight
+impl StaticAttribute for MinHeight
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -413,11 +372,15 @@ impl AnimatableAttribute for MinHeight {}
 )]
 pub struct MaxWidth(pub Val);
 
-impl ApplyToDims for MaxWidth
+impl ApplyToStyle for MaxWidth
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.max_width = self.0;
+        style.max_width = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.max_width = self.0;
     }
 }
 
@@ -425,7 +388,7 @@ impl Instruction for MaxWidth
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -434,7 +397,7 @@ impl Instruction for MaxWidth
     }
 }
 
-impl ThemedAttribute for MaxWidth
+impl StaticAttribute for MaxWidth
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -456,11 +419,15 @@ impl AnimatableAttribute for MaxWidth {}
 )]
 pub struct MaxHeight(pub Val);
 
-impl ApplyToDims for MaxHeight
+impl ApplyToStyle for MaxHeight
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.max_height = self.0;
+        style.max_height = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.max_height = self.0;
     }
 }
 
@@ -468,7 +435,7 @@ impl Instruction for MaxHeight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -477,7 +444,7 @@ impl Instruction for MaxHeight
     }
 }
 
-impl ThemedAttribute for MaxHeight
+impl StaticAttribute for MaxHeight
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -499,11 +466,15 @@ impl AnimatableAttribute for MaxHeight {}
 )]
 pub struct AspectRatio(pub f32);
 
-impl ApplyToDims for AspectRatio
+impl ApplyToStyle for AspectRatio
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.aspect_ratio = Some(self.0);
+        style.aspect_ratio = Some(self.0);
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.aspect_ratio = Some(self.0);
     }
 }
 
@@ -511,7 +482,7 @@ impl Instruction for AspectRatio
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -520,7 +491,7 @@ impl Instruction for AspectRatio
     }
 }
 
-impl ThemedAttribute for AspectRatio
+impl StaticAttribute for AspectRatio
 {
     type Value = f32;
     fn construct(value: Self::Value) -> Self
@@ -542,11 +513,15 @@ impl AnimatableAttribute for AspectRatio {}
 )]
 pub struct Border(pub StyleRect);
 
-impl ApplyToDims for Border
+impl ApplyToStyle for Border
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.border = self.0;
+        style.border = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.border = self.0;
     }
 }
 
@@ -554,7 +529,7 @@ impl Instruction for Border
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -563,7 +538,7 @@ impl Instruction for Border
     }
 }
 
-impl ThemedAttribute for Border
+impl StaticAttribute for Border
 {
     type Value = StyleRect;
     fn construct(value: Self::Value) -> Self
@@ -594,11 +569,15 @@ impl Splattable for Border
 )]
 pub struct DimsTop(pub Val);
 
-impl ApplyToDims for DimsTop
+impl ApplyToStyle for DimsTop
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.top = self.0;
+        style.top = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.top = self.0;
     }
 }
 
@@ -606,7 +585,7 @@ impl Instruction for DimsTop
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -615,7 +594,7 @@ impl Instruction for DimsTop
     }
 }
 
-impl ThemedAttribute for DimsTop
+impl StaticAttribute for DimsTop
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -637,11 +616,15 @@ impl AnimatableAttribute for DimsTop {}
 )]
 pub struct DimsBottom(pub Val);
 
-impl ApplyToDims for DimsBottom
+impl ApplyToStyle for DimsBottom
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.bottom = self.0;
+        style.bottom = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.bottom = self.0;
     }
 }
 
@@ -649,7 +632,7 @@ impl Instruction for DimsBottom
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -658,7 +641,7 @@ impl Instruction for DimsBottom
     }
 }
 
-impl ThemedAttribute for DimsBottom
+impl StaticAttribute for DimsBottom
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -680,11 +663,15 @@ impl AnimatableAttribute for DimsBottom {}
 )]
 pub struct DimsLeft(pub Val);
 
-impl ApplyToDims for DimsLeft
+impl ApplyToStyle for DimsLeft
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.left = self.0;
+        style.left = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.left = self.0;
     }
 }
 
@@ -692,7 +679,7 @@ impl Instruction for DimsLeft
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -701,7 +688,7 @@ impl Instruction for DimsLeft
     }
 }
 
-impl ThemedAttribute for DimsLeft
+impl StaticAttribute for DimsLeft
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -723,11 +710,15 @@ impl AnimatableAttribute for DimsLeft {}
 )]
 pub struct DimsRight(pub Val);
 
-impl ApplyToDims for DimsRight
+impl ApplyToStyle for DimsRight
 {
-    fn apply_to_dims(self, dims: &mut Dims)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        dims.right = self.0;
+        style.right = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.right = self.0;
     }
 }
 
@@ -735,7 +726,7 @@ impl Instruction for DimsRight
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_dims(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -744,7 +735,7 @@ impl Instruction for DimsRight
     }
 }
 
-impl ThemedAttribute for DimsRight
+impl StaticAttribute for DimsRight
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -766,11 +757,15 @@ impl AnimatableAttribute for DimsRight {}
 )]
 pub struct SetClipping(pub Clipping);
 
-impl ApplyToContentFlex for SetClipping
+impl ApplyToStyle for SetClipping
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.clipping = self.0;
+        style.clipping = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.clipping = self.0;
     }
 }
 
@@ -778,7 +773,7 @@ impl Instruction for SetClipping
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -787,7 +782,7 @@ impl Instruction for SetClipping
     }
 }
 
-impl ThemedAttribute for SetClipping
+impl StaticAttribute for SetClipping
 {
     type Value = Clipping;
     fn construct(value: Self::Value) -> Self
@@ -808,11 +803,15 @@ impl ResponsiveAttribute for SetClipping {}
 )]
 pub struct Padding(pub StyleRect);
 
-impl ApplyToContentFlex for Padding
+impl ApplyToStyle for Padding
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.padding = self.0;
+        style.padding = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.padding = self.0;
     }
 }
 
@@ -820,7 +819,7 @@ impl Instruction for Padding
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -829,7 +828,7 @@ impl Instruction for Padding
     }
 }
 
-impl ThemedAttribute for Padding
+impl StaticAttribute for Padding
 {
     type Value = StyleRect;
     fn construct(value: Self::Value) -> Self
@@ -860,11 +859,15 @@ impl Splattable for Padding
 )]
 pub struct SetFlexDirection(pub FlexDirection);
 
-impl ApplyToContentFlex for SetFlexDirection
+impl ApplyToStyle for SetFlexDirection
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.flex_direction = self.0;
+        style.flex_direction = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.flex_direction = self.0;
     }
 }
 
@@ -872,7 +875,7 @@ impl Instruction for SetFlexDirection
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -881,7 +884,7 @@ impl Instruction for SetFlexDirection
     }
 }
 
-impl ThemedAttribute for SetFlexDirection
+impl StaticAttribute for SetFlexDirection
 {
     type Value = FlexDirection;
     fn construct(value: Self::Value) -> Self
@@ -902,11 +905,15 @@ impl ResponsiveAttribute for SetFlexDirection {}
 )]
 pub struct SetFlexWrap(pub FlexWrap);
 
-impl ApplyToContentFlex for SetFlexWrap
+impl ApplyToStyle for SetFlexWrap
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.flex_wrap = self.0;
+        style.flex_wrap = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.flex_wrap = self.0;
     }
 }
 
@@ -914,7 +921,7 @@ impl Instruction for SetFlexWrap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -923,7 +930,7 @@ impl Instruction for SetFlexWrap
     }
 }
 
-impl ThemedAttribute for SetFlexWrap
+impl StaticAttribute for SetFlexWrap
 {
     type Value = FlexWrap;
     fn construct(value: Self::Value) -> Self
@@ -944,11 +951,15 @@ impl ResponsiveAttribute for SetFlexWrap {}
 )]
 pub struct SetJustifyLines(pub JustifyLines);
 
-impl ApplyToContentFlex for SetJustifyLines
+impl ApplyToStyle for SetJustifyLines
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.justify_lines = self.0;
+        style.justify_lines = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.justify_lines = self.0;
     }
 }
 
@@ -956,7 +967,7 @@ impl Instruction for SetJustifyLines
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -965,7 +976,7 @@ impl Instruction for SetJustifyLines
     }
 }
 
-impl ThemedAttribute for SetJustifyLines
+impl StaticAttribute for SetJustifyLines
 {
     type Value = JustifyLines;
     fn construct(value: Self::Value) -> Self
@@ -986,11 +997,15 @@ impl ResponsiveAttribute for SetJustifyLines {}
 )]
 pub struct SetJustifyMain(pub JustifyMain);
 
-impl ApplyToContentFlex for SetJustifyMain
+impl ApplyToStyle for SetJustifyMain
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.justify_main = self.0;
+        style.justify_main = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.justify_main = self.0;
     }
 }
 
@@ -998,7 +1013,7 @@ impl Instruction for SetJustifyMain
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1007,7 +1022,7 @@ impl Instruction for SetJustifyMain
     }
 }
 
-impl ThemedAttribute for SetJustifyMain
+impl StaticAttribute for SetJustifyMain
 {
     type Value = JustifyMain;
     fn construct(value: Self::Value) -> Self
@@ -1028,11 +1043,15 @@ impl ResponsiveAttribute for SetJustifyMain {}
 )]
 pub struct SetJustifyCross(pub JustifyCross);
 
-impl ApplyToContentFlex for SetJustifyCross
+impl ApplyToStyle for SetJustifyCross
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.justify_cross = self.0;
+        style.justify_cross = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.justify_cross = self.0;
     }
 }
 
@@ -1040,7 +1059,7 @@ impl Instruction for SetJustifyCross
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1049,7 +1068,7 @@ impl Instruction for SetJustifyCross
     }
 }
 
-impl ThemedAttribute for SetJustifyCross
+impl StaticAttribute for SetJustifyCross
 {
     type Value = JustifyCross;
     fn construct(value: Self::Value) -> Self
@@ -1070,11 +1089,15 @@ impl ResponsiveAttribute for SetJustifyCross {}
 )]
 pub struct ColumnGap(pub Val);
 
-impl ApplyToContentFlex for ColumnGap
+impl ApplyToStyle for ColumnGap
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.column_gap = self.0;
+        style.column_gap = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.column_gap = self.0;
     }
 }
 
@@ -1082,7 +1105,7 @@ impl Instruction for ColumnGap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1091,7 +1114,7 @@ impl Instruction for ColumnGap
     }
 }
 
-impl ThemedAttribute for ColumnGap
+impl StaticAttribute for ColumnGap
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -1113,11 +1136,15 @@ impl AnimatableAttribute for ColumnGap {}
 )]
 pub struct RowGap(pub Val);
 
-impl ApplyToContentFlex for RowGap
+impl ApplyToStyle for RowGap
 {
-    fn apply_to_content_flex(self, content: &mut ContentFlex)
+    fn apply_to_absolute(self, style: &mut AbsoluteStyle, _: Entity)
     {
-        content.row_gap = self.0;
+        style.row_gap = self.0;
+    }
+    fn apply_to_flex(self, style: &mut FlexStyle)
+    {
+        style.row_gap = self.0;
     }
 }
 
@@ -1125,7 +1152,7 @@ impl Instruction for RowGap
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_content_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1134,7 +1161,7 @@ impl Instruction for RowGap
     }
 }
 
-impl ThemedAttribute for RowGap
+impl StaticAttribute for RowGap
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -1156,11 +1183,12 @@ impl AnimatableAttribute for RowGap {}
 )]
 pub struct Margin(pub StyleRect);
 
-impl ApplyToSelfFlex for Margin
+impl ApplyToStyle for Margin
 {
-    fn apply_to_self_flex(self, content: &mut SelfFlex)
+    // no apply_to_absolute, absolute not supported for SelfFlex fields
+    fn apply_to_flex(self, style: &mut FlexStyle)
     {
-        content.margin = self.0;
+        style.margin = self.0;
     }
 }
 
@@ -1168,7 +1196,7 @@ impl Instruction for Margin
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_self_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1177,7 +1205,7 @@ impl Instruction for Margin
     }
 }
 
-impl ThemedAttribute for Margin
+impl StaticAttribute for Margin
 {
     type Value = StyleRect;
     fn construct(value: Self::Value) -> Self
@@ -1208,11 +1236,12 @@ impl Splattable for Margin
 )]
 pub struct FlexBasis(pub Val);
 
-impl ApplyToSelfFlex for FlexBasis
+impl ApplyToStyle for FlexBasis
 {
-    fn apply_to_self_flex(self, content: &mut SelfFlex)
+    // no apply_to_absolute, absolute not supported for SelfFlex fields
+    fn apply_to_flex(self, style: &mut FlexStyle)
     {
-        content.flex_basis = self.0;
+        style.flex_basis = self.0;
     }
 }
 
@@ -1220,7 +1249,7 @@ impl Instruction for FlexBasis
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_self_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1229,7 +1258,7 @@ impl Instruction for FlexBasis
     }
 }
 
-impl ThemedAttribute for FlexBasis
+impl StaticAttribute for FlexBasis
 {
     type Value = Val;
     fn construct(value: Self::Value) -> Self
@@ -1251,11 +1280,12 @@ impl AnimatableAttribute for FlexBasis {}
 )]
 pub struct FlexGrow(pub f32);
 
-impl ApplyToSelfFlex for FlexGrow
+impl ApplyToStyle for FlexGrow
 {
-    fn apply_to_self_flex(self, content: &mut SelfFlex)
+    // no apply_to_absolute, absolute not supported for SelfFlex fields
+    fn apply_to_flex(self, style: &mut FlexStyle)
     {
-        content.flex_grow = self.0;
+        style.flex_grow = self.0;
     }
 }
 
@@ -1263,7 +1293,7 @@ impl Instruction for FlexGrow
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_self_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1272,7 +1302,7 @@ impl Instruction for FlexGrow
     }
 }
 
-impl ThemedAttribute for FlexGrow
+impl StaticAttribute for FlexGrow
 {
     type Value = f32;
     fn construct(value: Self::Value) -> Self
@@ -1294,11 +1324,12 @@ impl AnimatableAttribute for FlexGrow {}
 )]
 pub struct FlexShrink(pub f32);
 
-impl ApplyToSelfFlex for FlexShrink
+impl ApplyToStyle for FlexShrink
 {
-    fn apply_to_self_flex(self, content: &mut SelfFlex)
+    // no apply_to_absolute, absolute not supported for SelfFlex fields
+    fn apply_to_flex(self, style: &mut FlexStyle)
     {
-        content.flex_shrink = self.0;
+        style.flex_shrink = self.0;
     }
 }
 
@@ -1306,7 +1337,7 @@ impl Instruction for FlexShrink
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_self_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1315,7 +1346,7 @@ impl Instruction for FlexShrink
     }
 }
 
-impl ThemedAttribute for FlexShrink
+impl StaticAttribute for FlexShrink
 {
     type Value = f32;
     fn construct(value: Self::Value) -> Self
@@ -1337,11 +1368,12 @@ impl AnimatableAttribute for FlexShrink {}
 )]
 pub struct SetJustifySelfCross(pub JustifySelfCross);
 
-impl ApplyToSelfFlex for SetJustifySelfCross
+impl ApplyToStyle for SetJustifySelfCross
 {
-    fn apply_to_self_flex(self, content: &mut SelfFlex)
+    // no apply_to_absolute, absolute not supported for SelfFlex fields
+    fn apply_to_flex(self, style: &mut FlexStyle)
     {
-        content.justify_self_cross = self.0;
+        style.justify_self_cross = self.0;
     }
 }
 
@@ -1349,7 +1381,7 @@ impl Instruction for SetJustifySelfCross
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        apply_to_self_flex(self, entity, world);
+        apply_to_style(self, entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -1358,7 +1390,7 @@ impl Instruction for SetJustifySelfCross
     }
 }
 
-impl ThemedAttribute for SetJustifySelfCross
+impl StaticAttribute for SetJustifySelfCross
 {
     type Value = JustifySelfCross;
     fn construct(value: Self::Value) -> Self

@@ -1,4 +1,7 @@
+use std::any::type_name;
+
 use attributes::custom_attrs::CustomStaticStyleAttribute;
+use attributes::style_animation::AnimationConfig;
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
 use bevy::reflect::{GetTypeRegistration, Typed};
@@ -47,11 +50,12 @@ fn add_attribute_to_dynamic_style(
 /// We do *not* support setting the 'target' of an attribute because it is not easy to correctly revert
 /// attribute instructions when they are applied to other entities. It's also not clear what use the target has.
 pub(super) fn add_attribute(
-    In((origin, mut source, state, attribute)): In<(
+    In((origin, mut source, state, attribute, type_name)): In<(
         Entity,
         Option<SmolStr>,
         Option<SmallVec<[PseudoState; 3]>>,
         DynamicStyleAttribute,
+        &'static str,
     )>,
     mut c: Commands,
     parents: Query<&Parent>,
@@ -70,7 +74,7 @@ pub(super) fn add_attribute(
         if let Some(state) = &state {
             if !state.is_empty() {
                 tracing::error!(
-                    "failed adding attribute to {origin:?}, pseudo states are not supported for \
+                    "failed adding attribute {type_name} to {origin:?}, pseudo states are not supported for \
                     non-controlled dynamic sytle attributes (state: {:?})",
                     state
                 );
@@ -80,13 +84,14 @@ pub(super) fn add_attribute(
 
         if let Some(source) = &source {
             tracing::warn!(
-                "ignoring control source {source:?} for dynamic style attribute on {origin:?} that doesn't \
+                "ignoring control source {source:?} for attribute {type_name} on {origin:?} that doesn't \
                 have a ControlLabel"
             );
         }
 
         // Fall back to inserting as a plain dynamic style attribute.
-        tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute to dynamic style instead");
+        tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute {type_name} to dynamic style \
+            instead");
         add_attribute_to_dynamic_style(origin, attribute, &mut c, &mut dynamic_styles);
         return true;
     };
@@ -118,7 +123,7 @@ pub(super) fn add_attribute(
     }
 
     tracing::error!(
-        "failed adding controlled dynamic attribute to {origin:?} with {label:?}, \
+        "failed adding controlled dynamic attribute {type_name} to {origin:?} with {label:?}, \
         no ancestor with ControlRoot"
     );
     false
@@ -154,7 +159,7 @@ fn revert_attributes(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
+fn extract_static_value<T: StaticAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
 {
     move |entity: Entity, world: &mut World| {
         T::construct(val.clone()).apply(entity, world);
@@ -164,7 +169,7 @@ fn extract_static_value<T: ThemedAttribute>(val: T::Value) -> impl Fn(Entity, &m
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
+fn extract_responsive_value<T: ResponsiveAttribute + StaticAttribute>(
     vals: InteractiveVals<T::Value>,
 ) -> impl Fn(Entity, FluxInteraction, &mut World)
 {
@@ -180,11 +185,11 @@ fn extract_responsive_value<T: ResponsiveAttribute + ThemedAttribute>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatableAttribute + ThemedAttribute>(
+fn extract_animation_value<T: AnimatableAttribute + StaticAttribute>(
     vals: AnimatedVals<T::Value>,
 ) -> impl Fn(Entity, AnimationState, &mut World)
 where
-    <T as ThemedAttribute>::Value: Lerp,
+    <T as StaticAttribute>::Value: Lerp,
 {
     move |entity: Entity, state: AnimationState, world: &mut World| {
         // Compute new value.
@@ -199,7 +204,7 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that specify a value for a theme.
-pub trait ThemedAttribute: Instruction + Typed
+pub trait StaticAttribute: Instruction + Typed
 {
     /// Specifies the value-type of the theme attribute.
     type Value: Loadable + Typed + Clone;
@@ -224,9 +229,9 @@ pub trait AnimatableAttribute: Loadable + Typed {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl<T> ThemedAttribute for Splat<T>
+impl<T> StaticAttribute for Splat<T>
 where
-    T: Instruction + Splattable + ThemedAttribute + GetTypeRegistration,
+    T: Instruction + Splattable + StaticAttribute + GetTypeRegistration,
 {
     type Value = T::Splat;
     fn construct(value: Self::Value) -> Self
@@ -239,17 +244,18 @@ impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribu
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable type for theme values.
+/// Instruction for static values.
 ///
-/// Primarily useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
+/// Useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
 //TODO: how to properly add Serialize/Deserialize derives when `serde` feature is enabled? we don't want to
-// require that T::Value implements Serialize/Deserialize
+// require that T::Value implements Serialize/Deserialize unless necessary
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Themed<T: ThemedAttribute>
+pub struct Static<T: StaticAttribute>
 where
-    <T as ThemedAttribute>::Value: GetTypeRegistration,
+    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
-    /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this to become active.
+    /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
+    /// of must be in for this to become active.
     ///
     /// Only used if this struct is applied to an entity with a [`ControlLabel`].
     #[reflect(default)]
@@ -258,9 +264,9 @@ where
     pub value: T::Value,
 }
 
-impl<T: ThemedAttribute> Instruction for Themed<T>
+impl<T: StaticAttribute> Instruction for Static<T>
 where
-    <T as ThemedAttribute>::Value: GetTypeRegistration,
+    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -269,7 +275,10 @@ where
             CustomStaticStyleAttribute::new(extract_static_value::<T>(self.value)),
         ));
 
-        world.syscall((entity, None, self.state, attribute), add_attribute);
+        world.syscall(
+            (entity, None, self.state, attribute, type_name::<Self>()),
+            add_attribute,
+        );
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -284,25 +293,24 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable type for responsive values.
+/// Instruction for responsive values.
 ///
 /// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Responsive<T: ResponsiveAttribute + ThemedAttribute>
+pub struct Responsive<T: ResponsiveAttribute + StaticAttribute>
 where
-    <T as ThemedAttribute>::Value: GetTypeRegistration,
+    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
-    /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this to become active.
+    /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
+    /// of must be in for this to become active.
     ///
     /// Only used if this struct is applied to an entity with a [`ControlLabel`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
-    /// The values that are toggled in response to interaction changes.
-    pub values: InteractiveVals<T::Value>,
 
-    /// The [`ControlLabel`] of an entity in the current widget. Interactions on that entity will control this
-    /// value.
+    /// The [`ControlLabel`] of an entity in the current widget. This attribute responds to interactions on
+    /// that entity.
     ///
     /// If `None`, then:
     /// - If the current entity has no [`ControlLabel`], then interactions on the current entity will control the
@@ -310,21 +318,43 @@ where
     /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
-    pub source: Option<SmolStr>,
+    pub respond_to: Option<SmolStr>,
+
+    /// The value to display when the source is idle.
+    pub idle: T::Value,
+    /// The value to display when the source is hovered.
+    #[reflect(default)]
+    pub hover: Option<T::Value>,
+    /// The value to display when the source is pressed.
+    #[reflect(default)]
+    pub press: Option<T::Value>,
+    /// The value to display when the source is canceled.
+    #[reflect(default)]
+    pub cancel: Option<T::Value>,
 }
 
-impl<T: ResponsiveAttribute + ThemedAttribute> Instruction for Responsive<T>
+impl<T: ResponsiveAttribute + StaticAttribute> Instruction for Responsive<T>
 where
-    <T as ThemedAttribute>::Value: GetTypeRegistration,
+    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
+        let values = InteractiveVals::<T::Value> {
+            idle: self.idle,
+            hover: self.hover,
+            press: self.press,
+            cancel: self.cancel,
+        };
+
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::new(
-            extract_responsive_value::<T>(self.values),
+            extract_responsive_value::<T>(values),
         ));
 
-        if world.syscall((entity, self.source, self.state, attribute), add_attribute) {
+        if world.syscall(
+            (entity, self.respond_to, self.state, attribute, type_name::<Self>()),
+            add_attribute,
+        ) {
             // Interactive if the attribute was applied directly to self.
             Interactive.apply(entity, world);
         }
@@ -343,25 +373,21 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable type for animatable values.
+/// Instruction for animatable values.
 ///
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Animated<T: AnimatableAttribute + ThemedAttribute>
+pub struct Animated<T: AnimatableAttribute + StaticAttribute>
 where
-    <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
+    <T as StaticAttribute>::Value: Lerp + GetTypeRegistration,
 {
-    /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for this animation to become active.
+    /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
+    /// of must be in for this animation to become active.
     ///
     /// Only used if this struct is applied to an entity with a [`ControlLabel`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
-    /// The values that are end-targets for each animation.
-    pub values: AnimatedVals<T::Value>,
-    /// Settings that control how values are interpolated.
-    #[reflect(default)]
-    pub settings: AnimationSettings,
 
     /// The [`ControlLabel`] of an entity in the current widget. Interactions on that entity will control this
     /// value.
@@ -372,22 +398,114 @@ where
     /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
-    pub source: Option<SmolStr>,
+    pub respond_to: Option<SmolStr>,
+
+    /// Reference value to use when animating to [`Self::idle`] with [`Self::enter_idle_with`] when the attribute
+    /// is first applied.
+    #[reflect(default)]
+    pub enter_ref: Option<T::Value>,
+
+    /// The value when idle.
+    pub idle: T::Value,
+    /// Controls animation to the [`Self::idle`] value when the attribute is first applied.
+    #[reflect(default)]
+    pub enter_idle_with: Option<AnimationConfig>,
+    /// Controls animation to the [`Self::idle`] value when the entity becomes disabled.
+    #[reflect(default)]
+    pub disable_with: Option<AnimationConfig>,
+
+    /// The value when hovered.
+    #[reflect(default)]
+    pub hover: Option<T::Value>,
+    #[reflect(default)]
+    pub hover_with: Option<AnimationConfig>,
+    /// Controls animation to the [`Self::idle`] value when the pointer leaves the entity.
+    #[reflect(default)]
+    pub unhover_with: Option<AnimationConfig>,
+
+    /// The value when pressed.
+    #[reflect(default)]
+    pub press: Option<T::Value>,
+    #[reflect(default)]
+    pub press_with: Option<AnimationConfig>,
+    /// Controls animation from [`Self::press`] to [`Self::hover`].
+    #[reflect(default)]
+    pub release_with: Option<AnimationConfig>,
+
+    /// The value when a press was recently canceled.
+    #[reflect(default)]
+    pub cancel: Option<T::Value>,
+    #[reflect(default)]
+    pub cancel_with: Option<AnimationConfig>,
+    /// Controls animation from [`Self::cancel`] to [`Self::idle`].
+    #[reflect(default)]
+    pub cancel_end_with: Option<AnimationConfig>,
+
+    /// Secondary value that idle loops ping-pong to.
+    #[reflect(default)]
+    pub idle_secondary: Option<T::Value>,
+    #[reflect(default)]
+    pub idle_loop: Option<LoopedAnimationConfig>,
+
+    /// Secondary value that hover loops ping-pong to.
+    #[reflect(default)]
+    pub hover_secondary: Option<T::Value>,
+    #[reflect(default)]
+    pub hover_loop: Option<LoopedAnimationConfig>,
+
+    /// Secondary value that press loops ping-pong to.
+    #[reflect(default)]
+    pub press_secondary: Option<T::Value>,
+    #[reflect(default)]
+    pub press_loop: Option<LoopedAnimationConfig>,
+
+    /// Indicates whether the attribute should be removed from the entity after [`Self::enter_idle_with`]
+    /// executes.
+    #[reflect(default)]
+    pub delete_on_entered: bool,
 }
 
-impl<T: AnimatableAttribute + ThemedAttribute> Instruction for Animated<T>
+impl<T: AnimatableAttribute + StaticAttribute> Instruction for Animated<T>
 where
-    <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
+    <T as StaticAttribute>::Value: Lerp + GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::new(extract_animation_value::<T>(self.values)),
-            controller: DynamicStyleController::new(self.settings, AnimationState::default()),
+        let values = AnimatedVals::<T::Value> {
+            idle: self.idle,
+            hover: self.hover,
+            press: self.press,
+            cancel: self.cancel,
+            idle_alt: self.idle_secondary,
+            hover_alt: self.hover_secondary,
+            press_alt: self.press_secondary,
+            enter_from: self.enter_ref,
+        };
+        let settings = AnimationSettings {
+            enter: self.enter_idle_with,
+            pointer_enter: self.hover_with,
+            pointer_leave: self.unhover_with,
+            press: self.press_with,
+            release: self.release_with,
+            cancel: self.cancel_with,
+            cancel_reset: self.cancel_end_with,
+            disable: self.disable_with,
+            idle: self.idle_loop,
+            hover: self.hover_loop,
+            pressed: self.press_loop,
+            delete_on_entered: self.delete_on_entered,
         };
 
-        if world.syscall((entity, self.source, self.state, attribute), add_attribute) {
+        // Prepare an updated DynamicStyleAttribute.
+        let attribute = DynamicStyleAttribute::Animated {
+            attribute: AnimatedStyleAttribute::new(extract_animation_value::<T>(values)),
+            controller: DynamicStyleController::new(settings, AnimationState::default()),
+        };
+
+        if world.syscall(
+            (entity, self.respond_to, self.state, attribute, type_name::<Self>()),
+            add_attribute,
+        ) {
             // Interactive if the attribute was applied directly to self.
             Interactive.apply(entity, world);
         }

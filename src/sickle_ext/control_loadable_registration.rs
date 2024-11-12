@@ -9,39 +9,39 @@ use crate::sickle_ext::lerp::Lerp;
 /// Helper methods for registering controlled instructions.
 pub trait ControlRegistrationExt
 {
-    fn register_themed<T: GetTypeRegistration + Instruction + ThemedAttribute>(&mut self) -> &mut Self
+    fn register_themed<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: GetTypeRegistration;
-    fn register_responsive<T: GetTypeRegistration + Instruction + ThemedAttribute + ResponsiveAttribute>(
+        <T as StaticAttribute>::Value: GetTypeRegistration;
+    fn register_responsive<T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute>(
         &mut self,
     ) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: GetTypeRegistration;
+        <T as StaticAttribute>::Value: GetTypeRegistration;
     fn register_animatable<
-        T: GetTypeRegistration + Instruction + ThemedAttribute + ResponsiveAttribute + AnimatableAttribute,
+        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatableAttribute,
     >(
         &mut self,
     ) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration;
+        <T as StaticAttribute>::Value: Lerp + GetTypeRegistration;
 }
 
 impl ControlRegistrationExt for App
 {
-    fn register_themed<T: GetTypeRegistration + Instruction + ThemedAttribute>(&mut self) -> &mut Self
+    fn register_themed<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: GetTypeRegistration,
+        <T as StaticAttribute>::Value: GetTypeRegistration,
     {
         self.register_instruction_type::<T>()
-            .register_instruction_type::<Themed<T>>()
-            .register_instruction_type::<Multi<Themed<T>>>()
+            .register_instruction_type::<Static<T>>()
+            .register_instruction_type::<Multi<Static<T>>>()
     }
 
-    fn register_responsive<T: GetTypeRegistration + Instruction + ThemedAttribute + ResponsiveAttribute>(
+    fn register_responsive<T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute>(
         &mut self,
     ) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: GetTypeRegistration,
+        <T as StaticAttribute>::Value: GetTypeRegistration,
     {
         self.register_themed::<T>()
             .register_instruction_type::<Responsive<T>>()
@@ -49,12 +49,12 @@ impl ControlRegistrationExt for App
     }
 
     fn register_animatable<
-        T: GetTypeRegistration + Instruction + ThemedAttribute + ResponsiveAttribute + AnimatableAttribute,
+        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatableAttribute,
     >(
         &mut self,
     ) -> &mut Self
     where
-        <T as ThemedAttribute>::Value: Lerp + GetTypeRegistration,
+        <T as StaticAttribute>::Value: Lerp + GetTypeRegistration,
     {
         self.register_responsive::<T>()
             .register_instruction_type::<Animated<T>>()

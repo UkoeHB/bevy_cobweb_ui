@@ -253,6 +253,7 @@ pub enum PseudoState
     Open,
     Closed,
     Error,
+    Dying,
     Resizable(CardinalDirection),
     Custom(String),
 }
