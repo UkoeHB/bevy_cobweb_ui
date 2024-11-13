@@ -94,6 +94,7 @@ impl CobDefs
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
+        writer.write_bytes("#defs".as_bytes())?;
         for entry in self.entries.iter() {
             entry.write_to(writer)?;
         }
