@@ -117,7 +117,12 @@ impl CobMapKeyValue
     {
         let (maybe_key, semicolon_fill, remaining) = CobMapKey::try_parse(fill, content)?;
         let Some(key) = maybe_key else { return Ok((None, semicolon_fill, content)) };
-        let (remaining, _) = char(':').parse(remaining)?;
+        // Allow failure on missing `:` in case we are inside a value group where there can be either single values
+        // or map entries.
+        let remaining = match char::<_, ()>(':').parse(remaining) {
+            Ok((remaining, _)) => remaining,
+            Err(_) => return Ok((None, semicolon_fill, content)),
+        };
         let (value_fill, remaining) = CobFill::parse(remaining);
         let (Some(value), next_fill, remaining) = CobValue::try_parse(value_fill, remaining)? else {
             tracing::warn!("failed parsing value for map entry at {}; no valid value found", get_location(remaining));

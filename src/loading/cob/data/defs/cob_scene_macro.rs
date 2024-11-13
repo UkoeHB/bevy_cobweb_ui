@@ -55,6 +55,12 @@ impl CobSceneMacroDef
         Ok(())
     }
 
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    {
+        // TODO
+        Ok((None, fill, content))
+    }
+
     pub fn recover_fill(&mut self, _other: &Self) {}
 }
 

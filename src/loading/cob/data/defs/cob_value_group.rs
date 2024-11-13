@@ -1,3 +1,6 @@
+use nom::character::complete::char;
+use nom::Parser;
+
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -29,11 +32,11 @@ impl CobValueGroupEntry
         // Check for key-value first in case a key is a CobValue.
         let fill = match CobMapKeyValue::try_parse(fill, content)? {
             (Some(kv), next_fill, remaining) => return Ok((Some(Self::KeyValue(kv)), next_fill, remaining)),
-            (_, fill, _) => fill
+            (_, fill, _) => fill,
         };
         let fill = match CobValue::try_parse(fill, content)? {
             (Some(value), next_fill, remaining) => return Ok((Some(Self::Value(value)), next_fill, remaining)),
-            (_, fill, _) => fill
+            (_, fill, _) => fill,
         };
 
         Ok((None, fill, content))
@@ -86,18 +89,20 @@ impl CobValueGroup
 
     pub fn try_parse(start_fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
     {
-        let Ok((remaining, _)) = char('\\').parse(content) else { return Ok((None, start_fill, content ))};
+        let Ok((remaining, _)) = char::<_, ()>('\\').parse(content) else {
+            return Ok((None, start_fill, content));
+        };
 
         let (mut item_fill, mut remaining) = CobFill::parse(remaining);
         let mut entries = vec![];
 
-        let close_fill = loop {
+        let end_fill = loop {
             let fill_len = item_fill.len();
             match CobValueGroupEntry::try_parse(item_fill, remaining)? {
                 (Some(entry), next_fill, after_entry) => {
                     if entries.len() > 0 {
                         if fill_len == 0 {
-                            tracing::warn!("failed parsing array at {}; entry #{} is not preceded by fill/whitespace",
+                            tracing::warn!("failed parsing value group at {}; entry #{} is not preceded by fill/whitespace",
                                 get_location(content), entries.len() + 1);
                             return Err(span_verify_error(content));
                         }
@@ -106,16 +111,16 @@ impl CobValueGroup
                     item_fill = next_fill;
                     remaining = after_entry;
                 }
-                (None, close_fill, after_end) => {
+                (None, end_fill, after_end) => {
                     remaining = after_end;
-                    break close_fill;
+                    break end_fill;
                 }
             }
         };
 
         let (remaining, _) = char('\\').parse(remaining)?;
         let (post_fill, remaining) = CobFill::parse(remaining);
-        Ok((Some(Self { start_fill, entries, close_fill }), post_fill, remaining))
+        Ok((Some(Self { start_fill, entries, end_fill }), post_fill, remaining))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -127,9 +132,5 @@ impl CobValueGroup
         self.end_fill.recover(&other.end_fill);
     }
 }
-
-/*
-Parsing:
-*/
 
 //-------------------------------------------------------------------------------------------------------------------

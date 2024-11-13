@@ -1,4 +1,4 @@
-WIP
+Attempt at a semi-formal specification for COB - WIP
 
 ## Global
 

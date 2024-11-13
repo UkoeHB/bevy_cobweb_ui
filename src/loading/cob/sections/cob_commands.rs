@@ -31,12 +31,16 @@ impl CobCommandEntry
     pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
     {
         let starts_newline = fill.ends_with_newline();
+        let check_newline = || -> Result<(), SpanError> {
+            if !starts_newline {
+                tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
+                return Err(span_verify_error(content));
+            }
+            Ok(())
+        };
         let fill = match rc(content, move |c| CobLoadable::try_parse(fill, c))? {
             (Some(loadable), next_fill, remaining) => {
-                if !starts_newline {
-                    tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
-                    return Err(span_verify_error(content));
-                }
+                (check_newline)()?;
                 // NOTE: macro params are not allowed in commands but we don't check here to avoid the perf cost
                 // of traversing the structure. Allow errors to be detected downstream (e.g. when deserializing).
                 // TODO: re-evaluate if this is useful; the perf cost of traversing everything again is
@@ -47,10 +51,7 @@ impl CobCommandEntry
         };
         let fill = match rc(content, move |c| CobLoadableMacroCall::try_parse(fill, c))? {
             (Some(call), next_fill, remaining) => {
-                if !starts_newline {
-                    tracing::warn!("command entry doesn't start on a new line at {}", get_location(content).as_str());
-                    return Err(span_verify_error(content));
-                }
+                (check_newline)()?;
                 return Ok((Some(Self::LoadableMacroCall(call)), next_fill, remaining));
             }
             (None, fill, _) => fill,

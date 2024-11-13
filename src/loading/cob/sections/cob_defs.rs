@@ -34,6 +34,48 @@ impl CobDefEntry
         }
         Ok(())
     }
+
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    {
+        let starts_newline = fill.ends_with_newline();
+        let check_newline = || -> Result<(), SpanError> {
+            if !starts_newline {
+                tracing::warn!("def entry doesn't start on a new line at {}", get_location(content).as_str());
+                return Err(span_verify_error(content));
+            }
+            Ok(())
+        };
+        let fill = match rc(content, move |c| CobConstantDef::try_parse(fill, c))? {
+            (Some(def), next_fill, remaining) => {
+                (check_newline)()?;
+                return Ok((Some(Self::Constant(def)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+        let fill = match rc(content, move |c| CobDataMacroDef::try_parse(fill, c))? {
+            (Some(def), next_fill, remaining) => {
+                (check_newline)()?;
+                return Ok((Some(Self::DataMacro(def)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+        let fill = match rc(content, move |c| CobLoadableMacroDef::try_parse(fill, c))? {
+            (Some(def), next_fill, remaining) => {
+                (check_newline)()?;
+                return Ok((Some(Self::LoadableMacro(def)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+        let fill = match rc(content, move |c| CobSceneMacroDef::try_parse(fill, c))? {
+            (Some(def), next_fill, remaining) => {
+                (check_newline)()?;
+                return Ok((Some(Self::SceneMacro(def)), next_fill, remaining));
+            }
+            (None, fill, _) => fill,
+        };
+
+        Ok((None, fill, content))
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -43,7 +85,7 @@ impl CobDefEntry
 pub struct CobDefs
 {
     pub start_fill: CobFill,
-    pub defs: Vec<CobDefEntry>,
+    pub entries: Vec<CobDefEntry>,
 }
 
 impl CobDefs
@@ -52,8 +94,8 @@ impl CobDefs
     {
         let space = if first_section { "" } else { "\n\n" };
         self.start_fill.write_to_or_else(writer, space)?;
-        for def in self.defs.iter() {
-            def.write_to(writer)?;
+        for entry in self.entries.iter() {
+            entry.write_to(writer)?;
         }
         Ok(())
     }
@@ -70,15 +112,25 @@ impl CobDefs
             return Err(span_verify_error(content));
         }
 
-        // TODO (with recursion testing)
+        let (mut item_fill, mut remaining) = CobFill::parse(remaining);
+        let mut entries = vec![];
 
-        let defs = CobDefs { start_fill, defs: vec![] };
-        Ok((Some(defs), CobFill::default(), remaining))
-    }
+        let end_fill = loop {
+            match rc(remaining, move |rm| CobDefEntry::try_parse(item_fill, rm))? {
+                (Some(entry), next_fill, after_entry) => {
+                    entries.push(entry);
+                    item_fill = next_fill;
+                    remaining = after_entry;
+                }
+                (None, end_fill, after_end) => {
+                    remaining = after_end;
+                    break end_fill;
+                }
+            }
+        };
 
-    pub fn eq_ignore_whitespace(&self, _other: &CobDefs) -> bool
-    {
-        true
+        let defs = CobDefs { start_fill, entries };
+        Ok((Some(defs), end_fill, remaining))
     }
 }
 
