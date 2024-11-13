@@ -270,6 +270,8 @@ impl CobAssetCache
         #[cfg(feature = "hot_reload")]
         {
             processed.imports = preprocessed.imports;
+            // Data must be cloned before extraction, because extraction will modify the value in-place in order
+            // to process definitions. Definitions always need to be re-processed when re-extracting a file.
             processed.data = preprocessed.data.clone();
         }
 

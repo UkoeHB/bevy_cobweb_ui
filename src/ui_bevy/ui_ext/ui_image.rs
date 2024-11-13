@@ -48,8 +48,6 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Mirrors [`UiImage`] for serialization.
-///
-/// Must be inserted to an entity with [`NodeBundle`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",

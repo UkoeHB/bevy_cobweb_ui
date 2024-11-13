@@ -61,35 +61,37 @@ pub(crate) fn preprocess_cob_file(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Extracts importable values (using and defs sections).
+///
+/// This is semi-destructive, because definitions will be removed and inserted to appropriate maps/buffers.
 pub(crate) fn extract_cob_importables(
     type_registry: &TypeRegistry,
     file: CobFile,
     data: &mut Cob,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-    _constants_buffer: &mut ConstantsBuffer,
+    constants_buffer: &mut ConstantsBuffer,
     // tracks specs
     _specs: &mut SpecsMap,
 )
 {
     tracing::info!("extracting cobweb asset file {:?}", file.as_str());
 
+    constants_buffer.start_new_file();
+
     for section in data.sections.iter_mut() {
         match section {
             CobSection::Using(section) => extract_using_section(type_registry, &file, section, name_shortcuts),
-            CobSection::Defs(_section) => {
-                // TODO
-                // extract_constants_section(&file, &mut data, constants_buffer)
-                // extract_specs_section(&file, &mut data, specs)
-            }
+            CobSection::Defs(section) => extract_defs_section(&file, section, constants_buffer),
             _ => (),
         }
     }
+
+    constants_buffer.end_new_file();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extracts commands from a `Cob`. Commands are updated in-place when applying defs.
+/// Extracts commands from a `Cob`. Commands are updated in-place when resolving defs.
 pub(crate) fn extract_cob_commands(
     type_registry: &TypeRegistry,
     commands_buffer: &mut CommandsBuffer,
@@ -97,7 +99,7 @@ pub(crate) fn extract_cob_commands(
     data: &mut Cob,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-    _constants_buffer: &ConstantsBuffer,
+    constants_buffer: &ConstantsBuffer,
     // tracks specs
     _specs: &SpecsMap,
 )
@@ -106,11 +108,14 @@ pub(crate) fn extract_cob_commands(
 
     for section in data.sections.iter_mut() {
         match section {
-            CobSection::Commands(section) => {
-                // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
-                // insert_specs(&file, &mut data, specs);
-                extract_commands_section(type_registry, &mut commands, &file, section, name_shortcuts);
-            }
+            CobSection::Commands(section) => extract_commands_section(
+                type_registry,
+                &mut commands,
+                &file,
+                section,
+                name_shortcuts,
+                constants_buffer,
+            ),
             _ => (),
         }
     }
@@ -120,7 +125,7 @@ pub(crate) fn extract_cob_commands(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extracts scenes from a `Cob`. Scene nodes are updated in-place when applying defs.
+/// Extracts scenes from a `Cob`. Scene nodes are updated in-place when resolving defs.
 pub(crate) fn extract_cob_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
@@ -130,26 +135,23 @@ pub(crate) fn extract_cob_scenes(
     mut data: Cob,
     // [ shortname : longname ]
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
-    _constants_buffer: &ConstantsBuffer,
+    constants_buffer: &ConstantsBuffer,
     // tracks specs
     _specs: &SpecsMap,
 )
 {
     for section in data.sections.iter_mut() {
         match section {
-            CobSection::Scenes(section) => {
-                // search_and_replace_map_constants(&file, CONSTANT_MARKER, &mut data, constants_buffer);
-                // insert_specs(&file, &mut data, specs);
-                extract_scenes(
-                    type_registry,
-                    c,
-                    scene_buffer,
-                    scene_loader,
-                    &file,
-                    section,
-                    name_shortcuts,
-                );
-            }
+            CobSection::Scenes(section) => extract_scenes(
+                type_registry,
+                c,
+                scene_buffer,
+                scene_loader,
+                &file,
+                section,
+                name_shortcuts,
+                constants_buffer,
+            ),
             _ => (),
         }
     }

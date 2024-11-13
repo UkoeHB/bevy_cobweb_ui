@@ -11,8 +11,9 @@ pub(super) fn extract_commands_section(
     type_registry: &TypeRegistry,
     commands: &mut Vec<(&'static str, ErasedLoadable)>,
     file: &CobFile,
-    section: &CobCommands,
+    section: &mut CobCommands,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    constants_buffer: &ConstantsBuffer,
 )
 {
     if section.entries.is_empty() {
@@ -23,7 +24,7 @@ pub(super) fn extract_commands_section(
     let mut shortname = String::default();
     let mut seen_shortnames = vec![];
 
-    for entry in section.entries.iter() {
+    for entry in section.entries.iter_mut() {
         match entry {
             CobCommandEntry::Loadable(loadable) => {
                 // Get the shortname.
@@ -44,6 +45,13 @@ pub(super) fn extract_commands_section(
                 }
 
                 seen_shortnames.push(short_name);
+
+                // Resolve defs.
+                if let Err(err) = loadable.resolve(constants_buffer) {
+                    tracing::warn!("failed extracting command {:?} in {:?}; error resolving defs: {:?}",
+                        short_name, file, err.as_str());
+                    continue;
+                }
 
                 // Get the commands's value.
                 let command_value = get_loadable_value(deserializer, loadable);

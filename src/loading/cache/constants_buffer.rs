@@ -4,6 +4,7 @@ use std::sync::Arc;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
+use crate::loading::CobConstantValue;
 use crate::prelude::CobImportAlias;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -31,8 +32,8 @@ fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// [ path : [ terminal identifier : constant value ] ]
-type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, ()>>;
+// [ identifier : constant value ]
+type ConstantsMap = HashMap<SmolStr, CobConstantValue>;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -40,43 +41,36 @@ type ConstantsMap = HashMap<SmolStr, HashMap<SmolStr, ()>>;
 ///
 /// Used to efficiently merge constants when importing them into new files.
 #[derive(Default, Debug)]
-pub(crate) struct ConstantsBuffer
+pub struct ConstantsBuffer
 {
     stack: SmallVec<[(SmolStr, Arc<ConstantsMap>); 5]>,
-    _new_file: ConstantsMap,
+    new_file: ConstantsMap,
 }
 
 impl ConstantsBuffer
 {
-    pub(crate) fn _start_new_file(&mut self)
+    pub(crate) fn start_new_file(&mut self)
     {
-        self._new_file = HashMap::default();
+        self.new_file = HashMap::default();
     }
 
-    pub(crate) fn _end_new_file(&mut self)
+    pub(crate) fn end_new_file(&mut self)
     {
-        let map = std::mem::take(&mut self._new_file);
+        let map = std::mem::take(&mut self.new_file);
         self.stack.push((SmolStr::default(), Arc::new(map)));
     }
 
-    /// Adds an entry to the new file being constructed.
-    pub(crate) fn _add_entry(&mut self, path: SmolStr, map: HashMap<SmolStr, ()>)
+    /// Adds an entry to the new file being collected.
+    pub(crate) fn insert(&mut self, name: SmolStr, value: CobConstantValue)
     {
-        self._new_file.insert(path, map);
-    }
-
-    /// Gets an already-inserted entry in the new file being constructed.
-    pub(crate) fn _get_entry_mut(&mut self, path: impl AsRef<str>) -> Option<&mut HashMap<SmolStr, ()>>
-    {
-        let path = path.as_ref();
-        self._new_file.get_mut(path)
+        self.new_file.insert(name, value);
     }
 
     /// Searches backward through the stack until a match is found.
-    pub(crate) fn _get_path(&self, path: impl AsRef<str>) -> Option<&HashMap<SmolStr, ()>>
+    pub fn get(&self, path: impl AsRef<str>) -> Option<&CobConstantValue>
     {
         let path = path.as_ref();
-        self._new_file.get(path).or_else(|| {
+        self.new_file.get(path).or_else(|| {
             self.stack.iter().rev().find_map(|(prefix, m)| {
                 let stripped = path.strip_prefix(prefix.as_str())?;
                 let cleaned = stripped
@@ -91,7 +85,7 @@ impl ConstantsBuffer
     {
         let alias = alias.as_str();
 
-        // Remove duplicates in self.
+        // Remove duplicate maps in self.
         for (to_append_prefix, to_append) in to_append.stack.iter() {
             let new_to_append_prefix = path_to_string(CONSTANT_SEPARATOR, &[alias, &*to_append_prefix]);
             let Some(existing) = self.stack.iter().position(|(prefix, m)| {

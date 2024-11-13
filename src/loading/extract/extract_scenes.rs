@@ -15,8 +15,9 @@ fn handle_loadable(
     scene_buffer: &mut SceneBuffer,
     file: &CobFile,
     current_path: &ScenePath,
-    loadable: &CobLoadable,
+    loadable: &mut CobLoadable,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    constants_buffer: &ConstantsBuffer,
 ) -> String
 {
     // Get the loadable's longname.
@@ -36,6 +37,13 @@ fn handle_loadable(
 
     let loadable_index = seen_shortnames.len();
     seen_shortnames.push(short_name);
+
+    // Resolve defs.
+    if let Err(err) = loadable.resolve(constants_buffer) {
+        tracing::warn!("failed extracting loadable {:?} at {:?} in {:?}; error resolving defs: {:?}",
+            short_name, current_path, file, err.as_str());
+        return id_scratch;
+    }
 
     // Get the loadable's value.
     let loadable_value = get_loadable_value(deserializer, loadable);
@@ -67,8 +75,9 @@ fn handle_scene_node(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     parent_path: &ScenePath,
-    cob_layer: &CobSceneLayer,
+    cob_layer: &mut CobSceneLayer,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    constants_buffer: &ConstantsBuffer,
     anonymous_count: &mut usize,
 ) -> String
 {
@@ -119,6 +128,7 @@ fn handle_scene_node(
         &node_path,
         cob_layer,
         name_shortcuts,
+        constants_buffer,
     )
 }
 
@@ -134,8 +144,9 @@ fn extract_scene_layer(
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     current_path: &ScenePath,
-    cob_layer: &CobSceneLayer,
+    cob_layer: &mut CobSceneLayer,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    constants_buffer: &ConstantsBuffer,
 ) -> String
 {
     // Prep the node.
@@ -148,7 +159,7 @@ fn extract_scene_layer(
     // Add loadables.
     seen_shortnames.clear();
 
-    for entry in cob_layer.entries.iter() {
+    for entry in cob_layer.entries.iter_mut() {
         match entry {
             CobSceneLayerEntry::Loadable(loadable) => {
                 id_scratch = handle_loadable(
@@ -163,17 +174,21 @@ fn extract_scene_layer(
                     current_path,
                     loadable,
                     name_shortcuts,
+                    constants_buffer,
                 );
             }
             // Do this one after we are done using the `seen_shortnames` buffer.
             CobSceneLayerEntry::Layer(_) => (),
             CobSceneLayerEntry::LoadableMacroCall(_) => {
+                // TODO: resolve
                 tracing::warn!("ignoring loadable macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
             CobSceneLayerEntry::SceneMacroCall(_) => {
+                // TODO: resolve
                 tracing::warn!("ignoring scene macro call in scene node {:?} in {:?}", current_path, scene.file);
             }
             CobSceneLayerEntry::SceneMacroParam(_) => {
+                // TODO: these are not allowed to appear here, they should already be resolved
                 tracing::warn!("ignoring scene macro param in scene node {:?} in {:?}", current_path, scene.file);
             }
         }
@@ -184,7 +199,7 @@ fn extract_scene_layer(
 
     // Add layers.
     let mut anonymous_count = 0;
-    for entry in cob_layer.entries.iter() {
+    for entry in cob_layer.entries.iter_mut() {
         match entry {
             CobSceneLayerEntry::Layer(next_cob_layer) => {
                 id_scratch = handle_scene_node(
@@ -199,6 +214,7 @@ fn extract_scene_layer(
                     current_path,
                     next_cob_layer,
                     name_shortcuts,
+                    constants_buffer,
                     &mut anonymous_count,
                 );
             }
@@ -224,7 +240,6 @@ fn extract_scene_layer(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// TODO: handle anonymous nodes
 // TODO: disallow duplicate node names, excluding anonymous nodes
 pub(super) fn extract_scenes(
     type_registry: &TypeRegistry,
@@ -232,15 +247,16 @@ pub(super) fn extract_scenes(
     scene_buffer: &mut SceneBuffer,
     scene_loader: &mut SceneLoader,
     file: &CobFile,
-    section: &CobScenes,
+    section: &mut CobScenes,
     name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    constants_buffer: &ConstantsBuffer,
 )
 {
     let mut scene_registry = scene_loader.take_scene_registry();
     let mut id_scratch = String::default();
     let mut seen_shortnames = vec![];
 
-    for cob_layer in section.scenes.iter() {
+    for cob_layer in section.scenes.iter_mut() {
         // Get this scene for editing.
         let Some(path) = ScenePath::parse_single(&*cob_layer.name) else {
             tracing::error!("failed parsing scene {:?} in {:?}, scene root ID is a multi-segment path, only \
@@ -263,6 +279,7 @@ pub(super) fn extract_scenes(
             &scene_ref.path,
             cob_layer,
             name_shortcuts,
+            constants_buffer,
         );
     }
 

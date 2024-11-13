@@ -80,6 +80,45 @@ impl CobArray
         }
         self.end_fill.recover(&other.end_fill);
     }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        let mut idx = 0;
+        while idx < self.entries.len() {
+            // If resolving the entry returns a group of values, they need to be flattened into this array.
+            let Some(group) = self.entries[idx].resolve(constants)? else {
+                idx += 1;
+                continue;
+            };
+
+            // Remove the old entry.
+            let old = self.entries.remove(idx);
+
+            // Flatten the group into the array.
+            for val in group.iter() {
+                match val {
+                    CobValueGroupEntry::KeyValue(_) => {
+                        let err_msg = match old {
+                            CobValue::Constant(constant) => {
+                                format!("failed flattening constant ${:?}'s value group into \
+                                an array, the group contains a key-value pair which is incompatible with arrays",
+                                constant.path.as_str())
+                            }
+                            _ => format!("failed flattening {{source unknown}} value group into \
+                                an array, the group contains a key-value pair which is incompatible with arrays"),
+                        };
+                        return Err(err_msg);
+                    }
+                    CobValueGroupEntry::Value(val) => {
+                        self.entries.insert(idx, val.clone());
+                        idx += 1;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl From<Vec<CobValue>> for CobArray

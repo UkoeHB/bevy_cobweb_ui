@@ -1,6 +1,6 @@
 ## Cobweb asset format (COB)
 
-COB is a minimalist custom asset format with the `.cob` file extension. This crate has a built-in framework for loading, extracting, and managing hot-reloading for COB files.
+COB is a minimalist custom asset format with the `.cob` file extension. This crate automatically loads, extracts, and manages hot-reloading for COB files.
 
 
 ### Loading files
@@ -21,6 +21,7 @@ All COB files are composed of *sections*.
 For example, here's a file with one **`#scenes`** section:
 
 ```rust
+// my_project/assets/main.cob
 #scenes
 "ex"
     FlexNode{width:10px height:10px}
@@ -39,9 +40,9 @@ There are six section types, all of which are optional and can be written in any
 File extraction uses the following overall algorithm.
 
 1. First, **`#manifest`** and **`#import`** sections are extracted. Manifest files are loaded, and import entries are cached until the files they point to are loaded.
-1. Once all imports are available, **`#using`** and **`#defs`** sections are extracted in the order the appear in-file. When extracting **`#defs`**, each definition is simplified using other definitions available up to that point (including imports and previous definitions from the file).
+1. Once all imports are available, **`#using`** and **`#defs`** sections are extracted in the order the appear in-file. When extracting **`#defs`**, each definition that internally requests other defs is 'resolved' using definitions available up to that point (including imports and previous definitions from the file).
     - After using/defs are extracted, the extracted values (stacked on top of the file's own imports) can be imported to other files.
-1. Then all **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#using`** and **`#defs`** values (including both imports and values from the file). Commands are buffered internally in order to apply them in the correct order (see [below](#Commands-section)).
+1. Then all **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#using`** and **`#defs`** values (including both imports and defs from the file). Commands are buffered in order to apply them in the correct order (see [below](#Commands-section)).
 1. Finally, all **`#scenes`** sections are extracted in the order they appear in-file. Similar to commands, all scene node values are immediately resolved using available **`#using`** and **`#defs`** values.
 
 

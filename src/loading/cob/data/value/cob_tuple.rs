@@ -81,6 +81,45 @@ impl CobTuple
         self.end_fill.recover(&other.end_fill);
     }
 
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        let mut idx = 0;
+        while idx < self.entries.len() {
+            // If resolving the entry returns a group of values, they need to be flattened into this tuple.
+            let Some(group) = self.entries[idx].resolve(constants)? else {
+                idx += 1;
+                continue;
+            };
+
+            // Remove the old entry.
+            let old = self.entries.remove(idx);
+
+            // Flatten the group into the tuple.
+            for val in group.iter() {
+                match val {
+                    CobValueGroupEntry::KeyValue(_) => {
+                        let err_msg = match old {
+                            CobValue::Constant(constant) => {
+                                format!("failed flattening constant ${:?}'s value group into \
+                                a tuple, the group contains a key-value pair which is incompatible with tuples",
+                                constant.path.as_str())
+                            }
+                            _ => format!("failed flattening {{source unknown}} value group into \
+                                a tuple, the group contains a key-value pair which is incompatible with tuples"),
+                        };
+                        return Err(err_msg);
+                    }
+                    CobValueGroupEntry::Value(val) => {
+                        self.entries.insert(idx, val.clone());
+                        idx += 1;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn single(value: CobValue) -> Self
     {
         Self {

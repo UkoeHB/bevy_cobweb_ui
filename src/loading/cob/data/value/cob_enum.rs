@@ -72,11 +72,6 @@ impl CobEnumVariant
             return Ok((Self::Array(array), next_fill, remaining));
         }
         if let (Some(map), next_fill, remaining) = rc(content, |c| CobMap::try_parse(CobFill::default(), c))? {
-            if !map.is_structlike() {
-                tracing::warn!("failed parsing enum struct variant at {}, map is not structlike",
-                    get_location(remaining));
-                return Err(span_verify_error(remaining));
-            }
             return Ok((Self::Map(map), next_fill, remaining));
         }
 
@@ -97,6 +92,16 @@ impl CobEnumVariant
                 map.recover_fill(other_map);
             }
             _ => (),
+        }
+    }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        match self {
+            Self::Unit => Ok(()),
+            Self::Array(arr) => arr.resolve(constants),
+            Self::Tuple(tup) => tup.resolve(constants),
+            Self::Map(map) => map.resolve(constants),
         }
     }
 }
@@ -139,6 +144,11 @@ impl CobEnum
     {
         self.fill.recover(&other.fill);
         self.variant.recover_fill(&other.variant);
+    }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        self.variant.resolve(constants)
     }
 
     pub fn unit(variant: &str) -> Self

@@ -17,11 +17,11 @@ impl CobValueGroupEntry
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::Value(value) => {
-                value.write_to(writer)?;
-            }
             Self::KeyValue(key_value) => {
                 key_value.write_to(writer)?;
+            }
+            Self::Value(value) => {
+                value.write_to(writer)?;
             }
         }
         Ok(())
@@ -45,13 +45,24 @@ impl CobValueGroupEntry
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::Value(value), Self::Value(other_value)) => {
-                value.recover_fill(other_value);
-            }
             (Self::KeyValue(key_value), Self::KeyValue(other_key_value)) => {
                 key_value.recover_fill(other_key_value);
             }
+            (Self::Value(value), Self::Value(other_value)) => {
+                value.recover_fill(other_value);
+            }
             _ => (),
+        }
+    }
+
+    pub fn resolve<'a>(
+        &mut self,
+        constants: &'a ConstantsBuffer,
+    ) -> Result<Option<&'a [CobValueGroupEntry]>, String>
+    {
+        match self {
+            Self::KeyValue(kv) => kv.resolve(constants).map(|()| None),
+            Self::Value(value) => value.resolve(constants),
         }
     }
 }
@@ -130,6 +141,29 @@ impl CobValueGroup
             entry.recover_fill(other_entry);
         }
         self.end_fill.recover(&other.end_fill);
+    }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        let mut idx = 0;
+        while idx < self.entries.len() {
+            // If resolving the entry returns a group of values, they need to be flattened into this outer group.
+            let Some(group) = self.entries[idx].resolve(constants)? else {
+                idx += 1;
+                continue;
+            };
+
+            // Remove the old entry.
+            self.entries.remove(idx);
+
+            // Flatten the group into the outer group.
+            for val in group.iter() {
+                self.entries.insert(idx, val.clone());
+                idx += 1;
+            }
+        }
+
+        Ok(())
     }
 }
 

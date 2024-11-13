@@ -71,6 +71,28 @@ impl CobMapKey
         }
     }
 
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        match self {
+            Self::Value(value) => {
+                if let Some(_) = value.resolve(constants)? {
+                    let err_msg = match value {
+                        CobValue::Constant(constant) => {
+                            format!("constant ${:?} in a map entry's key points to value group \
+                            but only plain values are allowed", constant.path.as_str())
+                        }
+                        _ => format!("{{unknown source}} in a map entry's key points to value group \
+                            but only plain values are allowed"),
+                    };
+                    return Err(err_msg);
+                }
+            }
+            Self::FieldName { .. } => (),
+        }
+
+        Ok(())
+    }
+
     pub fn value(value: CobValue) -> Self
     {
         Self::Value(value)
@@ -79,11 +101,6 @@ impl CobMapKey
     pub fn field_name(name: impl AsRef<str>) -> Self
     {
         Self::FieldName { fill: CobFill::default(), name: SmolStr::from(name.as_ref()) }
-    }
-
-    pub fn is_struct_field(&self) -> bool
-    {
-        matches!(*self, Self::FieldName{ .. })
     }
 }
 
@@ -138,6 +155,24 @@ impl CobMapKeyValue
         self.value.recover_fill(&other.value);
     }
 
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        self.key.resolve(constants)?;
+        if let Some(_) = self.value.resolve(constants)? {
+            let err_msg = match &self.value {
+                CobValue::Constant(constant) => {
+                    format!("constant ${:?} in a map entry's value points to value group \
+                    but only plain values are allowed", constant.path.as_str())
+                }
+                _ => format!("{{unknown source}} in a map entry's value points to value group \
+                    but only plain values are allowed"),
+            };
+            return Err(err_msg);
+        }
+
+        Ok(())
+    }
+
     pub fn struct_field(key: &str, value: CobValue) -> Self
     {
         Self {
@@ -155,11 +190,6 @@ impl CobMapKeyValue
             value,
         }
     }
-
-    pub fn is_struct_field(&self) -> bool
-    {
-        self.key.is_struct_field()
-    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -168,6 +198,7 @@ impl CobMapKeyValue
 pub enum CobMapEntry
 {
     KeyValue(CobMapKeyValue),
+    Constant(CobConstant),
     /// Only catch-all params are allowed.
     MacroParam(CobMacroParam),
 }
@@ -185,6 +216,9 @@ impl CobMapEntry
             Self::KeyValue(keyvalue) => {
                 keyvalue.write_to_with_space(writer, space)?;
             }
+            Self::Constant(constant) => {
+                constant.write_to_with_space(writer, space)?;
+            }
             Self::MacroParam(param) => {
                 param.write_to_with_space(writer, space)?;
             }
@@ -196,6 +230,12 @@ impl CobMapEntry
     {
         let fill = match rc(content, move |c| CobMapKeyValue::try_parse(fill, c))? {
             (Some(kv), next_fill, remaining) => return Ok((Some(Self::KeyValue(kv)), next_fill, remaining)),
+            (None, next_fill, _) => next_fill,
+        };
+        let fill = match rc(content, move |c| CobConstant::try_parse(fill, c))? {
+            (Some(constant), next_fill, remaining) => {
+                return Ok((Some(Self::Constant(constant)), next_fill, remaining))
+            }
             (None, next_fill, _) => next_fill,
         };
         let fill = match rc(content, move |c| CobMacroParam::try_parse(fill, c))? {
@@ -219,11 +259,45 @@ impl CobMapEntry
             (Self::KeyValue(keyvalue), Self::KeyValue(other_keyvalue)) => {
                 keyvalue.recover_fill(other_keyvalue);
             }
+            (Self::Constant(constant), Self::Constant(other_constant)) => {
+                constant.recover_fill(other_constant);
+            }
             (Self::MacroParam(param), Self::MacroParam(other_param)) => {
                 param.recover_fill(other_param);
             }
             _ => (),
         }
+    }
+
+    pub fn resolve<'a>(
+        &mut self,
+        constants: &'a ConstantsBuffer,
+    ) -> Result<Option<&'a [CobValueGroupEntry]>, String>
+    {
+        match self {
+            Self::KeyValue(kv) => kv.resolve(constants)?,
+            Self::Constant(constant) => {
+                let Some(const_val) = constants.get(constant.path.as_str()) else {
+                    return Err(format!("constant lookup failed for ${:?}", constant.path.as_str()));
+                };
+                match const_val {
+                    CobConstantValue::Value(_) => {
+                        return Err(
+                            format!("constant {:?} points to a value but is found in a map where only \
+                            value groups of key-value pairs are allowed", constant.path.as_str()),
+                        );
+                    }
+                    CobConstantValue::ValueGroup(group) => {
+                        return Ok(Some(&group.entries));
+                    }
+                }
+            }
+            Self::MacroParam(param) => {
+                // TODO: need to warn if encountered a param while not resolving a macro call
+                return Err(format!("encountered macro parameter {param:?} in map"));
+            }
+        }
+        Ok(None)
     }
 
     pub fn struct_field(key: &str, value: CobValue) -> Self
@@ -234,14 +308,6 @@ impl CobMapEntry
     pub fn map_entry(key: CobValue, value: CobValue) -> Self
     {
         Self::KeyValue(CobMapKeyValue::map_entry(key, value))
-    }
-
-    pub fn is_struct_field(&self) -> bool
-    {
-        match self {
-            Self::KeyValue(kv) => kv.is_struct_field(),
-            Self::MacroParam(param) => param.is_catch_all(),
-        }
     }
 
     /// Returns `true` if the value is a key-value type.
@@ -329,10 +395,43 @@ impl CobMap
         self.end_fill.recover(&other.end_fill);
     }
 
-    /// Returns `true` if all entries are either field-name:value pairs or macro 'catch all' params.
-    pub fn is_structlike(&self) -> bool
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
     {
-        !self.entries.iter().any(|e| !e.is_struct_field())
+        let mut idx = 0;
+        while idx < self.entries.len() {
+            // If resolving the entry returns a group of values, they need to be flattened into this map.
+            let Some(group) = self.entries[idx].resolve(constants)? else {
+                idx += 1;
+                continue;
+            };
+
+            // Remove the old entry.
+            let old = self.entries.remove(idx);
+
+            // Flatten the group into the map.
+            for val in group.iter() {
+                match val {
+                    CobValueGroupEntry::KeyValue(kv) => {
+                        self.entries.insert(idx, CobMapEntry::KeyValue(kv.clone()));
+                        idx += 1;
+                    }
+                    CobValueGroupEntry::Value(_) => {
+                        let err_msg = match old {
+                            CobMapEntry::Constant(constant) => {
+                                format!("failed flattening constant ${:?}'s value group into \
+                                a map, the group contains a plain value which is incompatible with maps",
+                                constant.path.as_str())
+                            }
+                            _ => format!("failed flattening {{source unknown}} value group into \
+                                a map, the group contains a plain value which is incompatible with maps"),
+                        };
+                        return Err(err_msg);
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 

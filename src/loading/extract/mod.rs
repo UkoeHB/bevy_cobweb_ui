@@ -10,7 +10,7 @@ mod utils;
 
 pub(crate) use cob_extract::*;
 pub(self) use extract_commands::*;
-//pub(self) use extract_defs::*;
+pub(self) use extract_defs::*;
 pub(self) use extract_import::*;
 pub(self) use extract_manifest::*;
 pub(self) use extract_scenes::*;

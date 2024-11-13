@@ -175,6 +175,17 @@ impl CobLoadableVariant
             _ => (),
         }
     }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        match self {
+            Self::Unit => Ok(()),
+            Self::Tuple(tuple) => tuple.resolve(constants),
+            Self::Array(array) => array.resolve(constants),
+            Self::Map(map) => map.resolve(constants),
+            Self::Enum(variant) => variant.resolve(constants),
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -211,6 +222,11 @@ impl CobLoadable
         self.fill.recover(&other.fill);
         self.id.recover_fill(&other.id);
         self.variant.recover_fill(&other.variant);
+    }
+
+    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    {
+        self.variant.resolve(constants)
     }
 
     pub fn extract<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>

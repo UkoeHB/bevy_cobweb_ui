@@ -172,6 +172,40 @@ impl CobValue
         }
     }
 
+    pub fn resolve<'a>(
+        &mut self,
+        constants: &'a ConstantsBuffer,
+    ) -> Result<Option<&'a [CobValueGroupEntry]>, String>
+    {
+        match self {
+            Self::Enum(val) => val.resolve(constants)?,
+            Self::Array(val) => val.resolve(constants)?,
+            Self::Tuple(val) => val.resolve(constants)?,
+            Self::Map(val) => val.resolve(constants)?,
+            Self::Constant(constant) => {
+                let Some(const_val) = constants.get(constant.path.as_str()) else {
+                    return Err(format!("constant lookup failed for ${:?}", constant.path.as_str()));
+                };
+                match const_val {
+                    CobConstantValue::Value(val) => *self = val.clone(),
+                    CobConstantValue::ValueGroup(group) => {
+                        return Ok(Some(&group.entries));
+                    }
+                }
+            }
+            Self::DataMacro(_) => {
+                // TODO
+            }
+            Self::MacroParam(param) => {
+                // TODO: need to warn if encountered a param while not resolving a macro call
+                return Err(format!("encountered macro parameter {param:?}"));
+            }
+            _ => (),
+        }
+
+        Ok(None)
+    }
+
     pub fn extract<T: ?Sized + Serialize>(value: &T) -> CobResult<Self>
     {
         value.serialize(CobValueSerializer)
