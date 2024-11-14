@@ -33,7 +33,7 @@ There are six section types, all of which are optional and can be written in any
 - **`#manifest`**: Requests other COB files to be loaded, assigns *manifest keys*, and controls the global order that commands are applied.
 - **`#import`**: Pulls **`#using`** and **`#defs`** sections from other files into the current file using their manifest keys, with an optional import alias.
 - **`#using`**: Allows specifying the full typename of a loadable, to disambiguate it when multiple types with the same short name are registered for reflection. Very rarely needed.
-- **`#defs`**: Definitions of re-usable constants and macros. **NOT YET IMPLEMENTED**
+- **`#defs`**: Definitions of re-usable constants and macros. **MACROS NOT YET IMPLEMENTED**
 - **`#commands`**: Bevy commands that are applied when a COB file is initially loaded. COB commands are globally ordered based on the file load order specified in **`#manifest`** sections.
 - **`#scenes`**: Specifies scene hierarchies that can be spawned in-code as entity hierarchies. Scene nodes are composed of loadables (components and instructions).
 
@@ -84,7 +84,7 @@ widgets.slider as slider
 
 In this example, `home_menu` is given `_`, which means no import alias. Import aliases are prepended to all imported definitions, allowing you to 'namespace' definitions.
 
-For example, this crate has built-in constants, including the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`. (NOTICE: constants are not yet implemented)
+For example, this crate has built-in constants, including the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`.
 
 
 ### Using section
@@ -103,7 +103,70 @@ If any command or scene in the file, or any file that imports the file, contains
 
 ### Defs section
 
-TODO: definitions (constants and macros) are not yet implemented
+A definition allows data and pattern re-use within COB files. There are four kinds of definitions: constants, data macros, loadable macros, and scene macros.
+
+**Constants**
+
+Constants are a 'copy paste' mechanism for data, and use the symbol `$`. They need a definition in a **`#defs`** section.
+
+Example (COB):
+```rust
+#defs
+$text = "Hello, World!"
+
+#scenes
+"hello"
+    TextLine{ text: $text }
+```
+
+A definition takes the form `${constant id} = {constant value}`.
+
+You 'request' a constant with `${alias path}{constand id}`. The alias path comes from importing constants from other files.
+
+Example (COB constants file):
+```rust
+// my_project/assets/constants.cob
+#defs
+$text = "Hello, World!"
+```
+
+Example (COB main file):
+```rust
+// my_project/assets/main.cob
+
+// First load in "constants.cob"
+#manifest
+"constants.cob" as constants
+
+// Then import constants from "constants.cob"
+#import
+constants as consts
+
+#scenes
+"hello"
+    // Now we need the 'consts::' alias path.
+    TextLine{ text: $consts::text }
+```
+
+A constant can point to a single value or a *value group*. Value groups look like `\ ..entries .. \` and can contain either values or key-value pairs. Value groups will be flattened into parent structures - arrays, tuples, or maps.
+
+Example (COB):
+```rust
+#defs
+$elements = \ 10 11 12 \
+$entries = \ a:10 b:11 c:12 \
+
+#commands
+// Flattens to: MyNumbers[ 10 11 12 ]
+MyNumbers[$elements]
+// Flattens to: MyStruct{ a:10 b:11 c:12 }
+MyStruct{$entries}
+```
+
+
+**{macros}**
+
+TODO: macros are not yet implemented
 
 
 ### Commands section
