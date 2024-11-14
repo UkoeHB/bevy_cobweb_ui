@@ -78,7 +78,7 @@ impl CobMapKey
                 if let Some(_) = value.resolve(constants)? {
                     let err_msg = match value {
                         CobValue::Constant(constant) => {
-                            format!("constant ${:?} in a map entry's key points to value group \
+                            format!("constant ${} in a map entry's key points to value group \
                             but only plain values are allowed", constant.path.as_str())
                         }
                         _ => format!("{{unknown source}} in a map entry's key points to value group \
@@ -161,7 +161,7 @@ impl CobMapKeyValue
         if let Some(_) = self.value.resolve(constants)? {
             let err_msg = match &self.value {
                 CobValue::Constant(constant) => {
-                    format!("constant ${:?} in a map entry's value points to value group \
+                    format!("constant ${} in a map entry's value points to value group \
                     but only plain values are allowed", constant.path.as_str())
                 }
                 _ => format!("{{unknown source}} in a map entry's value points to value group \
@@ -278,12 +278,12 @@ impl CobMapEntry
             Self::KeyValue(kv) => kv.resolve(constants)?,
             Self::Constant(constant) => {
                 let Some(const_val) = constants.get(constant.path.as_str()) else {
-                    return Err(format!("constant lookup failed for ${:?}", constant.path.as_str()));
+                    return Err(format!("constant lookup failed for ${}", constant.path.as_str()));
                 };
                 match const_val {
                     CobConstantValue::Value(_) => {
                         return Err(
-                            format!("constant {:?} points to a value but is found in a map where only \
+                            format!("constant ${} points to a value but is found in a map where only \
                             value groups of key-value pairs are allowed", constant.path.as_str()),
                         );
                     }
@@ -418,7 +418,7 @@ impl CobMap
                     CobValueGroupEntry::Value(_) => {
                         let err_msg = match old {
                             CobMapEntry::Constant(constant) => {
-                                format!("failed flattening constant ${:?}'s value group into \
+                                format!("failed flattening constant ${}'s value group into \
                                 a map, the group contains a plain value which is incompatible with maps",
                                 constant.path.as_str())
                             }

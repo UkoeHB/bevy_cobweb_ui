@@ -184,7 +184,7 @@ impl CobValue
             Self::Map(val) => val.resolve(constants)?,
             Self::Constant(constant) => {
                 let Some(const_val) = constants.get(constant.path.as_str()) else {
-                    return Err(format!("constant lookup failed for ${:?}", constant.path.as_str()));
+                    return Err(format!("constant lookup failed for ${}", constant.path.as_str()));
                 };
                 match const_val {
                     CobConstantValue::Value(val) => *self = val.clone(),

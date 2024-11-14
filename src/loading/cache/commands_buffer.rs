@@ -639,6 +639,26 @@ impl CommandsBuffer
         self.seen_cached = seen;
     }
 
+    /// Marks a file as awaiting commands. Used when the file is refreshed due to import dependency changes, where
+    /// the file won't be re-processed from scratch.
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn prep_commands_refresh(&mut self, file: CobFile)
+    {
+        let Some(info) = self.hierarchy.get_mut(&file) else {
+            tracing::error!("failed setting file descendants for unknown file {:?}; all files should be pre-registered \
+                as descendants of other files (this is a bug)", file);
+            return;
+        };
+
+        // Check if now pending.
+        if !info.is_orphaned && info.status == FileStatus::Loaded {
+            self.file_counter.add(1);
+        }
+
+        // Update status.
+        info.status = FileStatus::AwaitingCommands;
+    }
+
     /// Adds commands to a file.
     ///
     /// The incoming commands are expected to be deduplicated.

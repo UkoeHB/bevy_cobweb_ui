@@ -71,6 +71,9 @@ pub(crate) struct CobAssetCache
 
     /// Tracks pre-processed files.
     preprocessed: Vec<PreprocessedSceneFile>,
+    /// Tracks all unique pre-processes files. Used for state file cleanup during hot reloading.
+    #[cfg(feature = "hot_reload")]
+    preprocessed_set: HashSet<CobFile>,
 
     /// Records processed files.
     processed: HashMap<CobFile, ProcessedSceneFile>,
@@ -155,15 +158,13 @@ impl CobAssetCache
                 match entry.get_mut() {
                     // Error case: manifest key changing.
                     Some(prev_key) => {
-                        if *prev_key == new_key {
-                            return false;
+                        if *prev_key != new_key {
+                            tracing::warn!("changing manifest key for {:?} (old: {:?}, new: {:?})",
+                                file, prev_key, new_key);
+                            let prev = prev_key.clone();
+                            *prev_key = new_key.clone();
+                            self.manifest_map().remove(&prev);
                         }
-
-                        tracing::warn!("changing manifest key for {:?} (old: {:?}, new: {:?})",
-                            file, prev_key, new_key);
-                        let prev = prev_key.clone();
-                        *prev_key = new_key.clone();
-                        self.manifest_map().remove(&prev);
                     }
                     // Normal case: setting the manifest key.
                     None => {
@@ -171,6 +172,11 @@ impl CobAssetCache
                     }
                 }
 
+                // Note: self.file_to_manifest_key may contain 'dead' entries if a file is renamed and then
+                // the manifest that pull it in is updated. The old file-name will linger in
+                // self.file_to_manifest_key, but the manifest map will be updated to point to the
+                // new file. If the file is renamed back to its original name, then the manifest
+                // map will be updated again to point to the old file name.
                 if let Some(prev_file) = self.manifest_map().insert(new_key.clone(), file.clone()) {
                     tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
                         new_key, prev_file, file);
@@ -195,6 +201,21 @@ impl CobAssetCache
         data: Cob,
     )
     {
+        // Remove if already processed.
+        // - This is avoids duplicate re-processing in this kind of situation:
+        //   - file A has manifest and import for file B
+        //   - file B is renamed to B2, and file A is updated with the new name
+        //   - file A reloads with the new name, triggering a new load for file B2
+        //   - file A will be added here then get stuck pending since it imports B2
+        //   - when B2 loads, if file A is still in self.processed, then it will push the stale file A data onto
+        //     the preprocessed stack here
+        //   - the stale file A data will be inserted after the fresh file A data, causing it to be processed last,
+        //     which is a bug
+        #[cfg(feature = "hot_reload")]
+        {
+            self.processed.remove(&file);
+        }
+
         // Check that all dependencies are known.
         // - Note: We don't need to check for circular dependencies here. It can be checked after processing files
         //   by seeing if there are any pending files remaining. Once all pending files are loaded, if a file fails
@@ -218,9 +239,20 @@ impl CobAssetCache
                 continue;
             }
 
-            tracing::error!("ignoring loadable file {:?} that points to an untracked file {}; this is a bug",
+            tracing::error!("ignoring file {} that points to untracked file {}; this is a bug",
                 file.as_str(), import.as_str());
             return;
+        }
+
+        // During hot reload it's possible for a file to be sent to self.preprocessed multiple times before
+        // any processing occurs. For robustness we clean up stale updates here.
+        #[cfg(feature = "hot_reload")]
+        {
+            if !self.preprocessed_set.insert(file.clone()) {
+                if let Some(prev) = self.preprocessed.iter().position(|p| p.file == file) {
+                    self.preprocessed.remove(prev);
+                }
+            }
         }
 
         let preprocessed = PreprocessedSceneFile { file, imports, data };
@@ -348,8 +380,9 @@ impl CobAssetCache
                     .collect();
 
                 for needs_rebuild in needs_rebuild {
-                    let processed = self.processed.remove(&needs_rebuild).unwrap();
                     // Add via API to check for recursive dependencies.
+                    commands_buffer.prep_commands_refresh(needs_rebuild.clone());
+                    let processed = self.processed.remove(&needs_rebuild).unwrap();
                     self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
                 }
             }
@@ -376,6 +409,8 @@ impl CobAssetCache
             let num_already_processed = num_processed;
             preprocessed.clear();
             std::mem::swap(&mut self.preprocessed, &mut preprocessed);
+            #[cfg(feature = "hot_reload")]
+            self.preprocessed_set.clear();
 
             for preprocessed in preprocessed.drain(..) {
                 // Check if any dependency is not ready.
@@ -389,6 +424,11 @@ impl CobAssetCache
                             None => true,
                         })
                     {
+                        #[cfg(feature = "hot_reload")]
+                        {
+                            let res = self.preprocessed_set.insert(preprocessed.file.clone());
+                            debug_assert!(res);
+                        }
                         self.preprocessed.push(preprocessed);
                         continue;
                     }
