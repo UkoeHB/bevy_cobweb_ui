@@ -100,7 +100,7 @@ impl CobTuple
                     CobValueGroupEntry::KeyValue(_) => {
                         let err_msg = match old {
                             CobValue::Constant(constant) => {
-                                format!("failed flattening constant ${}'s value group into \
+                                format!("failed flattening value group constant ${} into \
                                 a tuple, the group contains a key-value pair which is incompatible with tuples",
                                 constant.path.as_str())
                             }

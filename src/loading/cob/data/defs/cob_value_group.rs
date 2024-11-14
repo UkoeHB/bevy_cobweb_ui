@@ -31,12 +31,18 @@ impl CobValueGroupEntry
     {
         // Check for key-value first in case a key is a CobValue.
         let fill = match CobMapKeyValue::try_parse(fill, content)? {
-            (Some(kv), next_fill, remaining) => return Ok((Some(Self::KeyValue(kv)), next_fill, remaining)),
-            (_, fill, _) => fill,
-        };
-        let fill = match CobValue::try_parse(fill, content)? {
-            (Some(value), next_fill, remaining) => return Ok((Some(Self::Value(value)), next_fill, remaining)),
-            (_, fill, _) => fill,
+            (CobMapKVParseResult::Success(kv), next_fill, remaining) => {
+                return Ok((Some(Self::KeyValue(kv)), next_fill, remaining));
+            }
+            (CobMapKVParseResult::KeyNoValue(CobMapKey::Value(value)), next_fill, remaining) => {
+                return Ok((Some(Self::Value(value)), next_fill, remaining));
+            }
+            (CobMapKVParseResult::KeyNoValue(CobMapKey::FieldName { name, .. }), _, _) => {
+                tracing::warn!("failed parsing value group entry at {}; found field name without value: {}",
+                    get_location(content).as_str(), name.as_str());
+                return Err(span_verify_error(content));
+            }
+            (CobMapKVParseResult::Failure, fill, _) => fill,
         };
 
         Ok((None, fill, content))

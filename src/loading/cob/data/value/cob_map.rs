@@ -106,6 +106,14 @@ impl CobMapKey
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Returned by [`CobMapKeyValue::try_parse`].
+pub enum CobMapKVParseResult
+{
+    Success(CobMapKeyValue),
+    KeyNoValue(CobMapKey),
+    Failure,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct CobMapKeyValue
 {
@@ -130,22 +138,27 @@ impl CobMapKeyValue
         Ok(())
     }
 
-    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    /// Returns [`CobMapKVParseResult`] so parsed values without keys can be used instead of re-parsing them.
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(CobMapKVParseResult, CobFill, Span), SpanError>
     {
         let (maybe_key, semicolon_fill, remaining) = CobMapKey::try_parse(fill, content)?;
-        let Some(key) = maybe_key else { return Ok((None, semicolon_fill, content)) };
+        let Some(key) = maybe_key else { return Ok((CobMapKVParseResult::Failure, semicolon_fill, content)) };
         // Allow failure on missing `:` in case we are inside a value group where there can be either single values
         // or map entries.
         let remaining = match char::<_, ()>(':').parse(remaining) {
             Ok((remaining, _)) => remaining,
-            Err(_) => return Ok((None, semicolon_fill, content)),
+            Err(_) => return Ok((CobMapKVParseResult::KeyNoValue(key), semicolon_fill, remaining)),
         };
         let (value_fill, remaining) = CobFill::parse(remaining);
         let (Some(value), next_fill, remaining) = CobValue::try_parse(value_fill, remaining)? else {
             tracing::warn!("failed parsing value for map entry at {}; no valid value found", get_location(remaining));
             return Err(span_verify_error(content));
         };
-        Ok((Some(Self { key, semicolon_fill, value }), next_fill, remaining))
+        Ok((
+            CobMapKVParseResult::Success(Self { key, semicolon_fill, value }),
+            next_fill,
+            remaining,
+        ))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -194,6 +207,14 @@ impl CobMapKeyValue
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Returned by [`CobMapEntry::try_parse`].
+pub enum CobMapEntryResult
+{
+    Success(CobMapEntry),
+    UnusedValue(CobValue),
+    Failure,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CobMapEntry
 {
@@ -226,17 +247,26 @@ impl CobMapEntry
         Ok(())
     }
 
-    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(CobMapEntryResult, CobFill, Span), SpanError>
     {
         let fill = match rc(content, move |c| CobMapKeyValue::try_parse(fill, c))? {
-            (Some(kv), next_fill, remaining) => return Ok((Some(Self::KeyValue(kv)), next_fill, remaining)),
-            (None, next_fill, _) => next_fill,
-        };
-        let fill = match rc(content, move |c| CobConstant::try_parse(fill, c))? {
-            (Some(constant), next_fill, remaining) => {
-                return Ok((Some(Self::Constant(constant)), next_fill, remaining))
+            (CobMapKVParseResult::Success(kv), next_fill, remaining) => {
+                return Ok((CobMapEntryResult::Success(Self::KeyValue(kv)), next_fill, remaining))
             }
-            (None, next_fill, _) => next_fill,
+            (CobMapKVParseResult::KeyNoValue(key), next_fill, remaining) => {
+                return match key {
+                    CobMapKey::Value(CobValue::Constant(constant)) => Ok((
+                        CobMapEntryResult::Success(Self::Constant(constant)),
+                        next_fill,
+                        remaining,
+                    )),
+                    CobMapKey::Value(non_constant_val) => {
+                        Ok((CobMapEntryResult::UnusedValue(non_constant_val), next_fill, remaining))
+                    }
+                    CobMapKey::FieldName { fill, .. } => Ok((CobMapEntryResult::Failure, fill, content)),
+                };
+            }
+            (CobMapKVParseResult::Failure, next_fill, _) => next_fill,
         };
         let fill = match rc(content, move |c| CobMacroParam::try_parse(fill, c))? {
             (Some(param), next_fill, remaining) => {
@@ -245,12 +275,16 @@ impl CobMapEntry
                         get_location(content));
                     return Err(span_verify_error(content));
                 }
-                return Ok((Some(Self::MacroParam(param)), next_fill, remaining));
+                return Ok((
+                    CobMapEntryResult::Success(Self::MacroParam(param)),
+                    next_fill,
+                    remaining,
+                ));
             }
             (None, next_fill, _) => next_fill,
         };
 
-        Ok((None, fill, content))
+        Ok((CobMapEntryResult::Failure, fill, content))
     }
 
     pub fn recover_fill(&mut self, other: &Self)
@@ -362,11 +396,11 @@ impl CobMap
         let end_fill = loop {
             let fill_len = item_fill.len();
             match rc(remaining, move |rm| CobMapEntry::try_parse(item_fill, rm))? {
-                (Some(entry), next_fill, after_entry) => {
+                (CobMapEntryResult::Success(entry), next_fill, after_entry) => {
                     if entries.len() > 0 {
                         if fill_len == 0 {
                             tracing::warn!("failed parsing map at {}; entry #{} is not preceded by fill/whitespace",
-                                get_location(content), entries.len() + 1);
+                                get_location(content).as_str(), entries.len() + 1);
                             return Err(span_verify_error(content));
                         }
                     }
@@ -374,7 +408,12 @@ impl CobMap
                     item_fill = next_fill;
                     remaining = after_entry;
                 }
-                (None, end_fill, after_end) => {
+                (CobMapEntryResult::UnusedValue(_), _, _) => {
+                    tracing::warn!("failed parsing map at {}; entry #{} is a value-like key without a value",
+                        get_location(content).as_str(), entries.len() + 1);
+                    return Err(span_verify_error(content));
+                }
+                (CobMapEntryResult::Failure, end_fill, after_end) => {
                     remaining = after_end;
                     break end_fill;
                 }
@@ -418,7 +457,7 @@ impl CobMap
                     CobValueGroupEntry::Value(_) => {
                         let err_msg = match old {
                             CobMapEntry::Constant(constant) => {
-                                format!("failed flattening constant ${}'s value group into \
+                                format!("failed flattening value group constant ${} into \
                                 a map, the group contains a plain value which is incompatible with maps",
                                 constant.path.as_str())
                             }

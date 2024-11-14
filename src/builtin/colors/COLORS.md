@@ -1,3 +1,5 @@
+Requires the `colors` feature.
+
 Manifest keys of embedded COB files:
 
 - `builtin.colors.basic`: See [`bevy::color::palettes::basic`](bevy::color::palettes::basic). Example use: `$AQUA`.

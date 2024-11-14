@@ -426,8 +426,8 @@ impl CobAssetCache
                     {
                         #[cfg(feature = "hot_reload")]
                         {
-                            let res = self.preprocessed_set.insert(preprocessed.file.clone());
-                            debug_assert!(res);
+                            let is_new = self.preprocessed_set.insert(preprocessed.file.clone());
+                            debug_assert!(is_new);
                         }
                         self.preprocessed.push(preprocessed);
                         continue;
