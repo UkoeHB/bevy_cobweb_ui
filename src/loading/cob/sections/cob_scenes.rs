@@ -27,9 +27,9 @@ impl CobSceneNodeName
     pub fn try_parse(content: Span) -> Result<(Option<Self>, Span), SpanError>
     {
         let Ok((remaining, _)) = char::<_, ()>('\"').parse(content) else { return Ok((None, content)) };
-        // Allows snake identifiers that may start with numbers and empty identifiers.
+        // Allows arbitrary identifiers and empty identifiers.
         let Ok((remaining, name)) = terminated(
-            alt((map(numerical_snake_identifier, |i| *i.fragment()), success(""))),
+            alt((map(anything_identifier, |i| *i.fragment()), success(""))),
             tag("\""),
         )
         .parse(remaining) else {

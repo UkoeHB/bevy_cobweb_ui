@@ -25,7 +25,7 @@ fn scenes_section()
     let res = test_cob(
         b"#scenes
 \"a\"
-\"b\"
+\"B\"
 ",
     );
     let CobSection::Scenes(scenes) = &res.sections[0] else { unreachable!() };
