@@ -23,7 +23,7 @@ impl Counter
 
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let scene = ("main.cob.json", "root");
+    let scene = ("main.cob", "root");
     c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         l.edit("button", |l| {
             let button_id = l.id();
@@ -61,7 +61,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.cob.json")
+        .load("main.cob")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
