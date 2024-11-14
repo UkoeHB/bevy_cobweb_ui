@@ -232,7 +232,12 @@ impl Instruction for TextLineColor
         world.syscall(
             (entity, self.0),
             |In((id, color)): In<(Entity, Color)>, mut editor: TextEditor| {
-                editor.set_font_color(id, color);
+                let Some((_, _, text_color)) = editor.root(id) else {
+                    tracing::warn!("failed setting TextLineColor({color:?}) on {id:?}; entity does not \
+                        have Text");
+                    return;
+                };
+                *text_color = color;
             },
         );
         let _ = world.get_entity_mut(entity).map(|mut e| {
@@ -242,7 +247,13 @@ impl Instruction for TextLineColor
 
     fn revert(entity: Entity, world: &mut World)
     {
-        Instruction::apply(Self(TextLine::default_color()), entity, world);
+        world.syscall(entity, |In(id): In<Entity>, mut editor: TextEditor| {
+            let Some((_, _, text_color)) = editor.root(id) else { return };
+            *text_color = TextLine::default_color();
+        });
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Self>();
+        });
     }
 }
 
