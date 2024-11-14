@@ -1081,7 +1081,7 @@ impl Instruction for FlexNode
         let _ = world.get_entity_mut(entity).map(|mut e| {
             //e.remove::<(React<AbsoluteNode>, React<FlexNode>, Node)>();
             // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
-            e.remove::<(React<AbsoluteNode>, React<FlexNode>)>();
+            e.remove::<(React<AbsoluteNode>, React<FlexNode>, ComputedNode)>();
             e.insert(Node::default());
         });
     }
@@ -1158,7 +1158,7 @@ fn detect_absolute_node(
     if let Some(control) = maybe_display_control {
         node.display = (**control).into();
     }
-    commands.entity(entity).try_insert(node.clone());
+    commands.entity(entity).try_insert(node);
 }
 
 struct DetectAbsoluteNode;
@@ -1187,7 +1187,7 @@ fn detect_flex_node(
     if let Some(control) = maybe_display_control {
         node.display = (**control).into();
     }
-    commands.entity(entity).try_insert(node.clone());
+    commands.entity(entity).try_insert(node);
 }
 
 struct DetectFlexNode;

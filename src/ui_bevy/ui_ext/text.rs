@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 use bevy::text::{ComputedTextBlock, LineBreak};
+use bevy::ui::widget::TextNodeFlags;
+use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
@@ -141,7 +143,17 @@ impl Instruction for TextLine
         let _ = world.get_entity_mut(entity).map(|mut e| {
             // TODO: requires https://github.com/bevyengine/bevy/pull/16288
             //e.remove_with_requires::<Text>();
-            e.remove::<(Text, TextFont, TextColor, TextLayout, ComputedTextBlock)>();
+            e.remove::<(
+                Text,
+                TextFont,
+                TextColor,
+                TextLayout,
+                TextNodeFlags,
+                ContentSize,
+                ComputedTextBlock,
+                ComputedNode,
+            )>();
+            e.insert(Node::default());
         });
     }
 }

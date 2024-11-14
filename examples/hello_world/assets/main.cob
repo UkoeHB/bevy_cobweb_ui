@@ -1,6 +1,3 @@
-#commands
-TestCommand("main")
-
 #scenes
 "scene"
-    TextLine{ size: 50.0 text: "Hello, World!" }
+    TextLine{ text: "Hello, World!" size: 50.0 }
