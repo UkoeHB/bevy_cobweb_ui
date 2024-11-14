@@ -455,7 +455,8 @@ impl CobAssetCache
         if self.pending.is_empty() && !self.preprocessed.is_empty() {
             for preproc in self.preprocessed.drain(..) {
                 tracing::error!("discarding COB file {:?} that failed to resolve imports; it either has a \
-                    dependency cycle or tries to import unknown manifest keys", preproc.file.as_str());
+                    dependency cycle or tries to import unknown manifest keys; note that builtin colors/widgets/etc. \
+                    require the corresponding feature to be enabled", preproc.file.as_str());
             }
         }
 

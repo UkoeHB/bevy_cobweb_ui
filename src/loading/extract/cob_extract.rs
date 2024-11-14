@@ -74,7 +74,7 @@ pub(crate) fn extract_cob_importables(
     _specs: &mut SpecsMap,
 )
 {
-    tracing::info!("extracting cobweb asset file {:?}", file.as_str());
+    tracing::info!("extracting COB file {:?}", file.as_str());
 
     constants_buffer.start_new_file();
 
