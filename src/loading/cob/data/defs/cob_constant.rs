@@ -2,7 +2,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::char;
 use nom::combinator::recognize;
 use nom::multi::many0_count;
-use nom::sequence::{preceded, tuple};
+use nom::sequence::{terminated, tuple};
 use nom::Parser;
 use smol_str::SmolStr;
 
@@ -10,7 +10,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Constant name must be `$` followed by a snake-case identifier. Names do not include `a::b::` path segments.
+/// Constant name must be `$` followed by an identifier. Names do not include `a::b::` path segments.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct CobConstantName
 {
@@ -29,7 +29,7 @@ impl CobConstantName
     pub fn parse(content: Span) -> Result<(Self, Span), SpanError>
     {
         let (post_symbol, _) = char('$').parse(content)?;
-        recognize(snake_identifier)
+        recognize(anything_identifier)
             .parse(post_symbol)
             .map(|(r, k)| (Self { name: SmolStr::from(*k.fragment()) }, r))
     }
@@ -62,10 +62,10 @@ impl CobConstantPath
     {
         let (post_symbol, _) = char('$').parse(content)?;
         recognize(tuple((
-            // First segment
-            snake_identifier,
             // Extensions
-            many0_count(preceded(tag("::"), snake_identifier)),
+            many0_count(terminated(snake_identifier, tag("::"))),
+            // Constant name
+            anything_identifier,
         )))
         .parse(post_symbol)
         .map(|(r, k)| (Self { path: SmolStr::from(*k.fragment()) }, r))

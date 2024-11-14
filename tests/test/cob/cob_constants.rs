@@ -36,7 +36,7 @@ $a = 10
     let res = test_cob(
         b"
 #defs
-$a = 10
+$A = 10
 $b = X{ a: 1, b: 2 }
 $c = $b
 $d = $a::b::c
@@ -46,7 +46,7 @@ $e = \\ 10 10 10 $a \\
     let CobSection::Defs(defs) = &res.sections[0] else { unreachable!() };
     assert_eq!(defs.entries.len(), 5);
     let CobDefEntry::Constant(constant) = &defs.entries[0] else { unreachable!() };
-    assert_eq!(constant.name.as_str(), "a");
+    assert_eq!(constant.name.as_str(), "A");
     let CobConstantValue::Value(CobValue::Number(number)) = &constant.value else { unreachable!() };
     assert_eq!(number.number.as_u128().unwrap(), 10);
     let CobDefEntry::Constant(constant) = &defs.entries[1] else { unreachable!() };
@@ -100,12 +100,12 @@ $a = 10
  $a = 10",
         b"$a = 10",
     );
-    // Definition is not lowercase
+    // Definition does not start with letter/number
     test_cob_fail(
         b"#defs
-$A = 10
+$_A = 10
 ",
-        b"$A = 10\n",
+        b"$_A = 10\n",
     );
     // Definition contains path segments
     test_cob_fail(

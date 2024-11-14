@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::character::complete::{alphanumeric0, char, digit1};
+use nom::character::complete::{alpha1, alphanumeric0, char, digit1};
 use nom::combinator::recognize;
 use nom::error::ErrorKind;
 use nom::multi::many0_count;
@@ -62,6 +62,21 @@ pub(crate) fn numerical_snake_identifier(input: Span) -> IResult<Span, Span>
 pub(crate) fn camel_identifier(input: Span) -> IResult<Span, Span>
 {
     recognize(tuple((uppercase_alpha1, alphanumeric0))).parse(input)
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Parses an identifier from the input.
+///
+/// The identifier must contain only upper and lower-case letters, numbers, and underscores. It must start with
+/// a letter or number.
+pub(crate) fn anything_identifier(input: Span) -> IResult<Span, Span>
+{
+    recognize(tuple((
+        alt((alpha1, digit1)),
+        many0_count(alt((alpha1, digit1, recognize(char('_'))))),
+    )))
+    .parse(input)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
