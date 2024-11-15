@@ -8,10 +8,10 @@ Depends on `bevy_ui`, `bevy_assets`, and [bevy_cobweb](https://github.com/UkoeHB
 ## Features
 
 - [Custom scene format](bevy_cobweb_ui::loading) called COB
-- [Asset management](bevy_cobweb_ui::assets_ext) tools
 - [Localization](bevy_cobweb_ui::localization) framework (text, fonts, images, audio)
 - [Font family](bevy_cobweb_ui::prelude::FontRequest) API
 - [Built-in](bevy_cobweb_ui::builtin) UI widgets and color palettes
+- [Asset management](bevy_cobweb_ui::assets_ext) tools
 - And many quality of life features.
 
 
@@ -33,21 +33,20 @@ app
 3. Add a COB file to your `assets` directory. Use the `.cob` file extension.
 
 ```rust
-// my_project/assets/main.cob
 #scenes
 "hello"
     TextLine{ text: "Hello, World!" }
 ```
 
-The example above has a scene with one node (the root node `"hello"`) and one loadable (`TextLine`). `TextLine` is an instruction that will insert a `Text` component to the scene node entity on spawn.
+This hello world has a scene with one node (the root node `"hello"`) and one loadable (`TextLine`). `TextLine` is an instruction that will insert a `Text` component to the scene node entity on spawn.
 
-4. Load the COB file to your app.
+4. Load the COB file to your app in a plugin.
 
 ```rust
 app.load("main.cob");
 ```
 
-You can load other COB files recursively using `#manifest` sections (see the loading [docs](bevy_cobweb_ui::loading)).
+You can load other COB files recursively using `#manifest` sections (see the loading module [docs](bevy_cobweb_ui::loading)).
 
 5. Add a system for spawning a scene.
 
@@ -71,7 +70,7 @@ app.add_systems(OnEnter(LoadState::Done), build_ui);
 
 We put the system in `OnEnter(LoadState::Done)` so it runs after all COB files and assets loaded into this crate's [asset managers](bevy_cobweb_ui::assets_ext) have been loaded.
 
-Check the loading [docs](bevy_cobweb_ui::loading) for how to write COB files. COB files can be hot reloaded with the `hot_reload` feature. Hot-reloaded changes will cause affected scene nodes to be refreshed (or cause commands to be re-applied). Hot-reloading is minimally destructive. Entities are only despawned when you delete scene nodes from a COB file.
+Check the loading module [docs](bevy_cobweb_ui::loading) for how to write COB files. COB files can be hot reloaded with the `hot_reload` feature. Hot-reloaded changes will cause affected scene nodes to be refreshed (or cause commands to be re-applied). Hot-reloading is minimally destructive. Entities are only despawned when you delete scene nodes from a COB file.
 
 Check the repository examples for how to build different kinds of UI.
 
@@ -95,4 +94,5 @@ Check the repository examples for how to build different kinds of UI.
 
 | `bevy` | `bevy_cobweb_ui` |
 |-------|-------------------|
-| 0.14  | 0.1.0 - main      |
+| 0.15  | 0.5.0 - main      |
+| 0.14  | 0.1.0 - 0.4.1     |
