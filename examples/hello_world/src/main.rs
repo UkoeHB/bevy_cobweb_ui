@@ -2,11 +2,15 @@ use bevy::prelude::*;
 use bevy_cobweb_ui::prelude::*;
 use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
+//-------------------------------------------------------------------------------------------------------------------
+
 fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
     c.spawn(Camera2d);
     c.ui_root().load_scene(("main.cob", "scene"), &mut s);
 }
+
+//-------------------------------------------------------------------------------------------------------------------
 
 fn main()
 {
@@ -23,3 +27,5 @@ fn main()
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
+
+//-------------------------------------------------------------------------------------------------------------------

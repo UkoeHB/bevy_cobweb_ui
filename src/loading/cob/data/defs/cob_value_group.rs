@@ -30,7 +30,7 @@ impl CobValueGroupEntry
     pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
     {
         // Check for key-value first in case a key is a CobValue.
-        let fill = match CobMapKeyValue::try_parse(fill, content)? {
+        let fill = match rc(content, |c| CobMapKeyValue::try_parse(fill, c))? {
             (CobMapKVParseResult::Success(kv), next_fill, remaining) => {
                 return Ok((Some(Self::KeyValue(kv)), next_fill, remaining));
             }
@@ -115,7 +115,7 @@ impl CobValueGroup
 
         let end_fill = loop {
             let fill_len = item_fill.len();
-            match CobValueGroupEntry::try_parse(item_fill, remaining)? {
+            match rc(remaining, |rm| CobValueGroupEntry::try_parse(item_fill, rm))? {
                 (Some(entry), next_fill, after_entry) => {
                     if entries.len() > 0 {
                         if fill_len == 0 {

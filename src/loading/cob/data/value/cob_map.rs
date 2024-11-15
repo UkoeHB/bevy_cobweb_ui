@@ -41,7 +41,7 @@ impl CobMapKey
     pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
     {
         // Try to parse value first in case it's a field-name-like value such as 'true' or 'none'.
-        let fill = match CobValue::try_parse(fill, content)? {
+        let fill = match rc(content, |c| CobValue::try_parse(fill, c))? {
             (Some(value), next_fill, remaining) => return Ok((Some(Self::Value(value)), next_fill, remaining)),
             (None, fill, _) => fill,
         };
@@ -141,7 +141,7 @@ impl CobMapKeyValue
     /// Returns [`CobMapKVParseResult`] so parsed values without keys can be used instead of re-parsing them.
     pub fn try_parse(fill: CobFill, content: Span) -> Result<(CobMapKVParseResult, CobFill, Span), SpanError>
     {
-        let (maybe_key, semicolon_fill, remaining) = CobMapKey::try_parse(fill, content)?;
+        let (maybe_key, semicolon_fill, remaining) = rc(content, |c| CobMapKey::try_parse(fill, c))?;
         let Some(key) = maybe_key else { return Ok((CobMapKVParseResult::Failure, semicolon_fill, content)) };
         // Allow failure on missing `:` in case we are inside a value group where there can be either single values
         // or map entries.
@@ -150,7 +150,7 @@ impl CobMapKeyValue
             Err(_) => return Ok((CobMapKVParseResult::KeyNoValue(key), semicolon_fill, remaining)),
         };
         let (value_fill, remaining) = CobFill::parse(remaining);
-        let (Some(value), next_fill, remaining) = CobValue::try_parse(value_fill, remaining)? else {
+        let (Some(value), next_fill, remaining) = rc(remaining, |rm| CobValue::try_parse(value_fill, rm))? else {
             tracing::warn!("failed parsing value for map entry at {}; no valid value found", get_location(remaining));
             return Err(span_verify_error(content));
         };

@@ -32,7 +32,7 @@ impl CobRustPrimitive
         buff.push_str(self.primitive.as_str());
     }
 
-    /// Nomlike means the ok value is `(remaining, result)`.
+    /// Nomlike means the Ok value is `(remaining, result)`.
     pub fn parse_nomlike(content: Span) -> IResult<Span, Self>
     {
         let (fill, remaining) = CobFill::parse(content);
