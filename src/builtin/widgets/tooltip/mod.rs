@@ -146,8 +146,11 @@ impl WithTooltip
 /*
 - target entity: WithTooltip instruction
     - on_pointer_enter, on_pressed: spawn tooltip, add HasTooltip component to hovered entity
-    - on_pointer_leave, on_released, on_press_canceled: remove HasTooltip component, add "Dying" pseudostate (activates Animated<PropagateOpacity>), also add DespawnOnOpacityOut component which waits for PropagateOpacity to reach zero then despawns
-        - DespawnOnOpacityOut checker system should be ordered in Last to make sure PropagateOpacity has a chance to be inserted by the flux framework
+    - on_pointer_leave, on_released, on_press_canceled: remove HasTooltip component, add "Dying" pseudostate
+    (activates Animated<PropagateOpacity>), also add DespawnOnOpacityOut component which waits for PropagateOpacity to
+    reach zero then despawns
+        - DespawnOnOpacityOut checker system should be ordered in Last to make sure PropagateOpacity has a chance to be
+        inserted by the flux framework
 - tooltip
     - has TooltipParent component
     - has WindowClamp component
@@ -163,6 +166,8 @@ impl WithTooltip
     - on trigger Drag, update ComputedCenteringDrag with distance traveled
     - no need to remove ComputedCenteringDrag for the demo
     - system: convert ComputedCenteringDrag to Transform
+
+- use TargetCamera on current node to detect which window we are in? camera -> render target -> window entity
 */
 
 //-------------------------------------------------------------------------------------------------------------------

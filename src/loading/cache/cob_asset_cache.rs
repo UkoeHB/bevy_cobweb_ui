@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 struct PreprocessedSceneFile
 {
     /// This file.
@@ -19,6 +19,9 @@ struct PreprocessedSceneFile
     imports: HashMap<ManifestKey, CobImportAlias>,
     /// Data cached for re-loading when dependencies are reloaded.
     data: Cob,
+    /// File hash for editor use.
+    #[cfg(feature = "editor")]
+    hash: crate::editor::CobFileHash,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -38,6 +41,9 @@ struct ProcessedSceneFile
     /// Un-extracted data cached for re-loading when imports are reloaded.
     #[cfg(feature = "hot_reload")]
     data: Cob,
+    /// File hash for editor use.
+    #[cfg(feature = "editor")]
+    hash: crate::editor::CobFileHash,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -116,6 +122,28 @@ impl CobAssetCache
         self.preprocessed.len()
     }
 
+    /// Returns `(hash, data, is_processed)`.
+    ///
+    /// Used for patching file data on editor changes.
+    #[cfg(feature = "editor")]
+    pub(crate) fn get_file_info_mut(
+        &mut self,
+        file: &CobFile,
+    ) -> Option<(crate::editor::CobFileHash, &mut Cob, bool)>
+    {
+        // Check processed first as most likely.
+        if let Some(processed) = self.processed.get_mut(file) {
+            return Some((processed.hash, &mut processed.data, true));
+        }
+
+        if self.preprocessed_set.contains(file) {
+            let preprocessed = self.preprocessed.iter_mut().find(|p| p.file == *file)?;
+            return Some((preprocessed.hash, &mut preprocessed.data, false));
+        }
+
+        None
+    }
+
     /// Prepares a cobweb asset file.
     pub(crate) fn prepare_file(&mut self, file: CobFile)
     {
@@ -142,8 +170,10 @@ impl CobAssetCache
 
                 if let Some(new_key) = manifest_key {
                     if let Some(prev_file) = self.manifest_map().insert(new_key.clone(), file.clone()) {
-                        tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
-                            new_key, prev_file, file);
+                        if file != prev_file {
+                            tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
+                                new_key, prev_file, file);
+                        }
                     }
                 }
 
@@ -178,8 +208,10 @@ impl CobAssetCache
                 // new file. If the file is renamed back to its original name, then the manifest
                 // map will be updated again to point to the old file name.
                 if let Some(prev_file) = self.manifest_map().insert(new_key.clone(), file.clone()) {
-                    tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
-                        new_key, prev_file, file);
+                    if file != prev_file {
+                        tracing::warn!("replacing file for manifest key {:?} (old: {:?}, new: {:?})",
+                            new_key, prev_file, file);
+                    }
                 }
 
                 false
@@ -199,6 +231,7 @@ impl CobAssetCache
         file: CobFile,
         imports: HashMap<ManifestKey, CobImportAlias>,
         data: Cob,
+        #[cfg(feature = "editor")] hash: crate::editor::CobFileHash,
     )
     {
         // Remove if already processed.
@@ -255,7 +288,13 @@ impl CobAssetCache
             }
         }
 
-        let preprocessed = PreprocessedSceneFile { file, imports, data };
+        let preprocessed = PreprocessedSceneFile {
+            file,
+            imports,
+            data,
+            #[cfg(feature = "editor")]
+            hash,
+        };
         self.preprocessed.push(preprocessed);
     }
 
@@ -307,6 +346,11 @@ impl CobAssetCache
             processed.data = preprocessed.data.clone();
         }
 
+        #[cfg(feature = "editor")]
+        {
+            processed.hash = preprocessed.hash;
+        }
+
         // Process the file.
         // - This updates the using/constants/specs maps with info extracted from the file.
         extract_cob_importables(
@@ -355,6 +399,7 @@ impl CobAssetCache
         processed.constants_buff = constants_buff;
         processed.specs = specs;
 
+        // Set fully processed
         self.processed.insert(preprocessed.file.clone(), processed);
 
         // Check for already-processed files that need to rebuild since they depend on this file.
@@ -383,7 +428,13 @@ impl CobAssetCache
                     // Add via API to check for recursive dependencies.
                     commands_buffer.prep_commands_refresh(needs_rebuild.clone());
                     let processed = self.processed.remove(&needs_rebuild).unwrap();
-                    self.add_preprocessed_file(needs_rebuild, processed.imports, processed.data);
+                    self.add_preprocessed_file(
+                        needs_rebuild,
+                        processed.imports,
+                        processed.data,
+                        #[cfg(feature = "editor")]
+                        processed.hash,
+                    );
                 }
             }
         }
@@ -481,6 +532,7 @@ impl CobAssetCache
         c: &mut Commands,
         scene_buffer: &mut SceneBuffer,
         scene_loader: &mut SceneLoader,
+        #[cfg(feature = "editor")] editor: &mut crate::editor::CobEditor,
     )
     {
         // Note: We assume it doesn't matter what file order scenes are extracted in.
@@ -498,6 +550,14 @@ impl CobAssetCache
                 &processed.constants_buff,
                 &processed.specs,
             );
+
+            // Pass to editor.
+            // - We wait until after scene extraction to make sure the editor view synchronizes with the
+            // file's cached state.
+            #[cfg(feature = "editor")]
+            {
+                editor.add_processed(c, processed.hash, &processed.data, &processed.using);
+            }
         }
     }
 }

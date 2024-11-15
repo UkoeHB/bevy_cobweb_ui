@@ -4,8 +4,8 @@
 },
 
 "#constants" : {
-    "$animation_settings_shared_medium" : {"duration": 0.0265, "easing": "Linear"},
-    "$animation_settings_shared_fast" : {"duration": 0.025, "easing": "Linear"},
+    "$animation_settings_shared_medium" : {"duration": 0.0265, "ease": "Linear"},
+    "$animation_settings_shared_fast" : {"duration": 0.025, "ease": "Linear"},
     "$animation_settings_medium" : {
         "enter": "$$animation_settings_shared_medium",
         "pointer_enter": "$$animation_settings_shared_medium",

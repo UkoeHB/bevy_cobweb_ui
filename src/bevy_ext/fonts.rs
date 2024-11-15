@@ -281,9 +281,9 @@ impl<T: Into<FontRequest>> FontWidthExt for T
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Node of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
+/// Style of a font from [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style).
 ///
-/// Take precedence over [`FontWeight`] when negotiating a [`FontRequest`] against available fonts (see
+/// Takes precedence over [`FontWeight`] when negotiating a [`FontRequest`] against available fonts (see
 /// [`FontMap`](crate::prelude::FontMap)).
 #[derive(Reflect, Default, Debug, Copy, Clone)]
 #[cfg_attr(
@@ -805,6 +805,36 @@ pub struct FontAttributes
     pub style: FontStyle,
     #[reflect(default)]
     pub weight: FontWeight,
+}
+
+impl FontAttributes
+{
+    /// Negotiates available attributes against `self` to find the best-matching available font.
+    ///
+    /// `attrs_fn` should return an iterator over available attributes.
+    ///
+    /// See the [CSS font-matching algorithm](https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm).
+    pub fn negotiate_eligible_fonts<I>(self, attrs_fn: impl Fn() -> I) -> Option<Self>
+    where
+        I: Iterator<Item = FontAttributes>,
+    {
+        // Identify the best-fitting font width.
+        let width = FontWidth::negotiate(self.width, || (attrs_fn)().map(|a| a.width))?;
+
+        // Identify the best-fitting font style using the identified width.
+        let style = FontStyle::negotiate(self.style, || {
+            (attrs_fn)().filter(|a| a.width == width).map(|a| a.style)
+        })?;
+
+        // Identify the best-fitting font weight using the identified width and style.
+        let weight = FontWeight::negotiate(self.weight, || {
+            (attrs_fn)()
+                .filter(|a| (a.width == width) && (a.style == style))
+                .map(|a| a.weight)
+        })?;
+
+        Some(Self { width, style, weight })
+    }
 }
 
 impl UpdateFontRequest for FontAttributes

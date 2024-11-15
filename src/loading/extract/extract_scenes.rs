@@ -54,7 +54,7 @@ fn handle_loadable(
             file: SceneFile::File(file.clone()),
             path: current_path.clone(),
         },
-        loadable_index,
+        Some(loadable_index),
         loadable_value,
         type_id,
         long_name,

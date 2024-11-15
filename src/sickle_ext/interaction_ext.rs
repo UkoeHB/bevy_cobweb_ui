@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
+use flux_interaction::ApplyFluxChanges;
 
 use crate::prelude::*;
 use crate::sickle_ext::attributes::pseudo_state::{PseudoState, PseudoStates};
@@ -8,6 +9,9 @@ use crate::sickle_ext::prelude::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Converts `sickle_ui` flux events to reactive entity events (see [`ReactCommand::entity_event`]).
+///
+/// Is situated between `FluxInteractionUpdate` and `ApplyFluxChanges` sets so the effects of reactions here
+/// can be immediately handled.
 //todo: better to have these in PreUpdate - note that state transitions occur between PreUpdate and Update, so
 // any states set in reaction to these events will be applied 1 frame late
 fn flux_ui_events(
@@ -165,8 +169,12 @@ impl Plugin for UiInteractionExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_instruction_type::<Interactive>()
-            .add_systems(Update, flux_ui_events.after(FluxInteractionUpdate));
+        app.register_instruction_type::<Interactive>().add_systems(
+            Update,
+            flux_ui_events
+                .after(FluxInteractionUpdate)
+                .before(ApplyFluxChanges),
+        );
     }
 }
 

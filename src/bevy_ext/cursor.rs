@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use bevy::prelude::*;
-use bevy::window::{PrimaryWindow, SystemCursorIcon};
+use bevy::window::SystemCursorIcon;
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
 use sickle_ui_scaffold::prelude::PseudoState;
 use smallvec::SmallVec;
@@ -84,23 +84,24 @@ fn refresh_cursor_icon(
     asset_server: Res<AssetServer>,
     mut c: Commands,
     mut source: ResMut<CursorSource>,
-    window: Query<(Entity, Option<&CursorIcon>), With<PrimaryWindow>>,
+    windows: Query<(Entity, Option<&CursorIcon>), With<Window>>,
     mut img_map: ResMut<ImageMap>,
 )
 {
-    let Ok((window_entity, current_cursor)) = window.get_single() else { return };
     let next_cursor = source.get_next_cursor(&mut img_map, &asset_server);
-    if current_cursor == next_cursor.as_ref() {
-        return;
-    }
-    let Some(next_cursor) = next_cursor else { return };
+    for (window_entity, current_cursor) in windows.iter() {
+        if current_cursor == next_cursor.as_ref() {
+            continue;
+        }
+        let Some(next_cursor) = next_cursor.clone() else { continue };
 
-    c.entity(window_entity).insert(next_cursor);
+        c.entity(window_entity).insert(next_cursor);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// A cursor type that can be loaded via [`SetPrimaryCursor`] or [`TempCursor`].
+/// A cursor type that can be loaded via [`PrimaryCursor`] or [`TempCursor`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -168,7 +169,7 @@ impl LoadableCursor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Command that sets the primary [`CursorIcon`] on the [`PrimaryWindow`].
+/// Command that sets the primary [`CursorIcon`] on all windows of the app.
 ///
 /// The primary icon can be temporarily overridden by a [`TempCursor`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq, Deref, DerefMut)]
@@ -177,9 +178,9 @@ impl LoadableCursor
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct SetPrimaryCursor(pub LoadableCursor);
+pub struct PrimaryCursor(pub LoadableCursor);
 
-impl Command for SetPrimaryCursor
+impl Command for PrimaryCursor
 {
     fn apply(self, world: &mut World)
     {
@@ -189,10 +190,10 @@ impl Command for SetPrimaryCursor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that tries to set [`CursorIcon`] on the [`PrimaryWindow`] every tick. Set the value to
+/// Component that tries to set [`CursorIcon`] on all windows of the app every tick. Set the value to
 /// [`LoadableCursor::None`]` to disable it.
 ///
-/// To set a long-term 'primary cursor', use the [`SetPrimaryCursor`] command.
+/// To set a long-term 'primary cursor', use the [`PrimaryCursor`] command.
 ///
 /// See [`ResponsiveCursor`] for an easy way to use this.
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
@@ -240,6 +241,9 @@ impl ResponsiveAttribute for TempCursor {}
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction that sets [`TempCursor`] on the entity when it is hovered or pressed.
+///
+/// Note that this should usually be paired with a [`PrimaryCursor`] command for the default cursor. Otherwise
+/// the cursor can get 'stuck' on responsive cursor values.
 // TODO: There is a bug where if you only have `hover` set, then the hover cursor will be maintained when you
 // press and drag away from the entity until you release.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
@@ -308,7 +312,7 @@ impl Plugin for CursorPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<CursorSource>()
-            .register_command_type::<SetPrimaryCursor>()
+            .register_command_type::<PrimaryCursor>()
             .register_responsive::<TempCursor>()
             .register_instruction_type::<ResponsiveCursor>()
             // Note: bevy's cursor_update system runs in Last but doesn't have a system set, so we need to put

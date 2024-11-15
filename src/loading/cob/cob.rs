@@ -2,6 +2,39 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn get_scene_loadable_from_layer<'a, 'b>(
+    layer: &'a mut CobSceneLayer,
+    mut path_iter: impl Iterator<Item = &'b str> + Clone + 'b,
+    target_name: &'b str,
+    mut id_scratch: String,
+) -> Option<&'a mut CobLoadable>
+{
+    let Some(next_name) = path_iter.next() else {
+        for entry in layer.entries.iter_mut() {
+            let CobSceneLayerEntry::Loadable(loadable) = entry else { continue };
+            id_scratch = loadable.id.to_canonical(Some(id_scratch));
+            if id_scratch != target_name {
+                continue;
+            };
+            return Some(loadable);
+        }
+        return None;
+    };
+
+    for entry in layer.entries.iter_mut() {
+        let CobSceneLayerEntry::Layer(next_layer) = entry else { continue };
+        if next_layer.name.as_str() != next_name {
+            continue;
+        }
+
+        return get_scene_loadable_from_layer(next_layer, path_iter, target_name, id_scratch);
+    }
+
+    None
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum CobSection
 {
@@ -123,6 +156,50 @@ impl Cob
         debug_assert_eq!(get_local_recursion_count(), 0);
 
         Ok(Self { file, sections, end_fill })
+    }
+
+    // TODO: This allocates a string to do loadable name checks.
+    pub fn get_command_loadable_mut(&mut self, target_name: &str) -> Option<&mut CobLoadable>
+    {
+        self.sections.iter_mut().find_map(|s| {
+            let mut id_scratch = String::default();
+            match s {
+                CobSection::Commands(commands) => {
+                    for entry in commands.entries.iter_mut() {
+                        let CobCommandEntry::Loadable(loadable) = entry else { continue };
+                        id_scratch = loadable.id.to_canonical(Some(id_scratch));
+                        if id_scratch != target_name {
+                            continue;
+                        }
+                        return Some(loadable);
+                    }
+                    None
+                }
+                _ => None,
+            }
+        })
+    }
+
+    // TODO: This allocates a string to do loadable name checks.
+    pub fn get_scene_loadable_mut(&mut self, path: &ScenePath, target_name: &str) -> Option<&mut CobLoadable>
+    {
+        let mut path_iter = path.iter();
+        let root_name = path_iter.next()?;
+
+        for section in self.sections.iter_mut() {
+            let CobSection::Scenes(scenes) = section else { continue };
+            let Some(root) = scenes
+                .scenes
+                .iter_mut()
+                .find(|s| s.name.as_str() == root_name)
+            else {
+                continue;
+            };
+
+            return get_scene_loadable_from_layer(root, path_iter, target_name, String::default());
+        }
+
+        None
     }
 }
 

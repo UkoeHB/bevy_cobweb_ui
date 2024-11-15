@@ -619,6 +619,7 @@ impl ContentFlex
         node.overflow_clip_margin = self.clip_margin;
         node.padding = self.padding.into();
         node.flex_direction = self.flex_direction;
+        node.flex_wrap = self.flex_wrap;
         node.align_content = self.justify_lines.into();
         node.justify_content = self.justify_main.into();
         node.align_items = self.justify_cross.into();

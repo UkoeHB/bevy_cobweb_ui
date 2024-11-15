@@ -1,5 +1,5 @@
 #commands
-SetPrimaryCursor(Custom{image:"cursor.png" hotspot:(9, 9)})
+PrimaryCursor(Custom{image:"cursor.png" hotspot:(9, 9)})
 
 #scenes
 "scene"

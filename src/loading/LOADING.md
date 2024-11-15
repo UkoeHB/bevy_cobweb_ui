@@ -316,6 +316,8 @@ impl Instruction for MyLoadable
 
 The `revert` method on `Instruction` is used when hot-reloading an instruction. When a loadable is changed or removed from a node, then it will be reverted. After that, all of the nodes' loadables are re-applied in order. This two-step process allows best-effort state repair when complex mutations are hot reloaded.
 
+**Warning**: If a loadable contains `NaN`, then it will *always* appear changed when a file reloads, since we use `reflect_partial_eq` to detect changes.
+
 To load a full scene and edit it, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene_and_edit` callback.
 
 ```rust

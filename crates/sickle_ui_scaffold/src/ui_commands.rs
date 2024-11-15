@@ -1,15 +1,12 @@
 use bevy::core::Name;
 use bevy::ecs::component::ComponentInfo;
 use bevy::ecs::entity::Entity;
-use bevy::ecs::query::With;
 use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
-use bevy::ecs::world::{Command, World};
+use bevy::ecs::world::World;
 use bevy::hierarchy::Children;
 use bevy::log::{info, warn};
 use bevy::prelude::{Color, Component, Mut, Text, TextColor, TextFont};
 use bevy::state::state::{FreelyMutableState, NextState, States};
-use bevy::window::{PrimaryWindow, SystemCursorIcon};
-use bevy::winit::cursor::CursorIcon;
 
 use crate::attributes::prelude::*;
 use crate::flux_interaction::{FluxInteractionStopwatchLock, StopwatchLock};
@@ -106,38 +103,6 @@ impl UpdateTextExt for EntityCommands<'_>
         self.queue(UpdateText { text: text.into() });
 
         self
-    }
-}
-
-// TODO: Move to style and apply to Node's window
-struct SetCursor
-{
-    cursor: SystemCursorIcon,
-}
-
-impl Command for SetCursor
-{
-    fn apply(self, world: &mut World)
-    {
-        let mut q_window = world.query_filtered::<Entity, With<PrimaryWindow>>();
-        let Ok(window_ent) = q_window.get_single(world) else { return };
-        let Ok(mut emut) = world.get_entity_mut(window_ent) else { return };
-
-        emut.insert(CursorIcon::from(self.cursor));
-    }
-}
-
-pub trait SetCursorExt<'w, 's, 'a>
-{
-    /// Set the [`PrimaryWindow`]'s cursor
-    fn set_cursor(&mut self, cursor: SystemCursorIcon);
-}
-
-impl<'w, 's, 'a> SetCursorExt<'w, 's, 'a> for Commands<'w, 's>
-{
-    fn set_cursor(&mut self, cursor: SystemCursorIcon)
-    {
-        self.queue(SetCursor { cursor });
     }
 }
 

@@ -240,7 +240,7 @@ impl RadioButtonBuilder
                 // Select this button.
                 // TODO: this callback could be moved to an EntityWorldReactor, with the manager entity as entity
                 // data.
-                .on_pressed(move |mut c: Commands, states: PseudoStateReader| {
+                .on_pressed(move |mut c: Commands, states: PseudoStateParam| {
                     states.try_select(base_entity, &mut c);
                 })
                 // Save the newly-selected button and deselect the previously selected.

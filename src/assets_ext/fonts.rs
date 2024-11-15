@@ -69,9 +69,9 @@ fn get_dependent_font_variants(
         };
 
         let attributes = if attributes.len() == 0 {
-            negotiate_eligible_fonts(reference_font, || variants.iter().map(|v| v.attributes()))
+            reference_font.negotiate_eligible_fonts(|| variants.iter().map(|v| v.attributes()))
         } else {
-            negotiate_eligible_fonts(reference_font, || attributes.iter().cloned())
+            reference_font.negotiate_eligible_fonts(|| attributes.iter().cloned())
         };
 
         let Some(attributes) = attributes else {
@@ -97,38 +97,15 @@ fn get_dependent_font_variants(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// See https://drafts.csswg.org/css-fonts-4/#font-matching-algorithm
-fn negotiate_eligible_fonts<I>(attrs: FontAttributes, attrs_fn: impl Fn() -> I) -> Option<FontAttributes>
-where
-    I: Iterator<Item = FontAttributes>,
-{
-    // Identify the best-fitting font width.
-    let width = FontWidth::negotiate(attrs.width, || (attrs_fn)().map(|a| a.width))?;
-
-    // Identify the best-fitting font style using the identified width.
-    let style = FontStyle::negotiate(attrs.style, || {
-        (attrs_fn)().filter(|a| a.width == width).map(|a| a.style)
-    })?;
-
-    // Identify the best-fitting font weight using the identified width and style.
-    let weight = FontWeight::negotiate(attrs.weight, || {
-        (attrs_fn)()
-            .filter(|a| (a.width == width) && (a.style == style))
-            .map(|a| a.weight)
-    })?;
-
-    Some(FontAttributes { width, style, weight })
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn get_eligible_font<'a>(
     families: &'a HashMap<SmolStr, Vec<FontVariant>>,
     font: &FontRequest,
 ) -> Option<&'a FontVariant>
 {
     let variants = families.get(&**font.family)?;
-    let attributes = negotiate_eligible_fonts(font.attributes(), || variants.iter().map(|v| v.attributes()))?;
+    let attributes = font
+        .attributes()
+        .negotiate_eligible_fonts(|| variants.iter().map(|v| v.attributes()))?;
 
     // Get the variant that matches what we found.
     let Some(variant) = variants.iter().find(|v| v.attributes() == attributes) else {
@@ -896,7 +873,9 @@ impl Command for LoadLocalizedFonts
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable command for registering font families that need to be pre-loaded.
+/// Loadable command for requesting font families to be loaded.
+///
+/// The [`RegisterFontFamilies`] command should be used before this command.
 ///
 /// The loaded fonts can be accessed via [`FontMap`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]

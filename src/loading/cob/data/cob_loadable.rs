@@ -1,5 +1,5 @@
 use bevy::reflect::serde::TypedReflectSerializer;
-use bevy::reflect::{Reflect, TypeRegistry};
+use bevy::reflect::{PartialReflect, Reflect, TypeRegistry};
 use nom::bytes::complete::tag;
 use nom::Parser;
 use serde::Serialize;
@@ -231,19 +231,33 @@ impl CobLoadable
 
     pub fn extract<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
     {
-        let registration = registry
-            .get(std::any::TypeId::of::<T>())
+        let type_info = registry
+            .get_type_info(std::any::TypeId::of::<T>())
             .ok_or(CobError::LoadableNotRegistered)?;
-        let name = registration.type_info().type_path_table().short_path();
+        let name = type_info.type_path_table().short_path();
         value.serialize(CobLoadableSerializer { name })
     }
 
     pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
     {
-        let registration = registry
-            .get(std::any::TypeId::of::<T>())
+        let type_info = registry
+            .get_type_info(std::any::TypeId::of::<T>())
             .ok_or(CobError::LoadableNotRegistered)?;
-        let name = registration.type_info().type_path_table().short_path();
+        let name = type_info.type_path_table().short_path();
+        let wrapper = TypedReflectSerializer::new(value, registry);
+        wrapper.serialize(CobLoadableSerializer { name })
+    }
+
+    /// This is slightly less efficient than [`Self::extract_reflect`], which should be preferred if possible.
+    pub fn extract_partial_reflect(
+        value: &(dyn PartialReflect + 'static),
+        registry: &TypeRegistry,
+    ) -> CobResult<Self>
+    {
+        let type_info = value
+            .get_represented_type_info()
+            .ok_or(CobError::LoadableNotRegistered)?;
+        let name = type_info.type_path_table().short_path();
         let wrapper = TypedReflectSerializer::new(value, registry);
         wrapper.serialize(CobLoadableSerializer { name })
     }

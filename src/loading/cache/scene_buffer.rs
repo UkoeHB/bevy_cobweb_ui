@@ -15,11 +15,13 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// This function assumes loadables are unique within a scene node.
+/// This function assumes loadables are unique within a scene node.
+///
+/// The index is optional to allow easily inserting 'at the current location'.
 fn insert_node_loadable_entry(
     loadables: &mut HashMap<SceneRef, SmallVec<[ErasedLoadable; 4]>>,
     scene_ref: &SceneRef,
-    index: usize,
+    index: Option<usize>,
     loadable: ReflectedLoadable,
     type_id: TypeId,
     full_type_name: &str,
@@ -27,6 +29,7 @@ fn insert_node_loadable_entry(
 {
     match loadables.entry(scene_ref.clone()) {
         Vacant(entry) => {
+            let index = index.unwrap_or(0);
             if index != 0 {
                 tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
                     the current loadables length is 0", full_type_name, scene_ref, index);
@@ -41,6 +44,8 @@ fn insert_node_loadable_entry(
         Occupied(mut entry) => {
             // Insert if the loadable value changed.
             if let Some(pos) = entry.get().iter().position(|e| e.type_id == type_id) {
+                let index = index.unwrap_or(pos);
+
                 // Check if the value is changing.
                 let erased_loadable = &mut entry.get_mut()[pos];
                 match erased_loadable.loadable.equals(&loadable) {
@@ -74,15 +79,19 @@ fn insert_node_loadable_entry(
                         InsertNodeResult::NoChange
                     }
                 }
-            } else if index <= entry.get().len() {
-                entry
-                    .get_mut()
-                    .insert(index, ErasedLoadable { type_id, loadable });
-                InsertNodeResult::Added
             } else {
-                tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
-                    the current loadables' length is {}", full_type_name, scene_ref, index, entry.get().len());
-                InsertNodeResult::NoChange
+                let entry_count = entry.get().len();
+                let index = index.unwrap_or(entry_count);
+                if index <= entry_count {
+                    entry
+                        .get_mut()
+                        .insert(index, ErasedLoadable { type_id, loadable });
+                    InsertNodeResult::Added
+                } else {
+                    tracing::error!("failed inserting node loadable {:?} at {:?}; expected to insert at index {} but \
+                        the current loadables' length is {}", full_type_name, scene_ref, index, entry.get().len());
+                    InsertNodeResult::NoChange
+                }
             }
         }
     }
@@ -248,7 +257,7 @@ impl SceneBuffer
     pub(crate) fn insert_loadable(
         &mut self,
         scene_ref: &SceneRef,
-        index: usize,
+        index: Option<usize>,
         loadable: ReflectedLoadable,
         type_id: TypeId,
         full_type_name: &str,

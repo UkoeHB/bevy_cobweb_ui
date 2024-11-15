@@ -77,7 +77,7 @@ pub struct LoadedUiImage
     ///
     /// Set this if you want to force the node to stretch to a specific size.
     ///
-    /// When the default [`LoadedImageMode`] is used, the node will automatically size itself to fit the image.
+    /// When [`LoadedImageMode::Auto`] is used, the node will automatically size itself to fit the image.
     #[reflect(default)]
     pub size: Option<Vec2>,
     /// Allows specifying a rectangle on the image to render. A cheap alternative to [`Self::atlas`].

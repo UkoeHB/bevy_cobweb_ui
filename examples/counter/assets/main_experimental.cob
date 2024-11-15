@@ -238,7 +238,7 @@ hsla!(/* in-line comment */ h  s l , a{b{c}} /* over here */) = Hsla<A<B>,@a,?f,
     hue: @h saturation: @s lightness: ?l alpha: @a.b.c
     AaBb herewego!()
 }
-ani!(d e) = { duration: @d easing: @e 100.0 $constant #FF000AAA}
+ani!(d e) = { duration: @d ease: @e 100.0 $constant #FF000AAA}
 // ?t means insert 't' in this position and if 't' is missing then exclude the associated map key.
 uirect!(t b l r) = { top: ?t bottom: ?b left: ?l right: ?r }
 

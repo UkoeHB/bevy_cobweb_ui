@@ -91,7 +91,7 @@
                 "settings": {
                     "idle": {
                         "duration": 0.75,
-                        "easing": "Linear",
+                        "ease": "Linear",
                         "loop_type": "PingPongContinous"
                     }
                 }
@@ -104,7 +104,7 @@
                 "settings": {
                     "idle": {
                         "duration": 3.0,
-                        "easing": "InOutSine",
+                        "ease": "InOutSine",
                         "loop_type": "PingPongContinous"
                     }
                 }
@@ -265,10 +265,10 @@
         "hover": {"Hsla": {"hue": 0.0, "saturation": 0.0, "lightness": 0.0, "alpha": 1.0}}
     },
     "@indicator_dot_animation_setting": {
-        "enter": {"duration": 0.0265, "easing": "Linear"},
-        "pointer_enter": {"duration": 0.0265, "easing": "Linear"},
-        "pointer_leave": {"duration": 0.0265, "easing": "Linear"},
-        "press": {"duration": 0.0265, "easing": "Linear"}
+        "enter": {"duration": 0.0265, "ease": "Linear"},
+        "pointer_enter": {"duration": 0.0265, "ease": "Linear"},
+        "pointer_leave": {"duration": 0.0265, "ease": "Linear"},
+        "press": {"duration": 0.0265, "ease": "Linear"}
     },
 
     "!content": {

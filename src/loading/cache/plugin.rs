@@ -36,13 +36,24 @@ fn preprocess_cobweb_asset_files(
             continue;
         };
 
-        preprocess_cob_file(
-            &asset_server,
-            &mut cob_files,
-            &mut cob_cache,
-            &mut commands_buffer,
-            asset.0,
-        );
+        match asset {
+            CobAssetFile::Ignore => continue,
+            CobAssetFile::File {
+                #[cfg(feature = "editor")]
+                hash,
+                data,
+            } => {
+                preprocess_cob_file(
+                    &asset_server,
+                    &mut cob_files,
+                    &mut cob_cache,
+                    &mut commands_buffer,
+                    data,
+                    #[cfg(feature = "editor")]
+                    hash,
+                );
+            }
+        }
     }
 
     // Note: we don't try to handle asset load failures here because a file load failure is assumed to be
@@ -113,6 +124,7 @@ fn apply_pending_node_updates_extract(
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
     mut scene_loader: ResMut<SceneLoader>,
+    #[cfg(feature = "editor")] mut editor: ResMut<crate::editor::CobEditor>,
 )
 {
     // Check if blocked.
@@ -122,7 +134,14 @@ fn apply_pending_node_updates_extract(
 
     // Extract scenes from recently loaded files.
     let type_registry = types.read();
-    cob_cache.handle_pending_scene_extraction(&type_registry, &mut c, &mut scene_buffer, &mut scene_loader);
+    cob_cache.handle_pending_scene_extraction(
+        &type_registry,
+        &mut c,
+        &mut scene_buffer,
+        &mut scene_loader,
+        #[cfg(feature = "editor")]
+        &mut editor,
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -149,15 +168,22 @@ fn apply_pending_node_updates_post(
 
 /// `HasLoadables` is only removed when the entity is despawned.
 #[cfg(feature = "hot_reload")]
-fn cleanup_despawned_loaded_entities(
-    mut scene_buffer: ResMut<SceneBuffer>,
-    mut scene_loader: ResMut<SceneLoader>,
-    mut removed: RemovedComponents<HasLoadables>,
-)
+fn cleanup_despawned_loaded_entities(world: &mut World)
 {
-    for removed in removed.read() {
-        scene_buffer.remove_entity(&mut scene_loader, removed);
+    // We use a separate internal function so this system can be called in multiple places but
+    // the RemovedComponents state will stay the same.
+    fn cleanup_fn(
+        mut scene_buffer: ResMut<SceneBuffer>,
+        mut scene_loader: ResMut<SceneLoader>,
+        mut removed: RemovedComponents<HasLoadables>,
+    )
+    {
+        for removed in removed.read() {
+            scene_buffer.remove_entity(&mut scene_loader, removed);
+        }
     }
+
+    world.syscall((), cleanup_fn);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -190,6 +216,7 @@ impl Plugin for CobAssetCachePlugin
                 (
                     preprocess_cobweb_asset_files,
                     process_cobweb_asset_files.run_if(|s: Res<CobAssetCache>| s.num_preprocessed_pending() > 0),
+                    cleanup_despawned_loaded_entities,
                     apply_pending_commands,
                     #[cfg(feature = "hot_reload")]
                     apply_pending_node_updates_pre,
@@ -201,6 +228,24 @@ impl Plugin for CobAssetCachePlugin
                     .chain()
                     .in_set(FileProcessingSet),
             );
+
+        #[cfg(feature = "editor")]
+        {
+            // Rerun these systems in PostUpdate to capture editor changes immediately.
+            app.add_systems(
+                PostUpdate,
+                (
+                    cleanup_despawned_loaded_entities,
+                    apply_pending_commands,
+                    apply_pending_node_updates_pre,
+                    apply_pending_node_updates_extract,
+                    apply_pending_node_updates_post,
+                )
+                    .chain()
+                    .before(bevy::ui::UiSystem::Prepare)
+                    .before(bevy::prelude::TransformSystem::TransformPropagate),
+            );
+        }
 
         #[cfg(not(feature = "hot_reload"))]
         {

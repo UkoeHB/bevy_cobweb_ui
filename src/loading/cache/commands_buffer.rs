@@ -749,6 +749,43 @@ impl CommandsBuffer
         }
     }
 
+    /// Replaces a specific command in a file.
+    #[cfg(feature = "editor")]
+    pub(crate) fn patch_command(&mut self, file: CobFile, longname: &'static str, command: ErasedLoadable)
+    {
+        let Some(info) = self.hierarchy.get_mut(&file) else {
+            tracing::warn!("failed patching command for unknown file {file:?}");
+            return;
+        };
+
+        match info
+            .commands
+            .iter_mut()
+            .find(|c| c.command.type_id == command.type_id)
+        {
+            Some(matches) => match matches.command.loadable.equals(&command.loadable) {
+                Some(true) => (),
+                Some(false) | None => {
+                    if !info.is_orphaned && !matches.is_pending {
+                        self.command_counter.add(1);
+                    }
+                    *matches = CachedCommand { command, is_pending: true };
+                }
+            },
+            None => {
+                tracing::warn!("failed patching command {longname} in {file:?}; no previously existing instance \
+                    of the given command type");
+                return;
+            }
+        }
+
+        // Update traversal point if we have pending commands.
+        if !info.is_orphaned && info.commands.iter().any(|c| c.is_pending) {
+            let idx = info.idx;
+            self.update_traversal_point(file, idx);
+        }
+    }
+
     /// Iterates through the cached hierarchy from the latest traversal point, applying pending commands as they
     /// are encountered.
     pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)

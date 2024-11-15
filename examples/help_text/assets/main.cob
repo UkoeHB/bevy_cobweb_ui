@@ -14,8 +14,8 @@
         Animated<PropagateOpacity>{
             idle:0.4
             hover:1
-            hover_with:{ duration:0.75 easing:OutExpo delay:0.05 }
-            press_with:{ duration:0.75 easing:OutExpo delay:0.01 }
+            hover_with:{ duration:0.75 ease:OutExpo delay:0.05 }
+            press_with:{ duration:0.75 ease:OutExpo delay:0.01 }
         }
 
         "inner_rect"
@@ -25,8 +25,8 @@
             Animated<PropagateOpacity>{
                 idle:0.4
                 hover:1
-                hover_with:{ duration:0.75 easing:OutExpo delay:0.05 }
-                press_with:{ duration:0.75 easing:OutExpo delay:0.01 }
+                hover_with:{ duration:0.75 ease:OutExpo delay:0.05 }
+                press_with:{ duration:0.75 ease:OutExpo delay:0.01 }
             }
 
             "text"
@@ -49,7 +49,7 @@
                         Animated<PropagateOpacity>{
                             idle:0
                             hover:1
-                            hover_with:{ duration:0.05 easing:OutExpo delay:0.5}
+                            hover_with:{ duration:0.05 ease:OutExpo delay:0.5}
                         }
 
                         "text_elem"

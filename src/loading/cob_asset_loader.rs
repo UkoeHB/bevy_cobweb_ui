@@ -3,11 +3,17 @@ use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy::prelude::*;
 use thiserror::Error;
 
+#[cfg(feature = "editor")]
+use crate::editor::{CobFileHash, CobHashRegistry};
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct CobAssetLoader;
+struct CobAssetLoader
+{
+    #[cfg(feature = "editor")]
+    registry: CobHashRegistry,
+}
 
 impl AssetLoader for CobAssetLoader
 {
@@ -33,6 +39,17 @@ impl AssetLoader for CobAssetLoader
         let mut string = String::default();
         reader.read_to_string(&mut string).await?;
 
+        // When using the editor, we may be able to discard incoming files if they were saved by the editor.
+        #[cfg(feature = "editor")]
+        let hash = CobFileHash::new(string.as_bytes());
+        #[cfg(feature = "editor")]
+        {
+            if !self.registry.try_refresh_file(&file, hash) {
+                tracing::info!("ignoring file reload for {}; file did not change", file.as_str());
+                return Ok(CobAssetFile::Ignore);
+            }
+        }
+
         // Parse the raw file data.
         let data = match Cob::parse(Span::new_extra(&string, CobLocationMetadata { file: file.as_str() })) {
             Ok(data) => data,
@@ -49,7 +66,15 @@ impl AssetLoader for CobAssetLoader
             }
         };
 
-        Ok(CobAssetFile(data))
+        #[cfg(not(feature = "editor"))]
+        {
+            return Ok(CobAssetFile::File { data });
+        }
+
+        #[cfg(feature = "editor")]
+        {
+            return Ok(CobAssetFile::File { hash, data });
+        }
     }
 
     fn extensions(&self) -> &[&str]
@@ -76,10 +101,20 @@ pub enum CobAssetLoaderError
 //-------------------------------------------------------------------------------------------------------------------
 
 /// A deserialized COB file.
-// TODO: for editor feature, save hash of file data so editor can detect manual updates vs updates triggered by a
-// save event
 #[derive(Debug, Asset, TypePath)]
-pub(crate) struct CobAssetFile(pub(crate) Cob);
+#[allow(dead_code)]
+pub(crate) enum CobAssetFile
+{
+    /// Used to ignore files saved by the editor (when the "editor" feature is enabled).
+    Ignore,
+    /// A parsed file.
+    File
+    {
+        #[cfg(feature = "editor")]
+        hash: CobFileHash,
+        data: Cob,
+    },
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -89,7 +124,19 @@ impl Plugin for CobAssetLoaderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_asset_loader(CobAssetLoader);
+        #[cfg(not(feature = "editor"))]
+        {
+            app.register_asset_loader(CobAssetLoader {});
+        }
+
+        #[cfg(feature = "editor")]
+        {
+            let registry = app
+                .world_mut()
+                .get_resource_or_init::<CobHashRegistry>()
+                .clone();
+            app.register_asset_loader(CobAssetLoader { registry });
+        }
     }
 }
 

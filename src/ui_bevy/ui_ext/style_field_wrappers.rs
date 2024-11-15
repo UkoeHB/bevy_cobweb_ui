@@ -1418,6 +1418,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_animatable::<MinWidth>()
             .register_animatable::<MinHeight>()
             .register_animatable::<MaxWidth>()
+            .register_animatable::<MaxHeight>()
             .register_animatable::<AspectRatio>()
             .register_animatable::<Border>()
             .register_animatable::<Splat<Border>>()

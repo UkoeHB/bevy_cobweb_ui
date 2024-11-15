@@ -40,6 +40,7 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     };
 
     //todo: more efficient cleanup mechanism
+    // - need to be careful here, if we make the system a child of the target then despawn_descendants will kill it
     cleanup_reactor_on_despawn(&mut c, entity, revoke_token);
 
     // Run the system to apply it.

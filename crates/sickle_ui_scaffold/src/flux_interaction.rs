@@ -13,17 +13,17 @@ impl Plugin for FluxInteractionPlugin
     fn build(&self, app: &mut App)
     {
         app.init_resource::<FluxInteractionConfig>()
-            .configure_sets(Update, FluxInteractionUpdate)
+            .configure_sets(Update, (FluxInteractionUpdate, ApplyFluxChanges).chain())
+            .add_systems(Update, update_flux_interaction.in_set(FluxInteractionUpdate))
             .add_systems(
                 Update,
                 (
-                    update_flux_interaction,
                     reset_flux_interaction_stopwatch_on_change,
                     update_prev_interaction,
                     tick_flux_interaction_stopwatch,
                 )
                     .chain()
-                    .in_set(FluxInteractionUpdate),
+                    .in_set(ApplyFluxChanges),
             );
     }
 }
@@ -44,6 +44,9 @@ impl Default for FluxInteractionConfig
 
 #[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
 pub struct FluxInteractionUpdate;
+
+#[derive(SystemSet, Clone, Eq, Debug, Hash, PartialEq)]
+pub struct ApplyFluxChanges;
 
 #[derive(Bundle, Clone, Debug, Default)]
 pub struct TrackedInteraction

@@ -296,7 +296,7 @@ where
         // Load the scene into the root entity.
         let mut commands = self.commands();
         let path = path.into();
-        if !scene_loader.load_scene_and_edit::<T>(&mut commands, root_entity, path.clone()) {
+        if !scene_loader.load_scene::<T>(&mut commands, root_entity, path.clone()) {
             return self;
         }
 

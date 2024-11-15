@@ -56,6 +56,8 @@ fn insert_text_line(
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Sets up an entity with a [`Text`] component and one text span.
+///
+/// The default font is "Fira Sans Medium" with size `25.0`.
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -69,10 +71,12 @@ pub struct TextLine
     pub text: String,
     /// The font handle.
     ///
-    /// Defaults to `sickle_ui`'s built-in `FiraSans-Medium` font.
+    /// Defaults to the built-in "Fira Sans Medium" font.
     #[reflect(default = "TextLine::default_font")]
     pub font: Option<FontRequest>,
     /// The desired font size.
+    ///
+    /// Defaults to `25.0`.
     #[reflect(default = "TextLine::default_font_size")]
     pub size: f32,
     /// The line's [`LineBreak`] behavior.

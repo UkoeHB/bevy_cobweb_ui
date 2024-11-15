@@ -77,7 +77,7 @@ enum SceneLayerInsertionMethod
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub(crate) struct SceneLayerData
 {
     pub(crate) id: ScenePath,
@@ -235,6 +235,16 @@ pub(crate) struct SceneInstance
 
 impl SceneInstance
 {
+    fn new_for_ref(scene_ref: SceneRef) -> Self
+    {
+        Self {
+            scene_ref,
+            entity: Entity::PLACEHOLDER,
+            new_node_prep_fn: NodeInitializer { initializer: |_| {} },
+            nodes: HashMap::default(),
+        }
+    }
+
     /// Prepares the instance to be filled by a scene.
     pub(crate) fn prepare(
         &mut self,
@@ -299,19 +309,6 @@ impl SceneInstance
                 None
             }
         })
-    }
-}
-
-impl Default for SceneInstance
-{
-    fn default() -> Self
-    {
-        Self {
-            scene_ref: SceneRef::default(),
-            entity: Entity::PLACEHOLDER,
-            new_node_prep_fn: NodeInitializer { initializer: |_| {} },
-            nodes: HashMap::default(),
-        }
     }
 }
 
@@ -396,7 +393,7 @@ impl SceneLoader
                     scene_instance.root_entity()
                 } else {
                     let Some(parent_entity) = scene_instance.get(parent) else {
-                        tracing::error!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
+                        tracing::error!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's \
                             parent {:?} is missing (this is a bug)", scene, scene_instance.root_entity(), inserted, parent);
                         continue;
                     };
@@ -416,7 +413,7 @@ impl SceneLoader
                 let position = find_scene_child_pos(world, parent_entity, insertion_index);
 
                 let Ok(mut emut) = world.get_entity_mut(parent_entity) else {
-                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's
+                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-inserted node {:?}, node's \
                         parent {:?} was despawned", scene_inner, root_entity, inserted_inner, parent_entity);
                     return;
                 };
@@ -459,7 +456,7 @@ impl SceneLoader
         for scene_instance in scene_instances.iter() {
             // Get parent entity.
             let Some(parent_entity) = scene_instance.get(parent) else {
-                tracing::error!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
+                tracing::error!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's \
                     parent {:?} is missing (this is a bug)", scene, scene_instance.root_entity(), moved, parent);
                 continue;
             };
@@ -481,7 +478,7 @@ impl SceneLoader
                 let position = find_scene_child_pos(world, parent_entity, new_index);
 
                 let Ok(mut emut) = world.get_entity_mut(parent_entity) else {
-                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's
+                    tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-rearranged node {:?}, node's \
                         parent {:?} was despawned", scene, root_entity, moved, parent_entity);
                     return;
                 };
@@ -503,14 +500,14 @@ impl SceneLoader
         for scene_instance in scene_instances.iter_mut() {
             // Remove the node and get the target entity.
             let Some(node_entity) = scene_instance.remove(deleted) else {
-                tracing::error!("failed updating scene instance of {:?} for {:?} with hot-removed node {:?}, node
+                tracing::error!("failed updating scene instance of {:?} for {:?} with hot-removed node {:?}, node \
                     is missing (this is a bug)", scene, scene_instance.root_entity(), deleted);
                 continue;
             };
 
             // Recursively despawn the node.
             let Some(ec) = c.get_entity(node_entity) else {
-                tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-removed node {:?}, node
+                tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-removed node {:?}, node \
                     {:?} was already despawned", scene, scene_instance.root_entity(), deleted, node_entity);
                 continue;
             };
@@ -555,12 +552,7 @@ impl SceneLoader
     ///
     /// The scene hierarchy is saved temporarily in a `SceneInstance`. It will be discarded when
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
-    pub(crate) fn load_scene_and_edit<T>(
-        &mut self,
-        c: &mut Commands,
-        root_entity: Entity,
-        mut scene_ref: SceneRef,
-    ) -> bool
+    pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
     where
         T: crate::loading::scene::load_scene_ext::scene_traits::SceneNodeLoader,
     {
@@ -608,7 +600,7 @@ impl SceneLoader
             } else if self.scene_instance_cache.len() > 0 {
                 self.scene_instance_cache.swap_remove(largest_idx)
             } else {
-                SceneInstance::default()
+                SceneInstance::new_for_ref(scene_ref.clone())
             }
         };
         scene_instance.prepare(

@@ -106,14 +106,6 @@ impl SceneFile
     }
 }
 
-impl Default for SceneFile
-{
-    fn default() -> Self
-    {
-        Self::new("")
-    }
-}
-
 impl<T: AsRef<str>> Add<T> for SceneFile
 {
     type Output = SceneRef;
@@ -129,6 +121,14 @@ impl<T: AsRef<str>> Add<T> for &SceneFile
     fn add(self, rhs: T) -> Self::Output
     {
         self.extend(rhs)
+    }
+}
+
+impl From<CobFile> for SceneFile
+{
+    fn from(file: CobFile) -> Self
+    {
+        Self::File(file)
     }
 }
 
@@ -155,6 +155,12 @@ impl ScenePath
         Self::extend_inner(new_path, &mut path);
 
         Self { path: Arc::from(path.as_slice()) }
+    }
+
+    /// Creates an empty scene path.
+    pub fn empty() -> Self
+    {
+        Self { path: Arc::from([]) }
     }
 
     /// Parses a path with one segment from the given string.
@@ -207,6 +213,12 @@ impl ScenePath
         self.path.len()
     }
 
+    /// Iterates the path's segments.
+    pub fn iter(&self) -> impl Iterator<Item = &str> + Clone + DoubleEndedIterator
+    {
+        self.path.iter().map(|s| s.as_str())
+    }
+
     fn extend_inner(extension: &str, path: &mut SmallVec<[SmolStr; 10]>)
     {
         for path_element in extension.split(SCENE_PATH_SEPARATOR) {
@@ -232,14 +244,6 @@ impl ScenePath
     }
 }
 
-impl Default for ScenePath
-{
-    fn default() -> Self
-    {
-        Self::new("")
-    }
-}
-
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Represents a complete reference to a scene node in a cobweb asset asset.
@@ -248,7 +252,7 @@ impl Default for ScenePath
 /// - **File**: `ui/home.cob` for a `home` cobweb asset in `assets/ui`.
 /// - **Path**: `menu::header::title` for accessing the `title` scene node in the `menu` scene in the `home` cobweb
 /// asset.
-#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct SceneRef
 {
     /// See [`SceneFile`].

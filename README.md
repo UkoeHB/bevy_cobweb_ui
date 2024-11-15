@@ -81,13 +81,13 @@ Check the repository examples for how to build different kinds of UI.
 
 - [`hello_world`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/hello_world): Bare-bones hello world.
 - [`counter`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter): Simple counter button. Shows how [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) can be used to transfer interactions within a widget. Also demonstrates updating text dynamically on the code side.
-- [`counter_widget`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter_widget) (not migrated): Widget-ified counter that can be configured. Uses scene 'specs' to make the widget scene data parameterized, enabling customization within asset files.
+- [`counter_widget`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter_widget) (*not migrated*): Widget-ified counter that can be configured. Uses scene 'specs' to make the widget scene data parameterized, enabling customization within asset files.
 - [`cursors`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/cursors): Set custom cursors that respond to interactions with UI elements.
 - [`help_text`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/help_text): Help text that appears on hover. Showcases [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity), which allows controlling (and animating) the opacity of entire node trees, and even layering multiple [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity) within a single tree.
-- [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons) (not migrated): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
-- [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization) (not migrated): Showcases localized text and font.
+- [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons) (*not migrated*): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
+- [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization) (*not migrated*): Showcases localized text and font.
 - [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix builder-pattern-based UI construction with `bevy_cobweb_ui` convenience tools for interactions.
-- [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu) (not migrated): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.
+- [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu) (*not migrated*): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.
 
 
 ## `bevy` compatability

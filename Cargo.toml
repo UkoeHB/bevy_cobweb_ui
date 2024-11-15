@@ -40,6 +40,9 @@ colors = []
 # Enables built-in widgets.
 widgets = ["colors"]
 
+# Enables the built-in experimental COB editor.
+editor = ["hot_reload", "colors", "widgets", "dep:foldhash"]
+
 # Enables Serialize/Deserialize on built-in types.
 serde = ["bevy/serialize"]
 
@@ -71,6 +74,9 @@ intl-memoizer = { version = "0.5" }
 ron = { version = "0.8" }
 serde_yaml = { version = "0.9" }
 unic-langid = { version = "0.9" }
+
+# Editor deps
+foldhash = { version = "0.1.3", optional = true }
 
 # Local sub-crates
 bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.1.0" }

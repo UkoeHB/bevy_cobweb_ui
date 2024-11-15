@@ -1,5 +1,5 @@
 use bevy::reflect::serde::TypedReflectSerializer;
-use bevy::reflect::{Reflect, TypeRegistry};
+use bevy::reflect::{PartialReflect, Reflect, TypeRegistry};
 use serde::Serialize;
 
 use crate::prelude::*;
@@ -212,6 +212,15 @@ impl CobValue
     }
 
     pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
+    {
+        let wrapper = TypedReflectSerializer::new(value, registry);
+        wrapper.serialize(CobValueSerializer)
+    }
+
+    pub fn extract_partial_reflect(
+        value: &(dyn PartialReflect + 'static),
+        registry: &TypeRegistry,
+    ) -> CobResult<Self>
     {
         let wrapper = TypedReflectSerializer::new(value, registry);
         wrapper.serialize(CobValueSerializer)

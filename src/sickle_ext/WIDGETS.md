@@ -99,10 +99,10 @@ Now we construct a `spec` for the widget containing default structure and stylin
             "Animated<BackgroundColor>": {
                 "values": {"idle": "@bg_idle", "hover": "@bg_hover", "press": "@bg_press"},
                 "settings": {
-                    "pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-                    "pointer_leave": {"duration": 0.15, "easing": "OutExpo"},
-                    "press": {"duration": 0.2, "easing": "OutExpo"},
-                    "release": {"duration": 0.2, "easing": "OutExpo"}
+                    "pointer_enter": {"duration": 0.15, "ease": "OutExpo"},
+                    "pointer_leave": {"duration": 0.15, "ease": "OutExpo"},
+                    "press": {"duration": 0.2, "ease": "OutExpo"},
+                    "release": {"duration": 0.2, "ease": "OutExpo"}
                 }
             },
             "Interactive": []

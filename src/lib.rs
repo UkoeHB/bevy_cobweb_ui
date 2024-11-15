@@ -15,6 +15,9 @@ pub mod sickle_ext;
 pub mod tools;
 pub mod ui_bevy;
 
+#[cfg(feature = "editor")]
+pub mod editor;
+
 pub mod prelude
 {
     pub use bevy_cobweb_ui_derive::*;

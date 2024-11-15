@@ -1,0 +1,17 @@
+[package]
+name = "editor_demo"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["dev", "editor"]
+dev = ["bevy_cobweb_ui/dev"]
+editor = ["bevy_cobweb_ui/editor"]
+
+[dependencies]
+bevy = { version = "0.15.0-rc.3", default-features = true }
+bevy_cobweb = { version = "0.13.0-rc.3" }
+bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
+tracing = { version = "0.1" }
+
+serde = { version = "1.0" }

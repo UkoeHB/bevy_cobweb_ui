@@ -54,8 +54,8 @@ To animate `BackgroundColor` on an entity, your COB file could look like this:
     Animated<BackgroundColor>{
         idle:#123456
         press:#123477
-        press_with:{duration:0.1 easing:Linear}
-        release_with:{duration:0.1 easing:Linear}
+        press_with:{duration:0.1 ease:Linear}
+        release_with:{duration:0.1 ease:Linear}
     }
 ```
 

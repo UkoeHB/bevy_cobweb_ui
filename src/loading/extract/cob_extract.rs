@@ -17,6 +17,7 @@ pub(crate) fn preprocess_cob_file(
     cob_cache: &mut CobAssetCache,
     commands_buffer: &mut CommandsBuffer,
     data: Cob,
+    #[cfg(feature = "editor")] hash: crate::editor::CobFileHash,
 )
 {
     cob_cache.initialize_file(&data.file);
@@ -55,7 +56,13 @@ pub(crate) fn preprocess_cob_file(
     commands_buffer.set_file_descendants(data.file.clone(), descendants);
 
     // Save this file for processing once its import dependencies are ready.
-    cob_cache.add_preprocessed_file(data.file.clone(), imports, data);
+    cob_cache.add_preprocessed_file(
+        data.file.clone(),
+        imports,
+        data,
+        #[cfg(feature = "editor")]
+        hash,
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------

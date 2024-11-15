@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use smol_str::SmolStr;
 
 use crate::prelude::*;
 
@@ -19,10 +18,7 @@ impl Plugin for CobwebUiPlugin
             app.add_plugins(ReactPlugin);
         }
 
-        app
-            //todo: remove in bevy v0.15; see https://github.com/bevyengine/bevy/issues/14969
-            .register_type_data::<SmolStr, ReflectDeserialize>()
-            .register_type_data::<Cow<str>, ReflectDeserialize>()
+        app.register_type_data::<Cow<str>, ReflectDeserialize>()
             .add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)
@@ -31,6 +27,9 @@ impl Plugin for CobwebUiPlugin
             .add_plugins(SickleExtPlugin)
             .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin);
+
+        #[cfg(feature = "editor")]
+        app.add_plugins(crate::editor::CobEditorPlugin);
     }
 }
 

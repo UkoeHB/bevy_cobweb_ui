@@ -4,10 +4,10 @@
 
 "#constants" : {
     "$animation_settings_f" : {
-        "$pointer_enter": {"duration": 0.15, "easing": "OutExpo"},
-        "$pointer_leave": {"duration": 0.15, "easing": "OutExpo"},
-        "$press": {"duration": 0.2, "easing": "OutExpo"},
-        "$release": {"duration": 0.2, "easing": "OutExpo"}
+        "$pointer_enter": {"duration": 0.15, "ease": "OutExpo"},
+        "$pointer_leave": {"duration": 0.15, "ease": "OutExpo"},
+        "$press": {"duration": 0.2, "ease": "OutExpo"},
+        "$release": {"duration": 0.2, "ease": "OutExpo"}
     },
     "$animation_settings" : {
         "pointer_enter": "$$animation_settings_f::pointer_enter",

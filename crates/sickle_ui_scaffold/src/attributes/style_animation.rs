@@ -129,16 +129,16 @@ pub struct AnimationConfig
 {
     pub duration: f32,
     #[reflect(default)]
-    pub easing: Option<Ease>,
+    pub ease: Option<Ease>,
     #[reflect(default)]
     pub delay: Option<f32>,
 }
 
 impl AnimationConfig
 {
-    pub fn new(duration: f32, easing: impl Into<Option<Ease>>, delay: impl Into<Option<f32>>) -> AnimationConfig
+    pub fn new(duration: f32, ease: impl Into<Option<Ease>>, delay: impl Into<Option<f32>>) -> AnimationConfig
     {
-        AnimationConfig { duration, easing: easing.into(), delay: delay.into() }
+        AnimationConfig { duration, ease: ease.into(), delay: delay.into() }
     }
 
     pub fn delay(&self) -> f32
@@ -149,9 +149,9 @@ impl AnimationConfig
         }
     }
 
-    pub fn easing(&self) -> Ease
+    pub fn ease(&self) -> Ease
     {
-        match self.easing {
+        match self.ease {
             Some(ease) => ease,
             None => Ease::Linear,
         }
@@ -163,7 +163,7 @@ pub struct LoopedAnimationConfig
 {
     pub duration: f32,
     #[reflect(default)]
-    pub easing: Option<Ease>,
+    pub ease: Option<Ease>,
     #[reflect(default)]
     pub start_delay: Option<f32>,
     #[reflect(default)]
@@ -176,7 +176,7 @@ impl LoopedAnimationConfig
 {
     pub fn new(
         duration: f32,
-        easing: impl Into<Option<Ease>>,
+        ease: impl Into<Option<Ease>>,
         start_delay: impl Into<Option<f32>>,
         loop_gap: impl Into<Option<f32>>,
         loop_type: impl Into<Option<AnimationLoop>>,
@@ -184,7 +184,7 @@ impl LoopedAnimationConfig
     {
         LoopedAnimationConfig {
             duration,
-            easing: easing.into(),
+            ease: ease.into(),
             start_delay: start_delay.into(),
             loop_gap: loop_gap.into(),
             loop_type: loop_type.into(),
@@ -207,9 +207,9 @@ impl LoopedAnimationConfig
         }
     }
 
-    fn easing(&self) -> Ease
+    fn ease(&self) -> Ease
     {
-        match self.easing {
+        match self.ease {
             Some(ease) => ease,
             None => Ease::Linear,
         }
@@ -269,12 +269,12 @@ macro_rules! transition_animation_setter {
         pub fn $setter(
             &mut self,
             duration: f32,
-            easing: impl Into<Option<Ease>>,
+            ease: impl Into<Option<Ease>>,
             delay: impl Into<Option<f32>>,
         ) -> &mut Self {
             let config = AnimationConfig {
                 duration,
-                easing: easing.into(),
+                ease: ease.into(),
                 delay: delay.into(),
             };
             self.$setter = Some(config);
@@ -299,7 +299,7 @@ macro_rules! state_animation_setter {
         pub fn $setter(
             &mut self,
             duration: f32,
-            easing: impl Into<Option<Ease>>,
+            ease: impl Into<Option<Ease>>,
             start_delay: impl Into<Option<f32>>,
             loop_gap: impl Into<Option<f32>>,
             loop_type: impl Into<Option<AnimationLoop>>,
@@ -310,7 +310,7 @@ macro_rules! state_animation_setter {
 
             let config = LoopedAnimationConfig {
                 duration,
-                easing: easing.into(),
+                ease: ease.into(),
                 start_delay: start_delay.into(),
                 loop_gap: loop_gap.into(),
                 loop_type: loop_type.into(),
@@ -527,7 +527,7 @@ impl AnimationState
 
         let delay = tween.delay();
         let tween_time = tween.duration.max(0.);
-        let easing = tween.easing();
+        let ease = tween.ease();
 
         // Includes elapsed == 0.
         if elapsed <= delay {
@@ -567,7 +567,7 @@ impl AnimationState
                 elapsed,
                 delay,
                 tween_time,
-                easing,
+                ease,
                 &self.result,
             )
         }
@@ -632,7 +632,7 @@ impl AnimationState
                 iteration: (iteration % 255) as u8,
             }
         } else {
-            let tween_ratio = (offset / tween.duration).clamp(0., 1.).ease(tween.easing());
+            let tween_ratio = (offset / tween.duration).clamp(0., 1.).ease(tween.ease());
             let from = match tween.is_pingpong() {
                 true => match even {
                     true => target_style,
@@ -660,11 +660,11 @@ impl AnimationState
         elapsed: f32,
         delay: f32,
         tween_time: f32,
-        easing: Ease,
+        ease: Ease,
         previous_result: &AnimationResult,
     ) -> AnimationState
     {
-        let tween_ratio = ((elapsed - delay) / tween_time).clamp(0., 1.).ease(easing);
+        let tween_ratio = ((elapsed - delay) / tween_time).clamp(0., 1.).ease(ease);
         match previous_result {
             AnimationResult::Hold(prev_style) => {
                 AnimationState::process_hold(target_style, prev_style, tween_ratio)
@@ -674,7 +674,7 @@ impl AnimationState
                 elapsed,
                 delay,
                 tween_time,
-                easing,
+                ease,
                 from,
                 to,
                 t,
@@ -712,7 +712,7 @@ impl AnimationState
         elapsed: f32,
         delay: f32,
         tween_time: f32,
-        easing: Ease,
+        ease: Ease,
         from: &InteractionStyle,
         to: &InteractionStyle,
         t: &f32,
@@ -720,10 +720,10 @@ impl AnimationState
     ) -> AnimationState
     {
         // Best effort complete the animation by tweening for only the remaining distance.
-        // We could store `elapsed` and the `easing` type and try to continue animations,
+        // We could store `elapsed` and the `ease` type and try to continue animations,
         // but there is no guarantee we continue the interrupted one.
         let base_ratio = (((elapsed - delay) / tween_time) * (1. - offset)).clamp(0., 1.);
-        let tween_ratio = (offset + base_ratio.ease(easing)).clamp(0., 1.);
+        let tween_ratio = (offset + base_ratio.ease(ease)).clamp(0., 1.);
 
         if *from == target_style {
             AnimationState {
