@@ -288,6 +288,9 @@ where
 
         // Revert attributes.
         world.syscall(entity, revert_attributes);
+        let _ = world.get_entity_mut(entity).map(|mut emut| {
+            emut.remove::<DynamicStyle>();
+        });
     }
 }
 
@@ -368,6 +371,9 @@ where
         // Revert attributes.
         world.syscall(entity, revert_attributes);
         Interactive::revert(entity, world);
+        let _ = world.get_entity_mut(entity).map(|mut emut| {
+            emut.remove::<DynamicStyle>();
+        });
     }
 }
 
@@ -519,6 +525,9 @@ where
         // Revert attributes.
         world.syscall(entity, revert_attributes);
         Interactive::revert(entity, world);
+        let _ = world.get_entity_mut(entity).map(|mut emut| {
+            emut.remove::<DynamicStyle>();
+        });
     }
 }
 
