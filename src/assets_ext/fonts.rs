@@ -374,11 +374,24 @@ impl FontMap
             return;
         }
 
-        if let Some(prev) = self
+        if let Some(mut prev) = self
             .families
             .insert(family.family.deref().clone(), family.fonts)
         {
-            tracing::warn!("overwriting font family {:?}; old font variants: {prev:?}", family.family);
+            tracing::warn!("overwriting font family {:?}; old font variants: {prev:?} (\"manual::\" fonts are not \
+                discarded)", family.family);
+
+            // Preserve manually-inserted variants.
+            let mut manual: Vec<_> = prev
+                .drain(..)
+                .filter(|v| v.path.starts_with("manual::"))
+                .collect();
+            if manual.len() > 0 {
+                self.families
+                    .get_mut(&*family.family)
+                    .unwrap()
+                    .extend(manual.drain(..));
+            }
         }
 
         // Insert loaded requests that can be completed now.
@@ -630,6 +643,30 @@ impl FontMap
                 Self::try_add_pending(&new_handle, asset_server, pending);
                 new_handle
             })
+    }
+
+    /// Inserts a font handle directly, with the assumption it never needs to be loaded or unloaded.
+    pub fn manual_insert(&mut self, font: Handle<Font>, req: FontRequest)
+    {
+        let path = format!("manual::{}::{:?}::{:?}::{:?}", req.family.as_str(), req.width, req.style, req.weight);
+        let variant = FontVariant {
+            path: path.clone(),
+            width: req.width,
+            style: req.style,
+            weight: req.weight,
+        };
+
+        if let Some(_) = self.cached_fonts.insert(path, font) {
+            tracing::warn!("overwriting handle for manually inserted font {:?}", req);
+        }
+
+        let Some(existing) = self.families.get_mut(&*req.family) else {
+            self.families.insert(req.family.0, vec![variant]);
+            return;
+        };
+
+        // Note: this can cause duplicate variants to be inserted. Doing so should be harmless.
+        existing.push(variant);
     }
 
     /// Gets the font localized to `lang_id` for the given `main_font`.
