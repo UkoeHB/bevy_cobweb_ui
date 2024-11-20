@@ -6,6 +6,7 @@
 - Many updates and improvements throughout the crate.
 - Remove `sickle_ui` dependency. We now vendor a subset of the sickle functionality as subcrates.
 - Update to Bevy 0.15.
+- Add editor proof of concept.
 
 ## 0.4.1
 

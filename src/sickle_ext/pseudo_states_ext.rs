@@ -150,6 +150,9 @@ pub struct Unfold;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering interaction reactors for node entities.
+///
+/// Note that callbacks registered here will be called *before* entities' `PseudoStates` components are updated.
+//todo: rework it to make sure the entity event callbacks run after the global reactor that sets states?
 pub trait PseudoStateExt
 {
     /// Adds a reactor to an [`Enable`] entity event.
