@@ -4,7 +4,7 @@ use bevy::ui::widget::text_system;
 use smallvec::SmallVec;
 
 use crate::prelude::*;
-use crate::sickle_ext::prelude::DynamicStylePostUpdate;
+use crate::sickle::DynamicStylePostUpdate;
 
 // TODO: consider adding IgnorePropagateOpacity so child nodes can opt-out. This would allow you to for example
 // fade in ancestor nodes while keeping a segment of the node tree the same opacity.

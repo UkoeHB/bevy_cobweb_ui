@@ -2,10 +2,9 @@ use std::fmt::Debug;
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_math::lerp::Lerp;
+use sickle_math::Lerp;
 
-use crate::attributes::prelude::*;
-use crate::flux_interaction::FluxInteraction;
+use crate::*;
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
 pub struct InteractiveVals<T: Clone + Default>

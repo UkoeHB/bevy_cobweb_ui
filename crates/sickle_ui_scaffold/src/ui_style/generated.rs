@@ -3,11 +3,7 @@ use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
 use sickle_macros::StyleCommands;
 
-use super::builder::StyleBuilder;
-use super::manual::{FontSource, ImageSource, SetAbsolutePositionExt, SetFluxInteractionExt, SetImageExt};
-use super::{LockedStyleAttributes, LogicalEq, TrackedStyleState, UiStyle, UiStyleUnchecked};
-use crate::attributes::custom_attrs::{ApplyCustomStaticStyleAttribute, CustomStaticStyleAttribute};
-use crate::attributes::prelude::*;
+use crate::*;
 
 /// Derive leaves the original struct, ignore it.
 /// (derive macros have a better style overall)

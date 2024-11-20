@@ -7,11 +7,10 @@ use bevy::render::camera::RenderTarget;
 use bevy::window::{EnabledButtons, PrimaryWindow, WindowRef, WindowResolution, WindowTheme};
 use bevy_cobweb::prelude::*;
 use serde::de::DeserializeSeed;
-use sickle_ui_scaffold::prelude::PseudoState;
-use ui_builder::{UiBuilder, UiBuilderExt};
 
 use super::*;
 use crate::prelude::*;
+use crate::sickle::*;
 
 // When widget-ifying a loadable, use .resolve() with an empty constants buffer to check if there are any internal
 // constants. Loadables with internal constants cannot be widgetified in the current reflect-oriented model.

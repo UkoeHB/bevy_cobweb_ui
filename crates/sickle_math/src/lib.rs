@@ -1,2 +1,5 @@
-pub mod ease;
-pub mod lerp;
+mod ease;
+mod lerp;
+
+pub use ease::*;
+pub use lerp::*;

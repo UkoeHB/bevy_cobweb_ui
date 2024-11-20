@@ -3,10 +3,10 @@ use std::borrow::Cow;
 use bevy::prelude::*;
 use bevy::window::SystemCursorIcon;
 use bevy::winit::cursor::{CursorIcon, CustomCursor};
-use sickle_ui_scaffold::prelude::PseudoState;
 use smallvec::SmallVec;
 
 use crate::prelude::*;
+use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

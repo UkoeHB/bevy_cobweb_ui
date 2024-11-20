@@ -2,7 +2,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 
 use crate::prelude::*;
-use crate::sickle_ext::ui_builder::*;
+use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

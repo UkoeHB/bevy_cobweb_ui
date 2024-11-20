@@ -1,12 +1,9 @@
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui_scaffold::prelude::PseudoStates;
 
 use crate::prelude::*;
-use crate::sickle_ext::attributes::pseudo_state::PseudoState;
-use crate::sickle_ext::prelude::UiBuilder;
-use crate::sickle_ext::ui_commands::ManagePseudoStateExt;
+use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

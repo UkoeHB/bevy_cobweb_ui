@@ -3,11 +3,9 @@ use std::vec;
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use sickle_math::ease::{Ease, ValueEasing};
-use sickle_math::lerp::Lerp;
+use sickle_math::{Ease, Lerp, ValueEasing};
 
-use crate::flux_interaction::{FluxInteraction, StopwatchLock};
-use crate::ui_style::attribute::AnimatedVals;
+use crate::*;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum InteractionStyle

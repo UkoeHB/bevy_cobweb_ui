@@ -3,7 +3,7 @@ use bevy_cobweb::prelude::*;
 
 //use crate::load_embedded_scene_file;
 use crate::prelude::*;
-use crate::sickle_ext::prelude::*;
+use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

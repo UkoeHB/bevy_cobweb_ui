@@ -19,13 +19,3 @@ pub(crate) use control_map::*;
 pub use interaction_ext::*;
 pub(crate) use plugin::*;
 pub use pseudo_states_ext::*;
-pub use sickle_macros::*;
-pub use sickle_math::*;
-pub use sickle_ui_scaffold::*;
-
-pub mod prelude
-{
-    pub use sickle_macros::*;
-    pub use sickle_math::*;
-    pub use sickle_ui_scaffold::prelude::*;
-}

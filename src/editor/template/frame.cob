@@ -112,7 +112,7 @@ PrimaryCursor(System(Default))
         TextLineColor($tw::BLUE_300)
 
     "content"
-        FlexNode{flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
+        FlexNode{margin:{left:5px} flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
 
 "file_not_editable"
     TextLine{size:14 text:"File not editable"}

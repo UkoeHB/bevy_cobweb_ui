@@ -18,9 +18,17 @@ pub mod ui_bevy;
 #[cfg(feature = "editor")]
 pub mod editor;
 
+pub mod sickle
+{
+    pub use sickle_macros::*;
+    pub use sickle_math::*;
+    pub use sickle_ui_scaffold::*;
+}
+
 pub mod prelude
 {
     pub use bevy_cobweb_ui_derive::*;
+    pub use sickle_ui_scaffold::{UiBuilder, UiBuilderExt};
 
     pub use crate::assets_ext::*;
     pub use crate::bevy_ext::*;

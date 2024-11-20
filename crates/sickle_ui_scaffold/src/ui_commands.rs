@@ -8,9 +8,7 @@ use bevy::log::{info, warn};
 use bevy::prelude::{Color, Component, Mut, Text, TextColor, TextFont};
 use bevy::state::state::{FreelyMutableState, NextState, States};
 
-use crate::attributes::prelude::*;
-use crate::flux_interaction::{FluxInteractionStopwatchLock, StopwatchLock};
-use crate::prelude::UiUtils;
+use crate::*;
 
 struct SetText
 {

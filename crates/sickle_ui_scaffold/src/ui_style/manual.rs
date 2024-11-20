@@ -1,9 +1,7 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 
-use super::generated::*;
-use super::{LockableStyleAttribute, LockedStyleAttributes, UiStyle, UiStyleUnchecked};
-use crate::flux_interaction::FluxInteraction;
+use crate::*;
 
 // Special style-related components needing manual implementation
 macro_rules! check_lock {

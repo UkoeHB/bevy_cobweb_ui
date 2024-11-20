@@ -3,7 +3,7 @@ use bevy::ui::FocusPolicy;
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
-use crate::sickle_ext::lerp::Lerp;
+use crate::sickle::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 

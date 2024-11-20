@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
-use super::generated::*;
-use super::LogicalEq;
-use crate::attributes::custom_attrs::CustomStaticStyleAttribute;
-use crate::attributes::prelude::*;
-use crate::attributes::ui_context::UiContext;
+use crate::*;
 
 #[derive(Clone, Debug)]
 pub struct ContextStyleAttributeConfig

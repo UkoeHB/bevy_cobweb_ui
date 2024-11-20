@@ -4,8 +4,7 @@ use bevy::ecs::system::{Commands, EntityCommands, IntoObserverSystem};
 use bevy::hierarchy::BuildChildren;
 use bevy::prelude::*;
 
-use crate::ui_commands::EntityCommandsNamedExt;
-use crate::ui_style::{UiStyle, UiStyleExt, UiStyleUnchecked, UiStyleUncheckedExt};
+use crate::*;
 
 /// Ghost struct to use as a type filler for root UI nodes.
 ///

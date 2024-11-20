@@ -2,8 +2,8 @@ use std::f32::consts::TAU;
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_cobweb_ui::prelude::flux_interaction::ApplyFluxChanges;
 use bevy_cobweb_ui::prelude::*;
+use bevy_cobweb_ui::sickle::ApplyFluxChanges;
 
 //-------------------------------------------------------------------------------------------------------------------
 

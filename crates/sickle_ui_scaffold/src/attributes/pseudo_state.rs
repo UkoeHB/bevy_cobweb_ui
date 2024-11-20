@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::ui_commands::ManagePseudoStateExt;
+use crate::*;
 
 pub struct PseudoStatePlugin;
 

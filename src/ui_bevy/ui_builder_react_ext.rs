@@ -1,9 +1,9 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
-use sickle_ui_scaffold::prelude::UiBuilder;
 
 use crate::prelude::*;
+
 //-------------------------------------------------------------------------------------------------------------------
 
 impl InstructionExt for UiBuilder<'_, Entity>

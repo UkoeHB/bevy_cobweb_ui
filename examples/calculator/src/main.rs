@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle_ext::prelude::*;
+use bevy_cobweb_ui::sickle::*;
 use calc::Context;
 use itertools::Itertools;
 use rust_decimal::prelude::{Decimal, FromPrimitive};

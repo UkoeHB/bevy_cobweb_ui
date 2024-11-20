@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::ui_builder::{UiBuilder, UiRoot};
+use crate::*;
 
 pub trait UiContainerExt
 {

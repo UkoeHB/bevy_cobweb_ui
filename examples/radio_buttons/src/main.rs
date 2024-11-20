@@ -7,7 +7,6 @@ use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb_ui::builtin::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle_ext::ui_builder::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
