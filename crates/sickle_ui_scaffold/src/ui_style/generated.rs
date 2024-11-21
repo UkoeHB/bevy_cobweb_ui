@@ -1,7 +1,7 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy::ui::FocusPolicy;
-use sickle_macros::StyleCommands;
+use cob_sickle_macros::StyleCommands;
 
 use crate::*;
 

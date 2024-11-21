@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.5.0-rc.3
 
 - Replace JSON-based asset format with custom Cobweb Asset Format (COB).
 - Many updates and improvements throughout the crate.

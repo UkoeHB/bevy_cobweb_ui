@@ -1,7 +1,7 @@
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use sickle_math::Lerp;
+use cob_sickle_math::Lerp;
 
 use crate::*;
 

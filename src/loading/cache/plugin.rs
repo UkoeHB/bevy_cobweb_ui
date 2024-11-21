@@ -216,6 +216,7 @@ impl Plugin for CobAssetCachePlugin
                 (
                     preprocess_cobweb_asset_files,
                     process_cobweb_asset_files.run_if(|s: Res<CobAssetCache>| s.num_preprocessed_pending() > 0),
+                    #[cfg(feature = "hot_reload")]
                     cleanup_despawned_loaded_entities,
                     apply_pending_commands,
                     #[cfg(feature = "hot_reload")]

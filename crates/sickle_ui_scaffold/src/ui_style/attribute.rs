@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
 use bevy::prelude::*;
+use cob_sickle_math::Lerp;
 use serde::{Deserialize, Serialize};
-use sickle_math::Lerp;
 
 use crate::*;
 

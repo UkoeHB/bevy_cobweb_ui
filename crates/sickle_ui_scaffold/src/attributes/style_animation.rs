@@ -2,8 +2,8 @@ use std::time::Duration;
 use std::vec;
 
 use bevy::prelude::*;
+use cob_sickle_math::{Ease, Lerp, ValueEasing};
 use serde::{Deserialize, Serialize};
-use sickle_math::{Ease, Lerp, ValueEasing};
 
 use crate::*;
 
