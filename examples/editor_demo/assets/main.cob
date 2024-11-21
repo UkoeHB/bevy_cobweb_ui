@@ -1,3 +1,6 @@
+#manifest
+"editor_ext.cob" as editor_ext
+
 #scenes
 "orbit"
-    Orbiter{radius:25.0 velocity:1.0}
+    Orbiter{radius:25 velocity:1.0262334}

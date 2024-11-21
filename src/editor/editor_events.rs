@@ -1,3 +1,4 @@
+use super::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -20,13 +21,23 @@ pub struct EditorFileExternalChange
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive event broadcasted when the save status of a file changes in the editor.
+/// Reactive event broadcasted when a file acquires 'unsaved' status in the editor.
 #[derive(Debug, Clone)]
-pub struct EditorSaveStatus
+pub struct EditorFileUnsaved
 {
     pub file: CobFile,
-    /// If `true` then the file has modifications that are unsaved.
-    pub unsaved: bool,
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Reactive event broadcasted when an unsaved file acquires 'saved' status in the editor.
+#[derive(Debug, Clone)]
+pub struct EditorFileSaved
+{
+    pub file: CobFile,
+    /// The hash of the file after saving.
+    // TODO: make this public?
+    pub(super) hash: CobFileHash,
 }
 
 //-------------------------------------------------------------------------------------------------------------------

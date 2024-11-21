@@ -132,7 +132,7 @@ impl CobEditor
             tracing::warn!("discarding unsaved changes for file {:?}; changes were overwritten by new \
                 file data that was hot-reloaded", data.file);
             c.react()
-                .broadcast(EditorSaveStatus { file: data.file.clone(), unsaved: false });
+                .broadcast(EditorFileSaved { file: data.file.clone(), hash });
         }
 
         // Save new data.
@@ -143,14 +143,14 @@ impl CobEditor
     pub(super) fn mark_unsaved(&mut self, c: &mut Commands, file: CobFile)
     {
         c.react()
-            .broadcast(EditorSaveStatus { file: file.clone(), unsaved: true });
+            .broadcast(EditorFileUnsaved { file: file.clone() });
         self.unsaved.insert(file);
     }
 
     /// Saves currently-unsaved files.
     // TODO: currently blocks the main loop, maybe pass this off to the CPU thread pool? problem is how to
     // correctly synchronize with the editor; also need to be careful about not contesting the scratch file name
-    pub(super) fn save(&mut self, c: &mut Commands, registry: &CobHashRegistry)
+    pub(super) fn save(&mut self, c: &mut Commands, cob_cache: &mut CobAssetCache, registry: &CobHashRegistry)
     {
         let Some(asset_dir) = &self.asset_dir else {
             if !self.unsaved.is_empty() {
@@ -162,9 +162,6 @@ impl CobEditor
         };
 
         for unsaved in self.unsaved.drain() {
-            c.react()
-                .broadcast(EditorSaveStatus { file: unsaved.clone(), unsaved: false });
-
             let Some(file_data) = self.files.get_mut(&unsaved) else {
                 tracing::error!("file {:?} is missing on save (this is a bug)", unsaved);
                 continue;
@@ -178,9 +175,24 @@ impl CobEditor
             // Compute hash.
             let hash = CobFileHash::new(&buff);
 
+            // Notify listeners.
+            c.react()
+                .broadcast(EditorFileSaved { file: unsaved.clone(), hash });
+
             // If hash didn't change, no need to save the file since the 'unsaved' status is spurious.
             if hash == file_data.last_save_hash {
                 continue;
+            }
+
+            // Update the asset cache.
+            // - If the last_save_hash matches, then we know all editor mutations have been applied manually to the
+            //   current
+            // file data, so we can safely 'hack' in a new hash.
+            if let Some((file_hash, _, _)) = cob_cache.get_file_info_mut(&unsaved) {
+                // This can fail if a hot-reloaded file is being processed in the backend when a save occurs.
+                if *file_hash == file_data.last_save_hash {
+                    *file_hash = hash;
+                }
             }
 
             // Update the hash registry.

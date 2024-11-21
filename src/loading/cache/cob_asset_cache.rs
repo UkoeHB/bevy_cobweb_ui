@@ -129,16 +129,16 @@ impl CobAssetCache
     pub(crate) fn get_file_info_mut(
         &mut self,
         file: &CobFile,
-    ) -> Option<(crate::editor::CobFileHash, &mut Cob, bool)>
+    ) -> Option<(&mut crate::editor::CobFileHash, &mut Cob, bool)>
     {
         // Check processed first as most likely.
         if let Some(processed) = self.processed.get_mut(file) {
-            return Some((processed.hash, &mut processed.data, true));
+            return Some((&mut processed.hash, &mut processed.data, true));
         }
 
         if self.preprocessed_set.contains(file) {
             let preprocessed = self.preprocessed.iter_mut().find(|p| p.file == *file)?;
-            return Some((preprocessed.hash, &mut preprocessed.data, false));
+            return Some((&mut preprocessed.hash, &mut preprocessed.data, false));
         }
 
         None

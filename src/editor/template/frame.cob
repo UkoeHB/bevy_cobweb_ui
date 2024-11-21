@@ -105,14 +105,14 @@ PrimaryCursor(System(Default))
         FlexNode{margin:{left:10px} flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
 
 "loadable"
-    FlexNode{flex_direction:Row justify_main:FlexStart justify_cross:Center}
+    FlexNode{flex_direction:Row justify_main:FlexStart justify_cross:FlexStart}
     
     "name"
         TextLine{size:14}
         TextLineColor($tw::BLUE_300)
 
     "content"
-        FlexNode{margin:{left:5px} flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
+        FlexNode{margin:{left:4px} flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
 
 "file_not_editable"
     TextLine{size:14 text:"File not editable"}

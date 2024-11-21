@@ -221,6 +221,12 @@ where
     {
         &self.scene
     }
+
+    /// Accesses the inner loader and builder.
+    pub fn inner(&mut self) -> (&mut SceneLoader, &mut T)
+    {
+        (self.scene_loader, &mut self.builder)
+    }
 }
 
 impl<'a, 'b, T> Deref for LoadedScene<'a, 'b, T>

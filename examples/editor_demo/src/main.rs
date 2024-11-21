@@ -1,7 +1,7 @@
 #[cfg(feature = "editor")]
-mod editor_ext;
-mod orbiter;
-mod rng;
+pub mod editor_ext;
+pub mod orbiter;
+pub mod rng;
 
 use std::f32::consts::TAU;
 

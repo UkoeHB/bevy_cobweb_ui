@@ -44,7 +44,14 @@ fn build_widgets<'a>(
             structure_path: ReflectStructurePath { path: Arc::from([]) },
             death_signal,
         };
-        if !(spawn_fn)(l.commands(), content_entity, &editor_ref, loadable.as_ref()) {
+        let (loader, builder) = l.inner();
+        if !(spawn_fn)(
+            builder.commands(),
+            loader,
+            content_entity,
+            &editor_ref,
+            loadable.as_ref(),
+        ) {
             l.load_scene(("editor.frame", "destructure_unsupported"));
         }
 
@@ -160,18 +167,35 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
     // Build file view.
     // - We do this roundabout via a reactor in order to auto-rebuild when the file data changes.
     let mut ec = c.entity(base_entity);
-    ec.update_on(broadcast::<EditorFileExternalChange>(), |_| {
-        move |//
-            event: BroadcastEvent<EditorFileExternalChange>,
+    ec.update_on(
+        (broadcast::<EditorFileExternalChange>(), broadcast::<EditorFileSaved>()),
+        |_| {
+            move |//
+            mut tracked_hash: Local<Option<CobFileHash>>,
+            external_change: BroadcastEvent<EditorFileExternalChange>,
+            file_saved: BroadcastEvent<EditorFileSaved>,
             mut c: Commands,
             mut s: ResMut<SceneLoader>,
             registry: Res<AppTypeRegistry>,
             widgets: Res<CobWidgetRegistry>,
             editor: Res<CobEditor>,//
         | {
+            // Look up file in editor to get file data.
+            let Some(file_data) = editor.get_file(&file) else {
+                c.entity(base_entity).despawn_descendants();
+                return;
+            };
+
             // If we are running this system because of an event, exit if the event targets a different file.
-            if let Some(event) = event.try_read() {
-                if event.file != file {
+            if let Some(external) = external_change.try_read() {
+                if external.file != file {
+                    return;
+                }
+            }
+            if let Some(file_saved) = file_saved.try_read() {
+                // We watch for when the file gets saved. If saving a file makes a new file hash, then
+                // existing widgets are invalid and need to be replaced.
+                if file_saved.file != file || Some(file_saved.hash) == *tracked_hash {
                     return;
                 }
             }
@@ -179,15 +203,15 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             // Clean up existing children.
             c.entity(base_entity).despawn_descendants();
 
-            // Look up file in editor to get file data.
-            let Some(file_data) = editor.get_file(&file) else { return };
-
             // Handle non-editable files.
             // Note: these are filtered out by the dropdown but we handle it just in case.
             if !file_data.is_editable() {
                 c.ui_builder(base_entity).load_scene(("editor.frame", "file_not_editable"), &mut s);
                 return;
             }
+
+            // Save tracked hash, used to coordinate rebuilds on save.
+            *tracked_hash = Some(file_data.last_save_hash);
 
             // Construct scene.
             let registry = registry.read();
@@ -245,7 +269,8 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                 });
             });
         }
-    });
+        },
+    );
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -416,7 +441,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
         // TODO: put an indicator on individual file names in the dropdown instead?
         let unsaved = l.get("footer::unsaved").id();
         l.react().on(
-            broadcast::<EditorSaveStatus>(),
+            (broadcast::<EditorFileUnsaved>(), broadcast::<EditorFileSaved>()),
             move |mut c: Commands, p: PseudoStateParam, editor: Res<CobEditor>| {
                 if editor.any_unsaved() {
                     p.try_enable(unsaved, &mut c);

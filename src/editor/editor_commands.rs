@@ -16,9 +16,13 @@ impl Command for SaveEditor
     fn apply(self, world: &mut World)
     {
         world.resource_scope::<CobEditor, ()>(|world: &mut World, mut editor: Mut<CobEditor>| {
-            world.resource_scope::<CobHashRegistry, ()>(|world: &mut World, registry: Mut<CobHashRegistry>| {
-                let mut c = world.commands();
-                editor.save(&mut c, &registry);
+            world.resource_scope::<CobAssetCache, ()>(|world: &mut World, mut cob_cache: Mut<CobAssetCache>| {
+                world.resource_scope::<CobHashRegistry, ()>(
+                    |world: &mut World, registry: Mut<CobHashRegistry>| {
+                        let mut c = world.commands();
+                        editor.save(&mut c, &mut cob_cache, &registry);
+                    },
+                );
             });
         });
     }
@@ -139,7 +143,7 @@ impl Command for SubmitPatch
             let mut cob_cache = world.resource_mut::<CobAssetCache>();
             if let Some((cache_hash, cache_data, is_processed)) = cob_cache.get_file_info_mut(&file) {
                 // Check file hash.
-                if cache_hash != editor_ref.file_hash {
+                if *cache_hash != editor_ref.file_hash {
                     tracing::warn!("failed propagating loadable patch for {} in {:?} to backend; target file \
                         is currently being re-processed, likely due to a hot-reloaded change; the current \
                         editor view of the file will likely be overwritten soon",
