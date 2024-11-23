@@ -4,7 +4,8 @@ use super::CobNumberValue;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Serializer for converting [`Cob`]/[`CobLoadable`]/[`CobValue`] to raw bytes.
+/// Serializer for converting [`Cob`](crate::prelude::Cob)/[`CobLoadable`](crate::prelude::CobLoadable)/
+/// [`CobValue`](crate::prelude::CobValue) to raw bytes.
 pub trait RawSerializer: std::io::Write
 {
     fn write_u128(&mut self, val: u128) -> Result<(), std::io::Error>;

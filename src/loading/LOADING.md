@@ -265,7 +265,7 @@ Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude
 
 **Loadable values**
 
-A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobAssetRegistrationAppExt`](bevy_cobweb_ui::prelude::CobAssetRegistrationAppExt).
+A [`Loadable`](bevy_cobweb_ui::prelude::Loadable) value is a Rust type that is registered with one of the methods in [`CobLoadableRegistrationAppExt`](bevy_cobweb_ui::prelude::CobLoadableRegistrationAppExt).
 
 For example, with the [`BackgroundColor`](bevy::prelude::BackgroundColor) component from `bevy`:
 

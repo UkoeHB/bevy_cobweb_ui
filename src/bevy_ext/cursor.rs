@@ -118,7 +118,7 @@ pub enum LoadableCursor
     /// Mirrors [`CustomCursor`].
     Custom
     {
-        /// Image path. It is recommended (but not required) to pre-load the image via [`LoadedImages`].
+        /// Image path. It is recommended (but not required) to pre-load the image via [`LoadImages`].
         ///
         /// The image must be in 8 bit int or 32 bit float rgba. PNG images work well for this.
         image: Cow<'static, str>,

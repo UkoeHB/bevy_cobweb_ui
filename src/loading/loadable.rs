@@ -19,7 +19,7 @@ impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default {}
 /// An instruction can be written in a COB file, or applied directly with
 /// [`apply`](InstructionExt::apply).
 ///
-/// See [`register_instruction`](crate::prelude::CobAssetRegistrationAppExt::register_instruction).
+/// See [`register_instruction`](crate::prelude::CobLoadableRegistrationAppExt::register_instruction).
 pub trait Instruction: Loadable
 {
     /// Applies the instruction to the entity.

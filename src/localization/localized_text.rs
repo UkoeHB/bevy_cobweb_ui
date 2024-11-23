@@ -114,7 +114,7 @@ pub enum TextLocalizationResult
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Localization templates for a specific [`Textspan`] in a [`Text`] component on an entity.
+/// Localization templates for a specific [`TextSpan`] in a [`Text`] component on an entity.
 ///
 /// Includes the language currently loaded to each span, which can be used to accurately set fallback
 /// fonts.

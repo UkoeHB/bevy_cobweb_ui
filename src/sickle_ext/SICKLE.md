@@ -1,4 +1,4 @@
-This module provides COB instructions to control scene node attributes. For example, it allows you to animate the [`BackgroundColor`](bevy::prelude::BackgroundColor) of a UI node, or to provide a different [`Width`](bevy_cobweb_ui::prelude::Width) if a node is [`Selected`](bevy_cobweb_ui::prelude::PseudoState::Selected) vs not selected, or allow [`TextLineColor`](bevy_cobweb_ui::prelude::TextLineColor) to change when a text node's parent is hovered.
+This module provides COB instructions to control scene node attributes. For example, it allows you to animate the [`BackgroundColor`](bevy::prelude::BackgroundColor) of a UI node, or to provide a different [`Width`](bevy_cobweb_ui::prelude::Width) if a node is [`Selected`](bevy_cobweb_ui::sickle::PseudoState::Selected) vs not selected, or allow [`TextLineColor`](bevy_cobweb_ui::prelude::TextLineColor) to change when a text node's parent is hovered.
 
 It also provides `UiBuilder` extensions to facilitate reactivity using [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb) (e.g. for interactions, see [`UiInteractionExt`](bevy_cobweb_ui::prelude::UiInteractionExt), and state changes, see [`PseudoStateExt`](bevy_cobweb_ui::prelude::PseudoStateExt)).
 
@@ -8,7 +8,7 @@ It also provides `UiBuilder` extensions to facilitate reactivity using [bevy_cob
 Attributes are entity mutators applied under certain conditions.
 
 There are three kinds of attributes:
-- **Static**: A static value is applied directly to an entity. For example, a static attribute could set the text size of a widget. We have the [`Static<T>`](bevy_cobweb_ui::prelude::Static) instruction for inserting static attributes to entities, and the corresponding [`StaticAttribute`]((bevy_cobweb_ui::prelude::StaticAttribute)) trait that must be implemented on `T`. `Static` is only useful when you want values that vary according to an entity's [`PseudoStates`](bevy_cobweb_ui::prelude::PseudoStates). Otherwise, just use `T` directly.
+- **Static**: A static value is applied directly to an entity. For example, a static attribute could set the text size of a widget. We have the [`Static<T>`](bevy_cobweb_ui::prelude::Static) instruction for inserting static attributes to entities, and the corresponding [`StaticAttribute`]((bevy_cobweb_ui::prelude::StaticAttribute)) trait that must be implemented on `T`. `Static` is only useful when you want values that vary according to an entity's [`PseudoStates`](bevy_cobweb_ui::sickle::PseudoStates). Otherwise, just use `T` directly.
 - **Responsive**: A responsive value will change in response to flux interactions. For example, the background color of a widget may change in response to hovering or pressing it. We have the [`Responsive<T>`](bevy_cobweb_ui::prelude::Responsive) instruction for these attributes, and the corresponding [`ResponsiveAttribute`]((bevy_cobweb_ui::prelude::ResponsiveAttribute)) trait that must be implemented on `T`.
 - **Animated**: An animated value will change fluidly between states in response to flux interactions. We have the [`Animated<T>`](bevy_cobweb_ui::prelude::Animated) instruction for these attributes, and the corresponding [`AnimatableAttribute`]((bevy_cobweb_ui::prelude::AnimatableAttribute)) trait that must be implemented on `T`.
 
@@ -62,7 +62,7 @@ To animate `BackgroundColor` on an entity, your COB file could look like this:
 
 ## Basic usage
 
-When attributes are added to plain entities, they are collected in an internal [`DynamicStyle`](bevy_cobweb_ui::prelude::DynamicStyle) component. Whenever `DynamicStyle` changes, all static attributes are immediately removed and applied to the entity. Responsive and animated attributes are retained in the component so they can be used to apply new values to the entity in response to flux interactions.
+When attributes are added to plain entities, they are collected in an internal [`DynamicStyle`](bevy_cobweb_ui::sickle::DynamicStyle) component. Whenever `DynamicStyle` changes, all static attributes are immediately removed and applied to the entity. Responsive and animated attributes are retained in the component so they can be used to apply new values to the entity in response to flux interactions.
 
 `DynamicStyle` is not aware of `PseudoStates`, so if any attributes on a plain entity have states, a warning will be logged. To use `PseudoStates`, you need a *control group*.
 

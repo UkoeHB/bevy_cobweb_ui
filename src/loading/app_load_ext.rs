@@ -85,7 +85,7 @@ impl LoadedCobAssetFiles
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`CobAssetCache`] use.
+/// Extends `App` with methods supporting cob file loading.
 pub trait LoadedCobAssetFilesAppExt
 {
     /// Registers a cobweb asset file to be loaded.

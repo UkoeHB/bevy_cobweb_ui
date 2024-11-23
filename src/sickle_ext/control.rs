@@ -137,7 +137,7 @@ impl Instruction for ControlRoot
 ///
 /// Use this if you want values on the entity to respond to interactions on other parts of the widget, or if
 /// you want different values to be applied depending on the widget's
-/// [`PseudoStates`](crate::sickle_ext::prelude::PseudoState).
+/// [`PseudoStates`](crate::sickle::PseudoState).
 ///
 /// Values in a multi-entity widget can be controlled with the [`Static`], [`Responsive`], and [`Animated`]
 /// loadables.

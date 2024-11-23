@@ -1,3 +1,4 @@
+#![allow(rustdoc::invalid_rust_codeblocks)]
 #![doc = include_str!("LOADING.md")]
 #[allow(unused_imports)]
 use crate as bevy_cobweb_ui;

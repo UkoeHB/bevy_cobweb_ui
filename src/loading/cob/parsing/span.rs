@@ -13,7 +13,8 @@ pub struct CobLocationMetadata<'a>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Type alias for [`LocatedSpan`]. Used in [`Cob`] parsing for identifying the location of errors.
+/// Type alias for [`LocatedSpan`]. Used in [`Cob`](crate::prelude::Cob) parsing for identifying the location of
+/// errors.
 pub type Span<'a> = LocatedSpan<&'a str, CobLocationMetadata<'a>>;
 
 /// Type alias for span errors.

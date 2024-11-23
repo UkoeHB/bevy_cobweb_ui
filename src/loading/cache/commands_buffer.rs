@@ -939,7 +939,7 @@ impl CommandsBuffer
                     buff.command_counter.remove(1);
 
                     let Some(callback) = callbacks.get_for_command(cached.command.type_id) else {
-                        tracing::warn!("ignoring command in {:?} that wasn't registered with CobAssetRegistrationAppExt",
+                        tracing::warn!("ignoring command in {:?} that wasn't registered with CobLoadableRegistrationAppExt",
                             file);
                         continue;
                     };

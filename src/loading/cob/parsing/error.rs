@@ -3,7 +3,8 @@ use std::io::ErrorKind;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Result for the [`CobLoadable`] and [`CobValue`] serializer and deserialize seed.
+/// Result for the [`CobLoadable`](crate::prelude::CobLoadable) and [`CobValue`](crate::prelude::CobValue)
+/// serializer and deserialize seed.
 pub type CobResult<T> = Result<T, CobError>;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ pub enum CobError
     LoadableNotRegistered,
     /// Only structs and enums can be serialized as loadables.
     NotALoadable,
-    /// A built-in type failed to serialize to [`CobBuiltin`].
+    /// A built-in type failed to serialize to [`CobBuiltin`](crate::prelude::CobBuiltin).
     MalformedBuiltin,
     /// Failed deserializing a newtype loadable or enum variant that is represented as a unit-like
     /// struct/variant.

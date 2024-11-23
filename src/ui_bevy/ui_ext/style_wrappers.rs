@@ -212,17 +212,17 @@ pub enum JustifyMain
     End,
     */
     /// Cluster items at the start of the main axis.
-    /// - [`FlexDirection::Row`]: Start according to `text_direction` (unimplemented).
-    /// - [`FlexDirection::RowReverse`]: End according to `text_direction` (unimplemented).
-    /// - [`FlexDirection::Column`]: Top.
-    /// - [`FlexDirection::ColumnReverse`]: Bottom.
+    /// - `FlexDirection::Row`: Start according to `text_direction` (unimplemented).
+    /// - `FlexDirection::RowReverse`: End according to `text_direction` (unimplemented).
+    /// - `FlexDirection::Column`: Top.
+    /// - `FlexDirection::ColumnReverse`: Bottom.
     #[default]
     FlexStart,
     /// Cluster items at the end of the main axis.
-    /// - [`FlexDirection::Row`]: End according to `text_direction` (unimplemented).
-    /// - [`FlexDirection::RowReverse`]: Start according to `text_direction` (unimplemented).
-    /// - [`FlexDirection::Column`]: Bottom.
-    /// - [`FlexDirection::ColumnReverse`]: Top.
+    /// - `FlexDirection::Row`: End according to `text_direction` (unimplemented).
+    /// - `FlexDirection::RowReverse`: Start according to `text_direction` (unimplemented).
+    /// - `FlexDirection::Column`: Bottom.
+    /// - `FlexDirection::ColumnReverse`: Top.
     FlexEnd,
     /// Cluster items in the center of the main axis.
     Center,
@@ -537,11 +537,12 @@ pub struct ContentFlex
     pub padding: StyleRect,
     /// Controls which direction the main flex axis points within this node.
     ///
-    /// - [`FlexDirection::Row`]: same direction as [`Self::text_direction`], flex wrapped lines are added down
-    /// - [`FlexDirection::Column`]: top-to-bottom, flex wrapped rows are added in [`Self::text_direction`]
-    /// - [`FlexDirection::RowReverse`]: opposite direction to [`Self::text_direction`], flex wrapped rows are
-    ///   added down
-    /// - [`FlexDirection::ColumnReverse`]: bottom-to-top, flex wrapped rows are added in [`Self::text_direction`]
+    /// - [`FlexDirection::Row`]: left to right, flex wrapped lines are added down
+    /// - [`FlexDirection::Column`]: top-to-bottom, flex wrapped lines are added left to right
+    /// - [`FlexDirection::RowReverse`]: right to left, flex wrapped lines are added down
+    /// - [`FlexDirection::ColumnReverse`]: bottom-to-top, flex wrapped lines are added in right to left
+    ///
+    /// Note: if `text_direction` gets implemented, then it will affect how flex wrapped lines are added.
     #[reflect(default)]
     pub flex_direction: FlexDirection,
     /// Controls whether children should wrap to multiple lines when overflowing the main axis.
@@ -563,7 +564,7 @@ pub struct ContentFlex
     ///
     /// Has no effect if [`Self::flex_wrap`] is set to [`FlexWrap::NoWrap`].
     ///
-    /// Mirrors [`Style::align_content`].
+    /// Mirrors [`Node::align_content`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,
     /// Controls how children should be aligned on the main axis.
@@ -572,7 +573,7 @@ pub struct ContentFlex
     /// - Any child in the line has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the main axis, or
     ///   has [`SelfFlex::flex_grow`] greater than `0.`.
     ///
-    /// Mirrors [`Style::justify_content`].
+    /// Mirrors [`Node::justify_content`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
     /// Controls how children should be aligned on the cross axis.
@@ -583,7 +584,7 @@ pub struct ContentFlex
     /// Has no effect on a child if it has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the cross
     /// axis.
     ///
-    /// Mirrors [`Style::align_items`].
+    /// Mirrors [`Node::align_items`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
     /// Gap applied between columns when organizing children.
@@ -693,7 +694,7 @@ pub struct SelfFlex
     ///
     /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
     ///
-    /// Mirrors [`Style::align_self`].
+    /// Mirrors [`Node::align_self`].
     ///
     /// Defaults to [`JustifySelfCross::Auto`].
     #[reflect(default)]
@@ -1066,7 +1067,7 @@ impl Instruction for FlexNode
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component that toggles the [`Style::display`] field.
+/// Reactive component that toggles the [`Node::display`] field.
 #[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",

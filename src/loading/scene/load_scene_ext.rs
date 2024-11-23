@@ -47,7 +47,7 @@ pub mod scene_traits
 /// Helper struct for editing loaded scenes.
 ///
 /// The struct will dereference to the inner `T`, which should be a [`Commands`]-based entity builder (e.g.
-/// [`EntityCommands`] or [`UiBuilder<Entity>`](sickle_ui::prelude::UiBuilder)) that can be used to arbitrarily
+/// [`EntityCommands`] or [`UiBuilder<Entity>`](crate::prelude::UiBuilder)) that can be used to arbitrarily
 /// modify the scene node entity.
 pub struct LoadedScene<'a, 'b, T>
 where

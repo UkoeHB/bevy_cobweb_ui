@@ -230,25 +230,25 @@ pub(crate) struct NodeInitializer
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extends `App` with methods supporting [`CobAssetCache`] use.
-pub trait CobAssetRegistrationAppExt
+/// Extends `App` with methods for registering loadables.
+pub trait CobLoadableRegistrationAppExt
 {
     /// Registers a command that will be applied to the Bevy world when it is loaded.
     fn register_command<T: Command + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`CobAssetRegistrationAppExt::register_command`].
+    /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_command`].
     fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a bundle that can be inserted on entities via COB loadables.
     fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`CobAssetRegistrationAppExt::register_bundle`].
+    /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_bundle`].
     fn register_bundle_type<T: TypePath + GetTypeRegistration + Bundle + Loadable>(&mut self) -> &mut Self;
 
     /// Registers a [`React<T>`] component that can be inserted on entities via COB loadables.
     fn register_reactive<T: ReactComponent + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`CobAssetRegistrationAppExt::register_reactive`].
+    /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_reactive`].
     fn register_reactive_type<T: TypePath + GetTypeRegistration + ReactComponent + Loadable>(
         &mut self,
     ) -> &mut Self;
@@ -256,13 +256,13 @@ pub trait CobAssetRegistrationAppExt
     /// Registers an instruction that can be applied to entities via COB loadables.
     fn register_instruction<T: Instruction + Loadable>(&mut self) -> &mut Self;
 
-    /// Combines [`App::register_type`] with [`CobAssetRegistrationAppExt::register_instruction`].
+    /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_instruction`].
     fn register_instruction_type<T: TypePath + GetTypeRegistration + Instruction + Loadable>(
         &mut self,
     ) -> &mut Self;
 }
 
-impl CobAssetRegistrationAppExt for App
+impl CobLoadableRegistrationAppExt for App
 {
     fn register_command<T: Command + Loadable>(&mut self) -> &mut Self
     {
