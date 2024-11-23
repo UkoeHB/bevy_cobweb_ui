@@ -8,16 +8,16 @@ use crate::prelude::*;
 /// Mirrors [`BorderRect`] for serialization.
 // TODO: use `BorderRect` when it has Serialize/Deserialize
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SliceRect
 {
+    #[reflect(default)]
     pub top: f32,
+    #[reflect(default)]
     pub bottom: f32,
+    #[reflect(default)]
     pub left: f32,
+    #[reflect(default)]
     pub right: f32,
 }
 
@@ -74,11 +74,7 @@ impl Into<SliceScaleMode> for LoadedSliceScaleMode
 
 /// Mirrors [`TextureSlicer`] for serialization.
 #[derive(Reflect, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadedTextureSlicer
 {
     /// The sprite borders, defining the 9 sections of the image.
@@ -132,11 +128,7 @@ impl Into<TextureSlicer> for LoadedTextureSlicer
 
 /// Mirrors [`NodeImageMode`] and [`SpriteImageMode`] for serialization.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LoadedImageMode
 {
     #[default]

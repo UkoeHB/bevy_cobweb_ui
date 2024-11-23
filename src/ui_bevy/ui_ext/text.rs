@@ -59,11 +59,7 @@ fn insert_text_line(
 ///
 /// The default font is "Fira Sans Medium" with size `25.0`.
 #[derive(Reflect, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct TextLine
 {
     /// The starting text string.

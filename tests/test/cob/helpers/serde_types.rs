@@ -367,6 +367,46 @@ impl Instruction for ReflectDefaulted
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Component, Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[reflect(Serialize, Deserialize)]
+pub struct SerdeReflectDefaulted
+{
+    #[reflect(default = "SerdeReflectDefaulted::default_a")]
+    #[serde(default = "SerdeReflectDefaulted::default_a")]
+    pub a: u32,
+    #[reflect(default = "SerdeReflectDefaulted::default_b")]
+    #[serde(default = "SerdeReflectDefaulted::default_b")]
+    pub b: u32,
+}
+
+impl SerdeReflectDefaulted
+{
+    fn default_a() -> u32
+    {
+        10
+    }
+    fn default_b() -> u32
+    {
+        20
+    }
+}
+
+impl Instruction for SerdeReflectDefaulted
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
+}
+
+impl Default for SerdeReflectDefaulted
+{
+    fn default() -> Self
+    {
+        Self { a: Self::default_a(), b: Self::default_b() }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub struct SerdeTypesPlugin;
 
 impl Plugin for SerdeTypesPlugin
@@ -410,7 +450,8 @@ impl Plugin for SerdeTypesPlugin
             .register_instruction_type::<EnumGeneric<SingleGeneric<u32>>>()
             .register_instruction_type::<BuiltinColor>()
             .register_instruction_type::<BuiltinCollection>()
-            .register_instruction_type::<ReflectDefaulted>();
+            .register_instruction_type::<ReflectDefaulted>()
+            .register_instruction_type::<SerdeReflectDefaulted>();
     }
 }
 

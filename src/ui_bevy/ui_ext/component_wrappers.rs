@@ -340,11 +340,7 @@ impl AnimatableAttribute for BrRadiusBottomRight {}
 
 /// Mirrors [`Outline`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeOutline
 {
     pub width: Val,

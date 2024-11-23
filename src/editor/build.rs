@@ -12,10 +12,6 @@ use super::*;
 use crate::prelude::*;
 use crate::sickle::*;
 
-// When widget-ifying a loadable, use .resolve() with an empty constants buffer to check if there are any internal
-// constants. Loadables with internal constants cannot be widgetified in the current reflect-oriented model.
-// - Possible solution: destructure the raw CobLoadable and allow its raw fields to be edited directly.
-
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default, Clone, Deref, DerefMut)]
@@ -180,12 +176,6 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             widgets: Res<CobWidgetRegistry>,
             editor: Res<CobEditor>,//
         | {
-            // Look up file in editor to get file data.
-            let Some(file_data) = editor.get_file(&file) else {
-                c.entity(base_entity).despawn_descendants();
-                return;
-            };
-
             // If we are running this system because of an event, exit if the event targets a different file.
             if let Some(external) = external_change.try_read() {
                 if external.file != file {
@@ -202,6 +192,9 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
 
             // Clean up existing children.
             c.entity(base_entity).despawn_descendants();
+
+            // Look up file in editor to get file data.
+            let Some(file_data) = editor.get_file(&file) else { return };
 
             // Handle non-editable files.
             // Note: these are filtered out by the dropdown but we handle it just in case.

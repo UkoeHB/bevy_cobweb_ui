@@ -506,11 +506,7 @@ impl AnimatableAttribute for AspectRatio {}
 
 /// Mirrors [`Dims::border`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Border(pub StyleRect);
 
 impl ApplyToNode for Border
@@ -796,11 +792,7 @@ impl ResponsiveAttribute for SetClipping {}
 
 /// Mirrors [`ContentFlex::padding`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Padding(pub StyleRect);
 
 impl ApplyToNode for Padding
@@ -1176,11 +1168,7 @@ impl AnimatableAttribute for RowGap {}
 
 /// Mirrors [`SelfFlex::margin`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Margin(pub StyleRect);
 
 impl ApplyToNode for Margin

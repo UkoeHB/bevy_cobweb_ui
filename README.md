@@ -2,7 +2,7 @@
 
 A UI and asset-management framework for the `bevy` game engine.
 
-Depends on `bevy_ui`, `bevy_assets`, and [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb).
+Depends on `bevy` and [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb).
 
 
 ## Features

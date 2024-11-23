@@ -49,11 +49,7 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 
 /// Mirrors [`UiImage`] for serialization.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LoadedUiImage
 {
     /// The location of the UiImage.

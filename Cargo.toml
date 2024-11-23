@@ -43,7 +43,7 @@ widgets = ["colors"]
 # Enables the built-in experimental COB editor.
 editor = ["hot_reload", "colors", "widgets", "dep:foldhash"]
 
-# Enables Serialize/Deserialize on built-in types.
+# Enables Serialize/Deserialize on some built-in types.
 serde = ["bevy/serialize"]
 
 # Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.

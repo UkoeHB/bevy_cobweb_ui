@@ -792,11 +792,7 @@ impl<T: Into<FontRequest>> FontWeightExt for T
 
 /// Font attributes that combine with a [`FontFamily`] to make a [`FontRequest`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FontAttributes
 {
     #[reflect(default)]
@@ -851,11 +847,7 @@ impl UpdateFontRequest for FontAttributes
 ///
 /// Can be used with [`FontMap`](crate::prelude::FontMap) to get a handle to the closest matching font.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FontRequest
 {
     pub family: FontFamily,

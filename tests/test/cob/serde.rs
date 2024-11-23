@@ -530,3 +530,31 @@ fn reflect_defaulted()
 }
 
 //-------------------------------------------------------------------------------------------------------------------
+
+#[test]
+fn serde_reflect_defaulted()
+{
+    let a = prepare_test_app();
+    test_equivalence(
+        a.world(),
+        "SerdeReflectDefaulted{a:1 b:2}",
+        "{a:1 b:2}",
+        SerdeReflectDefaulted { a: 1, b: 2 },
+    );
+
+    // Lossy conversion: reflect-defaulted fields will be inserted on reserialize
+    test_equivalence_lossy_reflection(
+        a.world(),
+        "SerdeReflectDefaulted",
+        "SerdeReflectDefaulted{a:10 b:20}",
+        SerdeReflectDefaulted::default(),
+    );
+    test_equivalence_lossy_reflection(
+        a.world(),
+        "SerdeReflectDefaulted{b:1}",
+        "SerdeReflectDefaulted{a:10 b:1}",
+        SerdeReflectDefaulted { b: 1, ..Default::default() },
+    );
+}
+
+//-------------------------------------------------------------------------------------------------------------------

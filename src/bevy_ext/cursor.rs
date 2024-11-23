@@ -247,11 +247,7 @@ impl ResponsiveAttribute for TempCursor {}
 // TODO: There is a bug where if you only have `hover` set, then the hover cursor will be maintained when you
 // press and drag away from the entity until you release.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ResponsiveCursor
 {
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for these cursor settings to be

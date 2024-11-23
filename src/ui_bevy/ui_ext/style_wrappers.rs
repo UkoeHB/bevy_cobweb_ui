@@ -10,11 +10,7 @@ use crate::sickle::Lerp;
 ///
 /// All fields default to `Val::Px(0.)`.
 #[derive(Reflect, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct StyleRect
 {
     #[reflect(default = "StyleRect::default_field")]
@@ -362,11 +358,7 @@ impl Into<AlignSelf> for JustifySelfCross
 ///
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Dims
 {
     /// Indicates the `desired` width of the node.
@@ -525,11 +517,7 @@ impl Default for Dims
 ///
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ContentFlex
 {
     /// Determines whether the node contents will be clipped at the node boundary.
@@ -659,11 +647,7 @@ impl Default for ContentFlex
 ///
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SelfFlex
 {
     /// Adds space outside the boundary of a node.
@@ -753,11 +737,7 @@ impl Default for SelfFlex
 ///
 /// See [`FlexNode`] for flexbox-controlled nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AbsoluteNode
 {
     // TODO: re-enable once #[reflect(flatten)] is available
@@ -911,11 +891,7 @@ impl Instruction for AbsoluteNode
 ///
 /// See [`AbsoluteNode`] for absolute-positioned nodes.
 #[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FlexNode
 {
     // TODO: re-enable once #[reflect(flatten)] is available
