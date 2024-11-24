@@ -239,6 +239,12 @@ pub trait CobLoadableRegistrationAppExt
     /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_command`].
     fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self;
 
+    /// Registers a component that can be inserted on entities via COB loadables.
+    fn register_component<T: Component + Loadable>(&mut self) -> &mut Self;
+
+    /// Combines [`App::register_type`] with [`CobLoadableRegistrationAppExt::register_component`].
+    fn register_component_type<T: TypePath + GetTypeRegistration + Component + Loadable>(&mut self) -> &mut Self;
+
     /// Registers a bundle that can be inserted on entities via COB loadables.
     fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self;
 
@@ -273,6 +279,17 @@ impl CobLoadableRegistrationAppExt for App
     fn register_command_type<T: TypePath + GetTypeRegistration + Command + Loadable>(&mut self) -> &mut Self
     {
         self.register_type::<T>().register_command::<T>()
+    }
+
+    fn register_component<T: Component + Loadable>(&mut self) -> &mut Self
+    {
+        register_node_loadable::<T>(self, bundle_loader::<T>, revert_bundle::<T>, "component");
+        self
+    }
+
+    fn register_component_type<T: TypePath + GetTypeRegistration + Component + Loadable>(&mut self) -> &mut Self
+    {
+        self.register_type::<T>().register_component::<T>()
     }
 
     fn register_bundle<T: Bundle + Loadable>(&mut self) -> &mut Self

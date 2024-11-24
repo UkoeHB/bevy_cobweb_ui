@@ -105,7 +105,7 @@ impl Plugin for DemoOrbiterPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_bundle_type::<Orbiter>()
+        app.register_component_type::<Orbiter>()
             // TODO: remove ApplyFluxChanges after flux systems reorganized
             .add_systems(Update, update_oribiters.after(ApplyFluxChanges));
     }

@@ -278,7 +278,7 @@ For example, with the [`BackgroundColor`](bevy::prelude::BackgroundColor) compon
 When the scene node `"a"` is loaded to an entity, the [`BackgroundColor`](bevy::prelude::BackgroundColor) component will be inserted to the entity.
 
 You can define three kinds of loadables:
-- **Bundles**: Inserted as bundles.
+- **Components**: Inserted as components.
 - **Reactive**: Inserted as `bevy_cobweb` reactive components.
 - **Instruction**: Applied to an entity via the [`Instruction`](bevy_cobweb_ui::prelude::Instruction) trait. The [`BrRadius`](bevy_cobweb_ui::prelude::BrRadius) loadable is an instruction that inserts the `BorderRadius` component.
 
@@ -288,9 +288,9 @@ For example:
 #[derive(Reflect, Default, PartialEq)]
 struct MyLoadable(usize);
 
-// Use this if you want MyLoadable to be inserted as a `Bundle`.
-// The type must implement `Bundle` (or `Component`).
-app.register_bundle_type::<MyLoadable>();
+// Use this if you want MyLoadable to be inserted as a `Component`.
+// The type must implement `Component`.
+app.register_component_type::<MyLoadable>();
 
 // Use this if you want MyLoadable to be inserted as a `React` component.
 // The type must implement `ReactComponent`.
