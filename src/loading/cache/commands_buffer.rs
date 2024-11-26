@@ -788,7 +788,7 @@ impl CommandsBuffer
 
     /// Iterates through the cached hierarchy from the latest traversal point, applying pending commands as they
     /// are encountered.
-    pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    pub(super) fn apply_pending_commands(&mut self, c: &mut Commands, callbacks: &LoadableRegistry)
     {
         // Don't apply any commands if any files are pending if at least one file has hot reloaded.
         // - This is needed to avoid race conditions involving multiple files refreshing concurrently. Since defs

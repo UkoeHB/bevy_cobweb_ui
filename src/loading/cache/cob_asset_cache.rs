@@ -29,8 +29,6 @@ struct PreprocessedSceneFile
 #[derive(Default, Debug)]
 struct ProcessedSceneFile
 {
-    /// Using info cached for use by dependents.
-    using: HashMap<&'static str, &'static str>,
     /// Constants info cached for use by dependents.
     constants_buff: ConstantsBuffer,
     /// Specs that can be imported into other files.
@@ -305,15 +303,14 @@ impl CobAssetCache
         &mut self,
         mut preprocessed: PreprocessedSceneFile,
         type_registry: &TypeRegistry,
+        loadables: &LoadableRegistry,
         _c: &mut Commands,
         commands_buffer: &mut CommandsBuffer,
         _scene_buffer: &mut SceneBuffer,
         _scene_loader: &mut SceneLoader,
     )
     {
-        // Initialize using/constants maps from dependencies.
-        // [ shortname : longname ]
-        let mut name_shortcuts: HashMap<&'static str, &'static str> = HashMap::default();
+        // Initialize constants map from dependencies.
         let mut constants_buff = ConstantsBuffer::default();
         // specs collector
         let mut specs = SpecsMap::default();
@@ -330,7 +327,6 @@ impl CobAssetCache
                 continue;
             };
 
-            name_shortcuts.extend(processed.using.iter());
             constants_buff.append(alias, &processed.constants_buff);
             specs.import_specs(&dependency, &preprocessed.file, &processed.specs);
         }
@@ -352,12 +348,10 @@ impl CobAssetCache
         }
 
         // Process the file.
-        // - This updates the using/constants/specs maps with info extracted from the file.
+        // - This updates the constants/specs maps with info extracted from the file.
         extract_cob_importables(
-            type_registry,
             preprocessed.file.clone(),
             &mut preprocessed.data,
-            &mut name_shortcuts,
             &mut constants_buff,
             &mut specs,
         );
@@ -367,7 +361,7 @@ impl CobAssetCache
             commands_buffer,
             preprocessed.file.clone(),
             &mut preprocessed.data,
-            &mut name_shortcuts,
+            loadables,
             &constants_buff,
             &specs,
         );
@@ -382,7 +376,7 @@ impl CobAssetCache
                 _scene_loader,
                 preprocessed.file.clone(),
                 preprocessed.data,
-                &mut name_shortcuts,
+                loadables,
                 &constants_buff,
                 &specs,
             );
@@ -395,7 +389,6 @@ impl CobAssetCache
         }
 
         // Save final maps.
-        processed.using = name_shortcuts;
         processed.constants_buff = constants_buff;
         processed.specs = specs;
 
@@ -446,6 +439,7 @@ impl CobAssetCache
     pub(super) fn process_cobweb_asset_files(
         &mut self,
         type_registry: &TypeRegistry,
+        loadables: &LoadableRegistry,
         c: &mut Commands,
         commands_buffer: &mut CommandsBuffer,
         scene_buffer: &mut SceneBuffer,
@@ -488,6 +482,7 @@ impl CobAssetCache
                 self.process_cobweb_asset_file(
                     preprocessed,
                     type_registry,
+                    loadables,
                     c,
                     commands_buffer,
                     scene_buffer,
@@ -529,6 +524,7 @@ impl CobAssetCache
     pub(crate) fn handle_pending_scene_extraction(
         &mut self,
         type_registry: &TypeRegistry,
+        loadables: &LoadableRegistry,
         c: &mut Commands,
         scene_buffer: &mut SceneBuffer,
         scene_loader: &mut SceneLoader,
@@ -546,7 +542,7 @@ impl CobAssetCache
                 scene_loader,
                 file,
                 data,
-                &mut processed.using,
+                loadables,
                 &processed.constants_buff,
                 &processed.specs,
             );
@@ -556,7 +552,7 @@ impl CobAssetCache
             // file's cached state.
             #[cfg(feature = "editor")]
             {
-                editor.add_processed(c, processed.hash, &processed.data, &processed.using);
+                editor.add_processed(c, processed.hash, &processed.data);
             }
         }
     }

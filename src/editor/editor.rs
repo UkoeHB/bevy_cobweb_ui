@@ -15,8 +15,6 @@ pub(super) struct CobFileData
     pub(super) last_save_hash: CobFileHash,
     /// Data for the file. Defs in this data are *not* resolved.
     pub(super) data: Cob,
-    /// Fully-extracted using info cached in order to identify the correct types when spawning widgets.
-    pub(super) using: HashMap<&'static str, &'static str>,
 }
 
 impl CobFileData
@@ -89,36 +87,21 @@ impl CobEditor
     }
 
     /// Adds a file that was just processed by the CobwebAssetCache.
-    pub(crate) fn add_processed(
-        &mut self,
-        c: &mut Commands,
-        hash: CobFileHash,
-        data: &Cob,
-        using: &HashMap<&'static str, &'static str>,
-    )
+    pub(crate) fn add_processed(&mut self, c: &mut Commands, hash: CobFileHash, data: &Cob)
     {
         let Some(existing) = self.files.get_mut(&data.file) else {
             self.files.insert(
                 data.file.clone(),
-                CobFileData {
-                    last_save_hash: hash,
-                    data: data.clone(),
-                    using: using.clone(),
-                },
+                CobFileData { last_save_hash: hash, data: data.clone() },
             );
             c.react()
                 .broadcast(EditorNewFile { file: data.file.clone() });
             return;
         };
 
-        // Always broadcast this in case the editor view needs to be respawned because of a using section
-        // change (e.g. that fixed a bug causing a widget to not be inserted properly).
+        // Always broadcast this in case the editor view needs to be respawned.
         c.react()
             .broadcast(EditorFileExternalChange { file: data.file.clone() });
-
-        // Always update using section in case it got updated.
-        existing.using.clear();
-        existing.using.extend(using.iter());
 
         // Remove from unsaved.
         let removed = self.unsaved.remove(&data.file);

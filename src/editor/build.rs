@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
 use bevy::prelude::*;
@@ -69,16 +68,16 @@ fn build_widgets<'a>(
 fn build_loadable<'a>(
     l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
     registry: &TypeRegistry,
+    loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
     file_hash: CobFileHash,
-    using: &HashMap<&'static str, &'static str>,
     scene_ref: SceneRef,
     loadable: &CobLoadable,
 )
 {
     // Look up loadable type
     let name = loadable.id.to_canonical(None);
-    let Some((deserializer, _, longname, shortname)) = get_deserializer(registry, name.as_str(), using) else {
+    let Some((deserializer, _, longname, shortname)) = get_deserializer(registry, name.as_str(), loadables) else {
         l.load_scene(("editor.frame", "unsupported"));
         return;
     };
@@ -117,9 +116,9 @@ fn build_loadable<'a>(
 fn build_scene_layer<'a>(
     l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
     registry: &TypeRegistry,
+    loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
     file_hash: CobFileHash,
-    using: &HashMap<&'static str, &'static str>,
     scene_ref: SceneRef,
     layer: &CobSceneLayer,
 )
@@ -142,10 +141,18 @@ fn build_scene_layer<'a>(
             for entry in layer.entries.iter() {
                 match entry {
                     CobSceneLayerEntry::Loadable(loadable) => {
-                        build_loadable(l, registry, widgets, file_hash, using, scene_ref.clone(), loadable);
+                        build_loadable(l, registry, loadables, widgets, file_hash, scene_ref.clone(), loadable);
                     }
                     CobSceneLayerEntry::Layer(scene_layer) => {
-                        build_scene_layer(l, registry, widgets, file_hash, using, scene_ref.clone(), scene_layer);
+                        build_scene_layer(
+                            l,
+                            registry,
+                            loadables,
+                            widgets,
+                            file_hash,
+                            scene_ref.clone(),
+                            scene_layer,
+                        );
                     }
                     _ => {
                         l.load_scene(("editor.frame", "unsupported"));
@@ -173,6 +180,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             mut c: Commands,
             mut s: ResMut<SceneLoader>,
             registry: Res<AppTypeRegistry>,
+            loadables: Res<LoadableRegistry>,
             widgets: Res<CobWidgetRegistry>,
             editor: Res<CobEditor>,//
         | {
@@ -224,9 +232,9 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                                     build_loadable(
                                         l,
                                         &registry,
+                                        &loadables,
                                         &widgets,
                                         file_data.last_save_hash,
-                                        &file_data.using,
                                         commands_ref.clone(),
                                         loadable,
                                     );
@@ -251,9 +259,9 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                             build_scene_layer(
                                 l,
                                 &registry,
+                                &loadables,
                                 &widgets,
                                 file_data.last_save_hash,
-                                &file_data.using,
                                 scene_ref.clone(),
                                 scene_layer
                             );

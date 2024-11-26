@@ -35,7 +35,6 @@ Local aliases:
 
 Behavior:
 - Loads file paths into the app if not yet loaded. Does *not* assign a manifest key when doing so.
-- Makes all #using from the imported file available to this file.
 - Makes all #defs and #specs from the imported file available to this file using the local alias as prefix
 (e.g. a constant $colors::tailwind::AMBER_500, or a macro $std::hsla(...), etc.).
 
@@ -48,18 +47,6 @@ std as std
 builtin.widgets.radio_button as radio_button
 builtin.colors as colors
 "some/file.cob" as _
-
-/*
-# Using
-
-Pattern: ^(({{identifier}}::)({{identifier}})*)?{{type_identifier}}\s*[a][s]\s*{{type_identifier}}
-
-Behavior:
-- Any reference to the type alias in this file or files that import this file will use the specified type path's
-type registration to deserialize values associated with the alias.
-*/
-#using
-my_crate::text::TextLine as TextLine
 
 /*
 # Defs

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy::reflect::TypeRegistry;
 
 use super::*;
@@ -12,7 +10,7 @@ pub(super) fn extract_commands_section(
     commands: &mut Vec<(&'static str, ErasedLoadable)>,
     file: &CobFile,
     section: &mut CobCommands,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
 )
 {
@@ -32,7 +30,7 @@ pub(super) fn extract_commands_section(
 
                 // Get the loadable's longname.
                 let Some((short_name, long_name, type_id, deserializer)) =
-                    get_loadable_meta(type_registry, file, &mock_path, shortname.as_str(), name_shortcuts)
+                    get_loadable_meta(type_registry, file, &mock_path, shortname.as_str(), loadables)
                 else {
                     continue;
                 };

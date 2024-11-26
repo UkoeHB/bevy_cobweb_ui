@@ -31,8 +31,7 @@ For example, here's a file with one **`#scenes`** section:
 There are six section types, all of which are optional and can be written in any order in a file:
 
 - **`#manifest`**: Requests other COB files to be loaded, assigns *manifest keys*, and controls the global order that commands are applied.
-- **`#import`**: Pulls **`#using`** and **`#defs`** sections from other files into the current file using their manifest keys, with an optional import alias.
-- **`#using`**: Allows specifying the full typename of a loadable, to disambiguate it when multiple types with the same short name are registered for reflection. Very rarely needed.
+- **`#import`**: Pulls **`#defs`** sections from other files into the current file using their manifest keys, with an optional import alias.
 - **`#defs`**: Definitions of re-usable constants and macros. **MACROS NOT YET IMPLEMENTED**
 - **`#commands`**: Bevy commands that are applied when a COB file is initially loaded. COB commands are globally ordered based on the file load order specified in **`#manifest`** sections.
 - **`#scenes`**: Specifies scene hierarchies that can be spawned in-code as entity hierarchies. Scene nodes are composed of loadables (components and instructions).
@@ -40,10 +39,10 @@ There are six section types, all of which are optional and can be written in any
 File extraction uses the following overall algorithm.
 
 1. First, **`#manifest`** and **`#import`** sections are extracted. Manifest files are loaded, and import entries are cached until the files they point to are loaded.
-1. Once all imports are available, **`#using`** and **`#defs`** sections are extracted in the order the appear in-file. When extracting **`#defs`**, each definition that internally requests other defs is 'resolved' using definitions available up to that point (including imports and previous definitions from the file).
-    - After using/defs are extracted, the extracted values (stacked on top of the file's own imports) can be imported to other files.
-1. Then all **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#using`** and **`#defs`** values (including both imports and defs from the file). Commands are buffered in order to apply them in the correct order (see [below](#Commands-section)).
-1. Finally, all **`#scenes`** sections are extracted in the order they appear in-file. Similar to commands, all scene node values are immediately resolved using available **`#using`** and **`#defs`** values.
+1. Once all imports are available, **`#defs`** sections are extracted in the order the appear in-file. When extracting **`#defs`**, each definition that internally requests other defs is 'resolved' using definitions available up to that point (including imports and previous definitions from the file).
+    - After defs are extracted, the extracted values (stacked on top of the file's own imports) can be imported to other files.
+1. Then all **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#defs`** values (including both imports and defs from the file). Commands are buffered in order to apply them in the correct order (see [below](#Commands-section)).
+1. Finally, all **`#scenes`** sections are extracted in the order they appear in-file. Similar to commands, all scene node values are immediately resolved using available **`#defs`** values.
 
 
 ### Manifest section
@@ -85,20 +84,6 @@ widgets.slider as slider
 In this example, `home_menu` is given `_`, which means no import alias. Import aliases are prepended to all imported definitions, allowing you to 'namespace' definitions.
 
 For example, this crate has built-in constants, including the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`.
-
-
-### Using section
-
-A using section is a sequence of 'long type name : short type name' pairs.
-
-For example:
-
-```rust
-#using
-bevy_cobweb_ui::ui_bevy::ui_ext::style_wrappers::FlexNode as FlexNode
-```
-
-If any command or scene in the file, or any file that imports the file, contains a `FlexNode`, then the type path specified here will be used when reflecting the raw data into a concrete rust type.
 
 
 ### Defs section

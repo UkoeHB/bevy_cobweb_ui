@@ -10,7 +10,6 @@ use crate::prelude::*;
 pub struct CobLoadableSerializer
 {
     /// The loadable name is injected because serde doesn't know about generics.
-    //todo: add ability to customize the loadable name e.g. in the case of 'using' statements
     pub name: &'static str,
 }
 

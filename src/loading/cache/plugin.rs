@@ -64,6 +64,7 @@ fn preprocess_cobweb_asset_files(
 
 fn process_cobweb_asset_files(
     types: Res<AppTypeRegistry>,
+    loadables: Res<LoadableRegistry>,
     mut cob_cache: ResMut<CobAssetCache>,
     mut c: Commands,
     mut commands_buffer: ResMut<CommandsBuffer>,
@@ -75,6 +76,7 @@ fn process_cobweb_asset_files(
 
     if cob_cache.process_cobweb_asset_files(
         &type_registry,
+        &loadables,
         &mut c,
         &mut commands_buffer,
         &mut scene_buffer,
@@ -86,7 +88,7 @@ fn process_cobweb_asset_files(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, loaders: Res<LoaderCallbacks>)
+fn apply_pending_commands(mut c: Commands, mut buffer: ResMut<CommandsBuffer>, loaders: Res<LoadableRegistry>)
 {
     buffer.apply_pending_commands(&mut c, &loaders);
 }
@@ -100,7 +102,7 @@ fn apply_pending_node_updates_pre(
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
-    loaders: Res<LoaderCallbacks>,
+    loaders: Res<LoadableRegistry>,
 )
 {
     // Check if blocked.
@@ -119,6 +121,7 @@ fn apply_pending_node_updates_pre(
 #[cfg(feature = "hot_reload")]
 fn apply_pending_node_updates_extract(
     types: Res<AppTypeRegistry>,
+    loadables: Res<LoadableRegistry>,
     mut cob_cache: ResMut<CobAssetCache>,
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
@@ -136,6 +139,7 @@ fn apply_pending_node_updates_extract(
     let type_registry = types.read();
     cob_cache.handle_pending_scene_extraction(
         &type_registry,
+        &loadables,
         &mut c,
         &mut scene_buffer,
         &mut scene_loader,
@@ -151,7 +155,7 @@ fn apply_pending_node_updates_post(
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
-    loaders: Res<LoaderCallbacks>,
+    loaders: Res<LoadableRegistry>,
 )
 {
     // Check if blocked.

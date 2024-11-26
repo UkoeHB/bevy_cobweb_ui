@@ -323,7 +323,7 @@ impl SceneBuffer
         &self,
         subscription: SubscriptionRef,
         scene_ref: SceneRef,
-        callbacks: &LoaderCallbacks,
+        callbacks: &LoadableRegistry,
         c: &mut Commands,
     )
     {
@@ -370,7 +370,7 @@ impl SceneBuffer
         entity: Entity,
         mut scene_ref: SceneRef,
         initializer: NodeInitializer,
-        callbacks: &LoaderCallbacks,
+        callbacks: &LoadableRegistry,
         c: &mut Commands,
         #[cfg(feature = "hot_reload")] commands_buffer: &CommandsBuffer,
     )
@@ -455,7 +455,7 @@ impl SceneBuffer
     }
 
     #[cfg(feature = "hot_reload")]
-    pub(super) fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoaderCallbacks)
+    pub(super) fn apply_pending_node_updates(&mut self, c: &mut Commands, callbacks: &LoadableRegistry)
     {
         // Revert loadables as needed.
         // - Note: We currently assume the order of reverts doesn't matter.

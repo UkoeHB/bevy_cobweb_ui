@@ -71,7 +71,7 @@ Check the repository examples for how to build different kinds of UI.
 
 ## Examples
 
-**NOTICE**: Many examples are not yet migrated to use COB, which is still in development to reach feature parity with the previous JSON format.
+**NOTICE**: Some examples are not yet migrated to use COB, which is still in development to reach feature parity with the previous JSON format.
 
 - [`hello_world`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/hello_world): Bare-bones hello world.
 - [`counter`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter): Simple counter button. Shows how [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) can be used to transfer interactions within a widget. Also demonstrates updating text dynamically on the code side.

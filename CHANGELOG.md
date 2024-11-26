@@ -4,6 +4,7 @@
 
 - `LoadedUiImage::image` is now optional. If no image is specified, a default handle will be inserted.
 - Add radio button widget. Use the `RadioButtonGroup` and `RadioButton` loadables to set up radio buttons. See the `radio_buttons` example.
+- Remove `#using` section from COB files. All loadable shortnames must be uniquely registered.
 
 ## 0.5.0-rc.3
 

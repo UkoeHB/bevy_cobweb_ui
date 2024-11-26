@@ -11,13 +11,43 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn register_loadable_type<T: Loadable>(app: &mut App) -> Option<(&mut LoadableRegistry, TypeId)>
+{
+    // Look up canonical short name.
+    let type_id = TypeId::of::<T>();
+    let registry = app.world().resource::<AppTypeRegistry>().read();
+    let Some(registration) = registry.get(type_id) else {
+        tracing::warn!("failed registering command loadable {} whose type is not registered in the app",
+            std::any::type_name::<T>());
+        return None;
+    };
+    let shortname = registration.type_info().type_path_table().short_path();
+    std::mem::drop(registry);
+
+    // Save loadable type.
+    let mut loadables = app
+        .world_mut()
+        .get_resource_or_insert_with::<LoadableRegistry>(|| Default::default());
+
+    if let Some(prev) = loadables.loadables.insert(shortname, type_id) {
+        if prev != type_id {
+            tracing::warn!("overwriting command loadable registration; new type id: {:?}, old type id: {:?}",
+                type_id, prev);
+        }
+    }
+
+    Some((loadables.into_inner(), type_id))
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn register_command_loadable<T: Command + Loadable>(app: &mut App)
 {
-    let mut loaders = app
-        .world_mut()
-        .get_resource_or_insert_with::<LoaderCallbacks>(|| Default::default());
+    // Register type.
+    let Some((loadables, type_id)) = register_loadable_type::<T>(app) else { return };
 
-    let entry = loaders.command_callbacks.entry(TypeId::of::<T>());
+    // Add callback entry.
+    let entry = loadables.command_callbacks.entry(type_id);
     if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
         tracing::warn!("tried registering command loadable {} multiple times", std::any::type_name::<T>());
     }
@@ -27,19 +57,18 @@ fn register_command_loadable<T: Command + Loadable>(app: &mut App)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn register_node_loadable<T: 'static>(
+fn register_node_loadable<T: Loadable + 'static>(
     app: &mut App,
     callback: fn(&mut World, Entity, ReflectedLoadable, SceneRef),
     _reverter: fn(Entity, &mut World),
     register_type: &'static str,
 )
 {
-    let mut loaders = app
-        .world_mut()
-        .get_resource_or_insert_with::<LoaderCallbacks>(|| Default::default());
+    // Register type.
+    let Some((loadables, type_id)) = register_loadable_type::<T>(app) else { return };
 
     // Applier callback.
-    let entry = loaders.node_callbacks.entry(TypeId::of::<T>());
+    let entry = loadables.node_callbacks.entry(type_id);
     if matches!(entry, std::collections::hash_map::Entry::Occupied(_)) {
         tracing::warn!("tried registering {register_type} loadable {} multiple times", std::any::type_name::<T>());
     }
@@ -48,9 +77,9 @@ fn register_node_loadable<T: 'static>(
 
     // Reverter callback.
     #[cfg(feature = "hot_reload")]
-    loaders
+    loadables
         .revert_callbacks
-        .entry(TypeId::of::<T>())
+        .entry(type_id)
         .or_insert(_reverter);
 }
 
@@ -129,7 +158,7 @@ fn instruction_loader<T: Instruction + Loadable>(
 fn load_from_ref(
     In((id, scene_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
     mut c: Commands,
-    loaders: Res<LoaderCallbacks>,
+    loadables: Res<LoadableRegistry>,
     mut scene_buffer: ResMut<SceneBuffer>,
     load_state: Res<State<LoadState>>,
     #[cfg(feature = "hot_reload")] commands_buffer: Res<CommandsBuffer>,
@@ -144,7 +173,7 @@ fn load_from_ref(
         id,
         scene_ref,
         initializer,
-        &loaders,
+        &loadables,
         &mut c,
         #[cfg(feature = "hot_reload")]
         &commands_buffer,
@@ -190,15 +219,18 @@ pub(crate) fn load_queued_from_ref(
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
-pub(crate) struct LoaderCallbacks
+pub(crate) struct LoadableRegistry
 {
+    /// [ short name : type id ]
+    loadables: HashMap<&'static str, TypeId>,
+
     command_callbacks: HashMap<TypeId, fn(&mut World, ReflectedLoadable, SceneRef)>,
     node_callbacks: HashMap<TypeId, fn(&mut World, Entity, ReflectedLoadable, SceneRef)>,
     #[cfg(feature = "hot_reload")]
     revert_callbacks: HashMap<TypeId, fn(Entity, &mut World)>,
 }
 
-impl LoaderCallbacks
+impl LoadableRegistry
 {
     pub(crate) fn get_for_command(&self, type_id: TypeId) -> Option<fn(&mut World, ReflectedLoadable, SceneRef)>
     {
@@ -218,6 +250,11 @@ impl LoaderCallbacks
     {
         self.revert_callbacks.get(&type_id).cloned()
     }
+
+    pub(crate) fn get_type_id(&self, id: impl AsRef<str>) -> Option<TypeId>
+    {
+        self.loadables.get(id.as_ref()).copied()
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -231,6 +268,8 @@ pub(crate) struct NodeInitializer
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Extends `App` with methods for registering loadables.
+///
+/// All registered loadable types must have unique short names (e.g. `BorderColor`).
 pub trait CobLoadableRegistrationAppExt
 {
     /// Registers a command that will be applied to the Bevy world when it is loaded.
@@ -376,7 +415,7 @@ impl Plugin for LoadExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.init_resource::<LoaderCallbacks>();
+        app.init_resource::<LoadableRegistry>();
     }
 }
 

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy::prelude::Commands;
 use bevy::reflect::TypeRegistry;
 
@@ -16,14 +14,14 @@ fn handle_loadable(
     file: &CobFile,
     current_path: &ScenePath,
     loadable: &mut CobLoadable,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
 ) -> String
 {
     // Get the loadable's longname.
     let id_scratch = loadable.id.to_canonical(Some(id_scratch));
     let Some((short_name, long_name, type_id, deserializer)) =
-        get_loadable_meta(type_registry, file, current_path, id_scratch.as_str(), name_shortcuts)
+        get_loadable_meta(type_registry, file, current_path, id_scratch.as_str(), loadables)
     else {
         return id_scratch;
     };
@@ -76,7 +74,7 @@ fn handle_scene_node(
     scene: &SceneRef,
     parent_path: &ScenePath,
     cob_layer: &mut CobSceneLayer,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
     anonymous_count: &mut usize,
 ) -> String
@@ -127,7 +125,7 @@ fn handle_scene_node(
         scene,
         &node_path,
         cob_layer,
-        name_shortcuts,
+        loadables,
         constants_buffer,
     )
 }
@@ -145,7 +143,7 @@ fn extract_scene_layer(
     scene: &SceneRef,
     current_path: &ScenePath,
     cob_layer: &mut CobSceneLayer,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
 ) -> String
 {
@@ -173,7 +171,7 @@ fn extract_scene_layer(
                         .expect("all SceneFile should contain CobFile in scene extraction"),
                     current_path,
                     loadable,
-                    name_shortcuts,
+                    loadables,
                     constants_buffer,
                 );
             }
@@ -213,7 +211,7 @@ fn extract_scene_layer(
                     scene,
                     current_path,
                     next_cob_layer,
-                    name_shortcuts,
+                    loadables,
                     constants_buffer,
                     &mut anonymous_count,
                 );
@@ -248,7 +246,7 @@ pub(super) fn extract_scenes(
     scene_loader: &mut SceneLoader,
     file: &CobFile,
     section: &mut CobScenes,
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
 )
 {
@@ -278,7 +276,7 @@ pub(super) fn extract_scenes(
             &scene_ref,
             &scene_ref.path,
             cob_layer,
-            name_shortcuts,
+            loadables,
             constants_buffer,
         );
     }

@@ -1,5 +1,4 @@
 use std::any::TypeId;
-use std::collections::HashMap;
 
 use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy::reflect::{TypeRegistration, TypeRegistry};
@@ -22,14 +21,11 @@ pub(super) fn get_targeted<'a>(data: &'a mut Cob, editor_ref: &CobEditorRef) -> 
 pub(super) fn get_registration<'a>(
     type_registry: &'a TypeRegistry,
     short_name: &str,
-    name_shortcuts: &HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
 ) -> Option<(&'a TypeRegistration, TypeId, &'static str, &'static str)>
 {
-    // Check if we already have this mapping.
-    let registration = match name_shortcuts.get(short_name) {
-        Some(long_name) => type_registry.get_with_type_path(long_name),
-        None => type_registry.get_with_short_type_path(short_name),
-    }?;
+    let type_id = loadables.get_type_id(short_name)?;
+    let registration = type_registry.get(type_id)?;
 
     let type_id = registration.type_info().type_id();
     let longname = registration.type_info().type_path_table().path();
@@ -43,11 +39,10 @@ pub(super) fn get_registration<'a>(
 pub(super) fn get_deserializer<'a>(
     type_registry: &'a TypeRegistry,
     short_name: &str,
-    name_shortcuts: &HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
 ) -> Option<(TypedReflectDeserializer<'a>, TypeId, &'static str, &'static str)>
 {
-    let (registration, type_id, longname, shortname) =
-        get_registration(type_registry, short_name, name_shortcuts)?;
+    let (registration, type_id, longname, shortname) = get_registration(type_registry, short_name, loadables)?;
     let deserializer = TypedReflectDeserializer::new(registration, type_registry);
     Some((deserializer, type_id, longname, shortname))
 }

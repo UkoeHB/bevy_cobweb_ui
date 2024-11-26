@@ -82,8 +82,9 @@ impl Command for SubmitPatch
             };
 
             // Prep deserializer for targeted loadable.
+            let loadables = world.resource::<LoadableRegistry>();
             let type_registry = world.resource::<AppTypeRegistry>().read();
-            let Some((deserializer, type_id, longname, _)) = get_deserializer(&type_registry, editor_ref.loadable_name, &file_data.using) else {
+            let Some((deserializer, type_id, longname, _)) = get_deserializer(&type_registry, editor_ref.loadable_name, &loadables) else {
                 tracing::warn!("ignoring editor patch for {} in {:?}; failed looking up loadable in type registry",
                     editor_ref.loadable_name, editor_ref.scene_ref);
                 return;

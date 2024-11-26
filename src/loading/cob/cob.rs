@@ -40,7 +40,6 @@ pub enum CobSection
 {
     Manifest(CobManifest),
     Import(CobImport),
-    Using(CobUsing),
     Defs(CobDefs),
     Commands(CobCommands),
     Scenes(CobScenes),
@@ -53,7 +52,6 @@ impl CobSection
         match self {
             Self::Manifest(section) => section.write_to(first_section, writer),
             Self::Import(section) => section.write_to(first_section, writer),
-            Self::Using(section) => section.write_to(first_section, writer),
             Self::Defs(section) => section.write_to(first_section, writer),
             Self::Commands(section) => section.write_to(first_section, writer),
             Self::Scenes(section) => section.write_to(first_section, writer),
@@ -69,10 +67,6 @@ impl CobSection
         };
         let fill = match CobImport::try_parse(fill, content)? {
             (Some(section), fill, remaining) => return Ok((Some(Self::Import(section)), fill, remaining)),
-            (None, fill, _) => fill,
-        };
-        let fill = match CobUsing::try_parse(fill, content)? {
-            (Some(section), fill, remaining) => return Ok((Some(Self::Using(section)), fill, remaining)),
             (None, fill, _) => fill,
         };
         let fill = match rc(content, move |c| CobDefs::try_parse(fill, c))? {

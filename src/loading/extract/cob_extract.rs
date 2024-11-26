@@ -67,15 +67,12 @@ pub(crate) fn preprocess_cob_file(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extracts importable values (using and defs sections).
+/// Extracts importable values (defs sections).
 ///
 /// This is semi-destructive, because definitions will be removed and inserted to appropriate maps/buffers.
 pub(crate) fn extract_cob_importables(
-    type_registry: &TypeRegistry,
     file: CobFile,
     data: &mut Cob,
-    // [ shortname : longname ]
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
     constants_buffer: &mut ConstantsBuffer,
     // tracks specs
     _specs: &mut SpecsMap,
@@ -87,7 +84,6 @@ pub(crate) fn extract_cob_importables(
 
     for section in data.sections.iter_mut() {
         match section {
-            CobSection::Using(section) => extract_using_section(type_registry, &file, section, name_shortcuts),
             CobSection::Defs(section) => extract_defs_section(&file, section, constants_buffer),
             _ => (),
         }
@@ -104,8 +100,7 @@ pub(crate) fn extract_cob_commands(
     commands_buffer: &mut CommandsBuffer,
     file: CobFile,
     data: &mut Cob,
-    // [ shortname : longname ]
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
     // tracks specs
     _specs: &SpecsMap,
@@ -120,7 +115,7 @@ pub(crate) fn extract_cob_commands(
                 &mut commands,
                 &file,
                 section,
-                name_shortcuts,
+                loadables,
                 constants_buffer,
             ),
             _ => (),
@@ -140,8 +135,7 @@ pub(crate) fn extract_cob_scenes(
     scene_loader: &mut SceneLoader,
     file: CobFile,
     mut data: Cob,
-    // [ shortname : longname ]
-    name_shortcuts: &mut HashMap<&'static str, &'static str>,
+    loadables: &LoadableRegistry,
     constants_buffer: &ConstantsBuffer,
     // tracks specs
     _specs: &SpecsMap,
@@ -156,7 +150,7 @@ pub(crate) fn extract_cob_scenes(
                 scene_loader,
                 &file,
                 section,
-                name_shortcuts,
+                loadables,
                 constants_buffer,
             ),
             _ => (),

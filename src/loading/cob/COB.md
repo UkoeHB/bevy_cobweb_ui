@@ -38,15 +38,6 @@ implicit: std as _
 {id}
 
 
-## `using`
-
-{full type path} as {type alias}
-
-### Type alias
-
-{Id}
-
-
 ## `defs`
 
 Definitions
