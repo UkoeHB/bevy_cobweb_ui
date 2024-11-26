@@ -53,7 +53,11 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 pub struct LoadedUiImage
 {
     /// The location of the UiImage.
-    pub image: String,
+    ///
+    /// If no image is specified, then a default handle will be inserted to the `UiImage`. This is useful if
+    /// you want to manually set the image in rust code.
+    #[reflect(default)]
+    pub image: Option<String>,
     /// A reference to the [`TextureAtlas`] to process this image with.
     ///
     /// The image can be animated using the referenced texture atlas with [`Animated<UiImageIndex>`].
@@ -74,6 +78,7 @@ pub struct LoadedUiImage
     /// Set this if you want to force the node to stretch to a specific size.
     ///
     /// When [`LoadedImageMode::Auto`] is used, the node will automatically size itself to fit the image.
+    // TODO: is this ^ a false statement? need to test it
     #[reflect(default)]
     pub size: Option<Vec2>,
     /// Allows specifying a rectangle on the image to render. A cheap alternative to [`Self::atlas`].
@@ -92,13 +97,21 @@ impl LoadedUiImage
     /// Converts to a [`UiImage`].
     pub fn to_ui_image(self, map: &ImageMap, layout_map: &TextureAtlasLayoutMap) -> UiImage
     {
+        let texture_atlas = self.atlas.and_then(|a| {
+            let Some(img) = self.image.as_ref() else {
+                tracing::warn!("failed setting TextureAtlas in UiImage when converting LoadedUiImage; the atlas is set but \
+                    the image texture is None");
+                return None;
+            };
+            Some(TextureAtlas {
+                layout: layout_map.get(img, &a.alias),
+                index: a.index,
+            })
+        });
         UiImage {
             color: self.color,
-            image: map.get(&self.image),
-            texture_atlas: self.atlas.map(|a| TextureAtlas {
-                layout: layout_map.get(&self.image, &a.alias),
-                index: a.index,
-            }),
+            image: self.image.map(|i| map.get(&i)).unwrap_or_default(),
+            texture_atlas,
             flip_x: self.flip_x,
             flip_y: self.flip_y,
             rect: self.rect,

@@ -3,7 +3,6 @@
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
-use bevy_cobweb_ui::builtin::widgets::radio_button::{RadioButtonBuilder, RadioButtonManager};
 use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -21,31 +20,31 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             l.get("selection_section::selection_box")
                 // Update the selection whenever the manifest is updated with a new base language list.
                 .update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
-                    move |mut c: Commands, manifest: Res<LocalizationManifest>| {
+                    move |mut c: Commands, _manifest: Res<LocalizationManifest>| {
                         // Despawn existing buttons.
                         c.entity(id).despawn_descendants();
 
                         // Spawn new buttons for everything in the manifest.
-                        let mut n = c.ui_builder(id);
-                        let manager_entity = RadioButtonManager::insert(&mut n);
-                        let current_lang = &manifest.negotiated()[0];
+                        // let mut n = c.ui_builder(id);
+                        // //let manager_entity = RadioButtonManager::insert(&mut n);
+                        // let current_lang = &manifest.negotiated()[0];
 
-                        for language in manifest.languages() {
-                            let name = language.display_name();
-                            let lang = language.id.clone();
+                        // for language in manifest.languages() {
+                        //     let name = language.display_name();
+                        //     let lang = language.id.clone();
 
-                            let button_id = RadioButtonBuilder::new_in_box(name)
-                                .build(manager_entity, &mut n)
-                                .on_select(move |mut locale: ResMut<Locale>| {
-                                    *locale = Locale::new_from_id(lang.clone());
-                                })
-                                .id();
+                        // let button_id = RadioButtonBuilder::new_in_box(name)
+                        //     .build(manager_entity, &mut n)
+                        //     .on_select(move |mut locale: ResMut<Locale>| {
+                        //         *locale = Locale::new_from_id(lang.clone());
+                        //     })
+                        //     .id();
 
-                            // Select the current locale.
-                            if language.id == *current_lang {
-                                n.react().entity_event(button_id, Select);
-                            }
-                        }
+                        // // Select the current locale.
+                        // if language.id == *current_lang {
+                        //     n.react().entity_event(button_id, Select);
+                        // }
+                        // }
                     }
                 });
 

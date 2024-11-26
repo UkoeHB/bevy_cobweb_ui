@@ -38,8 +38,6 @@ app
     TextLine{ text: "Hello, World!" }
 ```
 
-This hello world has a scene with one node (the root node `"hello"`) and one loadable (`TextLine`). `TextLine` is an instruction that will insert a `Text` component to the scene node entity on spawn.
-
 4. Load the COB file to your app in a plugin.
 
 ```rust
@@ -53,12 +51,8 @@ You can load other COB files recursively using `#manifest` sections (see the loa
 ```rust
 fn build_ui(mut commands: Commands, mut s: ResMut<SceneLoader>)
 {
-    commands
-        // Converts Commands to UiBuilder<UiRoot>
-        .ui_root()
-        // Loads the scene "hello" from file "main.cob".
-        // New entities will be spawned for the scene.
-        .load_scene(("main.cob", "hello"), &mut s);
+    // Spawns entities
+    commands.ui_root().load_scene(("main.cob", "hello"), &mut s);
 }
 ```
 
@@ -84,7 +78,7 @@ Check the repository examples for how to build different kinds of UI.
 - [`counter_widget`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter_widget) (*not migrated*): Widget-ified counter that can be configured. Uses scene 'specs' to make the widget scene data parameterized, enabling customization within asset files.
 - [`cursors`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/cursors): Set custom cursors that respond to interactions with UI elements.
 - [`help_text`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/help_text): Help text that appears on hover. Showcases [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity), which allows controlling (and animating) the opacity of entire node trees, and even layering multiple [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity) within a single tree.
-- [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons) (*not migrated*): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
+- [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
 - [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization) (*not migrated*): Showcases localized text and font.
 - [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix builder-pattern-based UI construction with `bevy_cobweb_ui` convenience tools for interactions.
 - [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu) (*not migrated*): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.

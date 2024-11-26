@@ -1,3 +1,9 @@
+mod widget;
+pub use widget::*;
+
+// TODO: everything below will be removed once scene macros are implemented
+
+/*
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 
@@ -294,17 +300,4 @@ impl RadioButtonBuilder
 }
 
 //-------------------------------------------------------------------------------------------------------------------
-
-pub(crate) struct CobwebRadioButtonPlugin;
-
-impl Plugin for CobwebRadioButtonPlugin
-{
-    fn build(&self, _app: &mut App)
-    {
-        // TODO: re-enable once COB scene macros are implemented
-        //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
-        // "radio_button.cob.json");
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
+*/

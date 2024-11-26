@@ -398,7 +398,7 @@ impl ImageMap
             .or_else(|| self.cached_images.get(path))
             .cloned()
             .unwrap_or_else(|| {
-                tracing::error!("failed getting image {} that was not loaded to ImageMap", path);
+                tracing::warn!("failed getting image {} that was not loaded to ImageMap", path);
                 Default::default()
             })
     }

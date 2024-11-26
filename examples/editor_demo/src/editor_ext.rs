@@ -23,7 +23,7 @@ impl DragValue
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Entity event sent when a draggable number zone was dragged.
+/// Reactive component that tracks the current value of a draggable number zone.
 #[derive(ReactComponent, PartialEq)]
 struct FieldValue<T: Send + Sync + 'static>(T);
 
@@ -51,7 +51,7 @@ const DRAG_VELOCITY_MODIFIER: f32 = 1.0 / 200.0;
 
 // TODO: This is in a separate system because bevy's Drag event only fires when the cursor moves, but we need
 // to get values every tick.
-// TODO: don't hard-code modifiers
+// TODO: don't hard-code the modifier
 fn extract_drag_values(time: Res<Time>, mut c: Commands, distances: Query<(Entity, &DragZoneDragDistance)>)
 {
     for (widget_id, distance) in distances.iter() {

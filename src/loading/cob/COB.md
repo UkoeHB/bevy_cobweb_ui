@@ -55,7 +55,7 @@ Definitions
         `${name} = \ .. values .. \`
     Value macros
         - 
-    Instruction macros
+    Loadable macros
     Scene macros
 
 Invocations
@@ -64,13 +64,13 @@ Invocations
         `${import::alias::path::to::}{name}`
     Value macros
         - 
-    Instruction macros
+    Loadable macros
     Scene macros
 
 
 ## `commands`
 
-Instructions
+Loadables
 
 
 ## `scenes`
@@ -82,8 +82,8 @@ Scene layers
     - add layer stack if encounter layer name >= 2 spaces deeper than current layer
     - if encounter layer name >= 2 spaces shallower than current layer, pop layers until find nearest parent layer at same level
 - Layer contents
-    - Instructions
-    - Instruction macros
+    - Loadables
+    - Loadable macros
     - Scene macros
     - New layers
 
@@ -93,9 +93,11 @@ Scene layers
 Limitations
 - Disallowed struct fields: `auto`, `none`, `nan`, `inf`, `true`, `false`.
 - Struct field names must be snake-case
-- Instruction names and enum variant names must be camel-case
+- Loadable names and enum variant names must be camel-case
+- Loadables must be structs/enums (no tuples, arrays, or rust primitives).
+- Loadable names and enum variants must abut their containers (i.e. no whitespace between name and braces/parens/brackets).
 
-Instructions
+Loadables
 - Identifier
     - Camel-case w/ optional numbers after first letter
     - Optional generics
@@ -175,7 +177,7 @@ Strings
 
 Lossy conversions (COB file to rust value back to COB file):
 - scientific notation: only floats >= 1e16 or <= 1e-7 will be formatted with scientific notation when serializing to raw COB
-- trailing zeroes after decimal in floats: if float can be coerced to int, it will be; otherwise trailing zeroes will be removed other than e.g, `1.0`
+- trailing zeroes after decimal in floats: if float can be coerced to int, it will be; otherwise trailing zeroes will be removed
 - multiline strings: multi-line strings are concatenated
 - in-line string formatting (newlines/tabs/etc.) and unicode characters will be replaced with escape sequences
 - unicode with leading zeros: leading zeroes removed

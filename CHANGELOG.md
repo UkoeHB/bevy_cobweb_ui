@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+
+- `LoadedUiImage::image` is now optional. If no image is specified, a default handle will be inserted.
+- Add radio button widget. Use the `RadioButtonGroup` and `RadioButton` loadables to set up radio buttons. See the `radio_buttons` example.
+
 ## 0.5.0-rc.3
 
 - Replace JSON-based asset format with custom Cobweb Asset Format (COB).
