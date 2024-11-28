@@ -1,8 +1,7 @@
-use std::any::type_name;
+use std::any::{type_name, TypeId};
 
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
-use bevy::reflect::{GetTypeRegistration, Typed};
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
@@ -152,58 +151,56 @@ fn revert_attributes(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: StaticAttribute>(val: T::Value) -> impl Fn(Entity, &mut World)
+fn extract_static_value<T: StaticAttribute>(ref_val: T::Value) -> impl Fn(Entity, &mut World)
 {
     move |entity: Entity, world: &mut World| {
-        T::construct(val.clone()).apply(entity, world);
-        world.flush();
+        T::update(entity, world, ref_val.clone());
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_responsive_value<T: ResponsiveAttribute + StaticAttribute>(
-    vals: InteractiveVals<T::Value>,
+fn extract_responsive_value<T: ResponsiveAttribute>(
+    ref_vals: InteractiveVals<T::Value>,
 ) -> impl Fn(Entity, FluxInteraction, &mut World)
 {
     move |entity: Entity, state: FluxInteraction, world: &mut World| {
-        // Compute new value.
-        let new_value = vals.to_value(state);
-
-        // Apply the value to the entity.
-        T::construct(new_value).apply(entity, world);
-        world.flush();
+        let value = T::extract(entity, world, &ref_vals, state);
+        T::update(entity, world, value);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatableAttribute + StaticAttribute>(
-    vals: AnimatedVals<T::Value>,
+fn extract_animation_value<T: AnimatableAttribute>(
+    ref_vals: AnimatedVals<T::Value>,
 ) -> impl Fn(Entity, AnimationState, &mut World)
-where
-    <T as StaticAttribute>::Value: Lerp,
 {
     move |entity: Entity, state: AnimationState, world: &mut World| {
-        // Compute new value.
-        let new_value = vals.to_value(&state);
-
-        // Apply the value to the entity.
-        T::construct(new_value).apply(entity, world);
-        world.flush();
+        let value = T::extract(entity, world, &ref_vals, &state);
+        T::update(entity, world, value);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Trait for loadable types that specify a value for a theme.
-pub trait StaticAttribute: Instruction + Typed
+/// Trait for loadable types that specify a static value tied to pseudo states.
+///
+/// See [`Static`].
+pub trait StaticAttribute: Instruction
 {
-    /// Specifies the value-type of the theme attribute.
-    type Value: Loadable + Typed + Clone;
+    /// Specifies the value-type of the attribute.
+    type Value: Loadable + Clone;
 
     /// Converts [`Self::Value`] into `Self`.
     fn construct(value: Self::Value) -> Self;
+
+    /// Updates an entity with a value.
+    fn update(entity: Entity, world: &mut World, new_value: Self::Value)
+    {
+        Self::construct(new_value).apply(entity, world);
+        world.flush();
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -211,20 +208,56 @@ pub trait StaticAttribute: Instruction + Typed
 /// Trait for loadable types that respond to interactions.
 ///
 /// Use [`Interactive`] to make an entity interactable.
-pub trait ResponsiveAttribute: Loadable + Typed {}
+///
+/// See [`Responsive`].
+pub trait ResponsiveAttribute: StaticAttribute
+{
+    /// Extracts a value from an interaction state.
+    ///
+    /// The `reference_vals` are set in [`Responsive`].
+    ///
+    /// The value will be applied with [`StaticAttribute::update`].
+    fn extract(
+        _: Entity,
+        _: &mut World,
+        reference_vals: &InteractiveVals<Self::Value>,
+        state: FluxInteraction,
+    ) -> Self::Value
+    {
+        reference_vals.to_value(state)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait for loadable types that can be animated in response to interactions.
 ///
 /// Use [`Interactive`] to make an entity interactable.
-pub trait AnimatableAttribute: Loadable + Typed {}
+///
+/// See [`Animated`].
+pub trait AnimatableAttribute: StaticAttribute<Value: Lerp>
+{
+    /// Extracts a value that should be applied to the entity.
+    ///
+    /// The `reference_vals` are set in [`Animated`].
+    ///
+    /// The value will be applied with [`StaticAttribute::update`].
+    fn extract(
+        _: Entity,
+        _: &mut World,
+        reference_vals: &AnimatedVals<Self::Value>,
+        state: &AnimationState,
+    ) -> Self::Value
+    {
+        reference_vals.to_value(state)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
 impl<T> StaticAttribute for Splat<T>
 where
-    T: Instruction + Splattable + StaticAttribute + GetTypeRegistration,
+    T: Splattable + StaticAttribute,
 {
     type Value = T::Splat;
     fn construct(value: Self::Value) -> Self
@@ -233,7 +266,12 @@ where
     }
 }
 impl<T> ResponsiveAttribute for Splat<T> where T: Splattable + ResponsiveAttribute {}
-impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribute {}
+impl<T> AnimatableAttribute for Splat<T>
+where
+    T: Splattable + AnimatableAttribute,
+    <T as Splattable>::Splat: Lerp,
+{
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -244,8 +282,6 @@ impl<T> AnimatableAttribute for Splat<T> where T: Splattable + AnimatableAttribu
 // require that T::Value implements Serialize/Deserialize unless necessary
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Static<T: StaticAttribute>
-where
-    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
@@ -258,14 +294,12 @@ where
 }
 
 impl<T: StaticAttribute> Instruction for Static<T>
-where
-    <T as StaticAttribute>::Value: GetTypeRegistration,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-            CustomStaticStyleAttribute::new(extract_static_value::<T>(self.value)),
+            CustomStaticStyleAttribute::new(TypeId::of::<Self>(), extract_static_value::<T>(self.value)),
         ));
 
         world.syscall(
@@ -294,9 +328,7 @@ where
 /// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Responsive<T: ResponsiveAttribute + StaticAttribute>
-where
-    <T as StaticAttribute>::Value: GetTypeRegistration,
+pub struct Responsive<T: ResponsiveAttribute>
 {
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
@@ -329,13 +361,11 @@ where
     pub cancel: Option<T::Value>,
 }
 
-impl<T: ResponsiveAttribute + StaticAttribute> Instruction for Responsive<T>
-where
-    <T as StaticAttribute>::Value: GetTypeRegistration,
+impl<T: ResponsiveAttribute> Instruction for Responsive<T>
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let values = InteractiveVals::<T::Value> {
+        let ref_vals = InteractiveVals::<T::Value> {
             idle: self.idle,
             hover: self.hover,
             press: self.press,
@@ -344,7 +374,8 @@ where
 
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::new(
-            extract_responsive_value::<T>(values),
+            TypeId::of::<Self>(),
+            extract_responsive_value::<T>(ref_vals),
         ));
 
         if world.syscall(
@@ -377,9 +408,7 @@ where
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Animated<T: AnimatableAttribute + StaticAttribute>
-where
-    <T as StaticAttribute>::Value: Lerp + GetTypeRegistration,
+pub struct Animated<T: AnimatableAttribute>
 {
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this animation to become active.
@@ -464,40 +493,38 @@ where
     pub delete_on_entered: bool,
 }
 
-impl<T: AnimatableAttribute + StaticAttribute> Instruction for Animated<T>
-where
-    <T as StaticAttribute>::Value: Lerp + GetTypeRegistration,
+impl<T: AnimatableAttribute> Instruction for Animated<T>
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let values = AnimatedVals::<T::Value> {
+        let ref_vals = AnimatedVals::<T::Value> {
+            enter_ref: self.enter_ref,
             idle: self.idle,
             hover: self.hover,
             press: self.press,
             cancel: self.cancel,
-            idle_alt: self.idle_secondary,
-            hover_alt: self.hover_secondary,
-            press_alt: self.press_secondary,
-            enter_from: self.enter_ref,
+            idle_secondary: self.idle_secondary,
+            hover_secondary: self.hover_secondary,
+            press_secondary: self.press_secondary,
         };
         let settings = AnimationSettings {
-            enter: self.enter_idle_with,
-            pointer_enter: self.hover_with,
-            pointer_leave: self.unhover_with,
-            press: self.press_with,
-            release: self.release_with,
-            cancel: self.cancel_with,
-            cancel_reset: self.cancel_end_with,
-            disable: self.disable_with,
-            idle: self.idle_loop,
-            hover: self.hover_loop,
-            pressed: self.press_loop,
+            enter_idle_with: self.enter_idle_with,
+            hover_with: self.hover_with,
+            unhover_with: self.unhover_with,
+            press_with: self.press_with,
+            release_with: self.release_with,
+            cancel_with: self.cancel_with,
+            cancel_end_with: self.cancel_end_with,
+            disable_with: self.disable_with,
+            idle_loop: self.idle_loop,
+            hover_loop: self.hover_loop,
+            press_loop: self.press_loop,
             delete_on_entered: self.delete_on_entered,
         };
 
         // Prepare an updated DynamicStyleAttribute.
         let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::new(extract_animation_value::<T>(values)),
+            attribute: AnimatedStyleAttribute::new(TypeId::of::<Self>(), extract_animation_value::<T>(ref_vals)),
             controller: DynamicStyleController::new(settings, AnimationState::default()),
         };
 

@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
@@ -98,10 +100,14 @@ impl StyleBuilder
         }
     }
 
-    pub fn custom(&mut self, callback: impl Fn(Entity, &mut World) + Send + Sync + 'static) -> &mut Self
+    pub fn custom(
+        &mut self,
+        type_id: TypeId,
+        callback: impl Fn(Entity, &mut World) + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.add(DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-            CustomStaticStyleAttribute::new(callback),
+            CustomStaticStyleAttribute::new(type_id, callback),
         )));
 
         self

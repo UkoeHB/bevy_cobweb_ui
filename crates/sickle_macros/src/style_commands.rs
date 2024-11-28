@@ -324,7 +324,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
             fn logical_eq(&self, other: &Self) -> bool {
                 match (self, other) {
                     #(#eq_variants)*
-                    (Self::Custom(l0), Self::Custom(r0)) => l0 == r0,
+                    (Self::Custom(l0), Self::Custom(r0)) => l0.logical_eq(r0),
                     _ => false,
                 }
             }

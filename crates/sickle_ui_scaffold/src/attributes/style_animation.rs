@@ -1,5 +1,5 @@
+use std::sync::Arc;
 use std::time::Duration;
-use std::vec;
 
 use bevy::prelude::*;
 use cob_sickle_math::{Ease, Lerp, ValueEasing};
@@ -76,7 +76,7 @@ pub enum AnimationResult
     TransitionBetween
     {
         origin: InteractionStyle,
-        points: Vec<(InteractionStyle, f32)>,
+        points: Arc<[(InteractionStyle, f32)]>,
     },
 }
 
@@ -234,30 +234,30 @@ impl LoopedAnimationConfig
 pub struct AnimationSettings
 {
     #[reflect(default)]
-    pub enter: Option<AnimationConfig>,
+    pub enter_idle_with: Option<AnimationConfig>,
     // TODO: this does nothing
     // #[reflect(default)]
     // pub non_interacted: Option<AnimationConfig>,
     #[reflect(default)]
-    pub pointer_enter: Option<AnimationConfig>,
+    pub hover_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub pointer_leave: Option<AnimationConfig>,
+    pub unhover_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub press: Option<AnimationConfig>,
+    pub press_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub release: Option<AnimationConfig>,
+    pub release_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub cancel: Option<AnimationConfig>,
+    pub cancel_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub cancel_reset: Option<AnimationConfig>,
+    pub cancel_end_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub disable: Option<AnimationConfig>,
+    pub disable_with: Option<AnimationConfig>,
     #[reflect(default)]
-    pub idle: Option<LoopedAnimationConfig>,
+    pub idle_loop: Option<LoopedAnimationConfig>,
     #[reflect(default)]
-    pub hover: Option<LoopedAnimationConfig>,
+    pub hover_loop: Option<LoopedAnimationConfig>,
     #[reflect(default)]
-    pub pressed: Option<LoopedAnimationConfig>,
+    pub press_loop: Option<LoopedAnimationConfig>,
     #[reflect(default)]
     pub delete_on_entered: bool,
 }
@@ -349,46 +349,46 @@ impl AnimationSettings
 
     pub fn copy_from(&mut self, other: Self) -> &mut Self
     {
-        self.enter = other.enter;
+        self.enter_idle_with = other.enter_idle_with;
         //self.non_interacted = other.non_interacted;
-        self.pointer_enter = other.pointer_enter;
-        self.pointer_leave = other.pointer_leave;
-        self.press = other.press;
-        self.release = other.release;
-        self.cancel = other.cancel;
-        self.cancel_reset = other.cancel_reset;
-        self.disable = other.disable;
-        self.idle = other.idle;
-        self.hover = other.hover;
-        self.pressed = other.pressed;
+        self.hover_with = other.hover_with;
+        self.unhover_with = other.unhover_with;
+        self.press_with = other.press_with;
+        self.release_with = other.release_with;
+        self.cancel_with = other.cancel_with;
+        self.cancel_end_with = other.cancel_end_with;
+        self.disable_with = other.disable_with;
+        self.idle_loop = other.idle_loop;
+        self.hover_loop = other.hover_loop;
+        self.press_loop = other.press_loop;
         self.delete_on_entered = other.delete_on_entered;
 
         self
     }
 
-    transition_animation_setter!(enter);
+    transition_animation_setter!(enter_idle_with);
     // transition_animation_setter!(non_interacted);
     // transition_from_animation_setter!(non_interacted, non_interacted_from);
-    transition_animation_setter!(pointer_enter);
-    transition_from_animation_setter!(pointer_enter, pointer_enter_from);
-    transition_animation_setter!(pointer_leave);
-    transition_from_animation_setter!(pointer_leave, pointer_leave_from);
-    transition_animation_setter!(press);
-    transition_from_animation_setter!(press, press_from);
-    transition_animation_setter!(release);
-    transition_from_animation_setter!(release, release_from);
-    transition_animation_setter!(cancel);
-    transition_from_animation_setter!(cancel, cancel_from);
-    transition_animation_setter!(cancel_reset);
-    transition_from_animation_setter!(cancel_reset, cancel_reset_from);
-    transition_animation_setter!(disable);
-    transition_from_animation_setter!(disable, disable_from);
-    state_animation_setter!(idle);
-    state_from_animation_setter!(idle, idle_from);
-    state_animation_setter!(hover);
-    state_from_animation_setter!(hover, hover_from);
-    state_animation_setter!(pressed);
-    state_from_animation_setter!(pressed, pressed_from);
+    transition_animation_setter!(hover_with);
+    transition_from_animation_setter!(hover_with, hover_with_from);
+    transition_animation_setter!(unhover_with);
+    transition_from_animation_setter!(unhover_with, unhover_with_from);
+    transition_animation_setter!(press_with);
+    transition_from_animation_setter!(press_with, press_with_from);
+    transition_animation_setter!(release_with);
+    transition_from_animation_setter!(release_with, release_with_from);
+    transition_animation_setter!(cancel_with);
+    transition_from_animation_setter!(cancel_with, cancel_with_from);
+    transition_animation_setter!(cancel_end_with);
+    transition_from_animation_setter!(cancel_end_with, cancel_end_with_from);
+    transition_animation_setter!(disable_with);
+    transition_from_animation_setter!(disable_with, disable_with_from);
+    state_animation_setter!(idle_loop);
+    state_from_animation_setter!(idle_loop, idle_loop_from);
+    state_animation_setter!(hover_loop);
+    state_from_animation_setter!(hover_loop, hover_loop_from);
+    state_animation_setter!(press_loop);
+    state_from_animation_setter!(press_loop, press_loop_from);
 
     pub fn delete_on_entered(&mut self, do_delete: bool) -> &mut Self
     {
@@ -400,52 +400,52 @@ impl AnimationSettings
     pub fn to_tween(&self, flux_interaction: &FluxInteraction) -> Option<AnimationConfig>
     {
         match flux_interaction {
-            FluxInteraction::None => self.enter,
-            FluxInteraction::PointerEnter => self.pointer_enter,
-            FluxInteraction::PointerLeave => self.pointer_leave,
-            FluxInteraction::Pressed => self.press,
-            FluxInteraction::Released => self.release,
-            FluxInteraction::PressCanceled => self.cancel,
-            FluxInteraction::Disabled => self.disable,
+            FluxInteraction::None => self.enter_idle_with,
+            FluxInteraction::PointerEnter => self.hover_with,
+            FluxInteraction::PointerLeave => self.unhover_with,
+            FluxInteraction::Pressed => self.press_with,
+            FluxInteraction::Released => self.release_with,
+            FluxInteraction::PressCanceled => self.cancel_with,
+            FluxInteraction::Disabled => self.disable_with,
         }
     }
 
     pub fn to_loop_tween(&self, flux_interaction: &FluxInteraction) -> Option<LoopedAnimationConfig>
     {
         match flux_interaction {
-            FluxInteraction::None => self.idle,
-            FluxInteraction::PointerEnter => self.hover,
-            FluxInteraction::PointerLeave => self.idle,
-            FluxInteraction::Pressed => self.pressed,
-            FluxInteraction::Released => self.idle,
-            FluxInteraction::PressCanceled => self.idle,
+            FluxInteraction::None => self.idle_loop,
+            FluxInteraction::PointerEnter => self.hover_loop,
+            FluxInteraction::PointerLeave => self.idle_loop,
+            FluxInteraction::Pressed => self.press_loop,
+            FluxInteraction::Released => self.idle_loop,
+            FluxInteraction::PressCanceled => self.idle_loop,
             FluxInteraction::Disabled => None,
         }
     }
 
     pub fn enter_duration(&self) -> StopwatchLock
     {
-        AnimationSettings::transition_lock_duration(self.enter)
+        AnimationSettings::transition_lock_duration(self.enter_idle_with)
     }
 
     pub fn lock_duration(&self, flux_interaction: &FluxInteraction) -> StopwatchLock
     {
         let transition = match flux_interaction {
             FluxInteraction::PressCanceled => {
-                let cancel_lock = AnimationSettings::transition_lock_duration(self.cancel);
-                let reset_lock = AnimationSettings::transition_lock_duration(self.cancel_reset);
+                let cancel_lock = AnimationSettings::transition_lock_duration(self.cancel_with);
+                let reset_lock = AnimationSettings::transition_lock_duration(self.cancel_end_with);
                 cancel_lock + reset_lock
             }
             _ => AnimationSettings::transition_lock_duration(self.to_tween(flux_interaction)),
         };
 
         let state_animation = match flux_interaction {
-            FluxInteraction::None => AnimationSettings::state_lock_duration(self.idle),
-            FluxInteraction::PointerEnter => AnimationSettings::state_lock_duration(self.hover),
-            FluxInteraction::PointerLeave => AnimationSettings::state_lock_duration(self.idle),
-            FluxInteraction::Pressed => AnimationSettings::state_lock_duration(self.pressed),
-            FluxInteraction::Released => AnimationSettings::state_lock_duration(self.idle),
-            FluxInteraction::PressCanceled => AnimationSettings::state_lock_duration(self.idle),
+            FluxInteraction::None => AnimationSettings::state_lock_duration(self.idle_loop),
+            FluxInteraction::PointerEnter => AnimationSettings::state_lock_duration(self.hover_loop),
+            FluxInteraction::PointerLeave => AnimationSettings::state_lock_duration(self.idle_loop),
+            FluxInteraction::Pressed => AnimationSettings::state_lock_duration(self.press_loop),
+            FluxInteraction::Released => AnimationSettings::state_lock_duration(self.idle_loop),
+            FluxInteraction::PressCanceled => AnimationSettings::state_lock_duration(self.idle_loop),
             FluxInteraction::Disabled => StopwatchLock::None,
         };
 
@@ -737,7 +737,7 @@ impl AnimationState
             AnimationState {
                 result: AnimationResult::TransitionBetween {
                     origin: *from,
-                    points: vec![(*to, *t), (target_style, tween_ratio)],
+                    points: Arc::new([(*to, *t), (target_style, tween_ratio)]),
                 },
                 iteration: 0,
             }
@@ -748,11 +748,11 @@ impl AnimationState
         target_style: InteractionStyle,
         tween_ratio: f32,
         origin: &InteractionStyle,
-        points: &Vec<(InteractionStyle, f32)>,
+        points: &[(InteractionStyle, f32)],
     ) -> AnimationState
     {
         // TODO: this is not a frequent case, but consider finding workaround for allocation
-        let mut new_points = points.clone();
+        let mut new_points = Vec::from_iter(points.iter().cloned());
         let point_count = new_points.len();
 
         // Safe unwrap: We never remove points, only add, and we start with two points
@@ -777,7 +777,7 @@ impl AnimationState
         }
 
         AnimationState {
-            result: AnimationResult::TransitionBetween { origin: *origin, points: new_points },
+            result: AnimationResult::TransitionBetween { origin: *origin, points: Arc::from(new_points) },
             iteration: 0,
         }
     }

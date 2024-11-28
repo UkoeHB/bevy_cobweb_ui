@@ -5,6 +5,10 @@
 - `LoadedUiImage::image` is now optional. If no image is specified, a default handle will be inserted.
 - Add radio button widget. Use the `RadioButtonGroup` and `RadioButton` loadables to set up radio buttons. See the `radio_buttons` example.
 - Remove `#using` section from COB files. All loadable shortnames must be uniquely registered.
+- Tighten trait bounds on `Loadable`. It now requires `Reflectable` instead of `Reflect`.
+- Fix control group attribute resolution so attributes of the same type (but associated with different pseudo states) won't be layered on top of each other.
+- Refactor the `StaticAttribute`/`ResponsiveAttribute`/`AnimatedAttribute` traits so value extraction can be customized.
+- Adjust field names of `AnimatedVals` and `AnimationSettings` to match the `Animated` instruction.
 
 ## 0.5.0-rc.3
 

@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::fmt::{Debug, Formatter, Result};
 use std::sync::Arc;
 
@@ -9,14 +10,23 @@ use crate::*;
 #[derive(Clone)]
 pub struct CustomStaticStyleAttribute
 {
+    pub type_id: TypeId,
     pub callback: Arc<dyn Fn(Entity, &mut World) + Send + Sync + 'static>,
 }
 
 impl CustomStaticStyleAttribute
 {
-    pub fn new(callback: impl Fn(Entity, &mut World) + Send + Sync + 'static) -> Self
+    pub fn new(type_id: TypeId, callback: impl Fn(Entity, &mut World) + Send + Sync + 'static) -> Self
     {
-        Self { callback: Arc::new(callback) }
+        Self { type_id, callback: Arc::new(callback) }
+    }
+}
+
+impl LogicalEq for CustomStaticStyleAttribute
+{
+    fn logical_eq(&self, other: &Self) -> bool
+    {
+        self.type_id == other.type_id
     }
 }
 
@@ -39,14 +49,18 @@ impl PartialEq for CustomStaticStyleAttribute
 #[derive(Clone)]
 pub struct InteractiveStyleAttribute
 {
+    pub type_id: TypeId,
     pub callback: Arc<dyn Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static>,
 }
 
 impl InteractiveStyleAttribute
 {
-    pub fn new(callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static) -> Self
+    pub fn new(
+        type_id: TypeId,
+        callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static,
+    ) -> Self
     {
-        Self { callback: Arc::new(callback) }
+        Self { type_id, callback: Arc::new(callback) }
     }
 
     pub fn apply(&self, flux_interaction: FluxInteraction, ui_style: &mut UiStyle)
@@ -61,7 +75,7 @@ impl LogicalEq for InteractiveStyleAttribute
 {
     fn logical_eq(&self, other: &Self) -> bool
     {
-        self == other
+        self.type_id == other.type_id
     }
 }
 
@@ -84,14 +98,18 @@ impl PartialEq for InteractiveStyleAttribute
 #[derive(Clone)]
 pub struct AnimatedStyleAttribute
 {
+    pub type_id: TypeId,
     pub callback: Arc<dyn Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static>,
 }
 
 impl AnimatedStyleAttribute
 {
-    pub fn new(callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static) -> Self
+    pub fn new(
+        type_id: TypeId,
+        callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static,
+    ) -> Self
     {
-        Self { callback: Arc::new(callback) }
+        Self { type_id, callback: Arc::new(callback) }
     }
 
     pub fn apply(&self, current_state: &AnimationState, ui_style: &mut UiStyle)
@@ -106,7 +124,7 @@ impl LogicalEq for AnimatedStyleAttribute
 {
     fn logical_eq(&self, other: &Self) -> bool
     {
-        self == other
+        self.type_id == other.type_id
     }
 }
 

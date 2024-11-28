@@ -79,6 +79,9 @@ impl<T: Clone + Default> InteractiveVals<T>
 #[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct AnimatedVals<T: Lerp + Default + Clone + PartialEq>
 {
+    #[reflect(default)]
+    pub enter_ref: Option<T>,
+    /// Required.
     pub idle: T,
     #[reflect(default)]
     pub hover: Option<T>,
@@ -87,13 +90,11 @@ pub struct AnimatedVals<T: Lerp + Default + Clone + PartialEq>
     #[reflect(default)]
     pub cancel: Option<T>,
     #[reflect(default)]
-    pub idle_alt: Option<T>,
+    pub idle_secondary: Option<T>,
     #[reflect(default)]
-    pub hover_alt: Option<T>,
+    pub hover_secondary: Option<T>,
     #[reflect(default)]
-    pub press_alt: Option<T>,
-    #[reflect(default)]
-    pub enter_from: Option<T>,
+    pub press_secondary: Option<T>,
 }
 
 impl<T: Lerp + Default + Clone + PartialEq> From<T> for AnimatedVals<T>
@@ -131,15 +132,15 @@ impl<T: Lerp + Default + Clone + PartialEq> AnimatedVals<T>
                 .unwrap_or(self.hover.clone().unwrap_or(self.idle.clone())),
             InteractionStyle::Cancel => self.cancel.clone().unwrap_or(self.idle.clone()),
             InteractionStyle::IdleAlt => self
-                .idle_alt
+                .idle_secondary
                 .clone()
                 .unwrap_or(self.hover.clone().unwrap_or(self.idle.clone())),
-            InteractionStyle::HoverAlt => self.hover_alt.clone().unwrap_or(self.idle.clone()),
+            InteractionStyle::HoverAlt => self.hover_secondary.clone().unwrap_or(self.idle.clone()),
             InteractionStyle::PressAlt => self
-                .press_alt
+                .press_secondary
                 .clone()
                 .unwrap_or(self.hover.clone().unwrap_or(self.idle.clone())),
-            InteractionStyle::Enter => self.enter_from.clone().unwrap_or(self.idle.clone()),
+            InteractionStyle::Enter => self.enter_ref.clone().unwrap_or(self.idle.clone()),
         }
     }
 

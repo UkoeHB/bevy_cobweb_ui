@@ -3,14 +3,14 @@ use std::fmt::Debug;
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::Command;
 use bevy::prelude::*;
-use bevy::reflect::{GetTypeRegistration, Typed};
+use bevy::reflect::{GetTypeRegistration, Reflectable, Typed};
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Trait representing types that can be loaded from cobweb asset files.
-pub trait Loadable: Reflect + FromReflect + PartialEq + Default {}
+pub trait Loadable: Reflectable + FromReflect + PartialEq + Default {}
 
-impl<T> Loadable for T where T: Reflect + FromReflect + PartialEq + Default {}
+impl<T> Loadable for T where T: Reflectable + FromReflect + PartialEq + Default {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ impl InstructionExt for EntityCommands<'_>
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Multi<T>(Vec<T>);
 
-impl<T: Instruction + Typed + FromReflect + GetTypeRegistration> Instruction for Multi<T>
+impl<T: Instruction> Instruction for Multi<T>
 {
     fn apply(mut self, entity: Entity, world: &mut World)
     {
@@ -86,7 +86,7 @@ impl<T: Instruction + Typed + FromReflect + GetTypeRegistration> Instruction for
     }
 }
 
-impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Multi<T>
+impl<T: Command + Loadable> Command for Multi<T>
 {
     fn apply(mut self, world: &mut World)
     {
@@ -101,7 +101,7 @@ impl<T: Command + TypePath + FromReflect + GetTypeRegistration> Command for Mult
 /// Trait that enables loadables to use the [`Splat`] wrapper loadable.
 ///
 /// For example, a UI `Border` could be splatted with `Splat<Border>(Val::Px(2.0))`.
-pub trait Splattable
+pub trait Splattable: Loadable
 {
     /// The inner value used to splat-construct `Self`.
     type Splat: Typed + FromReflect + GetTypeRegistration + Default + Debug + Clone + PartialEq;
@@ -119,7 +119,7 @@ pub struct Splat<T: Splattable>(pub T::Splat);
 
 impl<T> Instruction for Splat<T>
 where
-    T: Splattable + Instruction + Typed + FromReflect + GetTypeRegistration,
+    T: Splattable + Instruction,
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -134,7 +134,7 @@ where
 
 impl<T> Command for Splat<T>
 where
-    T: Splattable + Command + TypePath + FromReflect + GetTypeRegistration,
+    T: Splattable + Command,
 {
     fn apply(self, world: &mut World)
     {

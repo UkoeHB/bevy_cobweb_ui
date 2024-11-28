@@ -61,7 +61,7 @@ impl RadioButtonHandlers
 
 /// Instruction loadable that sets up a radio button group.
 ///
-/// Inserts a [`RadioButtonManager`] component to the entity.
+/// Inserts an internal `RadioButtonManager` component to the entity.
 ///
 /// Individual buttons should use [`RadioButton`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
@@ -95,7 +95,9 @@ impl Instruction for RadioButtonGroup
 /// Instruction loadable that sets up a radio button on an entity.
 ///
 /// Adds an `on_pressed` handler for selecting the button. Adds an `on_select` handler for updating the nearest
-/// [`RadioButtonManager`].
+/// `RadioButtonManager`.
+///
+/// See [`RadioButtonGroup`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -183,7 +185,7 @@ impl Plugin for CobwebRadioButtonPlugin
     {
         // TODO: re-enable once COB scene macros are implemented
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
-        // "radio_button.cob.json");
+        // "radio_button.cob");
         app.register_instruction_type::<RadioButtonGroup>()
             .register_instruction_type::<RadioButton>();
     }

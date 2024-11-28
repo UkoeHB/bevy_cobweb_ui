@@ -190,11 +190,11 @@ impl TrackedStyleState
     pub fn default_vals() -> AnimatedVals<Self>
     {
         AnimatedVals {
+            enter_ref: Self::Enter.into(),
             idle: Self::Idle,
             hover: Self::Hover.into(),
             press: Self::Pressed.into(),
             cancel: Self::Canceled.into(),
-            enter_from: Self::Enter.into(),
             ..default()
         }
     }

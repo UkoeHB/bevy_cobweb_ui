@@ -120,7 +120,7 @@ impl DynamicStyleController
         // for explicit control.
 
         // Pre-check if we should tick an enter frame
-        let entering = match self.animation.enter.is_some() {
+        let entering = match self.animation.enter_idle_with.is_some() {
             true => self.entering,
             false => false,
         };
@@ -134,7 +134,7 @@ impl DynamicStyleController
         // Idle -> Hover animation would be skipped if there is no Release tween set (otherwise the Release
         // tween will be used instead of the PointerEnter).
         let mut tween = match entering {
-            true => self.animation.enter,
+            true => self.animation.enter_idle_with,
             false => self.animation.to_tween(&flux_interaction),
         };
         let loop_tween = match entering {
@@ -148,12 +148,12 @@ impl DynamicStyleController
 
                 if elapsed >= cancel_tween_length {
                     target_style = InteractionStyle::Idle;
-                    tween = self.animation.cancel_reset;
+                    tween = self.animation.cancel_end_with;
                     elapsed -= cancel_tween_length;
                 }
             } else {
                 target_style = InteractionStyle::Idle;
-                tween = self.animation.cancel_reset;
+                tween = self.animation.cancel_end_with;
             }
         }
 
@@ -162,7 +162,7 @@ impl DynamicStyleController
             .tick(target_style, tween, loop_tween, elapsed);
 
         // Remove entering flag post tick, to allow Hold to occur
-        self.entering = match self.animation.enter {
+        self.entering = match self.animation.enter_idle_with {
             Some(tween) => self.entering && elapsed < (tween.duration + tween.delay()),
             None => false,
         };

@@ -11,6 +11,7 @@ impl Plugin for BuiltinWidgetsPlugin
     fn build(&self, app: &mut App)
     {
         app.add_plugins(radio_button::CobwebRadioButtonPlugin);
+        //.add_plugins(slider::CobwebSliderPlugin);
     }
 }
 
@@ -19,7 +20,6 @@ impl Plugin for BuiltinWidgetsPlugin
 /*
 todo
 
-- add built-in color schemes (css::tailwind)
 - enable customizing widget theming
     - radio_button_style_base.caf.json
         - imports built-in color schemes
