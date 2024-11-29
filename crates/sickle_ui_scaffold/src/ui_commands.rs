@@ -5,7 +5,7 @@ use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
 use bevy::ecs::world::World;
 use bevy::hierarchy::Children;
 use bevy::log::{info, warn};
-use bevy::prelude::{Color, Component, Mut, Text, TextColor, TextFont};
+use bevy::prelude::{Color, Component, EntityWorldMut, Mut, Text, TextColor, TextFont};
 use bevy::state::state::{FreelyMutableState, NextState, States};
 
 use crate::*;
@@ -316,6 +316,32 @@ impl ManagePseudoStateExt for EntityCommands<'_>
     fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self
     {
         self.queue(move |entity, world: &mut World| {
+            let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+            let emut: &mut EntityWorldMut<'_> = &mut emut;
+            emut.add_pseudo_state(state);
+        });
+        self
+    }
+
+    fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self
+    {
+        self.queue(move |entity, world: &mut World| {
+            let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+            let emut: &mut EntityWorldMut<'_> = &mut emut;
+            emut.remove_pseudo_state(state);
+        });
+
+        self
+    }
+}
+
+impl ManagePseudoStateExt for EntityWorldMut<'_>
+{
+    fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self
+    {
+        let entity = self.id();
+
+        self.world_scope(move |world| {
             let pseudo_states = world.get_mut::<PseudoStates>(entity);
 
             if let Some(mut pseudo_states) = pseudo_states {
@@ -330,12 +356,15 @@ impl ManagePseudoStateExt for EntityCommands<'_>
                 world.entity_mut(entity).insert(pseudo_states);
             }
         });
+
         self
     }
 
     fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self
     {
-        self.queue(move |entity, world: &mut World| {
+        let entity = self.id();
+
+        self.world_scope(move |world| {
             let Some(mut pseudo_states) = world.get_mut::<PseudoStates>(entity) else {
                 return;
             };

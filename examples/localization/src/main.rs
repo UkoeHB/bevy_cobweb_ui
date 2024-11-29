@@ -19,10 +19,11 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             // Language selection list.
             l.get("selection_section::selection_box")
                 // Update the selection whenever the manifest is updated with a new base language list.
-                .update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
-                    move |mut c: Commands, _manifest: Res<LocalizationManifest>| {
+                .update_on(
+                    broadcast::<LocalizationManifestUpdated>(),
+                    move |id: UpdateId, mut c: Commands, _manifest: Res<LocalizationManifest>| {
                         // Despawn existing buttons.
-                        c.entity(id).despawn_descendants();
+                        c.entity(*id).despawn_descendants();
 
                         // Spawn new buttons for everything in the manifest.
                         // let mut n = c.ui_builder(id);
@@ -45,8 +46,8 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         //     n.react().entity_event(button_id, Select);
                         // }
                         // }
-                    }
-                });
+                    },
+                );
 
             l.edit("text_section", |l| {
                 // Unlocalized text.
@@ -78,13 +79,14 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 l.get("dynamic")
                     .insert(LocalizedText::default())
                     .apply(TextLine::default())
-                    .update_on(broadcast::<RelocalizeApp>(), |id| {
-                        move |mut count: Local<usize>, mut e: TextEditor| {
+                    .update_on(
+                        broadcast::<RelocalizeApp>(),
+                        move |id: UpdateId, mut count: Local<usize>, mut e: TextEditor| {
                             // Displays count for the number of times the app was localized.
-                            write_text!(e, id, "locale-counter?count={:?}", *count);
+                            write_text!(e, *id, "locale-counter?count={:?}", *count);
                             *count += 1;
-                        }
-                    });
+                        },
+                    );
 
                 // Localized text from file (see `assets/main.cob.json`).
             });

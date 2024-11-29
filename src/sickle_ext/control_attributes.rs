@@ -93,7 +93,7 @@ pub(super) fn add_attribute(
 
     // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(origin) {
-        // Fixup source/target based on assumed user intention.
+        // Fixup source based on assumed user intention.
         if let Some(src) = &source {
             if *src == **label {
                 // Clear source if it points to self.

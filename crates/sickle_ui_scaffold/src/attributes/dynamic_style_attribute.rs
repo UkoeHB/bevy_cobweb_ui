@@ -167,9 +167,9 @@ impl DynamicStyleController
             None => false,
         };
 
-        if new_state != self.current_state {
+        self.dirty = new_state != self.current_state;
+        if self.dirty {
             self.current_state = new_state;
-            self.dirty = true;
         }
     }
 

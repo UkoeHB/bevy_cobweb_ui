@@ -45,17 +45,13 @@ pub trait UiBuilderReactExt
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
     /// Mirrors [`UiReactEntityCommandsExt::update_on`].
-    fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        triggers: impl ReactionTriggerBundle,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self;
+    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
 
     /// Mirrors [`UiReactEntityCommandsExt::update`].
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self;
+    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self;
 
     /// Mirrors [`UiReactEntityCommandsExt::modify`].
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self;
@@ -96,20 +92,16 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         self
     }
 
-    fn update_on<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        triggers: impl ReactionTriggerBundle,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self
+    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
     {
         self.entity_commands().update_on(triggers, reactor);
         self
     }
 
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self
+    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self
     {
         self.entity_commands().update_on((), reactor);
         self

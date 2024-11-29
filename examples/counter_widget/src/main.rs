@@ -32,16 +32,17 @@ impl Counter
         pre_text: impl Into<String>,
         post_text: impl Into<String>,
         from: Entity,
-        to: Entity,
-    ) -> impl IntoSystem<(), (), ()>
+    ) -> impl IntoSystem<UpdateId, (), ()>
     {
         let pre_text = pre_text.into();
         let post_text = post_text.into();
 
-        IntoSystem::into_system(move |mut editor: TextEditor, counters: Reactive<Counter>| {
-            let Some(counter) = counters.get(from) else { return };
-            write_text!(editor, to, "{}{}{}", pre_text.as_str(), counter.0, post_text.as_str());
-        })
+        IntoSystem::into_system(
+            move |to: UpdateId, mut editor: TextEditor, counters: Reactive<Counter>| {
+                let Some(counter) = counters.get(from) else { return };
+                write_text!(editor, *to, "{}{}{}", pre_text.as_str(), counter.0, post_text.as_str());
+            },
+        )
     }
 }
 
@@ -122,7 +123,7 @@ impl CounterWidgetBuilder
                         entity_event::<PressCanceled>(core_entity),
                         entity_mutation::<Counter>(core_entity),
                     ),
-                    |text_id| Counter::write(pre_text, post_text, core_entity, text_id),
+                    Counter::write(pre_text, post_text, core_entity),
                 );
             });
         });

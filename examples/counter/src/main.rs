@@ -32,13 +32,13 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 },
             );
 
-            l.get("text")
-                .update_on(entity_mutation::<Counter>(button_id), |text_id| {
-                    move |mut e: TextEditor, counters: Reactive<Counter>| {
-                        let Some(counter) = counters.get(button_id) else { return };
-                        write_text!(e, text_id, "Counter: {}", **counter);
-                    }
-                });
+            l.get("text").update_on(
+                entity_mutation::<Counter>(button_id),
+                move |text_id: UpdateId, mut e: TextEditor, counters: Reactive<Counter>| {
+                    let Some(counter) = counters.get(button_id) else { return };
+                    write_text!(e, *text_id, "Counter: {}", **counter);
+                },
+            );
         });
     });
 }

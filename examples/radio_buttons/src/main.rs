@@ -27,11 +27,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         write_text!(e, display_text, "Selected: {}", option);
                     });
 
-                    l.get("text").update(|id| {
-                        move |mut e: TextEditor| {
-                            write_text!(e, id, "{}", option);
-                        }
-                    });
+                    l.get("text")
+                        .update(move |id: UpdateId, mut e: TextEditor| {
+                            write_text!(e, *id, "{}", option);
+                        });
 
                     // Select the first option.
                     if i == 0 {

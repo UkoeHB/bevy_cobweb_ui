@@ -109,6 +109,41 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// [`SystemInput`] implementation for use in [`UiReactEntityCommandsExt::update_on`].
+#[derive(Debug)]
+pub struct UpdateId(pub Entity);
+
+impl SystemInput for UpdateId
+{
+    type Param<'i> = UpdateId;
+    type Inner<'i> = Entity;
+
+    fn wrap(this: Self::Inner<'_>) -> Self::Param<'_>
+    {
+        UpdateId(this)
+    }
+}
+
+impl Deref for UpdateId
+{
+    type Target = Entity;
+
+    fn deref(&self) -> &Self::Target
+    {
+        &self.0
+    }
+}
+
+impl DerefMut for UpdateId
+{
+    fn deref_mut(&mut self) -> &mut Self::Target
+    {
+        &mut self.0
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Helper trait for managing COB scene node entities.
 pub trait UiReactEntityCommandsExt
 {
@@ -135,10 +170,7 @@ pub trait UiReactEntityCommandsExt
     /// - Immediately after being registered.
     /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
     ///   only).
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self;
+    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self;
 
     /// Updates an entity with a reactor system.
     ///
@@ -147,11 +179,10 @@ pub trait UiReactEntityCommandsExt
     /// - Whenever the triggers fire.
     /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
     ///   only).
-    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
+    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
-        C: IntoSystem<(), (), M> + Send + Sync + 'static,
         T: ReactionTriggerBundle,
-        R: FnOnce(Entity) -> C;
+        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
 
     /// Provides access to entity commands for the entity.
     ///
@@ -201,22 +232,21 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn update<M, C: IntoSystem<(), (), M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: impl FnOnce(Entity) -> C,
-    ) -> &mut Self
+    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self
     {
         self.update_on((), reactor)
     }
 
-    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: R) -> &mut Self
+    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
-        C: IntoSystem<(), (), M> + Send + Sync + 'static,
         T: ReactionTriggerBundle,
-        R: FnOnce(Entity) -> C,
+        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
     {
         let id = self.id();
-        let callback = (reactor)(id);
+        let mut reactor = RawCallbackSystem::new(reactor);
+        let callback = move |world: &mut World| {
+            reactor.run_with_cleanup(world, id, |_| {});
+        };
         let syscommand = self.commands().spawn_system_command(callback);
         #[cfg(feature = "hot_reload")]
         {
@@ -233,11 +263,9 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
 
     fn modify(&mut self, mut callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
     {
-        self.update_on((), |id| {
-            move |mut c: Commands| {
-                let Some(ec) = c.get_entity(id) else { return };
-                (callback)(ec)
-            }
+        self.update_on((), move |id: UpdateId, mut c: Commands| {
+            let Some(ec) = c.get_entity(*id) else { return };
+            (callback)(ec)
         })
     }
 }

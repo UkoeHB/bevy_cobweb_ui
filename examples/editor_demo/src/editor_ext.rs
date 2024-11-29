@@ -95,38 +95,35 @@ fn make_draggable_field_widget<'a>(
 
         l.insert_reactive(FieldValue::new(initial_value));
 
-        l.get("name").update(|id| {
-            move |mut e: TextEditor| {
-                write_text!(e, id, "{name}:");
-            }
-        });
+        l.get("name")
+            .update(move |id: UpdateId, mut e: TextEditor| {
+                write_text!(e, *id, "{name}:");
+            });
 
         let bounds_start = *bounds.start();
-        l.get("lower_bound").update(|id| {
-            move |mut e: TextEditor| {
-                write_text!(e, id, "{}", bounds_start);
-            }
-        });
+        l.get("lower_bound")
+            .update(move |id: UpdateId, mut e: TextEditor| {
+                write_text!(e, *id, "{}", bounds_start);
+            });
 
         // Set up the drag zone to modify the DragValue.
         let mut zone = l.get("value");
         let mut ec = zone.entity_commands();
         setup_drag(&mut ec, widget_id);
 
-        l.get("value::text")
-            .update_on(entity_mutation::<FieldValue<f32>>(widget_id), |id| {
-                move |mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
-                    let Some(val) = vals.get(widget_id) else { return };
-                    write_text!(e, id, "{:.1}", val.get());
-                }
-            });
+        l.get("value::text").update_on(
+            entity_mutation::<FieldValue<f32>>(widget_id),
+            move |id: UpdateId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
+                let Some(val) = vals.get(widget_id) else { return };
+                write_text!(e, *id, "{:.1}", val.get());
+            },
+        );
 
         let bounds_end = *bounds.end();
-        l.get("upper_bound").update(|id| {
-            move |mut e: TextEditor| {
-                write_text!(e, id, "{}", bounds_end);
-            }
-        });
+        l.get("upper_bound")
+            .update(move |id: UpdateId, mut e: TextEditor| {
+                write_text!(e, *id, "{}", bounds_end);
+            });
 
         // Convert drag values to field value changes.
         l.on_event::<DragValue>().r(
@@ -200,8 +197,8 @@ impl CobEditorWidget for DemoOrbiterWidget
                         entity_mutation::<FieldValue<f32>>(radius_id),
                         entity_mutation::<FieldValue<f32>>(velocity_id),
                     ),
-                    |_| {
-                        move |//
+                    move |//
+                    _: UpdateId,
                     mutation: MutationEvent<FieldValue<f32>>,
                     mut c: Commands,
                     vals: Reactive<FieldValue<f32>>//
@@ -226,8 +223,7 @@ impl CobEditorWidget for DemoOrbiterWidget
                         editor_ref: editor_ref.clone(),
                         value: Box::new(new_orbiter),
                     });
-                }
-                    },
+                },
                 );
             });
 

@@ -1,9 +1,9 @@
-use std::sync::Arc;
 use std::time::Duration;
 
 use bevy::prelude::*;
 use cob_sickle_math::{Ease, Lerp, ValueEasing};
 use serde::{Deserialize, Serialize};
+use smallvec::SmallVec;
 
 use crate::*;
 
@@ -62,6 +62,8 @@ impl InteractionStyle
     }
 }
 
+pub const TRANSITION_BETWEEN_POINTS: usize = 5;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum AnimationResult
 {
@@ -76,7 +78,7 @@ pub enum AnimationResult
     TransitionBetween
     {
         origin: InteractionStyle,
-        points: Arc<[(InteractionStyle, f32)]>,
+        points: SmallVec<[(InteractionStyle, f32); TRANSITION_BETWEEN_POINTS]>,
     },
 }
 
@@ -529,26 +531,22 @@ impl AnimationState
 
         // Includes elapsed == 0.
         if elapsed <= delay {
-            match &self.result {
-                AnimationResult::Interpolate { from, to, t, .. } => {
-                    if *from == target_style {
-                        return AnimationState {
-                            result: AnimationResult::Interpolate {
-                                from: *to,
-                                to: *from,
-                                t: 1. - *t,
-                                offset: 1. - *t,
-                            },
-                            iteration: 0,
-                        };
-                    }
-                    return self.clone();
-                }
-                _ => return self.clone(),
+            let AnimationResult::Interpolate { from, to, t, .. } = &self.result else {
+                return self.clone();
+            };
+
+            // Special case of canceling a delay.
+            if *from == target_style {
+                return AnimationState {
+                    result: AnimationResult::Interpolate { from: *to, to: *from, t: 1. - *t, offset: 1. - *t },
+                    iteration: 0,
+                };
             }
+
+            return self.clone();
         }
 
-        if elapsed > (tween_time + delay) {
+        if elapsed >= (tween_time + delay) {
             // Do loop or hold
             let (Some(alt_tween), Some(alt_target)) = (loop_tween, target_style.alt()) else {
                 return AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 };
@@ -679,7 +677,7 @@ impl AnimationState
                 offset,
             ),
             AnimationResult::TransitionBetween { origin, points } => {
-                AnimationState::process_transition_between(target_style, tween_ratio, origin, points)
+                AnimationState::process_transition_between(target_style, tween_ratio, origin, points.clone())
             }
         }
     }
@@ -737,7 +735,7 @@ impl AnimationState
             AnimationState {
                 result: AnimationResult::TransitionBetween {
                     origin: *from,
-                    points: Arc::new([(*to, *t), (target_style, tween_ratio)]),
+                    points: SmallVec::from_slice(&[(*to, *t), (target_style, tween_ratio)]),
                 },
                 iteration: 0,
             }
@@ -748,20 +746,18 @@ impl AnimationState
         target_style: InteractionStyle,
         tween_ratio: f32,
         origin: &InteractionStyle,
-        points: &[(InteractionStyle, f32)],
+        mut points: SmallVec<[(InteractionStyle, f32); TRANSITION_BETWEEN_POINTS]>,
     ) -> AnimationState
     {
-        // TODO: this is not a frequent case, but consider finding workaround for allocation
-        let mut new_points = Vec::from_iter(points.iter().cloned());
-        let point_count = new_points.len();
+        let point_count = points.len();
 
         // Safe unwrap: We never remove points, only add, and we start with two points
-        let last_point = new_points.last_mut().unwrap();
+        let last_point = points.last_mut().unwrap();
         let last_style = last_point.0;
         if last_style == target_style {
             last_point.1 = tween_ratio;
-        } else if point_count < 5 {
-            new_points.push((target_style, tween_ratio));
+        } else if point_count < TRANSITION_BETWEEN_POINTS {
+            points.push((target_style, tween_ratio));
         } else {
             // At this point, this is from a weird jiggle, escape leak!
             // Reset to the last two step's interpolation
@@ -777,7 +773,7 @@ impl AnimationState
         }
 
         AnimationState {
-            result: AnimationResult::TransitionBetween { origin: *origin, points: Arc::from(new_points) },
+            result: AnimationResult::TransitionBetween { origin: *origin, points },
             iteration: 0,
         }
     }

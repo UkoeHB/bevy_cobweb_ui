@@ -112,12 +112,13 @@ fn build_ui(mut c: Commands)
                     ui.apply(TextLine { text: item.into(), size: 30.0, ..default() });
 
                     if is_display {
-                        ui.update_on(entity_mutation::<Calculator>(calc_entity), |id| {
-                            move |calc: Reactive<Calculator>, mut e: TextEditor| {
+                        ui.update_on(
+                            entity_mutation::<Calculator>(calc_entity),
+                            move |id: UpdateId, calc: Reactive<Calculator>, mut e: TextEditor| {
                                 let text = calc.get(calc_entity).unwrap().buffer_display();
-                                write_text!(e, id, "{}", text);
-                            }
-                        });
+                                write_text!(e, *id, "{}", text);
+                            },
+                        );
                     }
                 });
             });

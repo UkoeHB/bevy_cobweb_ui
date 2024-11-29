@@ -85,11 +85,10 @@ fn build_loadable<'a>(
     // Build view
     l.load_scene_and_edit(("editor.frame", "loadable"), |l| {
         // Set the loadable's name.
-        l.get("name").update(|id| {
-            move |mut e: TextEditor| {
-                write_text!(e, id, "{}", shortname);
-            }
-        });
+        l.get("name")
+            .update(move |id: UpdateId, mut e: TextEditor| {
+                write_text!(e, *id, "{}", shortname);
+            });
 
         // Set the content.
         // TODO: reflection can fail because of internal constants; we may want those to be editable/inspectable,
@@ -130,11 +129,10 @@ fn build_scene_layer<'a>(
     l.load_scene_and_edit(("editor.frame", "scene_node"), |l| {
         // Set node name.
         let ref_path = scene_ref.path.clone();
-        l.get("name").update(|id| {
-            move |mut e: TextEditor| {
-                write_text!(e, id, "\"{}\"", ref_path.iter().rev().next().unwrap());
-            }
-        });
+        l.get("name")
+            .update(move |id: UpdateId, mut e: TextEditor| {
+                write_text!(e, *id, "\"{}\"", ref_path.iter().rev().next().unwrap());
+            });
 
         // Add entries.
         l.edit("content", |l| {
@@ -172,8 +170,8 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
     let mut ec = c.entity(base_entity);
     ec.update_on(
         (broadcast::<EditorFileExternalChange>(), broadcast::<EditorFileSaved>()),
-        |_| {
-            move |//
+        move |//
+            _: UpdateId,
             mut tracked_hash: Local<Option<CobFileHash>>,
             external_change: BroadcastEvent<EditorFileExternalChange>,
             file_saved: BroadcastEvent<EditorFileSaved>,
@@ -269,7 +267,6 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                     }
                 });
             });
-        }
         },
     );
 }
@@ -358,12 +355,12 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
                             // Set the option's text.
                             let entry_clone = entry.clone();
-                            l.get("text").update(|id| {
-                                move |mut e: TextEditor| {
+                            l.get("text").update(
+                                move |id: UpdateId, mut e: TextEditor| {
                                     let text = entry_clone.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
-                                    write_text!(e, id, "{}", text);
+                                    write_text!(e, *id, "{}", text);
                                 }
-                            });
+                            );
 
                             // Select current selection for proper styling.
                             if entry == **selection {
@@ -392,12 +389,12 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
                             // Set the selection text.
                             let text: EditorFileSelection = selection.deref().clone();
-                            l.get("text").update(|id| {
-                                move |mut e: TextEditor| {
+                            l.get("text").update(
+                                move |id: UpdateId, mut e: TextEditor| {
                                     let text = text.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
-                                    write_text!(e, id, "{}", text);
+                                    write_text!(e, *id, "{}", text);
                                 }
-                            });
+                            );
 
                             // On pressed, open the dropdown.
                             l.on_pressed(move |mut c: Commands| {

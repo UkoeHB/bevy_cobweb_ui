@@ -134,7 +134,6 @@ fn update_dynamic_style_on_stopwatch_change(
             &mut DynamicStyle,
             &FluxInteraction,
             Option<&DynamicStyleStopwatch>,
-            Option<&mut DynamicStyleEnterState>,
         ),
         Or<(
             Changed<DynamicStyle>,
@@ -145,19 +144,18 @@ fn update_dynamic_style_on_stopwatch_change(
     par_commands: ParallelCommands,
 )
 {
+    // TODO: is this par_iter actually faster than single-threaded? the computational burden for most tasks is very
+    // small
     q_styles
         .par_iter_mut()
-        .for_each(|(entity, mut style, interaction, stopwatch, enter_state)| {
+        .for_each(|(entity, mut style, interaction, stopwatch)| {
             let style_changed = style.is_changed();
             let style = style.bypass_change_detection();
             let mut enter_completed = true;
             let mut filter_entered = false;
 
             for context_attribute in &mut style.attributes {
-                let ContextStyleAttribute {
-                    attribute: DynamicStyleAttribute::Animated { attribute, ref mut controller },
-                    ..
-                } = context_attribute
+                let DynamicStyleAttribute::Animated { attribute, controller } = &mut context_attribute.attribute
                 else {
                     continue;
                 };
@@ -188,21 +186,9 @@ fn update_dynamic_style_on_stopwatch_change(
                 style.enter_completed = true;
             }
 
-            if let Some(mut enter_state) = enter_state {
-                if enter_state.completed != style.enter_completed {
-                    enter_state.completed = style.enter_completed;
-                }
-            }
-
             if filter_entered {
                 style.attributes.retain(|csa| {
-                    let ContextStyleAttribute {
-                        attribute: DynamicStyleAttribute::Animated { controller, .. },
-                        ..
-                    } = csa
-                    else {
-                        return true;
-                    };
+                    let DynamicStyleAttribute::Animated { controller, .. } = &csa.attribute else { return true };
 
                     !(controller.animation.delete_on_entered && !controller.entering())
                 });
@@ -297,6 +283,11 @@ impl DynamicStyle
                 .collect(),
             enter_completed: false,
         }
+    }
+
+    pub fn enter_completed(&self) -> bool
+    {
+        self.enter_completed
     }
 
     pub fn copy_from(attributes: Vec<ContextStyleAttribute>) -> Self
