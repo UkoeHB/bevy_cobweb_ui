@@ -10,6 +10,7 @@
 - Refactor the `StaticAttribute`/`ResponsiveAttribute`/`AnimatedAttribute` traits so value extraction can be customized.
 - Adjust field names of `AnimatedVals` and `AnimationSettings` to match the `Animated` instruction.
 - Add `UpdateId` system input type (like `In` or `Trigger`). This is used in `.update()` and `.update_on()` now instead of layered closures.
+- Add 'anonymous control groups' which enables using PseudoStates without ControlRoot/ControlLabel if you only need to target one entity.
 - Add slider widget. Use the `Slider` and `SliderHandle` loadables to set up a slider. See the `slider` example.
 
 ## 0.5.0-rc.3

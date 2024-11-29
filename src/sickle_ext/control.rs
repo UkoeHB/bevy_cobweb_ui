@@ -64,27 +64,49 @@ impl Instruction for ControlRoot
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Add control map if missing.
-        if !emut.contains::<ControlMap>() {
+        if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
+            // Repair if map is currently anonymous.
+            if control_map.is_anonymous() {
+                // Make map non-anonymous.
+                control_map.set_anonymous(false);
+
+                // Repair
+                control_map.remove_all_labels().count();
+                let attrs = control_map.remove_all_attrs();
+
+                // Reset invalid targets now that we have a proper label.
+                let new_target = Some(self.0.clone());
+                for (origin, source, _target, state, attribute) in attrs {
+                    control_map.set_attribute(origin, state, source, new_target.clone(), attribute);
+                }
+            }
+
+            // We are not actually dying, just refreshing the control root, so this can be removed.
+            emut.remove::<ControlMapDying>();
+        } else {
             emut.insert(ControlMap::default());
 
             // Cold path when applying a root to an existing scene.
             #[cfg(feature = "hot_reload")]
             if emut.contains::<Children>() {
-                // Look for the nearest ancestor with ControlMap and
+                // Look for the nearest ancestor with non-anonymous ControlMap and
                 // force it to re-apply its attributes and labels, in case this new root needs to steal some.
                 // - Note: we don't check for ControlLabel here since any pre-existing ControlLabel was likely
-                //   removed
-                // when it was switched to ControlRoot. When a ControlLabel is removed, the entity will be removed
-                // from the associated ControlMap, which should ensure no stale attributes related
-                // to this entity will linger in other maps.
+                //   removed when the entity was switched to ControlRoot. When a ControlLabel is removed, the
+                //   entity will be removed from the associated ControlMap, which should ensure no stale attributes
+                //   related to this entity will linger in other maps.
                 let mut current = entity;
                 while let Some(parent) = world.get::<Parent>(current) {
                     current = parent.get();
                     let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
+                    if control_map.is_anonymous() {
+                        continue;
+                    }
                     let labels: Vec<_> = control_map.remove_all_labels().collect();
                     let attrs = control_map.remove_all_attrs();
 
                     // Labels
+                    // - Re-applying these forces the entities to re-register in the correct control maps.
                     for (label, label_entity) in labels {
                         ControlLabel(label).apply(label_entity, world);
                     }
@@ -109,9 +131,6 @@ impl Instruction for ControlRoot
                     scene_buffer.request_reload(controlled_entity);
                 }
             }
-        } else {
-            // We are not actually dying, just refreshing the control root, so this can be removed.
-            emut.remove::<ControlMapDying>();
         }
 
         // Update control label.
@@ -167,31 +186,8 @@ impl Instruction for ControlLabel
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
-        // Add entry to nearest control map.
-        if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
-            control_map.insert(self.0.as_str(), entity);
-        } else {
-            let mut current = entity;
-            let mut found = false;
-            while let Some(parent) = world.get::<Parent>(current) {
-                current = parent.get();
-                let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-                control_map.insert(self.0.as_str(), entity);
-                found = true;
-                break;
-            }
-
-            if !found {
-                tracing::error!(
-                    "error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
-                    (see ControlRoot)",
-                    self.0
-                );
-            }
-        }
-
         // Insert or update control label.
-        let mut emut = world.entity_mut(entity);
+        let label_str = self.0.clone();
         if let Some(mut existing_label) = emut.get_mut::<ControlLabel>() {
             if *existing_label != self {
                 tracing::warn!("updating control label on {entity:?} from {existing_label:?} to {self:?}");
@@ -200,6 +196,42 @@ impl Instruction for ControlLabel
         } else {
             emut.insert(self);
         }
+
+        // Add entry to nearest control map.
+        if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
+            if control_map.is_anonymous() {
+                // If the map is anonymous then this entity is *not* a control root and we need to drain the
+                // map's attributes and re-apply them now that we have a label on this entity.
+                let attrs = control_map.remove_all_attrs();
+                emut.remove::<ControlMap>();
+
+                // Attrs
+                // Note: target not needed, it is always set to self.
+                for (origin, source, _target, state, attribute) in attrs {
+                    world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
+                }
+            } else {
+                control_map.insert(label_str, entity);
+                return;
+            }
+        }
+
+        let mut current = entity;
+        while let Some(parent) = world.get::<Parent>(current) {
+            current = parent.get();
+            let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
+            if control_map.is_anonymous() {
+                continue;
+            }
+            control_map.insert(label_str, entity);
+            return;
+        }
+
+        tracing::error!(
+            "error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
+            (see ControlRoot)",
+            label_str
+        );
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -213,7 +245,11 @@ impl Instruction for ControlLabel
         // Remove entry from nearest control map.
         // - All still-existing attributes will be re-inserted when the entity reloads.
         if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
-            control_map.remove(entity);
+            if control_map.is_anonymous() {
+                emut.remove::<ControlMap>();
+            } else {
+                control_map.remove(entity);
+            }
         } else {
             let mut current = entity;
             while let Some(parent) = world.get::<Parent>(current) {

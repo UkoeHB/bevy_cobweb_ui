@@ -11,33 +11,7 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_attribute_to_dynamic_style(
-    entity: Entity,
-    attribute: DynamicStyleAttribute,
-    c: &mut Commands,
-    dynamic_styles: &mut Query<Option<&mut DynamicStyle>>,
-)
-{
-    // Insert directly to this entity.
-    let Some(maybe_style) = dynamic_styles.get_mut(entity).ok() else { return };
-
-    // Contextualize the attribute.
-    let contextual_attribute = ContextStyleAttribute::new(entity, attribute);
-
-    // Add this attribute directly.
-    // - NOTE: If the entity has a themed component or is given a ControlLabel at a later time, then these changes
-    //   MAY be overwritten.
-    if let Some(mut existing) = maybe_style {
-        existing.merge_in_place_from_iter([contextual_attribute].into_iter());
-    } else {
-        c.entity(entity)
-            .try_insert(DynamicStyle::copy_from(vec![contextual_attribute]));
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Returns `true` if the attribute is added directly, without a control map.
+/// Returns `true` if the attribute was applied to a control map on the entity.
 ///
 /// We do *not* support setting the 'target' of an attribute because it is not easy to correctly revert
 /// attribute instructions when they are applied to other entities. It's also not clear what use the target has.
@@ -54,7 +28,6 @@ pub(super) fn add_attribute(
     labels: Query<&ControlLabel>,
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
-    mut dynamic_styles: Query<Option<&mut DynamicStyle>>,
 ) -> bool
 {
     if !entities.contains(origin) {
@@ -62,40 +35,58 @@ pub(super) fn add_attribute(
     }
 
     // Get the current entity's control label.
-    let Ok(label) = labels.get(origin) else {
-        if let Some(state) = &state {
-            if !state.is_empty() {
-                tracing::error!(
-                    "failed adding attribute {type_name} to {origin:?}, pseudo states are not supported for \
-                    non-controlled dynamic sytle attributes (state: {:?})",
-                    state
-                );
-                return false;
-            }
-        }
-
-        if let Some(source) = &source {
-            tracing::warn!(
-                "ignoring control source {source:?} for attribute {type_name} on {origin:?} that doesn't \
-                have a ControlLabel"
-            );
-        }
-
-        // Fall back to inserting as a plain dynamic style attribute.
-        tracing::debug!("{origin:?} is not controlled by a widget, inserting attribute {type_name} to dynamic style \
-            instead");
-        add_attribute_to_dynamic_style(origin, attribute, &mut c, &mut dynamic_styles);
-        return true;
-    };
-
-    // Always target self.
-    let target = Some((**label).clone());
+    let maybe_label = labels.get(origin).ok().map(|l| (**l).clone());
 
     // Check if self has ControlMap.
-    if let Ok(mut control_map) = control_maps.get_mut(origin) {
+    if let Ok(control_map) = control_maps.get_mut(origin) {
+        let control_map_mut = control_map.into_inner();
+        if maybe_label.is_none() {
+            if !control_map_mut.is_anonymous() {
+                // Replace with anonymous map.
+                let mut old_control_map = std::mem::replace(control_map_mut, ControlMap::new_anonymous());
+
+                // Repair - re-apply attributes from the map.
+                c.queue(move |world: &mut World| {
+                    // Labels
+                    // - Re-applying these forces the entities to re-register in the correct control maps.
+                    for (label, label_entity) in old_control_map.remove_all_labels() {
+                        // The current entity doesn't have a label - all attributes are being reapplied
+                        // anonymously.
+                        if label_entity == origin {
+                            continue;
+                        }
+                        ControlLabel(label).apply(label_entity, world);
+                    }
+
+                    // Attrs
+                    // Note: target not needed, it is always set to self.
+                    let attrs = old_control_map.remove_all_attrs();
+                    for (origin, source, _target, state, attribute) in attrs {
+                        world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
+                    }
+                });
+
+                // We are not actually dying, we are converting from a normal map to an anonymous map.
+                c.entity(origin).remove::<ControlMapDying>();
+            }
+        } else if control_map_mut.is_anonymous() {
+            tracing::error!("failed inserting attribute {type_name} to {origin:?}; the entity unexpectedly has \
+                an anonymous control map with a control label");
+            return false;
+        }
+
+        let target = match maybe_label {
+            Some(target) => target,
+            None => {
+                let label = SmolStr::new_static("__anon");
+                control_map_mut.insert(label.clone(), origin);
+                label
+            }
+        };
+
         // Fixup source based on assumed user intention.
         if let Some(src) = &source {
-            if *src == **label {
+            if *src == target {
                 // Clear source if it points to self.
                 // TODO: why is this necessary? Something weird in sickle_ui means if the root node sources itself
                 // then child nodes' attributes won't properly respond to interactions on the root.
@@ -103,19 +94,32 @@ pub(super) fn add_attribute(
             }
         }
 
-        control_map.set_attribute(origin, state, source, target, attribute);
-        return false;
+        control_map_mut.set_attribute(origin, state, source, Some(target), attribute);
+        return true;
     }
 
-    // Find ancestor with ControlMap.
+    // Add anonymous ControlMap if there's no label.
+    let Some(target) = maybe_label else {
+        let mut control_map = ControlMap::new_anonymous();
+        let label = SmolStr::new_static("__anon");
+        control_map.insert(label.clone(), origin);
+        control_map.set_attribute(origin, state, None, Some(label), attribute);
+        c.entity(origin).try_insert(control_map);
+        return true;
+    };
+
+    // Find ancestor with non-anonymous ControlMap.
     for ancestor in parents.iter_ancestors(origin) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
-        control_map.set_attribute(origin, state, source, target, attribute);
+        if control_map.is_anonymous() {
+            continue;
+        }
+        control_map.set_attribute(origin, state, source, Some(target), attribute);
         return false;
     }
 
     tracing::error!(
-        "failed adding controlled dynamic attribute {type_name} to {origin:?} with {label:?}, \
+        "failed adding controlled dynamic attribute {type_name} to {origin:?} with label {target:?}, \
         no ancestor with ControlRoot"
     );
     false
@@ -125,6 +129,7 @@ pub(super) fn add_attribute(
 
 fn revert_attributes(
     In(entity): In<Entity>,
+    mut c: Commands,
     parents: Query<&Parent>,
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
@@ -136,14 +141,21 @@ fn revert_attributes(
 
     // Check if self has ControlMap.
     if let Ok(mut control_map) = control_maps.get_mut(entity) {
-        // Target falls back to None, which is implicitly the root entity.
-        control_map.remove(entity);
+        if control_map.is_anonymous() {
+            c.entity(entity).remove::<ControlMap>();
+        } else {
+            control_map.remove(entity);
+        }
+
         return;
     }
 
-    // Find ancestor with ControlMap.
+    // Find ancestor with non-anonymous ControlMap.
     for ancestor in parents.iter_ancestors(entity) {
         let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
+        if control_map.is_anonymous() {
+            continue;
+        }
         control_map.remove(entity);
         return;
     }

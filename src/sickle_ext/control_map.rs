@@ -137,20 +137,46 @@ impl EditablePseudoTheme
 #[derive(Component, Debug, Default)]
 pub(crate) struct ControlMap
 {
+    /// Anonymous maps only manage attributes for the entity with the map component.
+    ///
+    /// We allow this so entities can use pseudo states without need to set up a control group.
+    anonymous: bool,
     entities: SmallVec<[(SmolStr, Entity); 5]>,
     pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
 }
 
 impl ControlMap
 {
-    pub(crate) fn insert(&mut self, label: impl AsRef<str>, entity: Entity)
+    pub(crate) fn new_anonymous() -> Self
     {
-        let label = SmolStr::new(label.as_ref());
+        Self { anonymous: true, ..default() }
+    }
+
+    pub(crate) fn set_anonymous(&mut self, anonymous: bool)
+    {
+        self.anonymous = anonymous;
+    }
+
+    pub(crate) fn is_anonymous(&self) -> bool
+    {
+        self.anonymous
+    }
+
+    pub(crate) fn insert(&mut self, label: SmolStr, entity: Entity)
+    {
         let Some(pos) = self.entities.iter().position(|(name, _)| *name == label) else {
             self.entities.push((label, entity));
             return;
         };
-        self.entities[pos] = (label, entity);
+
+        let (prev_label, prev_entity) = &self.entities[pos];
+        if *prev_entity == entity {
+            return;
+        }
+
+        tracing::warn!("overwriting entity for control group label \"{}\"; old={prev_entity:?}, new={entity:?}",
+            prev_label.as_str());
+        self.entities[pos].1 = entity;
     }
 
     pub(crate) fn remove(&mut self, entity: Entity)

@@ -19,7 +19,6 @@ PrimaryCursor(System(Default))
     ResponsiveCursor{hover:System(Default)}
 
     "dropdown"
-        ControlRoot("dropdown")
         FlexNode{
             width:100% border:{bottom:1px}
             flex_direction:Column justify_main:FlexStart justify_cross:Center
@@ -36,7 +35,6 @@ PrimaryCursor(System(Default))
         FlexNode{width:100% flex_direction:Row justify_main:FlexEnd justify_cross:Center}
 
         "unsaved"
-            ControlRoot("unsaved")
             TextLine{size:14 text:"unsaved changes"}
             Multi<Static<TextLineColor>>[{value:#00000000} {state:[Enabled] value:#AABBBBBB}]
 

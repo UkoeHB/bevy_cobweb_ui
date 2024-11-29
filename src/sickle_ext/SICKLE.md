@@ -60,13 +60,6 @@ To animate `BackgroundColor` on an entity, your COB file could look like this:
 ```
 
 
-## Basic usage
-
-When attributes are added to plain entities, they are collected in an internal [`DynamicStyle`](bevy_cobweb_ui::sickle::DynamicStyle) component. Whenever `DynamicStyle` changes, all static attributes are immediately removed and applied to the entity. Responsive and animated attributes are retained in the component so they can be used to apply new values to the entity in response to flux interactions.
-
-`DynamicStyle` is not aware of `PseudoStates`, so if any attributes on a plain entity have states, a warning will be logged. To use `PseudoStates`, you need a *control group*.
-
-
 ## Control groups
 
 A control group is a group of entities in a scene hierarchy that are linked together and allow interactions on certain entities in the group to activate other entities' attributes.
@@ -75,13 +68,23 @@ A control group is a group of entities in a scene hierarchy that are linked toge
 
 You can set up a control root by adding a [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) instruction to the root node of the group, and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) to the other nodes in the group.
 
+### Anonymous control groups
+
+If an entity has `Static/Responsive/Animated` but no `ControlRoot`/`ControlLabel`, then the entity will have an *anonymous* control group that only applies to itself.
+
+### DynamicStyle
+
+Control groups use an internal [`DynamicStyle`](bevy_cobweb_ui::sickle::DynamicStyle) component to handle active attributes. Whenever `DynamicStyle` changes, all static attributes are immediately removed and applied to the entity. Responsive and animated attributes are retained in the component so they can be used to apply new values to the entity in response to flux interactions.
+
 ### Pseudo-states
 
-A `PseudoState` is an entity state such as `Enabled`, `Disabled`, `Checked`, `Selected`, etc. An entity's current pseudo state set is stored in a `PseudoStates` component on the entity.
+A `PseudoState` is an entity state such as `Enabled`, `Disabled`, `Checked`, `Selected`, etc. An entity's current set of pseudo states is stored in a `PseudoStates` component on the entity.
 
 Whenever `PseudoStates` changes on the root node of a control group, all the attributes that match the new `PseudoStates` will be collected into `DynamicStyle` components and inserted to members of the group. All attributes with the same interaction 'source' will be collected into a single `DynamicStyle` component and inserted to the group member with label that matches the 'source' string. Static attributes always end up in a `DynamicStyle` component on the targeted entity.
 
 It is possible for multiple instances of an attribute to match against the root entity's pseudo states (attribute states only need to be a subset of the root entity's pseudo states). In that case, the one with the most states will be selected.
+
+In a single-entity anonymous control group, all attributes are inserted to a `DynamicStyle` component on the entity.
 
 ### Action at a distance
 

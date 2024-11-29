@@ -298,6 +298,38 @@ impl PseudoStateParam<'_, '_>
         req.into_iter().any(|s| !states.has(s))
     }
 
+    /// Adds the pseudo state to the entity if it doesn't have it.
+    pub fn try_add(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
+    {
+        if self
+            .states
+            .get(entity)
+            .map(|s| s.has(&state))
+            .unwrap_or(false)
+        {
+            return false;
+        }
+
+        c.entity(entity).add_pseudo_state(state);
+        true
+    }
+
+    /// Removes the pseudo state from the entity if it has it.
+    pub fn try_remove(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
+    {
+        if !self
+            .states
+            .get(entity)
+            .map(|s| s.has(&state))
+            .unwrap_or(false)
+        {
+            return false;
+        }
+
+        c.entity(entity).remove_pseudo_state(state);
+        true
+    }
+
     /// Queues the [`Enable`] entity event if the entity does not have [`PseudoState::Enabled`].
     pub fn try_enable(&self, entity: Entity, c: &mut Commands) -> bool
     {
