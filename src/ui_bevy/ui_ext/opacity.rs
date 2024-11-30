@@ -81,7 +81,7 @@ fn recursively_propagate_opacity_value(
         (
             Option<&PropagateOpacity>,
             Option<&mut RestorableOpacity>,
-            Option<&mut UiImage>,
+            Option<&mut ImageNode>,
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
@@ -220,7 +220,7 @@ fn propagate_opacity_values(
             // Include this in case we need to merge modifiers.
             Option<&PropagateOpacity>,
             Option<&mut RestorableOpacity>,
-            Option<&mut UiImage>,
+            Option<&mut ImageNode>,
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
@@ -263,7 +263,7 @@ fn restore_opacity(
         (
             Entity,
             &RestorableOpacity,
-            Option<&mut UiImage>,
+            Option<&mut ImageNode>,
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,

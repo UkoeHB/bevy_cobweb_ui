@@ -1,5 +1,6 @@
-use bevy_color::{Color, Mix};
-use bevy_ui::{BorderRadius, Outline, UiRect, Val};
+use bevy::color::{Color, Mix};
+use bevy::prelude::Vec2;
+use bevy::ui::{BorderRadius, Outline, UiRect, Val};
 
 pub trait Lerp
 {
@@ -152,5 +153,13 @@ impl Lerp for UiRect
             self.top.lerp(to.top, t),
             self.bottom.lerp(to.bottom, t),
         )
+    }
+}
+
+impl Lerp for Vec2
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self { x: self.x.lerp(to.x, t), y: self.y.lerp(to.y, t) }
     }
 }

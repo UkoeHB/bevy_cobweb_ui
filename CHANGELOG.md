@@ -1,8 +1,8 @@
 # Changelog
 
-## 0.5.1
+## 0.5.0
 
-- `LoadedUiImage::image` is now optional. If no image is specified, a default handle will be inserted.
+- `LoadedImageNode::image` is now optional. If no image is specified, a default handle will be inserted.
 - Add radio button widget. Use the `RadioButtonGroup` and `RadioButton` loadables to set up radio buttons. See the `radio_buttons` example.
 - Remove `#using` section from COB files. All loadable shortnames must be uniquely registered.
 - Tighten trait bounds on `Loadable`. It now requires `Reflectable` instead of `Reflect`.
@@ -11,7 +11,10 @@
 - Adjust field names of `AnimatedVals` and `AnimationSettings` to match the `Animated` instruction.
 - Add `UpdateId` system input type (like `In` or `Trigger`). This is used in `.update()` and `.update_on()` now instead of layered closures.
 - Add 'anonymous control groups' which enables using PseudoStates without ControlRoot/ControlLabel if you only need to target one entity.
+- Add `NodeShadow` instruction loadable that inserts bevy's `BoxShadow` component. The shadow can be animated.
+- Rename `LoadedUiImage`/`UiImageColor`/`UiImageIndex` to `LoadedImageNode`/`ImageNodeColor`/`ImageNodeIndex`.
 - Add slider widget. Use the `Slider` and `SliderHandle` loadables to set up a slider. See the `slider` example.
+- Update to `bevy` v0.15.0.
 
 ## 0.5.0-rc.3
 

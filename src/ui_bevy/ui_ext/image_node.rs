@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::ui::widget::UiImageSize;
+use bevy::ui::widget::ImageNodeSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
@@ -7,9 +7,9 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Inserts a UiImage to an entity.
+/// Inserts a ImageNode to an entity.
 fn insert_ui_image(
-    In((entity, img)): In<(Entity, LoadedUiImage)>,
+    In((entity, img)): In<(Entity, LoadedImageNode)>,
     mut commands: Commands,
     img_map: Res<ImageMap>,
     layout_map: Res<TextureAtlasLayoutMap>,
@@ -31,7 +31,7 @@ fn insert_ui_image(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<&mut UiImage>)
+fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<&mut ImageNode>)
 {
     let Ok(mut img) = q.get_mut(entity) else { return };
     img.color = color;
@@ -39,7 +39,7 @@ fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut UiImage>)
+fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut ImageNode>)
 {
     let Ok(mut img) = q.get_mut(entity) else { return };
     img.texture_atlas.as_mut().map(|a| a.index = index);
@@ -47,20 +47,20 @@ fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`UiImage`] for serialization.
+/// Mirrors [`ImageNode`] for serialization.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct LoadedUiImage
+pub struct LoadedImageNode
 {
-    /// The location of the UiImage.
+    /// The location of the ImageNode.
     ///
-    /// If no image is specified, then a default handle will be inserted to the `UiImage`. This is useful if
+    /// If no image is specified, then a default handle will be inserted to the `ImageNode`. This is useful if
     /// you want to manually set the image in rust code.
     #[reflect(default)]
     pub image: Option<String>,
     /// A reference to the [`TextureAtlas`] to process this image with.
     ///
-    /// The image can be animated using the referenced texture atlas with [`Animated<UiImageIndex>`].
+    /// The image can be animated using the referenced texture atlas with [`Animated<ImageNodeIndex>`].
     ///
     /// The atlas's layout should be loaded into [`TextureAtlasLayoutMap`].
     #[reflect(default)]
@@ -71,7 +71,7 @@ pub struct LoadedUiImage
     #[reflect(default)]
     pub mode: Option<LoadedImageMode>,
     /// The color of the image.
-    #[reflect(default = "LoadedUiImage::default_color")]
+    #[reflect(default = "LoadedImageNode::default_color")]
     pub color: Color,
     /// The size of the image.
     ///
@@ -92,14 +92,14 @@ pub struct LoadedUiImage
     pub flip_y: bool,
 }
 
-impl LoadedUiImage
+impl LoadedImageNode
 {
-    /// Converts to a [`UiImage`].
-    pub fn to_ui_image(self, map: &ImageMap, layout_map: &TextureAtlasLayoutMap) -> UiImage
+    /// Converts to a [`ImageNode`].
+    pub fn to_ui_image(self, map: &ImageMap, layout_map: &TextureAtlasLayoutMap) -> ImageNode
     {
         let texture_atlas = self.atlas.and_then(|a| {
             let Some(img) = self.image.as_ref() else {
-                tracing::warn!("failed setting TextureAtlas in UiImage when converting LoadedUiImage; the atlas is set but \
+                tracing::warn!("failed setting TextureAtlas in ImageNode when converting LoadedImageNode; the atlas is set but \
                     the image texture is None");
                 return None;
             };
@@ -108,7 +108,7 @@ impl LoadedUiImage
                 index: a.index,
             })
         });
-        UiImage {
+        ImageNode {
             color: self.color,
             image: self.image.map(|i| map.get(&i)).unwrap_or_default(),
             texture_atlas,
@@ -126,7 +126,7 @@ impl LoadedUiImage
     }
 }
 
-impl Instruction for LoadedUiImage
+impl Instruction for LoadedImageNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -137,13 +137,13 @@ impl Instruction for LoadedUiImage
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
             // TODO: requires https://github.com/bevyengine/bevy/pull/16288
-            //e.remove_with_requires::<UiImage>();
-            e.remove::<(UiImage, ContentSize, UiImageSize)>();
+            //e.remove_with_requires::<ImageNode>();
+            e.remove::<(ImageNode, ContentSize, ImageNodeSize)>();
         });
     }
 }
 
-impl StaticAttribute for LoadedUiImage
+impl StaticAttribute for LoadedImageNode
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -154,16 +154,16 @@ impl StaticAttribute for LoadedUiImage
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`UiImage::color`], can be loaded as a style.
+/// Mirrors [`ImageNode::color`], can be loaded as a style.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct UiImageColor(pub Color);
+pub struct ImageNodeColor(pub Color);
 
-impl Instruction for UiImageColor
+impl Instruction for ImageNodeColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -172,11 +172,11 @@ impl Instruction for UiImageColor
 
     fn revert(entity: Entity, world: &mut World)
     {
-        Instruction::apply(Self(LoadedUiImage::default_color()), entity, world);
+        Instruction::apply(Self(LoadedImageNode::default_color()), entity, world);
     }
 }
 
-impl StaticAttribute for UiImageColor
+impl StaticAttribute for ImageNodeColor
 {
     type Value = Color;
     fn construct(value: Self::Value) -> Self
@@ -185,8 +185,8 @@ impl StaticAttribute for UiImageColor
     }
 }
 
-impl ResponsiveAttribute for UiImageColor {}
-impl AnimatableAttribute for UiImageColor {}
+impl ResponsiveAttribute for ImageNodeColor {}
+impl AnimatableAttribute for ImageNodeColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -199,9 +199,9 @@ impl AnimatableAttribute for UiImageColor {}
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct UiImageIndex(pub usize);
+pub struct ImageNodeIndex(pub usize);
 
-impl Instruction for UiImageIndex
+impl Instruction for ImageNodeIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -214,7 +214,7 @@ impl Instruction for UiImageIndex
     }
 }
 
-impl StaticAttribute for UiImageIndex
+impl StaticAttribute for ImageNodeIndex
 {
     type Value = usize;
     fn construct(value: Self::Value) -> Self
@@ -223,20 +223,20 @@ impl StaticAttribute for UiImageIndex
     }
 }
 
-impl ResponsiveAttribute for UiImageIndex {}
-impl AnimatableAttribute for UiImageIndex {}
+impl ResponsiveAttribute for ImageNodeIndex {}
+impl AnimatableAttribute for ImageNodeIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct UiImageExtPlugin;
+pub(crate) struct ImageNodeExtPlugin;
 
-impl Plugin for UiImageExtPlugin
+impl Plugin for ImageNodeExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_themed::<LoadedUiImage>()
-            .register_animatable::<UiImageColor>()
-            .register_animatable::<UiImageIndex>();
+        app.register_themed::<LoadedImageNode>()
+            .register_animatable::<ImageNodeColor>()
+            .register_animatable::<ImageNodeIndex>();
     }
 }
 

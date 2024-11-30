@@ -43,7 +43,7 @@ impl UiUtils
     /// Gets the nearest clipped container
     ///
     /// Useful for absolutely positioned elements to find a maximum size they can be visible in.
-    /// Offset is from the container top left corner to the element's top left corner.
+    /// Offset is from the container top left corner to the element's top left corner, in physical pixels.
     ///
     /// WARNING: Works only for Ui Nodes, panics if required components are missing!
     pub fn container_size_and_offset(entity: Entity, world: &World) -> (Vec2, Vec2)
@@ -206,6 +206,7 @@ impl UiUtils
     }
 
     /// Extracts a RenderTarget's size
+    // TODO: is this correctly returning physical pixels? or is it returning logical pixels?
     pub fn render_target_size(render_target: RenderTarget, world: &World) -> Vec2
     {
         match render_target {

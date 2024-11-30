@@ -78,12 +78,12 @@
                 }
             },
             "Interactive": [],
-            "LoadedUiImage": {
+            "LoadedImageNode": {
                 "image": "$title_texture",
                 "atlas": {"index": 0, "alias": "$title_texture_alias"},
                 "size": "$title_tile_size"
             },
-            "Animated<UiImageIndex>": {
+            "Animated<ImageNodeIndex>": {
                 "values": {
                     "idle": 0,
                     "idle_alt": 1
@@ -96,7 +96,7 @@
                     }
                 }
             },
-            "Animated<UiImageColor>": {
+            "Animated<ImageNodeColor>": {
                 "values": {
                     "idle": {"Hsla": {"hue": 42.0, "saturation": 0.8, "lightness": 0.5, "alpha": 1.0}},
                     "idle_alt": {"Hsla": {"hue": 42.0, "saturation": 0.6, "lightness": 0.7, "alpha": 1.0}}

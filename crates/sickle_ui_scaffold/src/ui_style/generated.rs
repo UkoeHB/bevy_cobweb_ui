@@ -1,5 +1,6 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use bevy::ui::widget::NodeImageMode;
 use bevy::ui::FocusPolicy;
 use cob_sickle_macros::StyleCommands;
 

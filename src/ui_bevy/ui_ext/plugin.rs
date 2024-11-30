@@ -19,7 +19,7 @@ impl Plugin for StyleExtPlugin
             // overwrite style fields correctly.
             .add_plugins(UiStyleFieldWrappersPlugin)
             .add_plugins(UiTextExtPlugin)
-            .add_plugins(UiImageExtPlugin);
+            .add_plugins(ImageNodeExtPlugin);
     }
 }
 

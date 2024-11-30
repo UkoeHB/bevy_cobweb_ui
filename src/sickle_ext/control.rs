@@ -31,12 +31,15 @@ fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable for setting up the root entity of a multi-entity widget.
+/// Instruction loadable for setting up the root entity of a multi-entity widget.
 ///
-/// Inserts a [`ControlLabel`] and a `ControlMap` (internal component) to the entity.
+/// Applies a [`ControlLabel`] instruction and inserts an internal `ControlMap` component to the entity.
 ///
 /// Children of the root node can be accessed through their [`ControlLabels`](ControlLabel) using
 /// [`ControlBuilderExt::edit_child`].
+///
+/// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
+/// performance.
 #[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct ControlRoot(pub SmolStr);
 
@@ -152,14 +155,15 @@ impl Instruction for ControlRoot
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that indicates an entity is part of a widget.
+/// Instruction loadable that adds self as a component to indicate the entity is part of a widget.
 ///
-/// Use this if you want values on the entity to respond to interactions on other parts of the widget, or if
-/// you want different values to be applied depending on the widget's
-/// [`PseudoStates`](crate::sickle::PseudoState).
+/// Use this if you want values on the entity to respond to interactions on other parts of the widget.
 ///
 /// Values in a multi-entity widget can be controlled with the [`Static`], [`Responsive`], and [`Animated`]
 /// loadables.
+///
+/// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
+/// performance.
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
 pub struct ControlLabel(pub SmolStr);
 

@@ -89,7 +89,7 @@
             "FlexNode": {
                 "dims": {"width": {"Px": "$title_texture_x"}, "height": {"Px": "$title_texture_y"}}
             },
-            "LoadedUiImage": {
+            "LoadedImageNode": {
                 "image": "$title_texture",
                 "size": "$title_tile_size"
             }

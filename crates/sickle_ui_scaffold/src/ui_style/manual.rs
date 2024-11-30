@@ -1,5 +1,6 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use bevy::ui::widget::NodeImageMode;
 
 use crate::*;
 
@@ -105,8 +106,8 @@ impl EntityCommand for SetImage
             }
         };
 
-        let Some(mut image) = world.get_mut::<UiImage>(entity) else {
-            warn!("Failed to set image on entity {}: No UiImage component found!", entity);
+        let Some(mut image) = world.get_mut::<ImageNode>(entity) else {
+            warn!("Failed to set image on entity {}: No ImageNode component found!", entity);
             return;
         };
 
@@ -120,8 +121,8 @@ impl EntityCommand for SetImage
                 .add(layout.clone())
                 .clone();
 
-            let Some(mut image) = world.get_mut::<UiImage>(entity) else {
-                warn!("Failed to set image on entity {}: No UiImage component found!", entity);
+            let Some(mut image) = world.get_mut::<ImageNode>(entity) else {
+                warn!("Failed to set image on entity {}: No ImageNode component found!", entity);
                 return;
             };
 
@@ -173,9 +174,9 @@ impl EntityCommand for SetImageTint
             check_lock!(world, entity, "image tint", LockableStyleAttribute::ImageTint);
         }
 
-        let Some(mut image) = world.get_mut::<UiImage>(entity) else {
+        let Some(mut image) = world.get_mut::<ImageNode>(entity) else {
             warn!(
-                "Failed to set image tint on entity {}: No UiImage component found!",
+                "Failed to set image tint on entity {}: No ImageNode component found!",
                 entity
             );
             return;
@@ -195,9 +196,9 @@ impl EntityCommand for SetImageFlip
             check_lock!(world, entity, "image flip", LockableStyleAttribute::ImageFlip);
         }
 
-        let Some(mut image) = world.get_mut::<UiImage>(entity) else {
+        let Some(mut image) = world.get_mut::<ImageNode>(entity) else {
             warn!(
-                "Failed to set image flip on entity {}: No UiImage component found!",
+                "Failed to set image flip on entity {}: No ImageNode component found!",
                 entity
             );
             return;
@@ -227,10 +228,10 @@ impl EntityCommand for SetNodeImageMode
         }
 
         if let Some(image_scale_mode) = self.image_scale_mode {
-            if let Some(mut image) = world.get_mut::<UiImage>(entity) {
+            if let Some(mut image) = world.get_mut::<ImageNode>(entity) {
                 image.image_mode = image_scale_mode;
             };
-        } else if let Some(mut image) = world.get_mut::<UiImage>(entity) {
+        } else if let Some(mut image) = world.get_mut::<ImageNode>(entity) {
             image.image_mode = NodeImageMode::default();
         }
     }
@@ -419,6 +420,7 @@ impl SetNodeShowHideUncheckedExt for UiStyleUnchecked<'_>
     }
 }
 
+/// Sets the absolute position of a node in logical pixels.
 pub struct SetAbsolutePosition
 {
     absolute_position: Vec2,
@@ -452,7 +454,7 @@ impl EntityCommand for SetAbsolutePosition
                 return;
             };
 
-            parent_transform.translation().truncate() - (size / 2.)
+            (parent_transform.translation().truncate() - (size / 2.)) * parent_node.inverse_scale_factor()
         } else {
             Vec2::ZERO
         };

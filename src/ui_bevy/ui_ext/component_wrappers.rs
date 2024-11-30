@@ -403,6 +403,115 @@ impl AnimatableAttribute for NodeOutline {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Mirrors [`BoxShadow`], can be loaded as an instruction.
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct NodeShadow
+{
+    /// The shadow's color.
+    ///
+    /// Defaults to black.
+    #[reflect(default = "NodeShadow::default_color")]
+    pub color: Color,
+    /// Horizontal offset.
+    #[reflect(default)]
+    pub x_offset: Val,
+    /// Vertical offset
+    #[reflect(default)]
+    pub y_offset: Val,
+    /// How much the shadow should spread outward.
+    ///
+    /// Negative values will make the shadow shrink inwards.
+    /// Percentage values are based on the width of the UI node.
+    #[reflect(default)]
+    pub spread_radius: Val,
+    /// Blurriness of the shadow
+    #[reflect(default)]
+    pub blur_radius: Val,
+}
+
+impl NodeShadow
+{
+    fn default_color() -> Color
+    {
+        Color::BLACK
+    }
+}
+
+impl Default for NodeShadow
+{
+    fn default() -> Self
+    {
+        Self {
+            color: NodeShadow::default_color(),
+            x_offset: Default::default(),
+            y_offset: Default::default(),
+            spread_radius: Default::default(),
+            blur_radius: Default::default(),
+        }
+    }
+}
+
+impl Into<BoxShadow> for NodeShadow
+{
+    fn into(self) -> BoxShadow
+    {
+        BoxShadow {
+            color: self.color,
+            x_offset: self.x_offset,
+            y_offset: self.y_offset,
+            spread_radius: self.spread_radius,
+            blur_radius: self.blur_radius,
+        }
+    }
+}
+
+impl Lerp for NodeShadow
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self {
+            color: self.color.lerp(to.color, t),
+            x_offset: self.x_offset.lerp(to.x_offset, t),
+            y_offset: self.y_offset.lerp(to.y_offset, t),
+            spread_radius: self.spread_radius.lerp(to.spread_radius, t),
+            blur_radius: self.blur_radius.lerp(to.blur_radius, t),
+        }
+    }
+}
+
+impl Instruction for NodeShadow
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let shadow: BoxShadow = self.into();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(shadow);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BoxShadow>();
+        });
+    }
+}
+
+impl StaticAttribute for NodeShadow
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+
+impl ResponsiveAttribute for NodeShadow {}
+impl AnimatableAttribute for NodeShadow {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 impl Instruction for FocusPolicy
 {
     fn apply(self, entity: Entity, world: &mut World)
@@ -476,6 +585,7 @@ impl Plugin for UiComponentWrappersPlugin
             .register_animatable::<BrRadiusBottomLeft>()
             .register_animatable::<BrRadiusBottomRight>()
             .register_animatable::<NodeOutline>()
+            .register_animatable::<NodeShadow>()
             .register_responsive::<FocusPolicy>()
             .register_responsive::<ZIndex>();
     }
