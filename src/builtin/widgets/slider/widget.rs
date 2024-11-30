@@ -216,14 +216,19 @@ fn get_camera_scale_factor(
 /// Computes the 'standard' value that will cause the handle to be centered over a target position in physical
 /// coordinates.
 fn compute_value_for_target_position(
-    target_position_physical: Vec2,
+    mut target_position_physical: Vec2,
     slider_transform: &GlobalTransform,
     bar_size: Vec2,
     handle_size: Vec2,
-    orientation: SliderOrientation,
+    axis: SliderAxis,
 ) -> SliderValue
 {
-    let bar_location = slider_transform.translation().truncate();
+    let mut bar_location = slider_transform.translation().truncate();
+
+    // Invert y-axis to point up.
+    target_position_physical.y = -target_position_physical.y;
+    bar_location.y = -bar_location.y;
+
     let bar_bottom = bar_location - (bar_size / 2.); // Physical bottom.
     let bar_action_size = (bar_size - handle_size).max(Vec2::splat(0.)); // Size of bar where slider values are applied.
     let adjusted_target = target_position_physical - (handle_size / 2.); // Adjusted down to center the handle.
@@ -236,10 +241,10 @@ fn compute_value_for_target_position(
         computed_val.y = (diff.y / bar_action_size.y).min(1.);
     }
 
-    match orientation {
-        SliderOrientation::Horizontal => SliderValue::Single(computed_val.x),
-        SliderOrientation::Vertical => SliderValue::Single(computed_val.y),
-        SliderOrientation::Planar => SliderValue::Planar(computed_val),
+    match axis {
+        SliderAxis::X => SliderValue::Single(computed_val.x),
+        SliderAxis::Y => SliderValue::Single(computed_val.y),
+        SliderAxis::Planar => SliderValue::Planar(computed_val),
     }
 }
 
@@ -328,13 +333,13 @@ fn slider_bar_ptr_down(
         slider_transform,
         bar_size,
         handle_size,
-        slider.config.orientation,
+        slider.config.axis,
     );
 
     let target_val = slider
         .config
         .direction
-        .flip_direction(standard_val, slider.config.orientation);
+        .flip_direction(standard_val, slider.config.axis);
 
     // Update drag reference.
     slider.drag_reference = SliderDragReference { invalid_press: false, offset: Vec2::default() };
@@ -376,6 +381,12 @@ fn slider_bar_drag(
 {
     // Prevent propagation, we are consuming this event.
     event.propagate(false);
+
+    // Prevent no-movement drags from doing anything. There is a bevy bug where pointer-up causes a drag event even
+    // if the cursor didn't move.
+    if event.event().distance == Vec2::default() {
+        return;
+    }
 
     // Look up the slider.
     let slider_entity = event.entity();
@@ -419,13 +430,13 @@ fn slider_bar_drag(
         slider_transform,
         bar_size,
         handle_size,
-        slider.config.orientation,
+        slider.config.axis,
     );
 
     let target_val = slider
         .config
         .direction
-        .flip_direction(standard_val, slider.config.orientation);
+        .flip_direction(standard_val, slider.config.axis);
 
     // Update value.
     React::set_if_neq(&mut slider_value, &mut c, target_val);
@@ -468,7 +479,7 @@ fn update_slider_handle_positions(
         };
         let Ok(mut handle_transform) = transforms.get_mut(handle_entity) else { continue };
 
-        let orientation = slider.config.orientation;
+        let axis = slider.config.axis;
 
         // Get slider bar and handle sizes (in physical pixels).
         let bar_size = slider_computed_node.size();
@@ -478,16 +489,22 @@ fn update_slider_handle_positions(
         // Get standardized current value.
         let mut value = slider_value.get().clone();
         value.normalize();
-        let standard_val = slider.config.direction.flip_direction(value, orientation);
-        let val_vec2 = standard_val.to_vec2(orientation);
+        let standard_val = slider.config.direction.flip_direction(value, axis);
+        let val_vec2 = standard_val.to_vec2(axis);
 
         // Get transform offset between bar and handle.
-        let val_pos = val_vec2 * bar_action_size;
-        let transform_offset = val_pos + (handle_size / 2.) - (bar_size / 2.);
-        let transform_offset_corrected = match orientation {
-            SliderOrientation::Horizontal => transform_offset.with_y(0.),
-            SliderOrientation::Vertical => transform_offset.with_x(0.),
-            SliderOrientation::Planar => transform_offset,
+        let mut val_pos = val_vec2 * bar_action_size;
+        val_pos.y = -(val_pos.y - bar_action_size.y); // Correction because y-axis is down and handle defaults to top of bar.
+        let transform_offset_corrected = match axis {
+            SliderAxis::X => {
+                let y_offset = (bar_size.y - handle_size.y) / 2.;
+                val_pos.with_y(y_offset)
+            }
+            SliderAxis::Y => {
+                let x_offset = (bar_size.x - handle_size.x) / 2.;
+                val_pos.with_x(x_offset)
+            }
+            SliderAxis::Planar => val_pos,
         };
 
         // Update handle's position relative to the slider bar.
@@ -507,7 +524,7 @@ fn update_slider_handle_positions(
 pub enum SliderValue
 {
     Single(f32),
-    /// The horizontal and vertical slider values for sliders with [`SliderOrientation::Planar`].
+    /// The horizontal and vertical slider values for sliders with [`SliderAxis::Planar`].
     Planar(Vec2),
 }
 
@@ -527,18 +544,18 @@ impl SliderValue
         }
     }
 
-    pub fn to_vec2(&self, orientation: SliderOrientation) -> Vec2
+    pub fn to_vec2(&self, axis: SliderAxis) -> Vec2
     {
-        match orientation {
-            SliderOrientation::Horizontal => match *self {
+        match axis {
+            SliderAxis::X => match *self {
                 Self::Single(v) => Vec2 { x: v, y: 0. },
                 Self::Planar(Vec2 { x, y: _ }) => Vec2 { x, y: 0. },
             },
-            SliderOrientation::Vertical => match *self {
+            SliderAxis::Y => match *self {
                 Self::Single(v) => Vec2 { x: 0., y: v },
                 Self::Planar(Vec2 { x: _, y }) => Vec2 { x: 0., y },
             },
-            SliderOrientation::Planar => match *self {
+            SliderAxis::Planar => match *self {
                 Self::Single(v) => Vec2 { x: v, y: v },
                 Self::Planar(v) => v,
             },
@@ -571,18 +588,20 @@ impl Lerp for SliderValue
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// The orientation of a slider's axis/axes.
+/// The axis of a slider.
+///
+/// See [`Slider`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum SliderOrientation
+pub enum SliderAxis
 {
     #[default]
-    Horizontal,
-    Vertical,
+    X,
+    Y,
     /// The slider moves both horizontally and vertically (i.e. in a rectangle).
     Planar,
 }
@@ -590,6 +609,8 @@ pub enum SliderOrientation
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The direction of a slider's axis/axes.
+///
+/// See [`Slider`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -623,7 +644,7 @@ impl SliderDirection
     ///
     /// If the value is 'standard' then it will be returned with the direction applied. If the value
     /// is 'directed', then the direction will be undone and it will be returned as a 'standard' value.
-    pub fn flip_direction(&self, value: SliderValue, orientation: SliderOrientation) -> SliderValue
+    pub fn flip_direction(&self, value: SliderValue, axis: SliderAxis) -> SliderValue
     {
         match self {
             Self::Standard => value,
@@ -632,18 +653,18 @@ impl SliderDirection
                 SliderValue::Planar(val) => SliderValue::Planar(Vec2::splat(1.) - val),
             },
             Self::ReverseHorizontal => match value {
-                SliderValue::Single(val) => match orientation {
-                    SliderOrientation::Horizontal => SliderValue::Single(1. - val),
-                    SliderOrientation::Vertical => SliderValue::Single(val),
-                    SliderOrientation::Planar => SliderValue::Planar(Vec2::new(1. - val, val)),
+                SliderValue::Single(val) => match axis {
+                    SliderAxis::X => SliderValue::Single(1. - val),
+                    SliderAxis::Y => SliderValue::Single(val),
+                    SliderAxis::Planar => SliderValue::Planar(Vec2::new(1. - val, val)),
                 },
                 SliderValue::Planar(Vec2 { x, y }) => SliderValue::Planar(Vec2::new(1. - x, y)),
             },
             Self::ReverseVertical => match value {
-                SliderValue::Single(val) => match orientation {
-                    SliderOrientation::Horizontal => SliderValue::Single(val),
-                    SliderOrientation::Vertical => SliderValue::Single(1. - val),
-                    SliderOrientation::Planar => SliderValue::Planar(Vec2::new(val, 1. - val)),
+                SliderValue::Single(val) => match axis {
+                    SliderAxis::X => SliderValue::Single(val),
+                    SliderAxis::Y => SliderValue::Single(1. - val),
+                    SliderAxis::Planar => SliderValue::Planar(Vec2::new(val, 1. - val)),
                 },
                 SliderValue::Planar(Vec2 { x, y }) => SliderValue::Planar(Vec2::new(x, 1. - y)),
             },
@@ -687,7 +708,7 @@ pub enum SliderPress
 pub struct Slider
 {
     #[reflect(default)]
-    pub orientation: SliderOrientation,
+    pub axis: SliderAxis,
     #[reflect(default)]
     pub direction: SliderDirection,
     /// Configures the handle's behavior when pressing the slider bar.
@@ -706,9 +727,9 @@ impl Instruction for Slider
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
-        let initial_slider_value = match self.orientation {
-            SliderOrientation::Horizontal | SliderOrientation::Vertical => SliderValue::Single(0.),
-            SliderOrientation::Planar => SliderValue::Planar(Vec2::default()),
+        let initial_slider_value = match self.axis {
+            SliderAxis::X | SliderAxis::Y => SliderValue::Single(0.),
+            SliderAxis::Planar => SliderValue::Planar(Vec2::default()),
         };
 
         let computed = emut.world_scope(|world| {
