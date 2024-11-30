@@ -10,9 +10,9 @@
             TextLine{size:30}
 
         "slider"
-            FlexNode{width:200px height:10px flex_direction:Row justify_cross:Center}
+            FlexNode{width:10px height:200px flex_direction:Row justify_cross:Center}
             BackgroundColor(#00FF00)
-            Slider{axis:X}
+            Slider{axis:Y}
 
             "handle"
                 AbsoluteNode{width:25px height:25px}

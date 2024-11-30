@@ -530,6 +530,24 @@ pub enum SliderValue
 
 impl SliderValue
 {
+    /// Gets the value if it is `Self::Single`.
+    pub fn single(&self) -> Option<f32>
+    {
+        match self {
+            Self::Single(val) => Some(*val),
+            Self::Planar(_) => None,
+        }
+    }
+
+    /// Gets the value if it is `Self::Planar`.
+    pub fn planar(&self) -> Option<Vec2>
+    {
+        match self {
+            Self::Single(_) => None,
+            Self::Planar(val) => Some(*val),
+        }
+    }
+
     /// Clamps the value to the range `[0.0..1.0]`.
     pub fn normalize(&mut self)
     {

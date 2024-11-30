@@ -1,5 +1,9 @@
 # Changelog
 
+## WIP
+
+- Add `SliderValue::single` and `SliderValue::planar` helpers.
+
 ## 0.5.0
 
 - `LoadedImageNode::image` is now optional. If no image is specified, a default handle will be inserted.

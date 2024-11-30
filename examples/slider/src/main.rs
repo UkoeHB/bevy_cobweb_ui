@@ -80,7 +80,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let basic_text = l.get_entity_from_root("basic::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let SliderValue::Single(val) = sliders.get(*id).unwrap() else { unreachable!() };
+                let val = sliders.get(*id).unwrap().single().unwrap();
                 let val = val * 100.;
                 write_text!(e, basic_text, "{}", val as usize);
             });
@@ -91,7 +91,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let reverse_text = l.get_entity_from_root("reverse::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let SliderValue::Single(val) = sliders.get(*id).unwrap() else { unreachable!() };
+                let val = sliders.get(*id).unwrap().single().unwrap();
                 let val = val * 100.;
                 write_text!(e, reverse_text, "{}", val as usize);
             });
@@ -103,7 +103,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let fancy_text = l.get_entity_from_root("fancy::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let SliderValue::Single(val) = sliders.get(*id).unwrap() else { unreachable!() };
+                let val = sliders.get(*id).unwrap().single().unwrap();
                 let val = val * 100.;
                 write_text!(e, fancy_text, "{}", val as usize);
             });
@@ -114,7 +114,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let planar_text = l.get_entity_from_root("planar::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let SliderValue::Planar(val) = sliders.get(*id).unwrap() else { unreachable!() };
+                let val = sliders.get(*id).unwrap().planar().unwrap();
                 let val = val * 100.;
                 write_text!(e, planar_text, "({}, {})", val.x as usize, val.y as usize);
             });
