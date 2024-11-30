@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ui::widget::NodeImageMode};
 
 #[allow(unused_imports)]
 use crate::prelude::*;
