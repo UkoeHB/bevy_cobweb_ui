@@ -2,7 +2,7 @@ use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
 use smol_str::SmolStr;
-
+use bevy_cobweb::ecs::WorldSyscallExt;
 use crate::prelude::*;
 use crate::sickle::*;
 
