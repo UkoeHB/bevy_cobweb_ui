@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-#[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
 use smol_str::SmolStr;
 

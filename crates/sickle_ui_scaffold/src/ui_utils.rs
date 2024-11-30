@@ -1,7 +1,7 @@
 use bevy::ecs::component::ComponentInfo;
 use bevy::prelude::*;
 use bevy::render::camera::{ManualTextureViews, RenderTarget};
-use bevy::window::{PrimaryWindow, WindowRef, WindowResolution};
+use bevy::window::{PrimaryWindow, Window, WindowRef, WindowResolution};
 
 pub struct UiUtils;
 

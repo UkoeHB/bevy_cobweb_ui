@@ -5,8 +5,8 @@
 //! **Disclaimer**: Default widget styling should not be considered stable at this time.
 //!
 //! Currently implemented:
-//! - [radio_button]: Includes [`RadioButtonBuilder`](radio_button::RadioButtonBuilder) for making radio buttons,
-//!   and [`RadioButtonManager`](radio_button::RadioButtonManager) for coordinating button selection.
+//! - [radio_button]
+//! - [slider]
 
 pub mod radio_button;
 pub mod slider;
