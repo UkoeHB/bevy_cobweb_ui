@@ -11,15 +11,6 @@ const C5_F32: f32 = (2. * PI) / 4.5;
 const N1_F32: f32 = 7.5625;
 const D1_F32: f32 = 2.75;
 
-// const PI_64: f64 = std::f64::consts::PI;
-// const C1_F64: f64 = 1.70158;
-// const C2_F64: f64 = C1_F64 * 1.525;
-// const C3_F64: f64 = C1_F64 + 1.;
-// const C4_F64: f64 = (2. * PI_64) / 3.;
-// const C5_F64: f64 = (2. * PI_64) / 4.5;
-// const N1_F64: f64 = 7.5625;
-// const D1_F64: f64 = 2.75;
-
 #[derive(Default, Copy, Clone, Debug, Hash, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 pub enum Ease
 {

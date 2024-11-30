@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use smol_str::SmolStr;
 
 use crate::*;
 
@@ -255,7 +256,7 @@ pub enum PseudoState
     Error,
     Dying,
     Resizable(CardinalDirection),
-    Custom(String),
+    Custom(SmolStr),
 }
 
 #[derive(Component, Clone, Debug, Default, Reflect)]

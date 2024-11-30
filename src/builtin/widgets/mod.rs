@@ -9,6 +9,7 @@
 //!   and [`RadioButtonManager`](radio_button::RadioButtonManager) for coordinating button selection.
 
 pub mod radio_button;
+pub mod slider;
 
 mod plugin;
 pub(crate) use plugin::*;

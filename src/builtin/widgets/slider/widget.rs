@@ -1,5 +1,9 @@
+use bevy::prelude::TransformSystem::TransformPropagate;
 use bevy::prelude::*;
+use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
+use smallvec::SmallVec;
+use smol_str::SmolStr;
 
 use crate::prelude::*;
 use crate::sickle::*;
@@ -15,7 +19,11 @@ struct SliderZoom(SliderValue);
 
 impl SliderZoom
 {
-    fn apply_zoom(In((entity, mut val)): In<(Entity, SliderValue)>, mut c: Commands, mut r: ReactiveMut<SliderValue>)
+    fn apply_zoom(
+        In((entity, mut val)): In<(Entity, SliderValue)>,
+        mut c: Commands,
+        mut r: ReactiveMut<SliderValue>,
+    )
     {
         val.normalize();
         r.set_if_neq(&mut c, entity, val);
@@ -30,7 +38,7 @@ impl Instruction for SliderZoom
     }
 
     /// Reverting SliderValue is handled by Slider::revert.
-    fn revert(_: Entity, _: &mut World) { }
+    fn revert(_: Entity, _: &mut World) {}
 }
 
 impl StaticAttribute for SliderZoom
@@ -48,19 +56,19 @@ impl AnimatableAttribute for SliderZoom
     fn extract(
         entity: Entity,
         world: &mut World,
-        _: &AnimatedVals<Self::Value>,
+        ref_vals: &AnimatedVals<Self::Value>,
         state: &AnimationState,
     ) -> Self::Value
     {
         // Clean up state when done zooming.
         // - This prepares us for the next zoom, which requires 'entering' the SliderZoom state.
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        if state.result == AnimationResult::Hold(InteractionStyle::Idle) {
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return ref_vals.idle.clone() };
+        if *state.result() == AnimationResult::Hold(InteractionStyle::Idle) {
             emut.remove_pseudo_state(SLIDER_ZOOM_PSEUDO_STATE.clone());
         }
 
         // Update the slider value.
-        let Some(bar) = emut.get::<ComputedSlider>() else { return };
+        let Some(bar) = emut.get::<ComputedSlider>() else { return ref_vals.idle.clone() };
         bar.press_vals.to_value(state)
     }
 }
@@ -113,12 +121,15 @@ impl ComputedSlider
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
-struct ChildrenIterScratch {
+struct ChildrenIterScratch
+{
     stack: Vec<(&'static Children, usize)>,
 }
 
-impl ChildrenIterScratch {
-    fn take<'a>(&mut self) -> Vec<(&'a Children, usize)> {
+impl ChildrenIterScratch
+{
+    fn take<'a>(&mut self) -> Vec<(&'a Children, usize)>
+    {
         self.stack.clear();
         core::mem::take(&mut self.stack)
             .into_iter()
@@ -126,7 +137,8 @@ impl ChildrenIterScratch {
             .collect()
     }
 
-    fn recover(&mut self, mut stack: Vec<(&Children, usize)>) {
+    fn recover(&mut self, mut stack: Vec<(&Children, usize)>)
+    {
         stack.clear();
         self.stack = stack
             .into_iter()
@@ -137,23 +149,23 @@ impl ChildrenIterScratch {
     fn search<R>(
         &mut self,
         initial_entity: Entity,
-        children: &Query<&Children>,
-        mut search_fn: impl FnMut(Entity) -> Option<R>
+        children_query: &Query<&Children>,
+        mut search_fn: impl FnMut(Entity) -> Option<R>,
     ) -> Option<R>
     {
         if let Some(entry) = (search_fn)(initial_entity) {
             return Some(entry);
         }
 
-        let initial_children = children_query.get(child)?;
-        self.search_descendants(initial_children, children, search_fn)
+        let initial_children = children_query.get(initial_entity).ok()?;
+        self.search_descendants(initial_children, children_query, search_fn)
     }
 
     fn search_descendants<R>(
         &mut self,
         initial_children: &Children,
-        children: &Query<&Children>,
-        mut search_fn: impl FnMut(Entity) -> Option<R>
+        children_query: &Query<&Children>,
+        mut search_fn: impl FnMut(Entity) -> Option<R>,
     ) -> Option<R>
     {
         let mut scratch = self.take();
@@ -174,7 +186,7 @@ impl ChildrenIterScratch {
                 scratch.push((children, idx + 1));
             }
 
-            if let Some(next_children) = children_query.get(child) {
+            if let Ok(next_children) = children_query.get(child) {
                 scratch.push((next_children, 0));
             }
         }
@@ -187,13 +199,15 @@ impl ChildrenIterScratch {
 //-------------------------------------------------------------------------------------------------------------------
 
 fn get_camera_scale_factor(
-    ui_camera: &UiCamera,
+    ui_camera: &DefaultUiCamera,
     cameras: &Query<&Camera>,
     maybe_slider_camera: Option<&TargetCamera>,
 ) -> Option<f32>
 {
-    let camera_entity = maybe_slider_camera.map(|t| **t).unwrap_or_else(|| ui_camera.get());
-    let Some(camera) = cameras.get(camera_entity) else { return None };
+    let camera_entity = maybe_slider_camera
+        .map(|t| t.entity())
+        .or_else(|| ui_camera.get())?;
+    let Ok(camera) = cameras.get(camera_entity) else { return None };
     Some(camera.target_scaling_factor().unwrap_or(1.))
 }
 
@@ -207,18 +221,18 @@ fn compute_value_for_target_position(
     bar_size: Vec2,
     handle_size: Vec2,
     orientation: SliderOrientation,
-) -> (f32, SliderValue)
+) -> SliderValue
 {
     let bar_location = slider_transform.translation().truncate();
     let bar_bottom = bar_location - (bar_size / 2.); // Physical bottom.
-    let bar_action_size = (bar_size - handle_size).max(0.); // Size of bar where slider values are applied.
+    let bar_action_size = (bar_size - handle_size).max(Vec2::splat(0.)); // Size of bar where slider values are applied.
     let adjusted_target = target_position_physical - (handle_size / 2.); // Adjusted down to center the handle.
     let diff = (adjusted_target - bar_bottom).max(Vec2::splat(0.)); // Distance from target to bottom.
     let mut computed_val = Vec2::default();
-    if bar_action_size.x > 0 {
+    if bar_action_size.x > 0. {
         computed_val.x = (diff.x / bar_action_size.x).min(1.);
     }
-    if bar_action_size.y > 0 {
+    if bar_action_size.y > 0. {
         computed_val.y = (diff.y / bar_action_size.y).min(1.);
     }
 
@@ -235,10 +249,17 @@ fn slider_bar_ptr_down(
     mut event: Trigger<Pointer<Down>>,
     mut iter_scratch: ResMut<ChildrenIterScratch>,
     mut c: Commands,
-    ps: PseudoStatParam,
+    ps: PseudoStateParam,
     cameras: Query<&Camera>,
     ui_camera: DefaultUiCamera,
-    mut sliders: Query<(&mut ComputedSlider, &mut React<SliderValue>, &ComputedNode, &GlobalTransform, &Children, Option<&TargetCamera>)>,
+    mut sliders: Query<(
+        &mut ComputedSlider,
+        &mut React<SliderValue>,
+        &ComputedNode,
+        &GlobalTransform,
+        &Children,
+        Option<&TargetCamera>,
+    )>,
     children_query: Query<&Children>,
     handles: Query<(Entity, &ComputedNode, &GlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
 )
@@ -248,9 +269,14 @@ fn slider_bar_ptr_down(
 
     // Look up the slider and its handle.
     let slider_entity = event.entity();
-    let Ok((mut slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) = sliders.get_mut(slider_entity) else { return };
+    let Ok((mut slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
+        sliders.get_mut(slider_entity)
+    else {
+        return;
+    };
 
-    let maybe_handle = iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child));
+    let maybe_handle =
+        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
     let Some((handle_entity, handle_node, handle_transform)) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
@@ -262,19 +288,23 @@ fn slider_bar_ptr_down(
     let handle_size = handle_node.size();
 
     // Get camera scale factor and pointer physical position.
-    let Some(camera_scale_factor) = get_camera_scale_factor(&ui_camera, &cameras, maybe_slider_camera) else { return };
+    let Some(camera_scale_factor) = get_camera_scale_factor(&ui_camera, &cameras, maybe_slider_camera) else {
+        return;
+    };
     let pointer_position = event.event().pointer_location.position;
     let pointer_position_physical = pointer_position * camera_scale_factor;
 
     // Check if pointer targets the handle or any of its descendants.
-    let pointer_target = event.event().target();
-    let targets_handle = iter_scratch.search(handle_entity, &children_query, |entity| {
-        if entity == pointer_target {
-            Some(())
-        } else {
-            None
-        }
-    }).is_some();
+    let pointer_target = event.event().target;
+    let targets_handle = iter_scratch
+        .search(handle_entity, &children_query, |entity| {
+            if entity == pointer_target {
+                Some(())
+            } else {
+                None
+            }
+        })
+        .is_some();
 
     // If the point targets the handle, we initiate drag.
     if targets_handle {
@@ -282,12 +312,12 @@ fn slider_bar_ptr_down(
         let handle_position_logical = handle_transform.translation().truncate() / camera_scale_factor.max(0.0001);
         let offset = handle_position_logical - pointer_position;
 
-        slider.drag_reference = SliderDragReference{ invalid_press: false, offset };
+        slider.drag_reference = SliderDragReference { invalid_press: false, offset };
         return;
     }
 
     // Inert bars cannot be pressed.
-    if slider.config.bar_press == SliderBarPress::Inert {
+    if slider.config.bar_press == SliderPress::Inert {
         slider.drag_reference.invalid_press = true;
         return;
     }
@@ -298,25 +328,28 @@ fn slider_bar_ptr_down(
         slider_transform,
         bar_size,
         handle_size,
-        slider.config.orientation
+        slider.config.orientation,
     );
 
-    let target_val = slider.config.direction.flip_direction(standard_val, slider.config.orientation);
+    let target_val = slider
+        .config
+        .direction
+        .flip_direction(standard_val, slider.config.orientation);
 
     // Update drag reference.
-    slider.drag_reference = SliderDragReference{ invalid_press: false, offset: Vec2::default() };
+    slider.drag_reference = SliderDragReference { invalid_press: false, offset: Vec2::default() };
 
     // Update value.
     match slider.config.bar_press {
-        SliderBarPress::Jump => {
-            slider_value.set_if_neq(&mut c, target_val);
+        SliderPress::Jump => {
+            React::set_if_neq(&mut slider_value, &mut c, target_val);
         }
-        SliderBarPress::Animate(_) => {
-            slider.press_vals.enter_ref = **slider_val;
+        SliderPress::Animate(_) => {
+            slider.press_vals.enter_ref = Some(**slider_value);
             slider.press_vals.idle = target_val;
-            ps.try_insert(&mut c, SLIDER_ZOOM_PSEUDO_STATE);;
+            ps.try_add(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
         }
-        SliderBarPress::Inert => unreachable!()
+        SliderPress::Inert => unreachable!(),
     }
 }
 
@@ -326,12 +359,19 @@ fn slider_bar_drag(
     mut event: Trigger<Pointer<Drag>>,
     mut iter_scratch: ResMut<ChildrenIterScratch>,
     mut c: Commands,
-    ps: PseudoStatParam,
+    ps: PseudoStateParam,
     cameras: Query<&Camera>,
     ui_camera: DefaultUiCamera,
-    mut sliders: Query<(&ComputedSlider, &mut React<SliderValue>, &ComputedNode, &GlobalTransform, &Children, Option<&TargetCamera>)>,
+    mut sliders: Query<(
+        &ComputedSlider,
+        &mut React<SliderValue>,
+        &ComputedNode,
+        &GlobalTransform,
+        &Children,
+        Option<&TargetCamera>,
+    )>,
     children_query: Query<&Children>,
-    handles: Query<(Entity, &ComputedNode, &GlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
+    handles: Query<&ComputedNode, (With<SliderHandle>, Without<ComputedSlider>)>,
 )
 {
     // Prevent propagation, we are consuming this event.
@@ -339,7 +379,11 @@ fn slider_bar_drag(
 
     // Look up the slider.
     let slider_entity = event.entity();
-    let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) = sliders.get_mut(slider_entity) else { return };
+    let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
+        sliders.get_mut(slider_entity)
+    else {
+        return;
+    };
 
     // Drags require a valid press event.
     if slider.drag_reference.invalid_press {
@@ -347,9 +391,10 @@ fn slider_bar_drag(
     }
 
     // Look up the handle.
-    let maybe_handle = iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child));
+    let maybe_handle =
+        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
-    let Some((handle_entity, handle_node, handle_transform)) = maybe_handle else {
+    let Some(handle_node) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
         return;
     };
@@ -363,7 +408,9 @@ fn slider_bar_drag(
     let target_position_corrected = pointer_position + slider.drag_reference.offset;
 
     // Get camera scale factor and target physical position.
-    let Some(camera_scale_factor) = get_camera_scale_factor(&ui_camera, &cameras, maybe_slider_camera) else { return };
+    let Some(camera_scale_factor) = get_camera_scale_factor(&ui_camera, &cameras, maybe_slider_camera) else {
+        return;
+    };
     let target_position_physical = target_position_corrected * camera_scale_factor;
 
     // Compute value.
@@ -372,32 +419,81 @@ fn slider_bar_drag(
         slider_transform,
         bar_size,
         handle_size,
-        slider.config.orientation
+        slider.config.orientation,
     );
 
-    let target_val = slider.config.direction.flip_direction(standard_val, slider.config.orientation);
+    let target_val = slider
+        .config
+        .direction
+        .flip_direction(standard_val, slider.config.orientation);
 
     // Update value.
-    slider_value.set_if_neq(&mut c, target_val);
+    React::set_if_neq(&mut slider_value, &mut c, target_val);
 
     // Cleanup zoom effect.
-    if matches!(slider.config.bar_press, SliderBarPress::Animate(_)) {
-        ps.try_remove(&mut c, SLIDER_ZOOM_PSEUDO_STATE);
+    if matches!(slider.config.bar_press, SliderPress::Animate(_)) {
+        ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn update_slider_handle_positions(
-
+    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut sliders: Query<(
+        &ComputedSlider,
+        &React<SliderValue>,
+        &Node,
+        &ComputedNode,
+        &Children,
+        &ViewVisibility,
+    )>,
+    children_q: Query<&Children>,
+    handles: Query<(Entity, &ComputedNode), (With<SliderHandle>, Without<ComputedSlider>)>,
+    mut transforms: Query<&mut Transform>,
 )
 {
-/*
-- PostUpdate between layout and transform
-    - for each displayed slider
-        - compute handle's expected position based on current value + bar size + handle size
-        - fixup handle Transform
-*/
+    for (slider, slider_value, slider_node, slider_computed_node, children, view_visibility) in sliders.iter_mut()
+    {
+        // Skip sliders that won't be displayed.
+        if !view_visibility.get() || slider_node.display == Display::None {
+            continue;
+        }
+
+        // Look up handle.
+        let Some((handle_entity, handle_node)) =
+            iter_scratch.search_descendants(children, &children_q, |c| handles.get(c).ok())
+        else {
+            continue;
+        };
+        let Ok(mut handle_transform) = transforms.get_mut(handle_entity) else { continue };
+
+        let orientation = slider.config.orientation;
+
+        // Get slider bar and handle sizes (in physical pixels).
+        let bar_size = slider_computed_node.size();
+        let handle_size = handle_node.size();
+        let bar_action_size = (bar_size - handle_size).max(Vec2::splat(0.));
+
+        // Get standardized current value.
+        let mut value = slider_value.get().clone();
+        value.normalize();
+        let standard_val = slider.config.direction.flip_direction(value, orientation);
+        let val_vec2 = standard_val.to_vec2(orientation);
+
+        // Get transform offset between bar and handle.
+        let val_pos = val_vec2 * bar_action_size;
+        let transform_offset = val_pos + (handle_size / 2.) - (bar_size / 2.);
+        let transform_offset_corrected = match orientation {
+            SliderOrientation::Horizontal => transform_offset.with_y(0.),
+            SliderOrientation::Vertical => transform_offset.with_x(0.),
+            SliderOrientation::Planar => transform_offset,
+        };
+
+        // Update handle's position relative to the slider bar.
+        // NOTE: This position adjustment may not be 'correct' if the handle isn't a direct child of the slider.
+        handle_transform.translation += transform_offset_corrected.extend(0.);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -407,7 +503,7 @@ fn update_slider_handle_positions(
 /// Values are in the range `[0.0..1.0]`.
 ///
 /// See [`Slider`].
-#[derive(ReactComponent, Debug, Copy, Clone, PartialEq, Reflect, Default)]
+#[derive(ReactComponent, Debug, Copy, Clone, PartialEq, Reflect)]
 pub enum SliderValue
 {
     Single(f32),
@@ -428,6 +524,24 @@ impl SliderValue
                 v.x = v.x.min(1.0).max(0.);
                 v.y = v.y.min(1.0).max(0.);
             }
+        }
+    }
+
+    pub fn to_vec2(&self, orientation: SliderOrientation) -> Vec2
+    {
+        match orientation {
+            SliderOrientation::Horizontal => match *self {
+                Self::Single(v) => Vec2 { x: v, y: 0. },
+                Self::Planar(Vec2 { x, y: _ }) => Vec2 { x, y: 0. },
+            },
+            SliderOrientation::Vertical => match *self {
+                Self::Single(v) => Vec2 { x: 0., y: v },
+                Self::Planar(Vec2 { x: _, y }) => Vec2 { x: 0., y },
+            },
+            SliderOrientation::Planar => match *self {
+                Self::Single(v) => Vec2 { x: v, y: v },
+                Self::Planar(v) => v,
+            },
         }
     }
 }
@@ -513,36 +627,26 @@ impl SliderDirection
     {
         match self {
             Self::Standard => value,
-            Self::Reverse => {
-                match value {
-                    SliderValue::Single(val) => SliderValue::Single(1. - val),
-                    SliderValue::Planar(val) => SliderValue::Planar(Vec2::splat(1.) - val),
-                }
-            }
-            Self::ReverseHorizontal => {
-                match value {
-                    SliderValue::Single(val) => {
-                        match orientation {
-                            SliderOrientation::Horizontal => SliderValue::Single(1. - val)
-                            SliderOrientation::Vertical => SliderValue::Single(val),
-                            SliderOrientation::Planar => SliderValue::Planar(Vec2::new(1. - val, val)),
-                        }
-                    }
-                    SliderValue::Planar(Vec2{x, y}) => SliderValue::Planar(Vec2::new(1. - x, y)),
-                }
-            }
-            Self::ReverseVertical => {
-                match value {
-                    SliderValue::Single(val) => {
-                        match orientation {
-                            SliderOrientation::Horizontal => SliderValue::Single(val)
-                            SliderOrientation::Vertical => SliderValue::Single(1. - val),
-                            SliderOrientation::Planar => SliderValue::Planar(Vec2::new(val, 1. - val)),
-                        }
-                    }
-                    SliderValue::Planar(Vec2{x, y}) => SliderValue::Planar(Vec2::new(x, 1. - y)),
-                }
-            }
+            Self::Reverse => match value {
+                SliderValue::Single(val) => SliderValue::Single(1. - val),
+                SliderValue::Planar(val) => SliderValue::Planar(Vec2::splat(1.) - val),
+            },
+            Self::ReverseHorizontal => match value {
+                SliderValue::Single(val) => match orientation {
+                    SliderOrientation::Horizontal => SliderValue::Single(1. - val),
+                    SliderOrientation::Vertical => SliderValue::Single(val),
+                    SliderOrientation::Planar => SliderValue::Planar(Vec2::new(1. - val, val)),
+                },
+                SliderValue::Planar(Vec2 { x, y }) => SliderValue::Planar(Vec2::new(1. - x, y)),
+            },
+            Self::ReverseVertical => match value {
+                SliderValue::Single(val) => match orientation {
+                    SliderOrientation::Horizontal => SliderValue::Single(val),
+                    SliderOrientation::Vertical => SliderValue::Single(1. - val),
+                    SliderOrientation::Planar => SliderValue::Planar(Vec2::new(val, 1. - val)),
+                },
+                SliderValue::Planar(Vec2 { x, y }) => SliderValue::Planar(Vec2::new(x, 1. - y)),
+            },
         }
     }
 }
@@ -553,11 +657,8 @@ impl SliderDirection
 ///
 /// See [`Slider`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
-pub enum SliderBarPress
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum SliderPress
 {
     /// Pressing the slider bar does nothing.
     Inert,
@@ -565,7 +666,7 @@ pub enum SliderBarPress
     #[default]
     Jump,
     /// Pressing the slider bar causes the handle to move to the cursor using an animation.
-    Animate(AnimationConfig)
+    Animate(AnimationConfig),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -574,17 +675,15 @@ pub enum SliderBarPress
 ///
 /// This should be placed on the entity with the 'slider bar' of the slider.
 ///
-/// Inserts a [`SliderValue`] reactive component to the entity. Also inserts an internal `ComputedSlider` component.
+/// Inserts a [`SliderValue`] reactive component to the entity. Also inserts an internal `ComputedSlider`
+/// component.
 ///
 /// The primary button of all pointers will be able to drag the slider handle and press the slider bar to move
 /// the handle.
 ///
 /// Use [`SliderHandle`] on the node that will own the slider handle.
 #[derive(Reflect, Default, PartialEq, Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Slider
 {
     #[reflect(default)]
@@ -593,9 +692,9 @@ pub struct Slider
     pub direction: SliderDirection,
     /// Configures the handle's behavior when pressing the slider bar.
     ///
-    /// Defaults to [`SliderBarPress::Jump`].
+    /// Defaults to [`SliderPress::Jump`].
     #[reflect(default)]
-    pub bar_press: SliderBarPress,
+    pub bar_press: SliderPress,
     // TODO: consider configuring what pointers are allowed to drag the handle and press on the bar
     // TODO: how to allow 'cursor scroll' or e.g. arrow keys (with keyboard focus?) to move the slider handle?
     // - this may need to be added via higher-level abstractions
@@ -614,11 +713,11 @@ impl Instruction for Slider
 
         let computed = emut.world_scope(|world| {
             // Set up animation for pressing the bar outside the handle.
-            if let SliderBarPress::Animate(enter_idle_with) = self.bar_press.clone() {
-                let animation = Animated::<SliderZoom>{
-                    state: Some(SmallVec::from_slice(&[SLIDER_ZOOM_PSEUDO_STATE.clone()])),
+            if let SliderPress::Animate(enter_idle_with) = self.bar_press.clone() {
+                let animation = Animated::<SliderZoom> {
+                    state: Some(SmallVec::from_elem(SLIDER_ZOOM_PSEUDO_STATE.clone(), 1)),
                     enter_idle_with: Some(enter_idle_with),
-                    idle: SliderZoom::default(), // We override the idle value in `SliderZoom::extract`.
+                    idle: SliderValue::default(), // We override the idle value in `SliderZoom::extract`.
                     delete_on_entered: true,
                     ..default()
                 };
@@ -626,13 +725,17 @@ impl Instruction for Slider
             }
 
             // Set up observers.
-            let press_observer = world.spawn(Observer::new(slider_bar_ptr_down).with_entity(entity)).id();
-            let drag_observer = world.spawn(Observer::new(slider_bar_drag).with_entity(entity)).id();
+            let press_observer = world
+                .spawn(Observer::new(slider_bar_ptr_down).with_entity(entity))
+                .id();
+            let drag_observer = world
+                .spawn(Observer::new(slider_bar_drag).with_entity(entity))
+                .id();
 
-            ComputedSlider{
+            ComputedSlider {
                 config: self,
                 drag_reference: SliderDragReference::default(),
-                press_vals: AnimatedVals<SliderValue>::default(),
+                press_vals: AnimatedVals::<SliderValue>::default(),
                 press_observer,
                 drag_observer,
             }
@@ -656,67 +759,21 @@ impl Instruction for Slider
     }
 }
 
-/*
-- animation setup
-    - press_bar_with
-    - tied to state PseudoState::Custom("SliderZoom")
-    - enter_idle_with and delete_on_entered
-    - StaticAttribute for setting SliderValue
-    - use custom AnimatedAttribute impl to get ComputedSliderPressVals component
-        - remove PseudoState::Custom("SliderZoom") when AnimationResult::Hold(..Idle) is received
-    - use Animated to apply (and revert the Animated)
-
-- Pointer<Down> on slider bar (primary button of any pointer)
-    - .propagate(false)
-    - check if pointer is inside the slider handle (UiSurface::get_layout().content_size centered on handle,
-    get max relative to handle size)
-        - convert pointer location to physical coords with ComputedNode::inverse_scale_factor()
-        - use GlobalTransform of the handle to get its position
-    - if pointer within handle
-        - set SliderDragReference to current SliderValue, bar size, and handle size
-        - return
-    - if inert_bar set
-        - return
-    - compute new value based on where the bar was pressed, incorporating bar size and handle size from prev tick
-    - set SliderDragReference to computed value, with bar size and handle size
-    - if has animation
-        - insert PseudoState::Custom("SliderZoom")
-        - update ComputedSlider with AnimatedVals set with correct enter_ref and idle values
-    - else
-        - update SliderValue
-
-- Pointer<Drag> on slider bar (primary button of any pointer)
-    - .propagate(false)
-    - compute new value based on SliderDragReference, drag distance, bar size, handle size
-        - convert drag distance to physical coords with ComputedNode::inverse_scale_factor()
-        - use reference bar/handle sizes to correct the value in case bar/handle sizes changed during the drag
-    - update SliderValue
-    - if !inert_bar and has animation
-        - remove PseudoState::Custom("SliderZoom")
-
-- PostUpdate between layout and transform
-    - for each displayed slider
-        - compute handle's expected position based on current value + bar size + handle size
-        - fixup handle Transform
-
-- caveat: slider handle must be in the same render target as the slider bar
-*/
-
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Component loadable for setting up a slider widget's handle.
 ///
 /// The handle node should be absolutely-positioned (see [`AbsoluteNode`]).
 ///
-/// One of the node's ancestors must have `ComputedSlider`.
-/// The node's position will be controlled by the slider bar.
+/// One of the node's ancestors must have `ComputedSlider` (see [`Slider`]). It is recommended, but not required,
+/// for the handle to be a direct child of the slider. The handle's `Transform` is automatically adjusted to
+/// position it correctly relative to the slider, so if the handle isn't a direct child that calculation may be
+/// off.
 ///
 /// If the handle node has a width or height, then those dimensions will be respected by the slider bar. For
 /// example if you have a vertical scrollbar, then the 'slider range' will equal the bar height minus the handle
-/// height, and the 'current slider value' equals the distance between the top of the bar and the top
-/// of the handle divided by the 'slider range'.
-///
-/// See [`Slider`].
+/// height, and the 'current slider value' equals the distance between the bottom of the bar and the bottom
+/// of the handle, divided by the 'slider range'.
 #[derive(Reflect, Component, Default, PartialEq, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -736,7 +793,7 @@ pub trait SliderWidgetExt
     /// audio level (or get the initial value from a setting in the app).
     /**
     ```rust
-    ui_builder.initialize_slider_value(
+    ui_builder.initialize_slider(
         |
             id: UpdateId,
             mut c: Commands,
@@ -755,7 +812,7 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_insertion::<SliderValue>(entity), callback)
     /// ```
-    fn initialize_slider_value<M, C>(&mut self, callback: R) -> &mut Self
+    fn initialize_slider<M, C>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
 
@@ -765,7 +822,7 @@ pub trait SliderWidgetExt
     /// whenever the slider changes.
     /**
     ```rust
-    ui_builder.update_on_slider_value(
+    ui_builder.on_slider(
         |
             id: UpdateId,
             mut settings: ResMut<Settings>,
@@ -782,25 +839,25 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_mutation::<SliderValue>(entity), callback)
     /// ```
-    fn update_on_slider_value<M, C>(&mut self, callback: R) -> &mut Self
+    fn on_slider<M, C>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
 }
 
 impl SliderWidgetExt for UiBuilder<'_, Entity>
 {
-    fn initialize_slider_value<M, C>(&mut self, callback: R) -> &mut Self
+    fn initialize_slider<M, C>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
     {
-        self.update_on(entity_insertion::<SliderValue>(entity), callback)
+        self.update_on(entity_insertion::<SliderValue>(self.id()), callback)
     }
 
-    fn update_on_slider_value<M, C>(&mut self, callback: R) -> &mut Self
+    fn on_slider<M, C>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static
+        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
     {
-        self.update_on(entity_mutation::<SliderValue>(entity), callback)
+        self.update_on(entity_mutation::<SliderValue>(self.id()), callback)
     }
 }
 
@@ -817,7 +874,12 @@ impl Plugin for CobwebSliderPlugin
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
             .init_resource::<ChildrenIterScratch>()
-            .add_systems(PostUpdate, update_slider_handle_positions.after(UiSystem::Layout).before(TransformPropagate));
+            .add_systems(
+                PostUpdate,
+                update_slider_handle_positions
+                    .after(UiSystem::Layout)
+                    .before(TransformPropagate),
+            );
     }
 }
 

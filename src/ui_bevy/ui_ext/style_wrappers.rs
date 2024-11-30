@@ -92,6 +92,14 @@ pub enum Clipping
     ClipX,
     ClipY,
     ClipXY,
+    ScrollX,
+    ScrollY,
+    /// Recommended for horizontal scrolling.
+    ScrollXClipY,
+    /// Recommended for vertical scrolling.
+    ScrollYClipX,
+    /// For bi-directional scrolling.
+    ScrollXY,
 }
 
 impl Into<Overflow> for Clipping
@@ -103,6 +111,11 @@ impl Into<Overflow> for Clipping
             Self::ClipX => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Visible },
             Self::ClipY => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Clip },
             Self::ClipXY => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Clip },
+            Self::ScrollX => Overflow { x: OverflowAxis::Scroll, y: OverflowAxis::Visible },
+            Self::ScrollY => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Scroll },
+            Self::ScrollXClipY => Overflow { x: OverflowAxis::Scroll, y: OverflowAxis::Clip },
+            Self::ScrollYClipX => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Scroll },
+            Self::ScrollXY => Overflow { x: OverflowAxis::Scroll, y: OverflowAxis::Scroll },
         }
     }
 }
@@ -521,6 +534,8 @@ impl Default for Dims
 pub struct ContentFlex
 {
     /// Determines whether the node contents will be clipped at the node boundary.
+    ///
+    /// Can be used to make a node scrollable.
     ///
     /// Defaults to no clipping.
     #[reflect(default)]

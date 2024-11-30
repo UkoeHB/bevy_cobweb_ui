@@ -508,6 +508,11 @@ impl AnimationState
         }
     }
 
+    pub fn result(&self) -> &AnimationResult
+    {
+        &self.result
+    }
+
     pub fn tick(
         &self,
         target_style: InteractionStyle,
