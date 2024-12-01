@@ -59,6 +59,20 @@ To animate `BackgroundColor` on an entity, your COB file could look like this:
     }
 ```
 
+We include derive macros for setting up animations on components:
+- [`StaticComponent`](bevy_cobweb_ui::prelude::StaticComponent)
+- [`ResponsiveComponent`](bevy_cobweb_ui::prelude::ResponsiveComponent)
+- [`AnimatedComponent`](bevy_cobweb_ui::prelude::AnimatedComponent)
+- [`StaticReactComponent`](bevy_cobweb_ui::prelude::StaticReactComponent)
+- [`ResponsiveReactComponent`](bevy_cobweb_ui::prelude::ResponsiveReactComponent)
+- [`AnimatedReactComponent`](bevy_cobweb_ui::prelude::AnimatedReactComponent)
+- [`StaticNewtype`](bevy_cobweb_ui::prelude::StaticNewtype)
+- [`ResponsiveNewtype`](bevy_cobweb_ui::prelude::ResponsiveNewtype)
+- [`AnimatedNewtype`](bevy_cobweb_ui::prelude::AnimatedNewtype)
+- [`StaticReactNewtype`](bevy_cobweb_ui::prelude::StaticReactNewtype)
+- [`ResponsiveReactNewtype`](bevy_cobweb_ui::prelude::ResponsiveReactNewtype)
+- [`AnimatedReactNewtype`](bevy_cobweb_ui::prelude::AnimatedReactNewtype)
+
 
 ## Control groups
 

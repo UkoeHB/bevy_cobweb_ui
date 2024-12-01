@@ -323,40 +323,13 @@ fn restore_opacity(
 /// efficient to *hide* those popups using opacity, because opacity does require hierarchy traversal every tick.
 /// If perf becomes an issue, you should use [`Visibility::Hidden`] to hide popups, and only insert
 /// this component when animating a transition to full opacity.
-#[derive(Component, Reflect, Default, Debug, Clone, PartialEq)]
+#[derive(Component, AnimatedNewtype, Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
 pub struct PropagateOpacity(pub f32);
-
-impl Instruction for PropagateOpacity
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        emut.insert(self);
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Self>();
-        });
-    }
-}
-
-impl StaticAttribute for PropagateOpacity
-{
-    type Value = f32;
-    fn construct(value: Self::Value) -> Self
-    {
-        Self(value)
-    }
-}
-impl ResponsiveAttribute for PropagateOpacity {}
-impl AnimatedAttribute for PropagateOpacity {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

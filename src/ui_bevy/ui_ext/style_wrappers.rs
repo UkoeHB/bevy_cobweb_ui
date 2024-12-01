@@ -330,7 +330,7 @@ impl Into<AlignItems> for JustifyCross
 /// (except when [`FlexWrap::WrapReverse`] is used, but don't use that).
 ///
 /// Defaults to [`Self::Auto`].
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
