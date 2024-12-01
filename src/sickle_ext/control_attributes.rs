@@ -184,7 +184,7 @@ fn extract_responsive_value<T: ResponsiveAttribute>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatableAttribute>(
+fn extract_animation_value<T: AnimatedAttribute>(
     ref_vals: AnimatedVals<T::Value>,
 ) -> impl Fn(Entity, AnimationState, &mut World)
 {
@@ -247,7 +247,7 @@ pub trait ResponsiveAttribute: StaticAttribute
 /// Use [`Interactive`] to make an entity interactable.
 ///
 /// See [`Animated`].
-pub trait AnimatableAttribute: StaticAttribute<Value: Lerp>
+pub trait AnimatedAttribute: StaticAttribute<Value: Lerp>
 {
     /// Extracts a value that should be applied to the entity.
     ///
@@ -278,9 +278,9 @@ where
     }
 }
 impl<T> ResponsiveAttribute for Splat<T> where T: Splattable + ResponsiveAttribute {}
-impl<T> AnimatableAttribute for Splat<T>
+impl<T> AnimatedAttribute for Splat<T>
 where
-    T: Splattable + AnimatableAttribute,
+    T: Splattable + AnimatedAttribute,
     <T as Splattable>::Splat: Lerp,
 {
 }
@@ -420,7 +420,7 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
-pub struct Animated<T: AnimatableAttribute>
+pub struct Animated<T: AnimatedAttribute>
 {
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this animation to become active.
@@ -505,7 +505,7 @@ pub struct Animated<T: AnimatableAttribute>
     pub delete_on_entered: bool,
 }
 
-impl<T: AnimatableAttribute> Instruction for Animated<T>
+impl<T: AnimatedAttribute> Instruction for Animated<T>
 {
     fn apply(self, entity: Entity, world: &mut World)
     {

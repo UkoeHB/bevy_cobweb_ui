@@ -356,7 +356,7 @@ impl StaticAttribute for PropagateOpacity
     }
 }
 impl ResponsiveAttribute for PropagateOpacity {}
-impl AnimatableAttribute for PropagateOpacity {}
+impl AnimatedAttribute for PropagateOpacity {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

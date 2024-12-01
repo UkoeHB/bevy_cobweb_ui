@@ -3,6 +3,7 @@
 ## WIP
 
 - Add `SliderValue::single` and `SliderValue::planar` helpers.
+- Rename `AnimatableAttribute` to `AnimatedAttribute`.
 
 ## 0.5.0
 

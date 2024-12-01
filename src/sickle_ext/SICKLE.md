@@ -10,7 +10,7 @@ Attributes are entity mutators applied under certain conditions.
 There are three kinds of attributes:
 - **Static**: A static value is applied directly to an entity. For example, a static attribute could set the text size of a widget. We have the [`Static<T>`](bevy_cobweb_ui::prelude::Static) instruction for inserting static attributes to entities, and the corresponding [`StaticAttribute`]((bevy_cobweb_ui::prelude::StaticAttribute)) trait that must be implemented on `T`. `Static` is only useful when you want values that vary according to an entity's [`PseudoStates`](bevy_cobweb_ui::sickle::PseudoStates). Otherwise, just use `T` directly.
 - **Responsive**: A responsive value will change in response to flux interactions. For example, the background color of a widget may change in response to hovering or pressing it. We have the [`Responsive<T>`](bevy_cobweb_ui::prelude::Responsive) instruction for these attributes, and the corresponding [`ResponsiveAttribute`]((bevy_cobweb_ui::prelude::ResponsiveAttribute)) trait that must be implemented on `T`.
-- **Animated**: An animated value will change fluidly between states in response to flux interactions. We have the [`Animated<T>`](bevy_cobweb_ui::prelude::Animated) instruction for these attributes, and the corresponding [`AnimatableAttribute`]((bevy_cobweb_ui::prelude::AnimatableAttribute)) trait that must be implemented on `T`.
+- **Animated**: An animated value will change fluidly between states in response to flux interactions. We have the [`Animated<T>`](bevy_cobweb_ui::prelude::Animated) instruction for these attributes, and the corresponding [`AnimatedAttribute`]((bevy_cobweb_ui::prelude::AnimatedAttribute)) trait that must be implemented on `T`.
 
 To illustrate, here is `bevy`'s built-in [`BackgroundColor`](bevy::prelude::BackgroundColor) component:
 ```rust
@@ -41,7 +41,7 @@ impl StaticAttribute for BackgroundColor
 }
 
 impl ResponsiveAttribute for BackgroundColor {}
-impl AnimatableAttribute for BackgroundColor {}
+impl AnimatedAttribute for BackgroundColor {}
 ```
 
 We include an `Instruction` implementation because it is a trait bound on `StaticAttribute`. `Instruction::apply` is used to apply values whenever a static/responsive/animatable attribute is activated.

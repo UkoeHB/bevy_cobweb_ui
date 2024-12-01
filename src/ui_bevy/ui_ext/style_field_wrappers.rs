@@ -218,7 +218,7 @@ impl StaticAttribute for Width
     }
 }
 impl ResponsiveAttribute for Width {}
-impl AnimatableAttribute for Width {}
+impl AnimatedAttribute for Width {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -265,7 +265,7 @@ impl StaticAttribute for Height
     }
 }
 impl ResponsiveAttribute for Height {}
-impl AnimatableAttribute for Height {}
+impl AnimatedAttribute for Height {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -312,7 +312,7 @@ impl StaticAttribute for MinWidth
     }
 }
 impl ResponsiveAttribute for MinWidth {}
-impl AnimatableAttribute for MinWidth {}
+impl AnimatedAttribute for MinWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -359,7 +359,7 @@ impl StaticAttribute for MinHeight
     }
 }
 impl ResponsiveAttribute for MinHeight {}
-impl AnimatableAttribute for MinHeight {}
+impl AnimatedAttribute for MinHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -406,7 +406,7 @@ impl StaticAttribute for MaxWidth
     }
 }
 impl ResponsiveAttribute for MaxWidth {}
-impl AnimatableAttribute for MaxWidth {}
+impl AnimatedAttribute for MaxWidth {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -453,7 +453,7 @@ impl StaticAttribute for MaxHeight
     }
 }
 impl ResponsiveAttribute for MaxHeight {}
-impl AnimatableAttribute for MaxHeight {}
+impl AnimatedAttribute for MaxHeight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -500,7 +500,7 @@ impl StaticAttribute for AspectRatio
     }
 }
 impl ResponsiveAttribute for AspectRatio {}
-impl AnimatableAttribute for AspectRatio {}
+impl AnimatedAttribute for AspectRatio {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -543,7 +543,7 @@ impl StaticAttribute for Border
     }
 }
 impl ResponsiveAttribute for Border {}
-impl AnimatableAttribute for Border {}
+impl AnimatedAttribute for Border {}
 
 impl Splattable for Border
 {
@@ -599,7 +599,7 @@ impl StaticAttribute for DimsTop
     }
 }
 impl ResponsiveAttribute for DimsTop {}
-impl AnimatableAttribute for DimsTop {}
+impl AnimatedAttribute for DimsTop {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -646,7 +646,7 @@ impl StaticAttribute for DimsBottom
     }
 }
 impl ResponsiveAttribute for DimsBottom {}
-impl AnimatableAttribute for DimsBottom {}
+impl AnimatedAttribute for DimsBottom {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -693,7 +693,7 @@ impl StaticAttribute for DimsLeft
     }
 }
 impl ResponsiveAttribute for DimsLeft {}
-impl AnimatableAttribute for DimsLeft {}
+impl AnimatedAttribute for DimsLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -740,7 +740,7 @@ impl StaticAttribute for DimsRight
     }
 }
 impl ResponsiveAttribute for DimsRight {}
-impl AnimatableAttribute for DimsRight {}
+impl AnimatedAttribute for DimsRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -829,7 +829,7 @@ impl StaticAttribute for Padding
     }
 }
 impl ResponsiveAttribute for Padding {}
-impl AnimatableAttribute for Padding {}
+impl AnimatedAttribute for Padding {}
 
 impl Splattable for Padding
 {
@@ -1115,7 +1115,7 @@ impl StaticAttribute for ColumnGap
     }
 }
 impl ResponsiveAttribute for ColumnGap {}
-impl AnimatableAttribute for ColumnGap {}
+impl AnimatedAttribute for ColumnGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1162,7 +1162,7 @@ impl StaticAttribute for RowGap
     }
 }
 impl ResponsiveAttribute for RowGap {}
-impl AnimatableAttribute for RowGap {}
+impl AnimatedAttribute for RowGap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1202,7 +1202,7 @@ impl StaticAttribute for Margin
     }
 }
 impl ResponsiveAttribute for Margin {}
-impl AnimatableAttribute for Margin {}
+impl AnimatedAttribute for Margin {}
 
 impl Splattable for Margin
 {
@@ -1255,7 +1255,7 @@ impl StaticAttribute for FlexBasis
     }
 }
 impl ResponsiveAttribute for FlexBasis {}
-impl AnimatableAttribute for FlexBasis {}
+impl AnimatedAttribute for FlexBasis {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1299,7 +1299,7 @@ impl StaticAttribute for FlexGrow
     }
 }
 impl ResponsiveAttribute for FlexGrow {}
-impl AnimatableAttribute for FlexGrow {}
+impl AnimatedAttribute for FlexGrow {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1343,7 +1343,7 @@ impl StaticAttribute for FlexShrink
     }
 }
 impl ResponsiveAttribute for FlexShrink {}
-impl AnimatableAttribute for FlexShrink {}
+impl AnimatedAttribute for FlexShrink {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

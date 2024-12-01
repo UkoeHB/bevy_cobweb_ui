@@ -18,7 +18,7 @@ pub trait ControlRegistrationExt
     where
         <T as StaticAttribute>::Value: GetTypeRegistration;
     fn register_animatable<
-        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatableAttribute,
+        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatedAttribute,
     >(
         &mut self,
     ) -> &mut Self
@@ -49,7 +49,7 @@ impl ControlRegistrationExt for App
     }
 
     fn register_animatable<
-        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatableAttribute,
+        T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute + AnimatedAttribute,
     >(
         &mut self,
     ) -> &mut Self

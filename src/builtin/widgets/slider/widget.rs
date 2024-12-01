@@ -51,7 +51,7 @@ impl StaticAttribute for SliderZoom
     }
 }
 
-impl AnimatableAttribute for SliderZoom
+impl AnimatedAttribute for SliderZoom
 {
     fn extract(
         entity: Entity,

@@ -186,7 +186,7 @@ impl StaticAttribute for ImageNodeColor
 }
 
 impl ResponsiveAttribute for ImageNodeColor {}
-impl AnimatableAttribute for ImageNodeColor {}
+impl AnimatedAttribute for ImageNodeColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -224,7 +224,7 @@ impl StaticAttribute for ImageNodeIndex
 }
 
 impl ResponsiveAttribute for ImageNodeIndex {}
-impl AnimatableAttribute for ImageNodeIndex {}
+impl AnimatedAttribute for ImageNodeIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

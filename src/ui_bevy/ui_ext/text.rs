@@ -267,7 +267,7 @@ impl StaticAttribute for TextLineColor
 }
 
 impl ResponsiveAttribute for TextLineColor {}
-impl AnimatableAttribute for TextLineColor {}
+impl AnimatedAttribute for TextLineColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

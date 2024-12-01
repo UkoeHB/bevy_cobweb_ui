@@ -100,7 +100,7 @@ impl StaticAttribute for BackgroundColor
 }
 
 impl ResponsiveAttribute for BackgroundColor {}
-impl AnimatableAttribute for BackgroundColor {}
+impl AnimatedAttribute for BackgroundColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ impl StaticAttribute for BorderColor
 }
 
 impl ResponsiveAttribute for BorderColor {}
-impl AnimatableAttribute for BorderColor {}
+impl AnimatedAttribute for BorderColor {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -174,7 +174,7 @@ impl StaticAttribute for BrRadius
 }
 
 impl ResponsiveAttribute for BrRadius {}
-impl AnimatableAttribute for BrRadius {}
+impl AnimatedAttribute for BrRadius {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -214,7 +214,7 @@ impl StaticAttribute for BrRadiusTopLeft
 }
 
 impl ResponsiveAttribute for BrRadiusTopLeft {}
-impl AnimatableAttribute for BrRadiusTopLeft {}
+impl AnimatedAttribute for BrRadiusTopLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -254,7 +254,7 @@ impl StaticAttribute for BrRadiusTopRight
 }
 
 impl ResponsiveAttribute for BrRadiusTopRight {}
-impl AnimatableAttribute for BrRadiusTopRight {}
+impl AnimatedAttribute for BrRadiusTopRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -294,7 +294,7 @@ impl StaticAttribute for BrRadiusBottomLeft
 }
 
 impl ResponsiveAttribute for BrRadiusBottomLeft {}
-impl AnimatableAttribute for BrRadiusBottomLeft {}
+impl AnimatedAttribute for BrRadiusBottomLeft {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -334,7 +334,7 @@ impl StaticAttribute for BrRadiusBottomRight
 }
 
 impl ResponsiveAttribute for BrRadiusBottomRight {}
-impl AnimatableAttribute for BrRadiusBottomRight {}
+impl AnimatedAttribute for BrRadiusBottomRight {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -399,7 +399,7 @@ impl StaticAttribute for NodeOutline
 }
 
 impl ResponsiveAttribute for NodeOutline {}
-impl AnimatableAttribute for NodeOutline {}
+impl AnimatedAttribute for NodeOutline {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -508,7 +508,7 @@ impl StaticAttribute for NodeShadow
 }
 
 impl ResponsiveAttribute for NodeShadow {}
-impl AnimatableAttribute for NodeShadow {}
+impl AnimatedAttribute for NodeShadow {}
 
 //-------------------------------------------------------------------------------------------------------------------
 

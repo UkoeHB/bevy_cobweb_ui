@@ -131,9 +131,11 @@ impl EditablePseudoTheme
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that coordinates dynamic attributes for multi-entity widgets.
+/// Component that coordinates dynamic attributes for multi-entity widgets (or single entities).
 ///
-/// Control maps should be placed on the root entity of a widget. See [`ControlRoot`] and [`ControlLabel`].
+/// Control maps should be placed on the root entity of a widget. Use [`ControlRoot`] and [`ControlLabel`] if you
+/// want a multi-entity control group. Otherwise the control group will be 'anonymous' and only work on the current
+/// entity.
 #[derive(Component, Debug, Default)]
 pub(crate) struct ControlMap
 {
