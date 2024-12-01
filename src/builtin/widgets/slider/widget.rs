@@ -120,78 +120,55 @@ impl ComputedSlider
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// More performant than `.iter_descendants`, which internally allocates every time you call it.
 #[derive(Resource, Default)]
 struct ChildrenIterScratch
 {
-    stack: Vec<(&'static Children, usize)>,
+    stack: Vec<Entity>,
 }
 
 impl ChildrenIterScratch
 {
-    fn take<'a>(&mut self) -> Vec<(&'a Children, usize)>
-    {
-        self.stack.clear();
-        core::mem::take(&mut self.stack)
-            .into_iter()
-            .map(|_| -> (&Children, usize) { unreachable!() })
-            .collect()
-    }
-
-    fn recover(&mut self, mut stack: Vec<(&Children, usize)>)
-    {
-        stack.clear();
-        self.stack = stack
-            .into_iter()
-            .map(|_| -> (&'static Children, usize) { unreachable!() })
-            .collect();
-    }
-
     fn search<R>(
         &mut self,
         initial_entity: Entity,
         children_query: &Query<&Children>,
-        mut search_fn: impl FnMut(Entity) -> Option<R>,
+        search_fn: impl FnMut(Entity) -> Option<R>,
     ) -> Option<R>
     {
-        if let Some(entry) = (search_fn)(initial_entity) {
-            return Some(entry);
-        }
-
-        let initial_children = children_query.get(initial_entity).ok()?;
-        self.search_descendants(initial_children, children_query, search_fn)
+        self.stack.clear();
+        self.stack.push(initial_entity);
+        self.search_impl(children_query, search_fn)
     }
 
     fn search_descendants<R>(
         &mut self,
         initial_children: &Children,
         children_query: &Query<&Children>,
+        search_fn: impl FnMut(Entity) -> Option<R>,
+    ) -> Option<R>
+    {
+        self.stack.clear();
+        self.stack.extend(initial_children);
+        self.search_impl(children_query, search_fn)
+    }
+
+    fn search_impl<R>(
+        &mut self,
+        children_query: &Query<&Children>,
         mut search_fn: impl FnMut(Entity) -> Option<R>,
     ) -> Option<R>
     {
-        let mut scratch = self.take();
-        scratch.push((initial_children, 0));
-
-        while let Some((children, idx)) = scratch.pop() {
-            if idx >= children.len() {
-                continue;
-            }
-            let child = children[idx];
-
-            if let Some(entry) = (search_fn)(child) {
-                self.recover(scratch);
+        while let Some(entity) = self.stack.pop() {
+            if let Some(entry) = (search_fn)(entity) {
                 return Some(entry);
             }
 
-            if idx + 1 < children.len() {
-                scratch.push((children, idx + 1));
-            }
-
-            if let Ok(next_children) = children_query.get(child) {
-                scratch.push((next_children, 0));
+            if let Ok(next_children) = children_query.get(entity) {
+                self.stack.extend(next_children);
             }
         }
 
-        self.recover(scratch);
         None
     }
 }
