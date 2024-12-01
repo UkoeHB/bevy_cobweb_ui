@@ -33,9 +33,6 @@ fn handle_loadable(
         return id_scratch;
     }
 
-    let loadable_index = seen_shortnames.len();
-    seen_shortnames.push(short_name);
-
     // Resolve defs.
     if let Err(err) = loadable.resolve(constants_buffer) {
         tracing::warn!("failed extracting loadable {:?} at {:?} in {:?}; error resolving defs: {:?}",
@@ -47,6 +44,9 @@ fn handle_loadable(
     let loadable_value = get_loadable_value(deserializer, loadable);
 
     // Save this loadable.
+    let loadable_index = seen_shortnames.len();
+    seen_shortnames.push(short_name);
+
     scene_buffer.insert_loadable(
         &SceneRef {
             file: SceneFile::File(file.clone()),

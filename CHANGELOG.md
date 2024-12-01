@@ -5,6 +5,7 @@
 - Add `SliderValue::single` and `SliderValue::planar` helpers.
 - Rename `AnimatableAttribute` to `AnimatedAttribute`.
 - Add derives for setting up animated components and newtype components: `StaticComponent`, `ResponsiveComponent`, `AnimatedComponent`, `StaticReactComponent`, `ResponsiveReactComponent`, `AnimatedReactComponent`, `StaticNewtype`, `ResponsiveNewtype`, `AnimatedNewtype`, `StaticReactNewtype`, `ResponsiveReactNewtype`, `AnimatedReactNewtype`.
+- Bugfix: internal panic when there is an invalid loadable in a scene node.
 
 ## 0.5.0
 

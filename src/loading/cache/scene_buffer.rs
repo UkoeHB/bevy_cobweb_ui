@@ -57,6 +57,7 @@ fn insert_node_loadable_entry(
                                 tracing::error!("error updating loadable {:?} at {:?}, detected previous instance of loadable \
                                     at index {} which is lower than the target index {} indicating there's a duplicate in the \
                                     scene node list (this is a bug)", full_type_name, scene_ref, pos, index);
+                                return InsertNodeResult::NoChange;
                             }
                             entry.get_mut().swap(pos, index);
                             InsertNodeResult::Rearranged
@@ -68,6 +69,7 @@ fn insert_node_loadable_entry(
                             tracing::error!("error updating loadable {:?} at {:?}, detected previous instance of loadable \
                                 at index {} which is lower than the target index {} indicating there's a duplicate in the \
                                 scene node list (this is a bug)", full_type_name, scene_ref, pos, index);
+                            return InsertNodeResult::NoChange;
                         }
                         *erased_loadable = ErasedLoadable { type_id, loadable };
                         entry.get_mut().swap(pos, index);
