@@ -11,6 +11,7 @@ use crate::sickle::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 const SLIDER_ZOOM_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolStr::new_static("SliderZoom"));
+const SLIDER_ZOOM_ATTR: &'static str = "sliderzoom";
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -60,16 +61,17 @@ impl AnimatedAttribute for SliderZoom
         state: &AnimationState,
     ) -> Self::Value
     {
+        let val = ref_vals.to_value(state);
+
         // Clean up state when done zooming.
         // - This prepares us for the next zoom, which requires 'entering' the SliderZoom state.
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return ref_vals.idle.clone() };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return val };
         if *state.result() == AnimationResult::Hold(InteractionStyle::Idle) {
             emut.remove_pseudo_state(SLIDER_ZOOM_PSEUDO_STATE.clone());
         }
 
         // Update the slider value.
-        let Some(bar) = emut.get::<ComputedSlider>() else { return ref_vals.idle.clone() };
-        bar.press_vals.to_value(state)
+        val
     }
 }
 
@@ -100,9 +102,6 @@ struct ComputedSlider
 
     /// Drag reference for the latest drag event.
     drag_reference: SliderDragReference,
-
-    /// Bar press values for animating handle movements when the bar is pressed.
-    press_vals: AnimatedVals<SliderValue>,
 
     /// Cached reactor ids for cleanup on instruction revert.
     press_observer: Entity,
@@ -237,6 +236,7 @@ fn slider_bar_ptr_down(
     mut sliders: Query<(
         &mut ComputedSlider,
         &mut React<SliderValue>,
+        Option<&mut NodeAttributes>,
         &ComputedNode,
         &GlobalTransform,
         &Children,
@@ -251,8 +251,15 @@ fn slider_bar_ptr_down(
 
     // Look up the slider and its handle.
     let slider_entity = event.entity();
-    let Ok((mut slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
-        sliders.get_mut(slider_entity)
+    let Ok((
+        mut slider,
+        mut slider_value,
+        maybe_attrs,
+        slider_node,
+        slider_transform,
+        slider_children,
+        maybe_slider_camera,
+    )) = sliders.get_mut(slider_entity)
     else {
         return;
     };
@@ -327,13 +334,17 @@ fn slider_bar_ptr_down(
             React::set_if_neq(&mut slider_value, &mut c, target_val);
         }
         SliderPress::Animate(_) => {
-            slider.press_vals.enter_ref = Some(**slider_value);
-            slider.press_vals.idle = target_val;
             // If adding state fails, we are already in this state. The animation framework does not support
             // changing reference values in the middle of an animation, so we fall back to 'jump to position'.
             if !ps.try_insert(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE) {
                 ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
                 React::set_if_neq(&mut slider_value, &mut c, target_val);
+            } else if let Some(zoom) = maybe_attrs
+                .and_then(|a| a.into_inner().get_mut(SLIDER_ZOOM_ATTR))
+                .and_then(|a| a.animated_vals::<SliderZoom>())
+            {
+                zoom.enter_ref = Some(**slider_value);
+                zoom.idle = target_val;
             }
         }
         SliderPress::Inert => unreachable!(),
@@ -736,6 +747,7 @@ impl Instruction for Slider
             // Set up animation for pressing the bar outside the handle.
             if let SliderPress::Animate(enter_idle_with) = self.bar_press.clone() {
                 let animation = Animated::<SliderZoom> {
+                    name: Some(SmolStr::new_static(SLIDER_ZOOM_ATTR)),
                     state: Some(SmallVec::from_elem(SLIDER_ZOOM_PSEUDO_STATE.clone(), 1)),
                     enter_idle_with: Some(enter_idle_with),
                     idle: SliderValue::default(), // We override the idle value in `SliderZoom::extract`.
@@ -756,7 +768,6 @@ impl Instruction for Slider
             ComputedSlider {
                 config: self,
                 drag_reference: SliderDragReference::default(),
-                press_vals: AnimatedVals::<SliderValue>::default(),
                 press_observer,
                 drag_observer,
             }
