@@ -329,7 +329,12 @@ fn slider_bar_ptr_down(
         SliderPress::Animate(_) => {
             slider.press_vals.enter_ref = Some(**slider_value);
             slider.press_vals.idle = target_val;
-            ps.try_add(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
+            // If adding state fails, we are already in this state. The animation framework does not support
+            // changing reference values in the middle of an animation, so we fall back to 'jump to position'.
+            if !ps.try_insert(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE) {
+                ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
+                React::set_if_neq(&mut slider_value, &mut c, target_val);
+            }
         }
         SliderPress::Inert => unreachable!(),
     }

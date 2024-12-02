@@ -298,8 +298,8 @@ impl PseudoStateParam<'_, '_>
         req.into_iter().any(|s| !states.has(s))
     }
 
-    /// Adds the pseudo state to the entity if it doesn't have it.
-    pub fn try_add(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
+    /// Inserts the pseudo state to the entity if it doesn't have it.
+    pub fn try_insert(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
     {
         if self
             .states
