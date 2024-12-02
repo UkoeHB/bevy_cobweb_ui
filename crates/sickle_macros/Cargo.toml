@@ -1,6 +1,6 @@
 [package]
 name = "cob_sickle_macros"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 description = "Macros for sickle_ui"
 license = "MIT OR Apache-2.0"
