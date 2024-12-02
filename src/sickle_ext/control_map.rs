@@ -2,7 +2,6 @@ use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use bevy::ui::UiSystem;
-use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
@@ -60,7 +59,7 @@ impl ControlRefreshCache
         style_builder: StyleBuilder,
         dynamic_style_buffers: Vec<Vec<ContextStyleAttribute>>,
         recovered_dynamic_styles: Vec<DynamicStyle>,
-        pseudo_themes: ps_buffer,
+        ps_buffer: PseudoThemeBuffer,
     )
     {
         self.collected_styles = collected_styles;
@@ -94,7 +93,7 @@ impl ControlMap
     pub(crate) fn new_anonymous(entity: Entity) -> Self
     {
         let mut map = Self { anonymous: true, ..default() };
-
+        map.insert(SmolStr::new_static("__anon"), entity);
         map
     }
 
@@ -111,18 +110,17 @@ impl ControlMap
         self.set_anonymous(true);
         self.remove(entity);
         self.reapply_labels(c);
-        map.insert(SmolStr::new_static("__anon"), entity);
+        self.insert(SmolStr::new_static("__anon"), entity);
     }
 
-    pub(crate) fn make_not_anonymous(&mut self, c: &mut Commands, entity: Entity, label: SmolStr)
+    pub(crate) fn make_not_anonymous(&mut self, entity: Entity, label: SmolStr)
     {
         if !self.is_anonymous() {
             return;
         }
         self.set_anonymous(false);
         self.entities.clear();
-        remove(entity);
-        map.insert(label, entity);
+        self.insert(label, entity);
     }
 
     pub(crate) fn is_anonymous(&self) -> bool
@@ -234,7 +232,7 @@ fn handle_node_attr_changes(
     mut maps: Query<(&mut ControlMap, Has<NodeAttributes>)>,
     parents: Query<&Parent>,
     mut removed_attrs: RemovedComponents<NodeAttributes>,
-    node_attributes: Query<(Entity, Option<&ControLabel>), Changed<NodeAttributes>>,
+    node_attributes: Query<(Entity, Option<&ControlLabel>), Changed<NodeAttributes>>,
 )
 {
     // Cleanup anonymous control maps on attrs removal.
@@ -256,12 +254,12 @@ fn handle_node_attr_changes(
             let mut current_entity = entity;
 
             loop {
-                if let Ok((map, _)) = maps.get(current_entity) {
+                if let Ok((mut map, _)) = maps.get_mut(current_entity) {
                     if !map.is_anonymous() {
                         map.set_changed();
                         break;
                     } else if current_entity == entity {
-                        map.make_not_anonymous(entity, label.clone());
+                        map.make_not_anonymous(entity, (**label).clone());
                         break;
                     }
                 }
@@ -275,7 +273,7 @@ fn handle_node_attr_changes(
             }
         } else {
             // Case: no control group
-            if let Ok((map, _)) = maps.get_mut(entity) {
+            if let Ok((mut map, _)) = maps.get_mut(entity) {
                 map.set_changed();
 
                 if !map.is_anonymous() {
@@ -353,6 +351,11 @@ impl EntityCommand for RefreshControlledStyles
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
+        // Need to check this first due to borrow checker limitations (>.<).
+        if world.get::<ControlMap>(entity).is_none() {
+            return;
+        }
+
         let mut cache = world.resource_mut::<ControlRefreshCache>();
         let mut collected_styles = std::mem::take(&mut cache.collected_styles);
         let mut unstyled_entities = std::mem::take(&mut cache.unstyled_entities);
@@ -361,19 +364,8 @@ impl EntityCommand for RefreshControlledStyles
         let mut recovered_dynamic_styles = std::mem::take(&mut cache.recovered_dynamic_styles);
         let mut ps_buffer = std::mem::take(&mut cache.ps_buffer);
         let mut pseudo_themes = ps_buffer.take();
-        let Ok(control_map) = world.get::<ControlMap>(entity) else {
-            let mut cache = world.resource_mut::<ControlRefreshCache>();
-            ps_buffer.recover(pseudo_themes);
-            cache.recover(
-                collected_styles,
-                unstyled_entities,
-                style_builder,
-                dynamic_style_buffers,
-                recovered_dynamic_styles,
-                ps_buffer,
-            );
-            return;
-        };
+
+        let control_map = world.get::<ControlMap>(entity).unwrap();
 
         // Get the entity's PseudoStates.
         let empty_pseudo_state = Vec::default();
@@ -387,7 +379,7 @@ impl EntityCommand for RefreshControlledStyles
         let mut idx = 0;
         for (label, entity) in control_map.iter_entities() {
             // Failure is not an error if the entity doesn't have any attributes.
-            let Ok(attrs) = world.get::<NodeAttributes>(entity) else { continue };
+            let Some(attrs) = world.get::<NodeAttributes>(*entity) else { continue };
 
             for pt in attrs.iter_themes() {
                 let Some(count) = pt.is_subset(pseudo_states) else { continue };

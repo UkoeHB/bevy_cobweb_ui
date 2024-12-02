@@ -334,8 +334,8 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
             pub fn apply(&self, ui_style: &mut UiStyle) {
                 match self {
                     #(#apply_variants)*
-                    Self::Custom(callback) => {
-                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ callback: callback.clone() });
+                    Self::Custom(attr) => {
+                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ attr: attr.clone() });
                     }
                 }
             }

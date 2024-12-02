@@ -365,7 +365,7 @@ impl DynamicStyle
     {
         self.attributes
             .iter()
-            .any(|csa| csa.attribute.is_interactive())
+            .any(|csa| csa.attribute.is_responsive())
     }
 
     pub fn is_animated(&self) -> bool

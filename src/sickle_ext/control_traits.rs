@@ -1,4 +1,7 @@
+use std::fmt::Debug;
+
 use bevy::prelude::*;
+use dyn_clone::DynClone;
 
 use crate::prelude::*;
 use crate::sickle::*;
@@ -11,7 +14,7 @@ use crate::sickle::*;
 pub trait StaticAttribute: Instruction
 {
     /// Specifies the value-type of the attribute.
-    type Value: Loadable + Clone;
+    type Value: Loadable + Clone + DynClone + Debug;
 
     /// Converts [`Self::Value`] into `Self`.
     fn construct(value: Self::Value) -> Self;

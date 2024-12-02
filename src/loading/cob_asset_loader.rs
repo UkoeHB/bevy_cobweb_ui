@@ -45,7 +45,7 @@ impl AssetLoader for CobAssetLoader
         #[cfg(feature = "editor")]
         {
             if !self.registry.try_refresh_file(&file, hash) {
-                tracing::info!("ignoring file reload for {}; file did not change", file.as_str());
+                tracing::info!("ignoring file reload for {}; file did not change since last save", file.as_str());
                 return Ok(CobAssetFile::Ignore);
             }
         }

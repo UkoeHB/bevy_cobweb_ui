@@ -7,6 +7,7 @@
 - Add derives for setting up animated components and newtype components: `StaticComponent`, `ResponsiveComponent`, `AnimatedComponent`, `StaticReactComponent`, `ResponsiveReactComponent`, `AnimatedReactComponent`, `StaticNewtype`, `ResponsiveNewtype`, `AnimatedNewtype`, `StaticReactNewtype`, `ResponsiveReactNewtype`, `AnimatedReactNewtype`.
 - Bugfix: internal panic when there is an invalid loadable in a scene node.
 - Refactor control attributes so they are stored on target entities. You can use the `NodeAttributes` component to add/remove/modify attributes at runtime.
+- Add `AnyClone` trait that mirrors `Any` but allows cloning the underlying type. Also bounded by `Debug + Send + Sync + 'static` for convenience.
 
 ## 0.5.0
 

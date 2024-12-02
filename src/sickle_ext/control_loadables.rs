@@ -1,4 +1,4 @@
-use std::any::{type_name, TypeId};
+use std::any::type_name;
 
 use bevy::ecs::entity::Entities;
 use bevy::prelude::*;
@@ -103,7 +103,7 @@ impl<T: StaticAttribute> Instruction for Static<T>
         // Add attribute.
         let attr = NodeAttribute::new_static::<T>(self.name, self.value);
 
-        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+        if let Some(mut attrs) = emut.get_mut::<NodeAttributes>() {
             if let Some(_) = attrs.insert(self.state, attr) {
                 tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
             }
@@ -189,14 +189,12 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Interactive if the attribute listens to interactions on self.
-        if emut.get::<ControlLabel>().map(|l| **l) == self.respond_to {
-            Interactive.apply(entity, world);
-        }
+        let needs_interactive = emut.get::<ControlLabel>().map(|l| &**l) == self.respond_to.as_ref();
 
         // Add attribute.
         let attr = NodeAttribute::new_responsive::<T>(self.name, self.respond_to, ref_vals);
 
-        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+        if let Some(mut attrs) = emut.get_mut::<NodeAttributes>() {
             if let Some(_) = attrs.insert(self.state, attr) {
                 tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
             }
@@ -204,6 +202,10 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
             let mut attrs = NodeAttributes::default();
             attrs.insert(self.state, attr);
             emut.insert(attrs);
+        }
+
+        if needs_interactive {
+            Interactive.apply(entity, world);
         }
     }
 
@@ -353,14 +355,12 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Interactive if the attribute listens to interactions on self.
-        if emut.get::<ControlLabel>().map(|l| **l) == self.respond_to {
-            Interactive.apply(entity, world);
-        }
+        let needs_interactive = emut.get::<ControlLabel>().map(|l| &**l) == self.respond_to.as_ref();
 
         // Add attribute.
         let attr = NodeAttribute::new_animated::<T>(self.name, self.respond_to, ref_vals, settings);
 
-        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+        if let Some(mut attrs) = emut.get_mut::<NodeAttributes>() {
             if let Some(_) = attrs.insert(self.state, attr) {
                 tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
             }
@@ -368,6 +368,10 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
             let mut attrs = NodeAttributes::default();
             attrs.insert(self.state, attr);
             emut.insert(attrs);
+        }
+
+        if needs_interactive {
+            Interactive.apply(entity, world);
         }
     }
 

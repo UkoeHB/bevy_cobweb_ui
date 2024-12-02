@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use smol_str::SmolStr;
@@ -103,11 +104,12 @@ impl StyleBuilder
     pub fn custom(
         &mut self,
         type_id: TypeId,
-        callback: impl Fn(Entity, &mut World) + Send + Sync + 'static,
+        reference: Arc<dyn AnyClone + Send + Sync + 'static>,
+        callback: fn(Entity, &mut World, &dyn AnyClone),
     ) -> &mut Self
     {
         self.add(DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-            CustomStaticStyleAttribute::new(type_id, callback),
+            CustomStaticStyleAttribute::new(type_id, reference, callback),
         )));
 
         self

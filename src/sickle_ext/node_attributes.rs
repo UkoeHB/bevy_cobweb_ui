@@ -1,13 +1,17 @@
-use std::any::{type_name, Any, TypeId};
+use std::any::{type_name, TypeId};
+use std::fmt::Debug;
+use std::sync::Arc;
 
 use bevy::prelude::*;
+use smallvec::SmallVec;
+use smol_str::SmolStr;
 
 use crate::prelude::*;
 use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: StaticAttribute>(entity: Entity, world: &mut World, ref_val: &dyn Any)
+fn extract_static_value<T: StaticAttribute>(entity: Entity, world: &mut World, ref_val: &dyn AnyClone)
 {
     let Some(ref_val) = ref_val.downcast_ref::<T::Value>() else {
         tracing::error!("failed downcasting static attribute ref value for extraction of {} (this is a bug)",
@@ -23,7 +27,7 @@ fn extract_responsive_value<T: ResponsiveAttribute>(
     entity: Entity,
     state: FluxInteraction,
     world: &mut World,
-    ref_vals: &dyn Any,
+    ref_vals: &dyn AnyClone,
 )
 {
     let Some(ref_vals) = ref_vals.downcast_ref::<ResponsiveVals<T::Value>>() else {
@@ -42,7 +46,7 @@ fn extract_animation_value<T: AnimatedAttribute>(
     entity: Entity,
     state: AnimationState,
     world: &mut World,
-    ref_vals: &dyn Any,
+    ref_vals: &dyn AnyClone,
 )
 {
     let Some(ref_vals) = ref_vals.downcast_ref::<AnimatedVals<T::Value>>() else {
@@ -57,7 +61,7 @@ fn extract_animation_value<T: AnimatedAttribute>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(super) struct PseudoTheme
 {
     state: Option<SmallVec<[PseudoState; 3]>>,
@@ -84,7 +88,7 @@ impl PseudoTheme
         if let Some(index) = self
             .style
             .iter()
-            .position(|(_, attr)| attr.logical_eq(&attribute))
+            .position(|attr| attr.logical_eq(&attribute))
         {
             let prev = std::mem::replace(&mut self.style[index], attribute);
             Some(prev)
@@ -118,7 +122,7 @@ impl PseudoTheme
             // then child nodes' attributes won't properly respond to interactions on the root.
             let source = attribute
                 .responds_to()
-                .map(|r| if r == label { None } else { r });
+                .and_then(|r| if r == label { None } else { Some(r) });
 
             // Set the placement (the placement of DynamicStyle, which is the 'interaction source' for non-static
             // attributes).
@@ -139,15 +143,15 @@ impl PseudoTheme
     /// Tries to remove an attribute by name.
     fn try_remove(&mut self, name: &str) -> Option<NodeAttribute>
     {
-        let pos = self.iter().find(|a| a.name() == Some(name))?;
-        self.style.remove(pos)
+        let pos = self.style.iter().position(|a| a.name() == Some(name))?;
+        Some(self.style.remove(pos))
     }
 
     /// Gets the attribute's info if this theme contains an attribute with the given name.
-    fn get_info(&self, name: &str) -> Option<(&[PseudoState], &NodeAttribute)>
+    fn get_info(&self, name: &str) -> Option<(Option<&[PseudoState]>, &NodeAttribute)>
     {
-        if let Some(attr) = self.iter().find(|a| a.name() == Some(name)) {
-            (self.state.as_ref().map(|s| &s), attr)
+        if let Some(attr) = self.style.iter().find(|a| a.name() == Some(name)) {
+            Some((self.state.as_ref().map(|s| s.as_slice()), attr))
         } else {
             None
         }
@@ -156,42 +160,47 @@ impl PseudoTheme
     /// Gets an attribute mutably by name.
     fn get_mut(&mut self, name: &str) -> Option<&mut NodeAttribute>
     {
-        let name = name.as_ref();
         self.style.iter_mut().find(|a| a.name() == Some(name))
     }
 
     /// Gets an attribute with state and type id.
-    fn get_with(&self, state: Option<&[PseudoState; 3]>, type_id: TypeId) -> Option<&NodeAttribute>
+    fn get_with<'a>(&'a self, state: Option<&[PseudoState]>, type_id: TypeId) -> Option<&'a NodeAttribute>
     {
-        if self.states.as_ref().map(|s| &s) != state {
+        if self.state.as_ref().map(|s| s.as_slice()) != state {
             return None;
         }
-        self.style.iter().find(|a| a.type_id() == type_id)
+        for attr in self.style.iter() {
+            if attr.attr_type_id() == type_id {
+                return Some(attr);
+            }
+        }
+        None
     }
 
     /// Gets an attribute mutably with state and type id.
-    fn get_with_mut(&mut self, state: Option<&[PseudoState; 3]>, type_id: TypeId) -> Option<&mut NodeAttribute>
+    fn get_with_mut(&mut self, state: Option<&[PseudoState]>, type_id: TypeId) -> Option<&mut NodeAttribute>
     {
-        if self.states.as_ref().map(|s| &s) != state {
+        if self.state.as_ref().map(|s| s.as_slice()) != state {
             return None;
         }
-        self.style.iter_mut().find(|a| a.type_id() == type_id)
+        self.style.iter_mut().find(|a| a.attr_type_id() == type_id)
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Debug)]
 enum AttributeExtractor
 {
-    Static(fn(Entity, &mut World, &dyn Any)),
-    Responsive(fn(Entity, FluxInteraction, &mut World, &dyn Any)),
-    Animated(fn(Entity, AnimationState, &mut World, &dyn Any)),
+    Static(fn(Entity, &mut World, &dyn AnyClone)),
+    Responsive(fn(Entity, FluxInteraction, &mut World, &dyn AnyClone)),
+    Animated(fn(Entity, AnimationState, &mut World, &dyn AnyClone)),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 /// The attribute type of a [`NodeAttribute`].
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum AttributeType
 {
     /// Static attributes are single values that are applied when an entity's pseudo states match the attribute.
@@ -225,7 +234,7 @@ pub struct NodeAttribute
     type_id: TypeId,
     respond_to: Option<SmolStr>,
     /// Reference value for this attribute.
-    reference: Arc<dyn Any + Send + Sync + 'static>,
+    reference: Arc<dyn AnyClone>,
     settings: Option<AnimationSettings>,
 }
 
@@ -296,7 +305,7 @@ impl NodeAttribute
         self.attribute_type
     }
 
-    pub fn type_id(&self) -> TypeId
+    pub fn attr_type_id(&self) -> TypeId
     {
         self.type_id
     }
@@ -312,7 +321,7 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Static` or the requested type doesn't match.
     pub fn static_val<T: StaticAttribute>(&mut self) -> Option<&mut T::Value>
     {
-        let val = self.reference.make_mut();
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
         val.downcast_mut::<T::Value>()
     }
 
@@ -321,7 +330,7 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Responsive` or the requested type doesn't match.
     pub fn responsive_vals<T: ResponsiveAttribute>(&mut self) -> Option<&mut ResponsiveVals<T::Value>>
     {
-        let val = self.reference.make_mut();
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
         val.downcast_mut::<ResponsiveVals<T::Value>>()
     }
 
@@ -330,7 +339,7 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Animated` or the requested type doesn't match.
     pub fn animated_vals<T: AnimatedAttribute>(&mut self) -> Option<&mut AnimatedVals<T::Value>>
     {
-        let val = self.reference.make_mut();
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
         val.downcast_mut::<AnimatedVals<T::Value>>()
     }
 
@@ -375,7 +384,7 @@ impl LogicalEq for NodeAttribute
 {
     fn logical_eq(&self, other: &Self) -> bool
     {
-        self.respond_to == other.respond_to && self.type_id.logical_eq(&other.type_id)
+        self.respond_to == other.respond_to && self.type_id == other.type_id
     }
 }
 
@@ -411,7 +420,7 @@ impl NodeAttributes
 
         if let Some(name) = attribute.name() {
             if let Some((prev_state, prev)) = self.get_info(name) {
-                if state.map(|s| &s) != prev_state || !attribute.logical_eq(prev) {
+                if state.as_ref().map(|s| s.as_slice()) != prev_state || !attribute.logical_eq(prev) {
                     tracing::warn!("adding node attribute to entity that already has an attribute with the same name ({}); \
                         only the older attribute will be accessible by NodeAttributes::get, etc.", name);
                 }
@@ -450,7 +459,7 @@ impl NodeAttributes
     /// Gets an attribute and its state by name.
     ///
     /// If multiple attributes have the same name, this will return the state of the one that was inserted first.
-    pub fn get_info(&self, name: impl AsRef<str>) -> Option<(&[PseudoState], &NodeAttribute)>
+    pub fn get_info(&self, name: impl AsRef<str>) -> Option<(Option<&[PseudoState]>, &NodeAttribute)>
     {
         let name = name.as_ref();
         self.themes.iter().filter_map(|t| t.get_info(name)).next()
@@ -469,7 +478,7 @@ impl NodeAttributes
     }
 
     /// Gets an attribute with state and type id.
-    pub fn get_with(&self, state: Option<&[PseudoState; 3]>, type_id: TypeId) -> Option<&NodeAttribute>
+    pub fn get_with(&self, state: Option<&[PseudoState]>, type_id: TypeId) -> Option<&NodeAttribute>
     {
         self.themes
             .iter()
@@ -478,8 +487,7 @@ impl NodeAttributes
     }
 
     /// Gets an attribute mutably with state and type id.
-    pub fn get_with_mut(&mut self, state: Option<&[PseudoState; 3]>, type_id: TypeId)
-        -> Option<&mut NodeAttribute>
+    pub fn get_with_mut(&mut self, state: Option<&[PseudoState]>, type_id: TypeId) -> Option<&mut NodeAttribute>
     {
         self.themes
             .iter_mut()
