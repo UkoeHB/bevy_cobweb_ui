@@ -74,13 +74,6 @@ impl Instruction for ControlRoot
 
                 // Repair
                 control_map.remove_all_labels().count();
-                let attrs = control_map.remove_all_attrs();
-
-                // Reset invalid targets now that we have a proper label.
-                let new_target = Some(self.0.clone());
-                for (origin, source, _target, state, attribute) in attrs {
-                    control_map.set_attribute(origin, state, source, new_target.clone(), attribute);
-                }
             }
 
             // We are not actually dying, just refreshing the control root, so this can be removed.
@@ -92,7 +85,7 @@ impl Instruction for ControlRoot
             #[cfg(feature = "hot_reload")]
             if emut.contains::<Children>() {
                 // Look for the nearest ancestor with non-anonymous ControlMap and
-                // force it to re-apply its attributes and labels, in case this new root needs to steal some.
+                // force it to re-apply its labels, in case this new root needs to steal some.
                 // - Note: we don't check for ControlLabel here since any pre-existing ControlLabel was likely
                 //   removed when the entity was switched to ControlRoot. When a ControlLabel is removed, the
                 //   entity will be removed from the associated ControlMap, which should ensure no stale attributes
@@ -105,7 +98,6 @@ impl Instruction for ControlRoot
                         continue;
                     }
                     let labels: Vec<_> = control_map.remove_all_labels().collect();
-                    let attrs = control_map.remove_all_attrs();
 
                     // Labels
                     // - Re-applying these forces the entities to re-register in the correct control maps.
@@ -113,11 +105,6 @@ impl Instruction for ControlRoot
                         ControlLabel(label).apply(label_entity, world);
                     }
 
-                    // Attrs
-                    // Note: target not needed, it is always set to self.
-                    for (origin, source, _target, state, attribute) in attrs {
-                        world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
-                    }
                     break;
                 }
 
@@ -203,16 +190,8 @@ impl Instruction for ControlLabel
         // Add entry to nearest control map.
         if let Some(mut control_map) = emut.get_mut::<ControlMap>() {
             if control_map.is_anonymous() {
-                // If the map is anonymous then this entity is *not* a control root and we need to drain the
-                // map's attributes and re-apply them now that we have a label on this entity.
-                let attrs = control_map.remove_all_attrs();
+                // If the map is anonymous then this entity is *not* a control root and we need to remove the map.
                 emut.remove::<ControlMap>();
-
-                // Attrs
-                // Note: target not needed, it is always set to self.
-                for (origin, source, _target, state, attribute) in attrs {
-                    world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
-                }
             } else {
                 control_map.insert(label_str, entity);
                 return;
@@ -231,9 +210,8 @@ impl Instruction for ControlLabel
         }
 
         tracing::error!(
-            "error while inserting ControlLabel({}) to {entity:?}, no ancestor with ControlMap \
+            "error while inserting ControlLabel({label_str}) to {entity:?}, no ancestor with ControlMap \
             (see ControlRoot)",
-            label_str
         );
     }
 
@@ -258,6 +236,9 @@ impl Instruction for ControlLabel
             while let Some(parent) = world.get::<Parent>(current) {
                 current = parent.get();
                 let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
+                if control_map.is_anonymous() {
+                    continue;
+                }
                 control_map.remove(entity);
                 break;
             }

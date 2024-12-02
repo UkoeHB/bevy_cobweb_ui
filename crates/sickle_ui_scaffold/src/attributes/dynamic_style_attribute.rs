@@ -9,7 +9,7 @@ pub enum DynamicStyleAttribute
     Static(StaticStyleAttribute),
 
     // Needs flux
-    Interactive(InteractiveStyleAttribute),
+    Responsive(ResponsiveStyleAttribute),
 
     // Needs stopwatch
     // None animations are effectively Pop
@@ -27,16 +27,16 @@ impl LogicalEq for DynamicStyleAttribute
     {
         match (self, other) {
             (Self::Static(l0), Self::Static(r0)) => l0.logical_eq(r0),
-            (Self::Static(_), Self::Interactive(_)) => false,
+            (Self::Static(_), Self::Responsive(_)) => false,
             (Self::Static(_), Self::Animated { .. }) => false,
-            (Self::Interactive(l0), Self::Interactive(r0)) => l0.logical_eq(r0),
-            (Self::Interactive(_), Self::Static(_)) => false,
-            (Self::Interactive(_), Self::Animated { .. }) => false,
+            (Self::Responsive(l0), Self::Responsive(r0)) => l0.logical_eq(r0),
+            (Self::Responsive(_), Self::Static(_)) => false,
+            (Self::Responsive(_), Self::Animated { .. }) => false,
             (Self::Animated { attribute: l_attribute, .. }, Self::Animated { attribute: r_attribute, .. }) => {
                 l_attribute.logical_eq(r_attribute)
             }
             (Self::Animated { .. }, Self::Static(_)) => false,
-            (Self::Animated { .. }, Self::Interactive(_)) => false,
+            (Self::Animated { .. }, Self::Responsive(_)) => false,
         }
     }
 }
@@ -51,10 +51,10 @@ impl DynamicStyleAttribute
         }
     }
 
-    pub fn is_interactive(&self) -> bool
+    pub fn is_responsive(&self) -> bool
     {
         match self {
-            DynamicStyleAttribute::Interactive(_) => true,
+            DynamicStyleAttribute::Responsive(_) => true,
             _ => false,
         }
     }

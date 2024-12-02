@@ -73,6 +73,8 @@ We include derive macros for setting up animations on components:
 - [`ResponsiveReactNewtype`](bevy_cobweb_ui::prelude::ResponsiveReactNewtype)
 - [`AnimatedReactNewtype`](bevy_cobweb_ui::prelude::AnimatedReactNewtype)
 
+You can use the [`NodeAttributes`](bevy_cobweb_ui::prelude::NodeAttributes) component to add/remove/modify attributes at runtime.
+
 
 ## Control groups
 

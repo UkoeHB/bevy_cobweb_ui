@@ -81,7 +81,7 @@ fn update_dynamic_style_on_flux_change(
 
         for context_attribute in &style.attributes {
             match &context_attribute.attribute {
-                DynamicStyleAttribute::Interactive(style) => {
+                DynamicStyleAttribute::Responsive(style) => {
                     let target = match context_attribute.target {
                         Some(context) => context,
                         None => entity,

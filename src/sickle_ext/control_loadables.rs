@@ -11,122 +11,6 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Returns `true` if the attribute was applied to a control map on the entity.
-///
-/// We do *not* support setting the 'target' of an attribute because it is not easy to correctly revert
-/// attribute instructions when they are applied to other entities. It's also not clear what use the target has.
-pub(super) fn add_attribute(
-    In((origin, mut source, state, attribute, type_name)): In<(
-        Entity,
-        Option<SmolStr>,
-        Option<SmallVec<[PseudoState; 3]>>,
-        DynamicStyleAttribute,
-        &'static str,
-    )>,
-    mut c: Commands,
-    parents: Query<&Parent>,
-    labels: Query<&ControlLabel>,
-    entities: &Entities,
-    mut control_maps: Query<&mut ControlMap>,
-) -> bool
-{
-    if !entities.contains(origin) {
-        return false;
-    }
-
-    // Get the current entity's control label.
-    let maybe_label = labels.get(origin).ok().map(|l| (**l).clone());
-
-    // Check if self has ControlMap.
-    if let Ok(control_map) = control_maps.get_mut(origin) {
-        let control_map_mut = control_map.into_inner();
-        if maybe_label.is_none() {
-            if !control_map_mut.is_anonymous() {
-                // Replace with anonymous map.
-                let mut old_control_map = std::mem::replace(control_map_mut, ControlMap::new_anonymous());
-
-                // Repair - re-apply attributes from the map.
-                c.queue(move |world: &mut World| {
-                    // Labels
-                    // - Re-applying these forces the entities to re-register in the correct control maps.
-                    for (label, label_entity) in old_control_map.remove_all_labels() {
-                        // The current entity doesn't have a label - all attributes are being reapplied
-                        // anonymously.
-                        if label_entity == origin {
-                            continue;
-                        }
-                        ControlLabel(label).apply(label_entity, world);
-                    }
-
-                    // Attrs
-                    // Note: target not needed, it is always set to self.
-                    let attrs = old_control_map.remove_all_attrs();
-                    for (origin, source, _target, state, attribute) in attrs {
-                        world.syscall((origin, source, state, attribute, "unknown"), super::add_attribute);
-                    }
-                });
-
-                // We are not actually dying, we are converting from a normal map to an anonymous map.
-                c.entity(origin).remove::<ControlMapDying>();
-            }
-        } else if control_map_mut.is_anonymous() {
-            tracing::error!("failed inserting attribute {type_name} to {origin:?}; the entity unexpectedly has \
-                an anonymous control map with a control label");
-            return false;
-        }
-
-        let target = match maybe_label {
-            Some(target) => target,
-            None => {
-                let label = SmolStr::new_static("__anon");
-                control_map_mut.insert(label.clone(), origin);
-                label
-            }
-        };
-
-        // Fixup source based on assumed user intention.
-        if let Some(src) = &source {
-            if *src == target {
-                // Clear source if it points to self.
-                // TODO: why is this necessary? Something weird in sickle_ui means if the root node sources itself
-                // then child nodes' attributes won't properly respond to interactions on the root.
-                source = None;
-            }
-        }
-
-        control_map_mut.set_attribute(origin, state, source, Some(target), attribute);
-        return true;
-    }
-
-    // Add anonymous ControlMap if there's no label.
-    let Some(target) = maybe_label else {
-        let mut control_map = ControlMap::new_anonymous();
-        let label = SmolStr::new_static("__anon");
-        control_map.insert(label.clone(), origin);
-        control_map.set_attribute(origin, state, None, Some(label), attribute);
-        c.entity(origin).try_insert(control_map);
-        return true;
-    };
-
-    // Find ancestor with non-anonymous ControlMap.
-    for ancestor in parents.iter_ancestors(origin) {
-        let Ok(mut control_map) = control_maps.get_mut(ancestor) else { continue };
-        if control_map.is_anonymous() {
-            continue;
-        }
-        control_map.set_attribute(origin, state, source, Some(target), attribute);
-        return false;
-    }
-
-    tracing::error!(
-        "failed adding controlled dynamic attribute {type_name} to {origin:?} with label {target:?}, \
-        no ancestor with ControlRoot"
-    );
-    false
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn revert_attributes(
     In(entity): In<Entity>,
     mut c: Commands,
@@ -163,39 +47,6 @@ fn revert_attributes(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: StaticAttribute>(ref_val: T::Value) -> impl Fn(Entity, &mut World)
-{
-    move |entity: Entity, world: &mut World| {
-        T::update(entity, world, ref_val.clone());
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn extract_responsive_value<T: ResponsiveAttribute>(
-    ref_vals: InteractiveVals<T::Value>,
-) -> impl Fn(Entity, FluxInteraction, &mut World)
-{
-    move |entity: Entity, state: FluxInteraction, world: &mut World| {
-        let value = T::extract(entity, world, &ref_vals, state);
-        T::update(entity, world, value);
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn extract_animation_value<T: AnimatedAttribute>(
-    ref_vals: AnimatedVals<T::Value>,
-) -> impl Fn(Entity, AnimationState, &mut World)
-{
-    move |entity: Entity, state: AnimationState, world: &mut World| {
-        let value = T::extract(entity, world, &ref_vals, &state);
-        T::update(entity, world, value);
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 impl<T> StaticAttribute for Splat<T>
 where
     T: Splattable + StaticAttribute,
@@ -219,17 +70,26 @@ where
 /// Instruction for static values.
 ///
 /// Useful for values in widgets that should change based on the widget's [`PseudoStates`](PseudoState).
+///
+/// Adds a [`NodeAttribute`] to the [`NodeAttributes`] component on the target entity.
 //TODO: how to properly add Serialize/Deserialize derives when `serde` feature is enabled? we don't want to
 // require that T::Value implements Serialize/Deserialize unless necessary
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Static<T: StaticAttribute>
 {
+    /// Sets the attribute name.
+    ///
+    /// Can be used to look up the attribute in the [`NodeAttributes`] component.
+    #[reflect(default)]
+    pub name: Option<SmolStr>,
+
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
     ///
     /// Only used if this struct is applied to an entity with a [`ControlLabel`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
+
     /// The value that will be applied to the entity with `T`.
     pub value: T::Value,
 }
@@ -238,15 +98,20 @@ impl<T: StaticAttribute> Instruction for Static<T>
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-            CustomStaticStyleAttribute::new(TypeId::of::<Self>(), extract_static_value::<T>(self.value)),
-        ));
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
-        world.syscall(
-            (entity, None, self.state, attribute, type_name::<Self>()),
-            add_attribute,
-        );
+        // Add attribute.
+        let attr = NodeAttribute::new_static::<T>(self.name, self.value);
+
+        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+            if let Some(_) = attrs.insert(self.state, attr) {
+                tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
+            }
+        } else {
+            let mut attrs = NodeAttributes::default();
+            attrs.insert(self.state, attr);
+            emut.insert(attrs);
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -257,7 +122,7 @@ impl<T: StaticAttribute> Instruction for Static<T>
         // Revert attributes.
         world.syscall(entity, revert_attributes);
         let _ = world.get_entity_mut(entity).map(|mut emut| {
-            emut.remove::<DynamicStyle>();
+            emut.remove::<(NodeAttributes, DynamicStyle)>();
         });
     }
 }
@@ -266,11 +131,19 @@ impl<T: StaticAttribute> Instruction for Static<T>
 
 /// Instruction for responsive values.
 ///
-/// Note that the `InteractiveVals::idle` field must always be set, which means it is effectively the 'default'
+/// Note that the `ResponsiveVals::idle` field must always be set, which means it is effectively the 'default'
 /// value for `T` that will be applied to the entity and override any value you set elsewhere.
+///
+/// Adds a [`NodeAttribute`] to the [`NodeAttributes`] component on the target entity.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Responsive<T: ResponsiveAttribute>
 {
+    /// Sets the attribute name.
+    ///
+    /// Can be used to look up the attribute in the [`NodeAttributes`] component.
+    #[reflect(default)]
+    pub name: Option<SmolStr>,
+
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
     ///
@@ -306,25 +179,31 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let ref_vals = InteractiveVals::<T::Value> {
+        let ref_vals = ResponsiveVals::<T::Value> {
             idle: self.idle,
             hover: self.hover,
             press: self.press,
             cancel: self.cancel,
         };
 
-        // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Interactive(InteractiveStyleAttribute::new(
-            TypeId::of::<Self>(),
-            extract_responsive_value::<T>(ref_vals),
-        ));
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
-        if world.syscall(
-            (entity, self.respond_to, self.state, attribute, type_name::<Self>()),
-            add_attribute,
-        ) {
-            // Interactive if the attribute was applied directly to self.
+        // Interactive if the attribute listens to interactions on self.
+        if emut.get::<ControlLabel>().map(|l| **l) == self.respond_to {
             Interactive.apply(entity, world);
+        }
+
+        // Add attribute.
+        let attr = NodeAttribute::new_responsive::<T>(self.name, self.respond_to, ref_vals);
+
+        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+            if let Some(_) = attrs.insert(self.state, attr) {
+                tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
+            }
+        } else {
+            let mut attrs = NodeAttributes::default();
+            attrs.insert(self.state, attr);
+            emut.insert(attrs);
         }
     }
 
@@ -337,7 +216,7 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
         world.syscall(entity, revert_attributes);
         Interactive::revert(entity, world);
         let _ = world.get_entity_mut(entity).map(|mut emut| {
-            emut.remove::<DynamicStyle>();
+            emut.remove::<(NodeAttributes, DynamicStyle)>();
         });
     }
 }
@@ -348,9 +227,17 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
 ///
 /// Note that the `AnimatedVals::idle` field must always be set, which means it is effectively the 'default' value
 /// for `T` that will be applied to the entity and override any value you set elsewhere.
+///
+/// Adds a [`NodeAttribute`] to the [`NodeAttributes`] component on the target entity.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Animated<T: AnimatedAttribute>
 {
+    /// Sets the attribute name.
+    ///
+    /// Can be used to look up the attribute in the [`NodeAttributes`] component.
+    #[reflect(default)]
+    pub name: Option<SmolStr>,
+
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this animation to become active.
     ///
@@ -463,18 +350,24 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
             delete_on_entered: self.delete_on_entered,
         };
 
-        // Prepare an updated DynamicStyleAttribute.
-        let attribute = DynamicStyleAttribute::Animated {
-            attribute: AnimatedStyleAttribute::new(TypeId::of::<Self>(), extract_animation_value::<T>(ref_vals)),
-            controller: DynamicStyleController::new(settings, AnimationState::default()),
-        };
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
-        if world.syscall(
-            (entity, self.respond_to, self.state, attribute, type_name::<Self>()),
-            add_attribute,
-        ) {
-            // Interactive if the attribute was applied directly to self.
+        // Interactive if the attribute listens to interactions on self.
+        if emut.get::<ControlLabel>().map(|l| **l) == self.respond_to {
             Interactive.apply(entity, world);
+        }
+
+        // Add attribute.
+        let attr = NodeAttribute::new_animated::<T>(self.name, self.respond_to, ref_vals, settings);
+
+        if let Some(attrs) = emut.get_mut::<NodeAttributes>() {
+            if let Some(_) = attrs.insert(self.state, attr) {
+                tracing::warn!("overwriting attribute {} on {:?}", type_name::<Self>(), entity);
+            }
+        } else {
+            let mut attrs = NodeAttributes::default();
+            attrs.insert(self.state, attr);
+            emut.insert(attrs);
         }
     }
 
@@ -487,7 +380,7 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
         world.syscall(entity, revert_attributes);
         Interactive::revert(entity, world);
         let _ = world.get_entity_mut(entity).map(|mut emut| {
-            emut.remove::<DynamicStyle>();
+            emut.remove::<(NodeAttributes, DynamicStyle)>();
         });
     }
 }

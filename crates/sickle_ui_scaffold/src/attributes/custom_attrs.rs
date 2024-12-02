@@ -10,15 +10,20 @@ use crate::*;
 #[derive(Clone)]
 pub struct CustomStaticStyleAttribute
 {
-    pub type_id: TypeId,
-    pub callback: Arc<dyn Fn(Entity, &mut World) + Send + Sync + 'static>,
+    type_id: TypeId,
+    reference: Arc<dyn Any + Send + Sync + 'static>,
+    callback: fn(Entity, &mut World, &dyn Any),
 }
 
 impl CustomStaticStyleAttribute
 {
-    pub fn new(type_id: TypeId, callback: impl Fn(Entity, &mut World) + Send + Sync + 'static) -> Self
+    pub fn new(
+        type_id: TypeId,
+        reference: Arc<dyn Any + Send + Sync + 'static>,
+        callback: fn(Entity, &mut World, &dyn Any),
+    ) -> Self
     {
-        Self { type_id, callback: Arc::new(callback) }
+        Self { type_id, reference, callback }
     }
 }
 
@@ -42,36 +47,38 @@ impl PartialEq for CustomStaticStyleAttribute
 {
     fn eq(&self, other: &Self) -> bool
     {
-        Arc::ptr_eq(&self.callback, &other.callback)
+        Arc::ptr_eq(&self.reference, &other.reference)
     }
 }
 
 #[derive(Clone)]
-pub struct InteractiveStyleAttribute
+pub struct ResponsiveStyleAttribute
 {
-    pub type_id: TypeId,
-    pub callback: Arc<dyn Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static>,
+    type_id: TypeId,
+    reference: Arc<dyn Any + Send + Sync + 'static>,
+    callback: fn(Entity, FluxInteraction, &mut World, &dyn Any),
 }
 
-impl InteractiveStyleAttribute
+impl ResponsiveStyleAttribute
 {
     pub fn new(
         type_id: TypeId,
-        callback: impl Fn(Entity, FluxInteraction, &mut World) + Send + Sync + 'static,
+        reference: Arc<dyn Any + Send + Sync + 'static>,
+        callback: fn(Entity, FluxInteraction, &mut World, &dyn Any),
     ) -> Self
     {
-        Self { type_id, callback: Arc::new(callback) }
+        Self { type_id, reference, callback }
     }
 
     pub fn apply(&self, flux_interaction: FluxInteraction, ui_style: &mut UiStyle)
     {
         ui_style
             .entity_commands()
-            .queue(ApplyInteractiveStyleAttribute { callback: self.clone(), flux_interaction });
+            .queue(ApplyResponsiveStyleAttribute { callback: self.clone(), flux_interaction });
     }
 }
 
-impl LogicalEq for InteractiveStyleAttribute
+impl LogicalEq for ResponsiveStyleAttribute
 {
     fn logical_eq(&self, other: &Self) -> bool
     {
@@ -79,37 +86,39 @@ impl LogicalEq for InteractiveStyleAttribute
     }
 }
 
-impl Debug for InteractiveStyleAttribute
+impl Debug for ResponsiveStyleAttribute
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result
     {
-        f.debug_struct("InteractiveStyleAttribute").finish()
+        f.debug_struct("ResponsiveStyleAttribute").finish()
     }
 }
 
-impl PartialEq for InteractiveStyleAttribute
+impl PartialEq for ResponsiveStyleAttribute
 {
     fn eq(&self, other: &Self) -> bool
     {
-        Arc::ptr_eq(&self.callback, &other.callback)
+        Arc::ptr_eq(&self.reference, &other.reference)
     }
 }
 
 #[derive(Clone)]
 pub struct AnimatedStyleAttribute
 {
-    pub type_id: TypeId,
-    pub callback: Arc<dyn Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static>,
+    type_id: TypeId,
+    reference: Arc<dyn Any + Send + Sync + 'static>,
+    callback: fn(Entity, AnimationState, &mut World, &dyn Any),
 }
 
 impl AnimatedStyleAttribute
 {
     pub fn new(
         type_id: TypeId,
-        callback: impl Fn(Entity, AnimationState, &mut World) + Send + Sync + 'static,
+        reference: Arc<dyn Any + Send + Sync + 'static>,
+        callback: fn(Entity, AnimationState, &mut World, &dyn Any),
     ) -> Self
     {
-        Self { type_id, callback: Arc::new(callback) }
+        Self { type_id, reference, callback }
     }
 
     pub fn apply(&self, current_state: &AnimationState, ui_style: &mut UiStyle)
@@ -140,7 +149,7 @@ impl PartialEq for AnimatedStyleAttribute
 {
     fn eq(&self, other: &Self) -> bool
     {
-        Arc::ptr_eq(&self.callback, &other.callback)
+        Arc::ptr_eq(&self.reference, &other.reference)
     }
 }
 
@@ -153,21 +162,21 @@ impl EntityCommand for ApplyCustomStaticStyleAttribute
 {
     fn apply(self, id: Entity, world: &mut World)
     {
-        (self.callback.callback)(id, world);
+        (self.callback.callback)(id, world, &self.reference);
     }
 }
 
-pub struct ApplyInteractiveStyleAttribute
+pub struct ApplyResponsiveStyleAttribute
 {
-    pub callback: InteractiveStyleAttribute,
+    pub callback: ResponsiveStyleAttribute,
     pub flux_interaction: FluxInteraction,
 }
 
-impl EntityCommand for ApplyInteractiveStyleAttribute
+impl EntityCommand for ApplyResponsiveStyleAttribute
 {
     fn apply(self, id: Entity, world: &mut World)
     {
-        (self.callback.callback)(id, self.flux_interaction, world);
+        (self.callback.callback)(id, self.flux_interaction, world, &self.reference);
     }
 }
 
@@ -181,6 +190,6 @@ impl EntityCommand for ApplyAnimatadStyleAttribute
 {
     fn apply(self, id: Entity, world: &mut World)
     {
-        (self.callback.callback)(id, self.current_state, world);
+        (self.callback.callback)(id, self.current_state, world, &self.reference);
     }
 }

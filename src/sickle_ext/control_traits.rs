@@ -43,7 +43,7 @@ pub trait ResponsiveAttribute: StaticAttribute
     fn extract(
         _: Entity,
         _: &mut World,
-        reference_vals: &InteractiveVals<Self::Value>,
+        reference_vals: &ResponsiveVals<Self::Value>,
         state: FluxInteraction,
     ) -> Self::Value
     {

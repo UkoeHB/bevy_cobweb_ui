@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::*;
 
 #[derive(Clone, Copy, Debug, Default, Reflect, Serialize, Deserialize)]
-pub struct InteractiveVals<T: Clone + Default>
+pub struct ResponsiveVals<T: Clone + Default>
 {
     pub idle: T,
     #[reflect(default)]
@@ -18,15 +18,15 @@ pub struct InteractiveVals<T: Clone + Default>
     pub cancel: Option<T>,
 }
 
-impl<T: Default + Clone> From<T> for InteractiveVals<T>
+impl<T: Default + Clone> From<T> for ResponsiveVals<T>
 {
     fn from(value: T) -> Self
     {
-        InteractiveVals::new(value)
+        ResponsiveVals::new(value)
     }
 }
 
-impl<T: Default + Clone + PartialEq> PartialEq for InteractiveVals<T>
+impl<T: Default + Clone + PartialEq> PartialEq for ResponsiveVals<T>
 {
     fn eq(&self, other: &Self) -> bool
     {
@@ -37,11 +37,11 @@ impl<T: Default + Clone + PartialEq> PartialEq for InteractiveVals<T>
     }
 }
 
-impl<T: Clone + Default> InteractiveVals<T>
+impl<T: Clone + Default> ResponsiveVals<T>
 {
     pub fn new(value: T) -> Self
     {
-        InteractiveVals { idle: value, ..default() }
+        ResponsiveVals { idle: value, ..default() }
     }
 
     pub fn hover(self, value: T) -> Self
@@ -105,9 +105,9 @@ impl<T: Lerp + Default + Clone + PartialEq> From<T> for AnimatedVals<T>
     }
 }
 
-impl<T: Lerp + Default + Clone + PartialEq> From<InteractiveVals<T>> for AnimatedVals<T>
+impl<T: Lerp + Default + Clone + PartialEq> From<ResponsiveVals<T>> for AnimatedVals<T>
 {
-    fn from(value: InteractiveVals<T>) -> Self
+    fn from(value: ResponsiveVals<T>) -> Self
     {
         Self {
             idle: value.idle,

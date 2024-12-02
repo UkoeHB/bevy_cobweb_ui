@@ -13,6 +13,34 @@ use crate::sickle::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
+struct PseudoThemeBuffer
+{
+    stack: Vec<(usize, usize, &'static SmolStr, &'static PseudoTheme)>,
+}
+
+impl PseudoThemeBuffer
+{
+    fn take<'a>(&mut self) -> Vec<(usize, usize, &'a SmolStr, &'a PseudoTheme)>
+    {
+        core::mem::take(&mut self.stack)
+            .into_iter()
+            .map(|_| -> (usize, usize, &SmolStr, &PseudoTheme) { unreachable!() })
+            .collect()
+    }
+
+    fn recover(&mut self, mut stack: Vec<(usize, usize, &SmolStr, &PseudoTheme)>)
+    {
+        stack.clear();
+        self.stack = stack
+            .into_iter()
+            .map(|_| -> (usize, usize, &'static SmolStr, &'static PseudoTheme) { unreachable!() })
+            .collect();
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Resource, Default)]
 struct ControlRefreshCache
 {
     collected_styles: Vec<(Option<Entity>, DynamicStyle)>,
@@ -20,112 +48,27 @@ struct ControlRefreshCache
     style_builder: StyleBuilder,
     dynamic_style_buffers: Vec<Vec<ContextStyleAttribute>>,
     recovered_dynamic_styles: Vec<DynamicStyle>,
+    ps_buffer: PseudoThemeBuffer,
 }
 
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Clone)]
-struct CachedContextualAttribute
+impl ControlRefreshCache
 {
-    source: Option<SmolStr>,
-    target: Option<SmolStr>,
-    attribute: DynamicStyleAttribute,
-}
-
-impl LogicalEq for CachedContextualAttribute
-{
-    fn logical_eq(&self, other: &Self) -> bool
+    fn recover(
+        &mut self,
+        collected_styles: Vec<(Option<Entity>, DynamicStyle)>,
+        unstyled_entities: Vec<Entity>,
+        style_builder: StyleBuilder,
+        dynamic_style_buffers: Vec<Vec<ContextStyleAttribute>>,
+        recovered_dynamic_styles: Vec<DynamicStyle>,
+        pseudo_themes: ps_buffer,
+    )
     {
-        self.source == other.source && self.target == other.target && self.attribute.logical_eq(&other.attribute)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Clone)]
-struct EditablePseudoTheme
-{
-    state: Option<SmallVec<[PseudoState; 3]>>,
-    /// [ (origin entity, attribute )]
-    /// - Origin entity is used for cleanup when an attribute is reverted.
-    style: SmallVec<[(Entity, CachedContextualAttribute); 3]>,
-}
-
-impl EditablePseudoTheme
-{
-    fn new(origin: Entity, state: Option<SmallVec<[PseudoState; 3]>>, attribute: CachedContextualAttribute)
-        -> Self
-    {
-        let mut style = SmallVec::new();
-        style.push((origin, attribute));
-        Self { state, style }
-    }
-
-    fn remove_origin(&mut self, origin: Entity)
-    {
-        self.style.retain(|(e, _)| *e != origin);
-    }
-
-    fn matches(&self, state: &Option<SmallVec<[PseudoState; 3]>>) -> bool
-    {
-        self.state == *state
-    }
-
-    fn set_attribute(&mut self, origin: Entity, attribute: CachedContextualAttribute)
-    {
-        // Merge attribute with existing list.
-        if let Some(index) = self
-            .style
-            .iter()
-            .position(|(_, attr)| attr.logical_eq(&attribute))
-        {
-            self.style[index] = (origin, attribute);
-        } else {
-            self.style.push((origin, attribute));
-        }
-    }
-
-    fn is_subset(&self, node_states: &[PseudoState]) -> Option<usize>
-    {
-        match &self.state {
-            // Only consider pseudo themes that are specific to an inclusive substet of the themed element's pseudo
-            // states. A theme for [Checked, Disabled] will apply to elements with [Checked, Disabled,
-            // FirstChild], but will not apply to elements with [Checked] (because the theme targets
-            // more specific elements) or [Checked, FirstChild] (because they are disjoint)
-            Some(theme_states) => match theme_states.iter().all(|state| node_states.contains(state)) {
-                true => Some(theme_states.len()),
-                false => None,
-            },
-            None => Some(0),
-        }
-    }
-
-    /// Adds all attributes to the style builder.
-    fn build(&self, style_builder: &mut StyleBuilder)
-    {
-        for (_, CachedContextualAttribute { source, target, attribute }) in self.style.iter() {
-            // Set the placement.
-            if let Some(source) = source {
-                style_builder.switch_placement_with(source.clone());
-            } else {
-                style_builder.reset_placement();
-            }
-
-            // Set the target.
-            if let Some(target) = target {
-                style_builder.switch_target_with(target.clone());
-            } else {
-                style_builder.reset_target();
-            }
-
-            // Insert attribute.
-            style_builder.add(attribute.clone());
-        }
-    }
-
-    fn cleanup_references(&mut self, entities: &Entities)
-    {
-        self.style.retain(|(e, _)| entities.contains(*e));
+        self.collected_styles = collected_styles;
+        self.unstyled_entities = unstyled_entities;
+        self.style_builder = style_builder;
+        self.dynamic_style_buffers = dynamic_style_buffers;
+        self.recovered_dynamic_styles = recovered_dynamic_styles;
+        self.ps_buffer = ps_buffer;
     }
 }
 
@@ -141,17 +84,18 @@ pub(crate) struct ControlMap
 {
     /// Anonymous maps only manage attributes for the entity with the map component.
     ///
-    /// We allow this so entities can use pseudo states without need to set up a control group.
+    /// We allow this so entities can use pseudo states without needing to set up a control group.
     anonymous: bool,
     entities: SmallVec<[(SmolStr, Entity); 5]>,
-    pseudo_themes: SmallVec<[EditablePseudoTheme; 1]>,
 }
 
 impl ControlMap
 {
-    pub(crate) fn new_anonymous() -> Self
+    pub(crate) fn new_anonymous(entity: Entity) -> Self
     {
-        Self { anonymous: true, ..default() }
+        let mut map = Self { anonymous: true, ..default() };
+
+        map
     }
 
     pub(crate) fn set_anonymous(&mut self, anonymous: bool)
@@ -159,9 +103,39 @@ impl ControlMap
         self.anonymous = anonymous;
     }
 
+    pub(crate) fn make_anonymous(&mut self, c: &mut Commands, entity: Entity)
+    {
+        if self.is_anonymous() {
+            return;
+        }
+        self.set_anonymous(true);
+        self.remove(entity);
+        self.reapply_labels(c);
+        map.insert(SmolStr::new_static("__anon"), entity);
+    }
+
+    pub(crate) fn make_not_anonymous(&mut self, c: &mut Commands, entity: Entity, label: SmolStr)
+    {
+        if !self.is_anonymous() {
+            return;
+        }
+        self.set_anonymous(false);
+        self.entities.clear();
+        remove(entity);
+        map.insert(label, entity);
+    }
+
     pub(crate) fn is_anonymous(&self) -> bool
     {
         self.anonymous
+    }
+
+    pub(crate) fn reapply_labels(&mut self, c: &mut Commands)
+    {
+        for (label, entity) in self.entities.drain(..) {
+            let Some(mut ec) = c.get_entity(entity) else { continue };
+            ec.apply(ControlLabel(label));
+        }
     }
 
     pub(crate) fn insert(&mut self, label: SmolStr, entity: Entity)
@@ -186,32 +160,6 @@ impl ControlMap
         if let Some(pos) = self.entities.iter().position(|(_, e)| *e == entity) {
             self.entities.remove(pos);
         }
-
-        for pt in self.pseudo_themes.iter_mut() {
-            pt.remove_origin(entity);
-        }
-    }
-
-    pub(crate) fn set_attribute(
-        &mut self,
-        origin: Entity,
-        mut state: Option<SmallVec<[PseudoState; 3]>>,
-        source: Option<SmolStr>,
-        target: Option<SmolStr>,
-        attribute: DynamicStyleAttribute,
-    )
-    {
-        if let Some(states) = state.as_deref_mut() {
-            states.sort_unstable();
-        }
-
-        let attribute = CachedContextualAttribute { source, target, attribute };
-        match self.pseudo_themes.iter_mut().find(|t| t.matches(&state)) {
-            Some(pseudo_theme) => pseudo_theme.set_attribute(origin, attribute),
-            None => self
-                .pseudo_themes
-                .push(EditablePseudoTheme::new(origin, state, attribute)),
-        }
     }
 
     pub(crate) fn get_entity(&self, target: impl AsRef<str>) -> Option<Entity>
@@ -228,42 +176,9 @@ impl ControlMap
         self.entities.drain(..)
     }
 
-    pub(crate) fn remove_all_attrs(
-        &mut self,
-    ) -> Vec<(
-        Entity,
-        Option<SmolStr>,
-        Option<SmolStr>,
-        Option<SmallVec<[PseudoState; 3]>>,
-        DynamicStyleAttribute,
-    )>
-    {
-        let res = self
-            .pseudo_themes
-            .iter_mut()
-            .flat_map(|pt| {
-                let pstates = pt.state.take();
-                pt.style.drain(..).map(move |(origin, ctx_attr)| {
-                    (
-                        origin,
-                        ctx_attr.source,
-                        ctx_attr.target,
-                        pstates.clone(),
-                        ctx_attr.attribute,
-                    )
-                })
-            })
-            .collect();
-        self.pseudo_themes.clear();
-        res
-    }
-
     fn cleanup_references(&mut self, entities: &Entities)
     {
         self.entities.retain(|(_, e)| entities.contains(*e));
-        for pt in self.pseudo_themes.iter_mut() {
-            pt.cleanup_references(entities);
-        }
     }
 
     fn iter_entities(&self) -> impl Iterator<Item = &(SmolStr, Entity)> + '_
@@ -302,10 +217,6 @@ pub(crate) struct ControlMapDying;
 fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDying>>)
 {
     // If any control map is dead, then remove it and reapply its contents.
-    // - Reapplied content should only 'move' to a lower control map in the hierarchy. If a higher control
-    // map was added that would steal attributes from the dead control map, then that map will auto-steal
-    // attributes on insert (which synchronizes with attribute loads from children). There should be no cases
-    // were stale attributes from this map overwrite correct attributes on other control maps.
     // - We know if a map is 'dying' here then it's actually dead, because the only time a 'dying' flag can
     // be unset is immediately after it is set (i.e. ControlRoot instruction reverted -> ControlRoot instruction
     // re-applied).
@@ -313,6 +224,68 @@ fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDyi
         c.entity(entity)
             .queue(RemoveDeadControlMap)
             .remove::<ControlMapDying>();
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn handle_node_attr_changes(
+    mut c: Commands,
+    mut maps: Query<(&mut ControlMap, Has<NodeAttributes>)>,
+    parents: Query<&Parent>,
+    mut removed_attrs: RemovedComponents<NodeAttributes>,
+    node_attributes: Query<(Entity, Option<&ControLabel>), Changed<NodeAttributes>>,
+)
+{
+    // Cleanup anonymous control maps on attrs removal.
+    for removed in removed_attrs.read() {
+        let Ok((map, has_attrs)) = maps.get(removed) else { continue };
+        if has_attrs {
+            continue;
+        }
+        if !map.is_anonymous() {
+            continue;
+        }
+        c.entity(removed).remove::<ControlMap>();
+    }
+
+    // Mark maps as changed when node attrs changed on any member of the control group.
+    for (entity, maybe_label) in node_attributes.iter() {
+        if let Some(label) = maybe_label {
+            // Case: control group
+            let mut current_entity = entity;
+
+            loop {
+                if let Ok((map, _)) = maps.get(current_entity) {
+                    if !map.is_anonymous() {
+                        map.set_changed();
+                        break;
+                    } else if current_entity == entity {
+                        map.make_not_anonymous(entity, label.clone());
+                        break;
+                    }
+                }
+
+                let Ok(parent) = parents.get(entity) else {
+                    tracing::warn!("failed finding control root for entity {:?} with {:?}; use ControlRoot",
+                        entity, label);
+                    break;
+                };
+                current_entity = **parent;
+            }
+        } else {
+            // Case: no control group
+            if let Ok((map, _)) = maps.get_mut(entity) {
+                map.set_changed();
+
+                if !map.is_anonymous() {
+                    map.make_anonymous(&mut c, entity);
+                }
+            } else {
+                let map = ControlMap::new_anonymous(entity);
+                c.entity(entity).insert(map);
+            }
+        }
     }
 }
 
@@ -344,7 +317,7 @@ fn refresh_controlled_styles(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Removes a dead [`ControlMap`] and reapplies all its labels and attributes so they can be relocated to another
+/// Removes a dead [`ControlMap`] and reapplies all its labels so they can be relocated to another
 /// control map if possible.
 struct RemoveDeadControlMap;
 
@@ -357,12 +330,8 @@ impl EntityCommand for RemoveDeadControlMap
             .ok()
             .and_then(|mut emut| emut.take::<ControlMap>())
         else {
-            tracing::error!("failed removing ControlMap");
             return;
         };
-        if world.entity(entity).contains::<ControlMap>() {
-            tracing::error!("still has ControlMap");
-        }
 
         for (label, label_entity) in old_control_map.remove_all_labels() {
             // Clean up dynamic style on all label entities in case they were targets for placement.
@@ -372,11 +341,6 @@ impl EntityCommand for RemoveDeadControlMap
             });
 
             ControlLabel(label).apply(label_entity, world);
-        }
-
-        // Note: target not needed, we always set it to self.
-        for (origin, source, _target, state, attribute) in old_control_map.remove_all_attrs() {
-            world.syscall((origin, source, state, attribute, "unknown"), add_attribute);
         }
     }
 }
@@ -389,25 +353,27 @@ impl EntityCommand for RefreshControlledStyles
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let mut collected_styles =
-            std::mem::take(&mut world.resource_mut::<ControlRefreshCache>().collected_styles);
-        let mut unstyled_entities = std::mem::take(
-            &mut world
-                .resource_mut::<ControlRefreshCache>()
-                .unstyled_entities,
-        );
-        let mut style_builder = std::mem::take(&mut world.resource_mut::<ControlRefreshCache>().style_builder);
-        let mut dynamic_style_buffers = std::mem::take(
-            &mut world
-                .resource_mut::<ControlRefreshCache>()
-                .dynamic_style_buffers,
-        );
-        let mut recovered_dynamic_styles = std::mem::take(
-            &mut world
-                .resource_mut::<ControlRefreshCache>()
-                .recovered_dynamic_styles,
-        );
-        let control_map = world.get::<ControlMap>(entity).unwrap();
+        let mut cache = world.resource_mut::<ControlRefreshCache>();
+        let mut collected_styles = std::mem::take(&mut cache.collected_styles);
+        let mut unstyled_entities = std::mem::take(&mut cache.unstyled_entities);
+        let mut style_builder = std::mem::take(&mut cache.style_builder);
+        let mut dynamic_style_buffers = std::mem::take(&mut cache.dynamic_style_buffers);
+        let mut recovered_dynamic_styles = std::mem::take(&mut cache.recovered_dynamic_styles);
+        let mut ps_buffer = std::mem::take(&mut cache.ps_buffer);
+        let mut pseudo_themes = ps_buffer.take();
+        let Ok(control_map) = world.get::<ControlMap>(entity) else {
+            let mut cache = world.resource_mut::<ControlRefreshCache>();
+            ps_buffer.recover(pseudo_themes);
+            cache.recover(
+                collected_styles,
+                unstyled_entities,
+                style_builder,
+                dynamic_style_buffers,
+                recovered_dynamic_styles,
+                ps_buffer,
+            );
+            return;
+        };
 
         // Get the entity's PseudoStates.
         let empty_pseudo_state = Vec::default();
@@ -417,28 +383,30 @@ impl EntityCommand for RefreshControlledStyles
             .unwrap_or(&empty_pseudo_state);
 
         // Collect eligible pseudo themes.
-        //todo: this has excessive complexity ~ O(S^2*P*T); It would be simpler to collect, sort, and dedup
-        // pseudo_themes but unstable sorting may cause hard-to-debug order inconsistencies between pseudo themes
-        // with the same number of pseudo states.
-        let mut pseudo_themes: SmallVec<[&EditablePseudoTheme; 10]> = SmallVec::default();
+        // - We store an index for use during sorting to avoid hard-to-debug order inconsistencies.
+        let mut idx = 0;
+        for (label, entity) in control_map.iter_entities() {
+            // Failure is not an error if the entity doesn't have any attributes.
+            let Ok(attrs) = world.get::<NodeAttributes>(entity) else { continue };
 
-        for i in 0..=pseudo_states.len() {
-            control_map
-                .pseudo_themes
-                .iter()
-                .filter(|pt| match pt.is_subset(pseudo_states) {
-                    Some(count) => count == i,
-                    None => false,
-                })
-                .for_each(|pt| pseudo_themes.push(pt));
+            for pt in attrs.iter_themes() {
+                let Some(count) = pt.is_subset(pseudo_states) else { continue };
+                pseudo_themes.push((count, idx, label, pt));
+                idx += 1;
+            }
         }
+
+        // Sort themes by how well they match the pseudo states.
+        pseudo_themes.sort_unstable_by(|(count, idx, _, _), (count_b, idx_b, _, _)| {
+            count.cmp(count_b).then(idx.cmp(idx_b))
+        });
 
         // Merge attributes, overwriting per-attribute as more specific pseudo themes are encountered.
         collected_styles.clear();
 
-        for pseudo_theme in pseudo_themes.iter() {
+        for (_, _, label, pseudo_theme) in pseudo_themes.iter() {
             style_builder.clear();
-            pseudo_theme.build(&mut style_builder);
+            pseudo_theme.build(label, &mut style_builder);
             let styles_iter = style_builder
                 .convert_to_iter_with_buffers(control_map, || dynamic_style_buffers.pop().unwrap_or_default());
             collected_styles = styles_iter.fold(collected_styles, |mut collected, (placement, mut style)| {
@@ -460,11 +428,12 @@ impl EntityCommand for RefreshControlledStyles
             }
         }
 
+        ps_buffer.recover(pseudo_themes); // borrow checker needs some help...
+
         // Save the dynamic styles to entities.
         let mut cleanup_main_style = true;
         unstyled_entities.clear();
         unstyled_entities.extend(control_map.iter_entities().map(|(_, entity)| *entity));
-        std::mem::drop(pseudo_themes); // borrow checker needs some help...
 
         for (placement, mut style) in collected_styles.drain(..) {
             let placement_entity = match placement {
@@ -516,17 +485,16 @@ impl EntityCommand for RefreshControlledStyles
         }
 
         // Cache buffers.
-        world.resource_mut::<ControlRefreshCache>().collected_styles = collected_styles;
-        world
-            .resource_mut::<ControlRefreshCache>()
-            .unstyled_entities = unstyled_entities;
-        world.resource_mut::<ControlRefreshCache>().style_builder = style_builder;
-        world
-            .resource_mut::<ControlRefreshCache>()
-            .dynamic_style_buffers = dynamic_style_buffers;
-        world
-            .resource_mut::<ControlRefreshCache>()
-            .recovered_dynamic_styles = recovered_dynamic_styles;
+        let mut cache = world.resource_mut::<ControlRefreshCache>();
+        // ps_buffer.recover(pseudo_themes); // Did this above
+        cache.recover(
+            collected_styles,
+            unstyled_entities,
+            style_builder,
+            dynamic_style_buffers,
+            recovered_dynamic_styles,
+            ps_buffer,
+        );
     }
 }
 
@@ -554,7 +522,11 @@ impl Plugin for ControlMapPlugin
             )
             .add_systems(
                 PostUpdate,
-                (cleanup_control_maps, refresh_controlled_styles)
+                (
+                    cleanup_control_maps,
+                    handle_node_attr_changes,
+                    refresh_controlled_styles,
+                )
                     .chain()
                     .in_set(ControlSet),
             );
