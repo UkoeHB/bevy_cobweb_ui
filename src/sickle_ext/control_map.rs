@@ -264,7 +264,7 @@ fn handle_node_attr_changes(
                     }
                 }
 
-                let Ok(parent) = parents.get(entity) else {
+                let Ok(parent) = parents.get(current_entity) else {
                     tracing::warn!("failed finding control root for entity {:?} with {:?}; use ControlRoot",
                         entity, label);
                     break;
