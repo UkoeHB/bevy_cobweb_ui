@@ -32,7 +32,7 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
 // Button widget, implemented from scratch.
 "button"
     RadioButton // <--- Makes a radio button.
-    ControlRoot("RadioButton")
+    ControlRoot("")
     FlexNode{
         margin:{top:5px bottom:5px left:5px right:5px}
         flex_direction:Row justify_main:FlexStart justify_cross:Center
@@ -62,7 +62,7 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
     BorderColor(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
 
     "indicator"
-        ControlLabel("RadioButtonIndicator")
+        ControlLabel("")
         FlexNode{
             margin:{top:4px bottom:4px left:9px right:1px}
             justify_main:Center justify_cross:Center
@@ -72,7 +72,7 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
         BorderColor(#000000)
 
         "indicator_dot"
-            ControlLabel("RadioButtonIndicatorDot")
+            ControlLabel("")
             FlexNode{width:9px height:9px}
             Splat<Margin>(2px)
             BrRadius(4.5px)
@@ -84,7 +84,7 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
             }
 
     "text"
-        ControlLabel("RadioButtonContent")
+        ControlLabel("")
         FlexNode{
             margin:{top:5px bottom:5px left:10px right:10px}
         }

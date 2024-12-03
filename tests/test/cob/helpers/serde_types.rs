@@ -367,6 +367,29 @@ impl Instruction for ReflectDefaulted
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ReflectDefaultNewtype(#[reflect(default)] pub u32);
+
+impl Instruction for ReflectDefaultNewtype
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+// Tuple-struct defaulting is not a good idea because field order becomes ambiguous.
+// #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+// pub struct ReflectDefaultTupleStruct(#[reflect(default)] pub u32, #[reflect(default)] pub u32);
+
+// impl Instruction for ReflectDefaultTupleStruct
+// {
+//     fn apply(self, _: Entity, _: &mut World) {}
+//     fn revert(_: Entity, _: &mut World) {}
+// }
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[derive(Component, Reflect, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[reflect(Serialize, Deserialize)]
 pub struct SerdeReflectDefaulted
@@ -451,6 +474,8 @@ impl Plugin for SerdeTypesPlugin
             .register_instruction_type::<BuiltinColor>()
             .register_instruction_type::<BuiltinCollection>()
             .register_instruction_type::<ReflectDefaulted>()
+            .register_instruction_type::<ReflectDefaultNewtype>()
+            //.register_instruction_type::<ReflectDefaultTupleStruct>()
             .register_instruction_type::<SerdeReflectDefaulted>();
     }
 }

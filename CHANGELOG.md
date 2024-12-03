@@ -2,6 +2,8 @@
 
 ## WIP
 
+- Update `ControlRoot` and `ControlLabel` to create anonymous labels if an empty string is set.
+
 ## 0.5.1
 
 - Add `SliderValue::single` and `SliderValue::planar` helpers.

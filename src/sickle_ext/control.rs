@@ -39,7 +39,7 @@ fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<
 /// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
 /// performance.
 #[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
-pub struct ControlRoot(pub SmolStr);
+pub struct ControlRoot(#[reflect(default)] pub SmolStr);
 
 impl ControlRoot
 {
@@ -150,7 +150,7 @@ impl Instruction for ControlRoot
 /// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
 /// performance.
 #[derive(Component, Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
-pub struct ControlLabel(pub SmolStr);
+pub struct ControlLabel(#[reflect(default)] pub SmolStr);
 
 impl ControlLabel
 {
@@ -171,9 +171,17 @@ impl<T: Into<SmolStr>> From<T> for ControlLabel
 
 impl Instruction for ControlLabel
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(mut self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+
+        // Anonymous label
+        if self.len() == 0 {
+            // TODO: smol_str v0.3 lets you do this without intermediate allocation
+            self = ControlLabel(SmolStr::from(
+                format!("_anon-{}v{}", entity.index(), entity.generation()),
+            ));
+        }
 
         // Insert or update control label.
         let label_str = self.0.clone();

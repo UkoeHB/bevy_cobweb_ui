@@ -532,6 +532,24 @@ fn reflect_defaulted()
 //-------------------------------------------------------------------------------------------------------------------
 
 #[test]
+fn reflect_default_newtype()
+{
+    let a = prepare_test_app();
+    test_equivalence(a.world(), "ReflectDefaultNewtype(1)", "1", ReflectDefaultNewtype(1));
+
+    // Lossy conversion: reflect-defaulted fields will be inserted on reserialize
+    // TODO: requires bevy_reflect update
+    // test_equivalence_lossy_reflection(
+    //     a.world(),
+    //     "ReflectDefaultNewtype",
+    //     "ReflectDefaultNewtype(0)",
+    //     ReflectDefaultNewtype::default(),
+    // );
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[test]
 fn serde_reflect_defaulted()
 {
     let a = prepare_test_app();
