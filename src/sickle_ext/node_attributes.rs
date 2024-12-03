@@ -319,28 +319,25 @@ impl NodeAttribute
     /// Gets the inner static reference value.
     ///
     /// Returns `None` if self is not `AttributeType::Static` or the requested type doesn't match.
-    pub fn static_val<T: StaticAttribute>(&mut self) -> Option<&mut T::Value>
+    pub fn static_val<T: StaticAttribute>(&self) -> Option<&T::Value>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<T::Value>()
+        self.reference.downcast_ref::<T::Value>()
     }
 
     /// Gets the inner responsive reference values.
     ///
     /// Returns `None` if self is not `AttributeType::Responsive` or the requested type doesn't match.
-    pub fn responsive_vals<T: ResponsiveAttribute>(&mut self) -> Option<&mut ResponsiveVals<T::Value>>
+    pub fn responsive_vals<T: ResponsiveAttribute>(&self) -> Option<&ResponsiveVals<T::Value>>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<ResponsiveVals<T::Value>>()
+        self.reference.downcast_ref::<ResponsiveVals<T::Value>>()
     }
 
     /// Gets the inner animated reference values.
     ///
     /// Returns `None` if self is not `AttributeType::Animated` or the requested type doesn't match.
-    pub fn animated_vals<T: AnimatedAttribute>(&mut self) -> Option<&mut AnimatedVals<T::Value>>
+    pub fn animated_vals<T: AnimatedAttribute>(&self) -> Option<&AnimatedVals<T::Value>>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<AnimatedVals<T::Value>>()
+        self.reference.downcast_ref::<AnimatedVals<T::Value>>()
     }
 
     /// Gets `AnimationSettings.
@@ -349,6 +346,33 @@ impl NodeAttribute
     pub fn animation_settings(&self) -> Option<&AnimationSettings>
     {
         self.settings.as_ref()
+    }
+
+    /// Gets the inner static reference value.
+    ///
+    /// Returns `None` if self is not `AttributeType::Static` or the requested type doesn't match.
+    pub fn static_val_mut<T: StaticAttribute>(&mut self) -> Option<&mut T::Value>
+    {
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
+        val.downcast_mut::<T::Value>()
+    }
+
+    /// Gets the inner responsive reference values.
+    ///
+    /// Returns `None` if self is not `AttributeType::Responsive` or the requested type doesn't match.
+    pub fn responsive_vals_mut<T: ResponsiveAttribute>(&mut self) -> Option<&mut ResponsiveVals<T::Value>>
+    {
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
+        val.downcast_mut::<ResponsiveVals<T::Value>>()
+    }
+
+    /// Gets the inner animated reference values.
+    ///
+    /// Returns `None` if self is not `AttributeType::Animated` or the requested type doesn't match.
+    pub fn animated_vals_mut<T: AnimatedAttribute>(&mut self) -> Option<&mut AnimatedVals<T::Value>>
+    {
+        let val = dyn_clone::arc_make_mut(&mut self.reference);
+        val.downcast_mut::<AnimatedVals<T::Value>>()
     }
 
     /// Gets a mutable reference to `AnimationSettings.
@@ -475,6 +499,139 @@ impl NodeAttributes
             .iter_mut()
             .filter_map(|t| t.get_mut(name))
             .next()
+    }
+
+    /// Gets an attribute's static value immutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn static_val<T: StaticAttribute>(&self, name: impl AsRef<str>) -> Option<&T::Value>
+    {
+        self.get(name).and_then(|a| a.static_val::<T>())
+    }
+
+    /// Gets an attribute's responsive values immutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn responsive_vals<T: ResponsiveAttribute>(
+        &self,
+        name: impl AsRef<str>,
+    ) -> Option<&ResponsiveVals<T::Value>>
+    {
+        self.get(name).and_then(|a| a.responsive_vals::<T>())
+    }
+
+    /// Gets an attribute's animated values immutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn animated_vals<T: AnimatedAttribute>(&self, name: impl AsRef<str>) -> Option<&AnimatedVals<T::Value>>
+    {
+        self.get(name).and_then(|a| a.animated_vals::<T>())
+    }
+
+    /// Gets an attribute's animation settings immutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn animation_settings(&self, name: impl AsRef<str>) -> Option<&AnimationSettings>
+    {
+        self.get(name).and_then(|a| a.animation_settings())
+    }
+
+    /// Gets an attribute's static value mutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn static_val_mut<T: StaticAttribute>(&mut self, name: impl AsRef<str>) -> Option<&mut T::Value>
+    {
+        self.get_mut(name).and_then(|a| a.static_val_mut::<T>())
+    }
+
+    /// Gets an attribute's responsive values mutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn responsive_vals_mut<T: ResponsiveAttribute>(
+        &mut self,
+        name: impl AsRef<str>,
+    ) -> Option<&mut ResponsiveVals<T::Value>>
+    {
+        self.get_mut(name)
+            .and_then(|a| a.responsive_vals_mut::<T>())
+    }
+
+    /// Gets an attribute's animated values mutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn animated_vals_mut<T: AnimatedAttribute>(
+        &mut self,
+        name: impl AsRef<str>,
+    ) -> Option<&mut AnimatedVals<T::Value>>
+    {
+        self.get_mut(name).and_then(|a| a.animated_vals_mut::<T>())
+    }
+
+    /// Gets an attribute's animation settings mutably by name.
+    ///
+    /// If multiple attributes have the same name, this will return the one that was inserted first.
+    pub fn animation_settings_mut(&mut self, name: impl AsRef<str>) -> Option<&mut AnimationSettings>
+    {
+        self.get_mut(name).and_then(|a| a.animation_settings_mut())
+    }
+
+    /// Edits an attribute's static value mutably by name.
+    ///
+    /// The callback will not be invoked if the requested attribute is not found or is not `AttributeType::Static`.
+    pub fn edit_static_val<T: StaticAttribute>(
+        &mut self,
+        name: impl AsRef<str>,
+        callback: impl FnOnce(&mut T::Value),
+    ) -> bool
+    {
+        let Some(s) = self.static_val_mut::<T>(name) else { return false };
+        (callback)(s);
+        true
+    }
+
+    /// Edits an attribute's responsive values mutably by name.
+    ///
+    /// The callback will not be invoked if the requested attribute is not found or is not
+    /// `AttributeType::Responsive`.
+    pub fn edit_responsive_vals<T: ResponsiveAttribute>(
+        &mut self,
+        name: impl AsRef<str>,
+        callback: impl FnOnce(&mut ResponsiveVals<T::Value>),
+    ) -> bool
+    {
+        let Some(s) = self.responsive_vals_mut::<T>(name) else { return false };
+        (callback)(s);
+        true
+    }
+
+    /// Edits an attribute's animated values mutably by name.
+    ///
+    /// The callback will not be invoked if the requested attribute is not found or is not
+    /// `AttributeType::Animated`.
+    pub fn edit_animated_vals<T: AnimatedAttribute>(
+        &mut self,
+        name: impl AsRef<str>,
+        callback: impl FnOnce(&mut AnimatedVals<T::Value>),
+    ) -> bool
+    {
+        let Some(s) = self.animated_vals_mut::<T>(name) else { return false };
+        (callback)(s);
+        true
+    }
+
+    /// Edits an attribute's animation settings mutably by name.
+    ///
+    /// The callback will not be invoked if the requested attribute is not found or is not
+    /// `AttributeType::Animated`.
+    pub fn edit_animation_settings(
+        &mut self,
+        name: impl AsRef<str>,
+        callback: impl FnOnce(&mut AnimationSettings),
+    ) -> bool
+    {
+        let Some(s) = self.animation_settings_mut(name) else { return false };
+        (callback)(s);
+        true
     }
 
     /// Gets an attribute with state and type id.

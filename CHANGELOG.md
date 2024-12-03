@@ -3,6 +3,8 @@
 ## WIP
 
 - Update `ControlRoot` and `ControlLabel` to create anonymous labels if an empty string is set.
+- Remove `Copy` derive from `AnimationSettings`, `AnimationConfig`, and `LoopedAnimationConfig` to avoid silent copies causing issues when editing values.
+- Expand API of `NodeAttributes` component to make editing attributes easier.
 
 ## 0.5.1
 

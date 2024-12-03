@@ -134,7 +134,7 @@ impl DynamicStyleController
         // Idle -> Hover animation would be skipped if there is no Release tween set (otherwise the Release
         // tween will be used instead of the PointerEnter).
         let mut tween = match entering {
-            true => self.animation.enter_idle_with,
+            true => self.animation.enter_idle_with.clone(),
             false => self.animation.to_tween(&flux_interaction),
         };
         let loop_tween = match entering {
@@ -143,26 +143,26 @@ impl DynamicStyleController
         };
 
         if target_style == InteractionStyle::Cancel {
-            if let Some(cancel_tween) = tween {
+            if let Some(cancel_tween) = tween.clone() {
                 let cancel_tween_length = cancel_tween.duration + cancel_tween.delay();
 
                 if elapsed >= cancel_tween_length {
                     target_style = InteractionStyle::Idle;
-                    tween = self.animation.cancel_end_with;
+                    tween = self.animation.cancel_end_with.clone();
                     elapsed -= cancel_tween_length;
                 }
             } else {
                 target_style = InteractionStyle::Idle;
-                tween = self.animation.cancel_end_with;
+                tween = self.animation.cancel_end_with.clone();
             }
         }
 
         let new_state = self
             .current_state
-            .tick(target_style, tween, loop_tween, elapsed);
+            .tick(target_style, tween.clone(), loop_tween, elapsed);
 
         // Remove entering flag post tick, to allow Hold to occur
-        self.entering = match self.animation.enter_idle_with {
+        self.entering = match self.animation.enter_idle_with.clone() {
             Some(tween) => self.entering && elapsed < (tween.duration + tween.delay()),
             None => false,
         };

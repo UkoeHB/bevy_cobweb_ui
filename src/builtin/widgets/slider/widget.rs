@@ -339,10 +339,10 @@ fn slider_bar_ptr_down(
             if !ps.try_insert(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE) {
                 ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
                 React::set_if_neq(&mut slider_value, &mut c, target_val);
-            } else if let Some(zoom) = maybe_attrs
-                .and_then(|a| a.into_inner().get_mut(SLIDER_ZOOM_ATTR))
-                .and_then(|a| a.animated_vals::<SliderZoom>())
-            {
+            } else if let Some(zoom) = maybe_attrs.and_then(|a| {
+                a.into_inner()
+                    .animated_vals_mut::<SliderZoom>(SLIDER_ZOOM_ATTR)
+            }) {
                 zoom.enter_ref = Some(**slider_value);
                 zoom.idle = target_val;
             }
@@ -688,7 +688,7 @@ impl SliderDirection
 /// Configuration for pressing a slider's bar.
 ///
 /// See [`Slider`].
-#[derive(Reflect, Default, PartialEq, Copy, Clone)]
+#[derive(Reflect, Default, PartialEq, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SliderPress
 {

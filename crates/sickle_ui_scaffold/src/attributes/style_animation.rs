@@ -124,7 +124,7 @@ pub enum AnimationLoop
     PingPong(u8),
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct AnimationConfig
 {
     pub duration: f32,
@@ -158,7 +158,7 @@ impl AnimationConfig
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct LoopedAnimationConfig
 {
     pub duration: f32,
@@ -232,7 +232,7 @@ impl LoopedAnimationConfig
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct AnimationSettings
 {
     #[reflect(default)]
@@ -265,7 +265,7 @@ pub struct AnimationSettings
 }
 
 macro_rules! transition_animation_setter {
-    ($setter:ident) => {
+    ($setter:ident, $setter_edit:ident) => {
         pub fn $setter(
             &mut self,
             duration: f32,
@@ -278,6 +278,19 @@ macro_rules! transition_animation_setter {
                 delay: delay.into(),
             };
             self.$setter = Some(config);
+
+            self
+        }
+
+        /// If the value is `None`, a default value will be pre-inserted.
+        pub fn $setter_edit(
+            &mut self,
+            callback: impl FnOnce(&mut AnimationConfig),
+        ) -> &mut Self {
+            if self.$setter.is_none() {
+                self.$setter = Some(AnimationConfig::default());
+            }
+            (callback)(self.$setter.as_mut().unwrap());
 
             self
         }
@@ -295,7 +308,7 @@ macro_rules! transition_from_animation_setter {
 }
 
 macro_rules! state_animation_setter {
-    ($setter:ident) => {
+    ($setter:ident, $setter_edit:ident) => {
         pub fn $setter(
             &mut self,
             duration: f32,
@@ -316,6 +329,19 @@ macro_rules! state_animation_setter {
                 loop_type: loop_type.into(),
             };
             self.$setter = Some(config);
+
+            self
+        }
+
+        /// If the value is `None`, a default value will be pre-inserted.
+        pub fn $setter_edit(
+            &mut self,
+            callback: impl FnOnce(&mut LoopedAnimationConfig),
+        ) -> &mut Self {
+            if self.$setter.is_none() {
+                self.$setter = Some(LoopedAnimationConfig::default());
+            }
+            (callback)(self.$setter.as_mut().unwrap());
 
             self
         }
@@ -368,28 +394,28 @@ impl AnimationSettings
         self
     }
 
-    transition_animation_setter!(enter_idle_with);
-    // transition_animation_setter!(non_interacted);
+    transition_animation_setter!(enter_idle_with, edit_enter_idle_with);
+    // transition_animation_setter!(non_interacted, edit_non_interacted);
     // transition_from_animation_setter!(non_interacted, non_interacted_from);
-    transition_animation_setter!(hover_with);
+    transition_animation_setter!(hover_with, edit_hover_with);
     transition_from_animation_setter!(hover_with, hover_with_from);
-    transition_animation_setter!(unhover_with);
+    transition_animation_setter!(unhover_with, edit_unhover_with);
     transition_from_animation_setter!(unhover_with, unhover_with_from);
-    transition_animation_setter!(press_with);
+    transition_animation_setter!(press_with, edit_press_with);
     transition_from_animation_setter!(press_with, press_with_from);
-    transition_animation_setter!(release_with);
+    transition_animation_setter!(release_with, edit_release_with);
     transition_from_animation_setter!(release_with, release_with_from);
-    transition_animation_setter!(cancel_with);
+    transition_animation_setter!(cancel_with, edit_cancel_with);
     transition_from_animation_setter!(cancel_with, cancel_with_from);
-    transition_animation_setter!(cancel_end_with);
+    transition_animation_setter!(cancel_end_with, edit_cancel_end_with);
     transition_from_animation_setter!(cancel_end_with, cancel_end_with_from);
-    transition_animation_setter!(disable_with);
+    transition_animation_setter!(disable_with, edit_disable_with);
     transition_from_animation_setter!(disable_with, disable_with_from);
-    state_animation_setter!(idle_loop);
+    state_animation_setter!(idle_loop, edit_idle_loop);
     state_from_animation_setter!(idle_loop, idle_loop_from);
-    state_animation_setter!(hover_loop);
+    state_animation_setter!(hover_loop, edit_hover_loop);
     state_from_animation_setter!(hover_loop, hover_loop_from);
-    state_animation_setter!(press_loop);
+    state_animation_setter!(press_loop, edit_press_loop);
     state_from_animation_setter!(press_loop, press_loop_from);
 
     pub fn delete_on_entered(&mut self, do_delete: bool) -> &mut Self
@@ -402,52 +428,52 @@ impl AnimationSettings
     pub fn to_tween(&self, flux_interaction: &FluxInteraction) -> Option<AnimationConfig>
     {
         match flux_interaction {
-            FluxInteraction::None => self.enter_idle_with,
-            FluxInteraction::PointerEnter => self.hover_with,
-            FluxInteraction::PointerLeave => self.unhover_with,
-            FluxInteraction::Pressed => self.press_with,
-            FluxInteraction::Released => self.release_with,
-            FluxInteraction::PressCanceled => self.cancel_with,
-            FluxInteraction::Disabled => self.disable_with,
+            FluxInteraction::None => self.enter_idle_with.clone(),
+            FluxInteraction::PointerEnter => self.hover_with.clone(),
+            FluxInteraction::PointerLeave => self.unhover_with.clone(),
+            FluxInteraction::Pressed => self.press_with.clone(),
+            FluxInteraction::Released => self.release_with.clone(),
+            FluxInteraction::PressCanceled => self.cancel_with.clone(),
+            FluxInteraction::Disabled => self.disable_with.clone(),
         }
     }
 
     pub fn to_loop_tween(&self, flux_interaction: &FluxInteraction) -> Option<LoopedAnimationConfig>
     {
         match flux_interaction {
-            FluxInteraction::None => self.idle_loop,
-            FluxInteraction::PointerEnter => self.hover_loop,
-            FluxInteraction::PointerLeave => self.idle_loop,
-            FluxInteraction::Pressed => self.press_loop,
-            FluxInteraction::Released => self.idle_loop,
-            FluxInteraction::PressCanceled => self.idle_loop,
+            FluxInteraction::None => self.idle_loop.clone(),
+            FluxInteraction::PointerEnter => self.hover_loop.clone(),
+            FluxInteraction::PointerLeave => self.idle_loop.clone(),
+            FluxInteraction::Pressed => self.press_loop.clone(),
+            FluxInteraction::Released => self.idle_loop.clone(),
+            FluxInteraction::PressCanceled => self.idle_loop.clone(),
             FluxInteraction::Disabled => None,
         }
     }
 
     pub fn enter_duration(&self) -> StopwatchLock
     {
-        AnimationSettings::transition_lock_duration(self.enter_idle_with)
+        AnimationSettings::transition_lock_duration(self.enter_idle_with.clone())
     }
 
     pub fn lock_duration(&self, flux_interaction: &FluxInteraction) -> StopwatchLock
     {
         let transition = match flux_interaction {
             FluxInteraction::PressCanceled => {
-                let cancel_lock = AnimationSettings::transition_lock_duration(self.cancel_with);
-                let reset_lock = AnimationSettings::transition_lock_duration(self.cancel_end_with);
+                let cancel_lock = AnimationSettings::transition_lock_duration(self.cancel_with.clone());
+                let reset_lock = AnimationSettings::transition_lock_duration(self.cancel_end_with.clone());
                 cancel_lock + reset_lock
             }
             _ => AnimationSettings::transition_lock_duration(self.to_tween(flux_interaction)),
         };
 
         let state_animation = match flux_interaction {
-            FluxInteraction::None => AnimationSettings::state_lock_duration(self.idle_loop),
-            FluxInteraction::PointerEnter => AnimationSettings::state_lock_duration(self.hover_loop),
-            FluxInteraction::PointerLeave => AnimationSettings::state_lock_duration(self.idle_loop),
-            FluxInteraction::Pressed => AnimationSettings::state_lock_duration(self.press_loop),
-            FluxInteraction::Released => AnimationSettings::state_lock_duration(self.idle_loop),
-            FluxInteraction::PressCanceled => AnimationSettings::state_lock_duration(self.idle_loop),
+            FluxInteraction::None => AnimationSettings::state_lock_duration(self.idle_loop.clone()),
+            FluxInteraction::PointerEnter => AnimationSettings::state_lock_duration(self.hover_loop.clone()),
+            FluxInteraction::PointerLeave => AnimationSettings::state_lock_duration(self.idle_loop.clone()),
+            FluxInteraction::Pressed => AnimationSettings::state_lock_duration(self.press_loop.clone()),
+            FluxInteraction::Released => AnimationSettings::state_lock_duration(self.idle_loop.clone()),
+            FluxInteraction::PressCanceled => AnimationSettings::state_lock_duration(self.idle_loop.clone()),
             FluxInteraction::Disabled => StopwatchLock::None,
         };
 
