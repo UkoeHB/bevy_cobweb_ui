@@ -11,6 +11,17 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn validate_loadable_name(shortname: &'static str) -> bool
+{
+    if shortname.is_empty() || !shortname.chars().next().unwrap().is_ascii_uppercase() {
+        tracing::warn!("failed registering loadable '{shortname}', type must be a named struct that starts uppercase");
+        return false;
+    }
+    true
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn register_loadable_type<T: Loadable>(app: &mut App) -> Option<(&mut LoadableRegistry, TypeId)>
 {
     // Look up canonical short name.
@@ -23,6 +34,10 @@ fn register_loadable_type<T: Loadable>(app: &mut App) -> Option<(&mut LoadableRe
     };
     let shortname = registration.type_info().type_path_table().short_path();
     std::mem::drop(registry);
+
+    if !validate_loadable_name(shortname) {
+        return None;
+    }
 
     // Save loadable type.
     let mut loadables = app

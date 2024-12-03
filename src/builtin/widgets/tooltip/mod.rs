@@ -8,6 +8,7 @@ pub enum TooltipAnchor
     /// Top-right corner of the parent node.
     TopRight,
     /// Top-center point on the parent node.
+    #[default]
     TopCenter,
     /// Top-left corner of the parent node.
     TopLeft,
@@ -42,6 +43,7 @@ pub enum TooltipAlignment
     Start,
     /// `Top*`/`Bottom*` anchor: center of bottom/top edge of the tooltip.
     /// `LeftCenter`/`RightCenter` anchor: center of right/left edge of the tooltip.
+    #[default]
     Center,
     /// `Top*`/`Bottom*` anchor: right bottom/top corner of the tooltip.
     /// `LeftCenter`/`RightCenter` anchor: bottom right/left corner of the tooltip.
@@ -55,17 +57,14 @@ pub enum TooltipAlignment
 /// The tooltip will spawn as a fresh UI scene when hovering the entity.
 pub struct WithTooltip
 {
-    /// A reference to the scene of the tooltip to spawn. Format: `(file path, scene name)`.
-    pub tooltip: (SmolStr, SmolStr),
-
     /// The anchor point on the reference node for the tooltip.
     ///
-    /// Defaults to [`TooltipAnchor::TopLeft`].
+    /// Defaults to [`TooltipAnchor::TopCenter`].
     #[reflect(default)]
     pub anchor: TooltipAnchor,
     /// The alignment of the tooltip relative to the anchor point.
     ///
-    /// Defaults to [`TooltipAlignment::End`].
+    /// Defaults to [`TooltipAlignment::Center`].
     #[reflect(default)]
     pub alignment: TooltipAlignment,
     /// Offset from the anchor point to the alignment point.
@@ -102,26 +101,26 @@ pub struct WithTooltip
     /// Defaults to `true`.
     #[reflect(default = "WithTooltip::avoid_cursor_default")]
     pub avoid_cursor: bool,
-    /// If set, then the tooltip will be repositioned to stay inside the primary window.
+    /// If set, then the tooltip will be repositioned to stay inside the node's camera view (usually the primary window).
     ///
-    /// Respositioning is done by first trying to 'push' the tooltip away from the window. If pushing results
+    /// Repositioning is done by first trying to 'push' the tooltip away from the camera view's edges. If pushing results
     /// in the tooltip overlapping with the 'offset box' around the edge of the reference node, then
     /// the anchor point will be flipped away from the overlap.
     ///
-    /// If the window is too small to fit the tooltip, then it will be adjusted so its top and left edges stay within
-    /// the window.
+    /// If the camera view is too small to fit the tooltip, then its position will be adjusted so its top and left edges
+    /// stay within the camera view.
     ///
     /// Defaults to `true`.
-    #[reflect(default = "WithTooltip::stay_in_window_default")]
-    pub stay_in_window: bool,
-    /// Minimum distance allowed between the tooltip and the window edges. Only takes effect if `stay_in_window`
+    #[reflect(default = "WithTooltip::stay_in_camera_default")]
+    pub stay_in_camera: bool,
+    /// Minimum distance allowed between the tooltip and the camera edges. Only takes effect if `stay_in_camera`
     /// is set.
     ///
-    /// Will shrink to zero if the window is too small to include both the tooltip and the padding.
+    /// Will shrink to zero if the camera is too small to include both the tooltip and the padding.
     ///
     /// Defaults to no padding.
     #[reflect(default)]
-    pub window_padding: f32,
+    pub camera_padding: f32,
 }
 
 impl WithTooltip
@@ -131,7 +130,7 @@ impl WithTooltip
         true
     }
 
-    fn stay_in_window_default() -> bool
+    fn stay_in_camera_default() -> bool
     {
         true
     }
@@ -143,7 +142,12 @@ impl WithTooltip
 // On tooltip spawn, make Animated<PropagateOpacity> to control the entry, and another tied to the Dying pseudostate
 // for fade-out.
 
+
 /*
+Events:
+- On tooltip activation (after animation delay).
+- 
+
 - target entity: WithTooltip instruction
     - on_pointer_enter, on_pressed: spawn tooltip, add HasTooltip component to hovered entity
     - on_pointer_leave, on_released, on_press_canceled: remove HasTooltip component, add "Dying" pseudostate
