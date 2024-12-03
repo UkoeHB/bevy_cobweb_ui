@@ -8,6 +8,7 @@
 - Remove `Copy` derive from `AnimationSettings`, `AnimationConfig`, and `LoopedAnimationConfig` to avoid silent copies causing issues when editing values.
 - Expand API of `NodeAttributes` component to make editing attributes easier.
 - Validate loadable names on registration. Only named structs that start uppercase are allowed.
+- Simplify `AnimationConfig` and `LoopedAnimationConfig` definitions. Allow the `duration` field to be ignored (e.g. if you only want the delay).
 
 ## 0.5.1
 

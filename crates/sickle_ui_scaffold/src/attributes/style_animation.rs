@@ -127,105 +127,61 @@ pub enum AnimationLoop
 #[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct AnimationConfig
 {
+    /// Defaults to zero seconds.
+    #[reflect(default)]
     pub duration: f32,
+    /// Defaults to linear easing.
     #[reflect(default)]
-    pub ease: Option<Ease>,
+    pub ease: Ease,
+    /// Defaults to no delay.
     #[reflect(default)]
-    pub delay: Option<f32>,
+    pub delay: f32,
 }
 
 impl AnimationConfig
 {
-    pub fn new(duration: f32, ease: impl Into<Option<Ease>>, delay: impl Into<Option<f32>>) -> AnimationConfig
+    pub fn new(duration: f32, ease: Ease, delay: f32) -> AnimationConfig
     {
-        AnimationConfig { duration, ease: ease.into(), delay: delay.into() }
-    }
-
-    pub fn delay(&self) -> f32
-    {
-        match self.delay {
-            Some(delay) => delay,
-            None => 0.,
-        }
-    }
-
-    pub fn ease(&self) -> Ease
-    {
-        match self.ease {
-            Some(ease) => ease,
-            None => Ease::Linear,
-        }
+        AnimationConfig { duration, ease, delay }
     }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct LoopedAnimationConfig
 {
+    /// Defaults to zero duration.
+    #[reflect(default)]
     pub duration: f32,
+    /// Defaults to linear easing.
     #[reflect(default)]
-    pub ease: Option<Ease>,
+    pub ease: Ease,
+    /// Defaults to no delay.
     #[reflect(default)]
-    pub start_delay: Option<f32>,
+    pub start_delay: f32,
+    /// Defaults to no gap.
     #[reflect(default)]
-    pub loop_gap: Option<f32>,
+    pub loop_gap: f32,
+    /// Defaults to `AnimationLoop::None`.
     #[reflect(default)]
-    pub loop_type: Option<AnimationLoop>,
+    pub loop_type: AnimationLoop,
 }
 
 impl LoopedAnimationConfig
 {
     pub fn new(
         duration: f32,
-        ease: impl Into<Option<Ease>>,
-        start_delay: impl Into<Option<f32>>,
-        loop_gap: impl Into<Option<f32>>,
-        loop_type: impl Into<Option<AnimationLoop>>,
+        ease: Ease,
+        start_delay: f32,
+        loop_gap: f32,
+        loop_type: AnimationLoop,
     ) -> LoopedAnimationConfig
     {
-        LoopedAnimationConfig {
-            duration,
-            ease: ease.into(),
-            start_delay: start_delay.into(),
-            loop_gap: loop_gap.into(),
-            loop_type: loop_type.into(),
-        }
-    }
-
-    fn start_delay(&self) -> f32
-    {
-        match self.start_delay {
-            Some(delay) => delay,
-            None => 0.,
-        }
-    }
-
-    fn loop_gap(&self) -> f32
-    {
-        match self.loop_gap {
-            Some(delay) => delay,
-            None => 0.,
-        }
-    }
-
-    fn ease(&self) -> Ease
-    {
-        match self.ease {
-            Some(ease) => ease,
-            None => Ease::Linear,
-        }
-    }
-
-    fn loop_type(&self) -> AnimationLoop
-    {
-        match self.loop_type {
-            Some(loop_type) => loop_type,
-            None => AnimationLoop::None,
-        }
+        LoopedAnimationConfig { duration, ease, start_delay, loop_gap, loop_type }
     }
 
     fn is_pingpong(&self) -> bool
     {
-        match self.loop_type() {
+        match self.loop_type {
             AnimationLoop::PingPong(_) | AnimationLoop::PingPongContinous => true,
             _ => false,
         }
@@ -269,13 +225,13 @@ macro_rules! transition_animation_setter {
         pub fn $setter(
             &mut self,
             duration: f32,
-            ease: impl Into<Option<Ease>>,
-            delay: impl Into<Option<f32>>,
+            ease: Ease,
+            delay: f32,
         ) -> &mut Self {
             let config = AnimationConfig {
                 duration,
-                ease: ease.into(),
-                delay: delay.into(),
+                ease,
+                delay,
             };
             self.$setter = Some(config);
 
@@ -312,10 +268,10 @@ macro_rules! state_animation_setter {
         pub fn $setter(
             &mut self,
             duration: f32,
-            ease: impl Into<Option<Ease>>,
-            start_delay: impl Into<Option<f32>>,
-            loop_gap: impl Into<Option<f32>>,
-            loop_type: impl Into<Option<AnimationLoop>>,
+            ease: Ease,
+            start_delay: f32,
+            loop_gap: f32,
+            loop_type: AnimationLoop,
         ) -> &mut Self {
             if duration <= 0. {
                 warn!("Invalid animation duration used: {}", duration);
@@ -323,10 +279,10 @@ macro_rules! state_animation_setter {
 
             let config = LoopedAnimationConfig {
                 duration,
-                ease: ease.into(),
-                start_delay: start_delay.into(),
-                loop_gap: loop_gap.into(),
-                loop_type: loop_type.into(),
+                ease,
+                start_delay,
+                loop_gap,
+                loop_type,
             };
             self.$setter = Some(config);
 
@@ -486,7 +442,7 @@ impl AnimationSettings
             return StopwatchLock::None;
         };
 
-        StopwatchLock::Duration(Duration::from_secs_f32(tween.delay() + tween.duration))
+        StopwatchLock::Duration(Duration::from_secs_f32(tween.delay + tween.duration))
     }
 
     pub fn state_lock_duration(tween: Option<LoopedAnimationConfig>) -> StopwatchLock
@@ -495,17 +451,17 @@ impl AnimationSettings
             return StopwatchLock::None;
         };
 
-        match tween.loop_type() {
+        match tween.loop_type {
             AnimationLoop::None => {
-                StopwatchLock::Duration(Duration::from_secs_f32(tween.start_delay() + tween.duration))
+                StopwatchLock::Duration(Duration::from_secs_f32(tween.start_delay + tween.duration))
             }
             AnimationLoop::Continous => StopwatchLock::Infinite,
             AnimationLoop::Times(n, _) => StopwatchLock::Duration(Duration::from_secs_f32(
-                tween.start_delay() + (tween.duration * n as f32) + (tween.loop_gap() * n as f32),
+                tween.start_delay + (tween.duration * n as f32) + (tween.loop_gap * n as f32),
             )),
             AnimationLoop::PingPongContinous => StopwatchLock::Infinite,
             AnimationLoop::PingPong(n) => StopwatchLock::Duration(Duration::from_secs_f32(
-                tween.start_delay() + (tween.duration * n as f32) + (tween.loop_gap() * n as f32),
+                tween.start_delay + (tween.duration * n as f32) + (tween.loop_gap * n as f32),
             )),
         }
     }
@@ -556,9 +512,9 @@ impl AnimationState
             return AnimationState::process_animation_loops(target_style, alt_target, elapsed, alt_tween);
         };
 
-        let delay = tween.delay();
+        let delay = tween.delay;
         let tween_time = tween.duration.max(0.);
-        let ease = tween.ease();
+        let ease = tween.ease;
 
         // Includes elapsed == 0.
         if elapsed <= delay {
@@ -607,17 +563,17 @@ impl AnimationState
         tween: LoopedAnimationConfig,
     ) -> AnimationState
     {
-        let start_delay = tween.start_delay();
-        if tween.loop_type() == AnimationLoop::None || elapsed < start_delay || tween.duration <= 0. {
+        let start_delay = tween.start_delay;
+        if tween.loop_type == AnimationLoop::None || elapsed < start_delay || tween.duration <= 0. {
             return AnimationState { result: AnimationResult::Hold(target_style), iteration: 0 };
         }
         elapsed -= start_delay;
 
-        let loop_gap = tween.loop_gap();
+        let loop_gap = tween.loop_gap;
         let iteration = (elapsed / (tween.duration + loop_gap)).floor() as usize;
         let even = iteration % 2 == 0;
 
-        match tween.loop_type() {
+        match tween.loop_type {
             AnimationLoop::Times(times, reset) => {
                 if iteration >= times as usize {
                     return AnimationState {
@@ -659,7 +615,7 @@ impl AnimationState
                 iteration: (iteration % 255) as u8,
             }
         } else {
-            let tween_ratio = (offset / tween.duration).clamp(0., 1.).ease(tween.ease());
+            let tween_ratio = (offset / tween.duration).clamp(0., 1.).ease(tween.ease);
             let from = match tween.is_pingpong() {
                 true => match even {
                     true => target_style,
