@@ -6,13 +6,13 @@
 
     // Sets up a button with centered content, that animates its background in response to hovers/presses.
     "button"
-        ControlRoot("ExampleButton")
+        ControlRoot
         FlexNode{ justify_main:Center justify_cross:Center }
         Animated<BackgroundColor>{ idle:#007000 hover:#006200 press:#005500 }
 
         // Sets up the button's text as a single line of text with margin to control the edges of the button.
         "text"
-            ControlLabel("ExampleButtonText")
+            ControlMember
             FlexNode{ margin:{top:10px bottom:10px left:18px right:18px} }
             TextLine{ size:50 }
             Animated<TextLineColor>{ idle:#05080F hover:#5080F0 press:#4070E0 }

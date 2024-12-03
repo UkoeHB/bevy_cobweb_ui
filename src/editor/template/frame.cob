@@ -54,12 +54,12 @@ PrimaryCursor(System(Default))
 
 "dropdown_entry"
     // Shim lets us interact with the whole entry, not just the text.
-    ControlRoot("entry")
+    ControlRoot
     FlexNode{width:100% padding:{left:7px top:10px bottom:10px} flex_direction:Row justify_main:FlexStart justify_cross:Center}
     Multi<Responsive<BackgroundColor>>[{idle:#00000000 hover:#44BBBBBB} {state:[Selected] idle:#22BBBBBB hover:#44BBBBBB}]
 
     "text"
-        ControlLabel("text")
+        ControlMember
         TextLine{ size:14 text:"" }
         Multi<Responsive<TextLineColor>>[
             {idle:#CCCCCC hover:#FFFFFF} {state:[Selected] idle:#DFDFDF hover:#FFFFFF}

@@ -538,7 +538,10 @@ fn reflect_default_newtype()
     test_equivalence(a.world(), "ReflectDefaultNewtype(1)", "1", ReflectDefaultNewtype(1));
 
     // Lossy conversion: reflect-defaulted fields will be inserted on reserialize
-    // TODO: requires bevy_reflect update
+    // TODO: requires bevy_reflect update AND a solution to this problem:
+    // - To support #[reflect(default)] in newtypes, I need a way to 'back out' of the loadable erased newtype
+    // deserializer on value-request-error to instead hand it an empty sequence. The problem is Visitor gets
+    // consumed when you call its methods. So there's no way to 'on failure, try something else'.
     // test_equivalence_lossy_reflection(
     //     a.world(),
     //     "ReflectDefaultNewtype",

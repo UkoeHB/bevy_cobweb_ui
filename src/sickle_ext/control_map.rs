@@ -75,7 +75,7 @@ impl ControlRefreshCache
 
 /// Component that coordinates dynamic attributes for multi-entity widgets (or single entities).
 ///
-/// Control maps should be placed on the root entity of a widget. Use [`ControlRoot`] and [`ControlLabel`] if you
+/// Control maps should be placed on the root entity of a widget. Use [`ControlRoot`] and [`ControlMember`] if you
 /// want a multi-entity control group. Otherwise the control group will be 'anonymous' and only work on the current
 /// entity.
 #[derive(Component, Debug, Default)]
@@ -132,7 +132,7 @@ impl ControlMap
     {
         for (label, entity) in self.entities.drain(..) {
             let Some(mut ec) = c.get_entity(entity) else { continue };
-            ec.apply(ControlLabel(label));
+            ec.apply(ControlMember::from(label));
         }
     }
 
@@ -232,7 +232,7 @@ fn handle_node_attr_changes(
     mut maps: Query<(&mut ControlMap, Has<NodeAttributes>)>,
     parents: Query<&Parent>,
     mut removed_attrs: RemovedComponents<NodeAttributes>,
-    node_attributes: Query<(Entity, Option<&ControlLabel>), Changed<NodeAttributes>>,
+    node_attributes: Query<(Entity, Option<&ControlMember>), Changed<NodeAttributes>>,
 )
 {
     // Cleanup anonymous control maps on attrs removal.
@@ -259,7 +259,7 @@ fn handle_node_attr_changes(
                         map.set_changed();
                         break;
                     } else if current_entity == entity {
-                        map.make_not_anonymous(entity, (**label).clone());
+                        map.make_not_anonymous(entity, label.id.clone());
                         break;
                     }
                 }
@@ -304,7 +304,7 @@ fn refresh_controlled_styles(
         .chain(changed_without_states.iter_mut())
     {
         // Cleanup dead references.
-        // - We do this here instead of as an OnRemove hook for ControlLabel to avoid excess hierarchy traversals
+        // - We do this here instead of as an OnRemove hook for ControlMember to avoid excess hierarchy traversals
         // when despawning large scenes.
         map.cleanup_references(&entities);
 
@@ -338,7 +338,7 @@ impl EntityCommand for RemoveDeadControlMap
                 e.remove::<(DynamicStyle, DynamicStyleStopwatch)>();
             });
 
-            ControlLabel(label).apply(label_entity, world);
+            ControlMember::from(label).apply(label_entity, world);
         }
     }
 }

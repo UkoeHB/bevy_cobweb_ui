@@ -43,7 +43,7 @@
                 "!base":{},
 
                 "content": {
-                    "ControlLabel": ["RadioButtonContent"],
+                    "ControlMember": ["RadioButtonContent"],
                     "FlexNode": {
                         "dims": {"!content_dims":{}},
                         "content": {"!content_content":{}},
@@ -68,7 +68,7 @@
         "@indicator_internal_spacing": {"Px": 2.0},
         "!base": {
             "indicator": {
-                "ControlLabel": ["RadioButtonIndicator"],
+                "ControlMember": ["RadioButtonIndicator"],
                 "FlexNode": {
                     "content": {"justify_main": "Center", "justify_cross": "Center"},
                     "flex": {"margin": "@indicator_outline_margin"}
@@ -79,7 +79,7 @@
                 "!indicator":{},
 
                 "indicator_dot": {
-                    "ControlLabel": ["RadioButtonIndicatorDot"],
+                    "ControlMember": ["RadioButtonIndicatorDot"],
                     "FlexNode": {
                         "dims": {"width": "@indicator_dot_diameter", "height": "@indicator_dot_diameter"}
                     },

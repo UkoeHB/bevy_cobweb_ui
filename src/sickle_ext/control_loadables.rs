@@ -86,7 +86,7 @@ pub struct Static<T: StaticAttribute>
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
     ///
-    /// Only used if this struct is applied to an entity with a [`ControlLabel`].
+    /// Only used if this struct is applied to an entity with a [`ControlMember`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
 
@@ -147,17 +147,17 @@ pub struct Responsive<T: ResponsiveAttribute>
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this to become active.
     ///
-    /// Only used if this struct is applied to an entity with a [`ControlLabel`].
+    /// Only used if this struct is applied to an entity with a [`ControlMember`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
 
-    /// The [`ControlLabel`] of an entity in the current widget. This attribute responds to interactions on
+    /// The [`ControlMember`] of an entity in the current widget. This attribute responds to interactions on
     /// that entity.
     ///
     /// If `None`, then:
-    /// - If the current entity has no [`ControlLabel`], then interactions on the current entity will control the
+    /// - If the current entity has no [`ControlMember`], then interactions on the current entity will control the
     ///   value.
-    /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
+    /// - If the current entity *does* have a [`ControlMember`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
     pub respond_to: Option<SmolStr>,
@@ -189,7 +189,7 @@ impl<T: ResponsiveAttribute> Instruction for Responsive<T>
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Interactive if the attribute listens to interactions on self.
-        let needs_interactive = emut.get::<ControlLabel>().map(|l| &**l) == self.respond_to.as_ref();
+        let needs_interactive = emut.get::<ControlMember>().map(|m| &m.id) == self.respond_to.as_ref();
 
         // Add attribute.
         let attr = NodeAttribute::new_responsive::<T>(self.name, self.respond_to, ref_vals);
@@ -243,17 +243,17 @@ pub struct Animated<T: AnimatedAttribute>
     /// Specifies which [`PseudoStates`](PseudoState) the root node of the control group this entity is a member
     /// of must be in for this animation to become active.
     ///
-    /// Only used if this struct is applied to an entity with a [`ControlLabel`].
+    /// Only used if this struct is applied to an entity with a [`ControlMember`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
 
-    /// The [`ControlLabel`] of an entity in the current widget. Interactions on that entity will control this
+    /// The [`ControlMember`] of an entity in the current widget. Interactions on that entity will control this
     /// value.
     ///
     /// If `None`, then:
-    /// - If the current entity has no [`ControlLabel`], then interactions on the current entity will control the
+    /// - If the current entity has no [`ControlMember`], then interactions on the current entity will control the
     ///   value.
-    /// - If the current entity *does* have a [`ControlLabel`], then interactions on the nearest [`ControlRoot`]
+    /// - If the current entity *does* have a [`ControlMember`], then interactions on the nearest [`ControlRoot`]
     ///   entity will control the value.
     #[reflect(default)]
     pub respond_to: Option<SmolStr>,
@@ -355,7 +355,7 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         // Interactive if the attribute listens to interactions on self.
-        let needs_interactive = emut.get::<ControlLabel>().map(|l| &**l) == self.respond_to.as_ref();
+        let needs_interactive = emut.get::<ControlMember>().map(|m| &m.id) == self.respond_to.as_ref();
 
         // Add attribute.
         let attr = NodeAttribute::new_animated::<T>(self.name, self.respond_to, ref_vals, settings);

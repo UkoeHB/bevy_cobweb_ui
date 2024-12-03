@@ -82,11 +82,11 @@ A control group is a group of entities in a scene hierarchy that are linked toge
 
 `PseudoStates` on the root entity of a control group will determine which attributes are activated for all entities in the group.
 
-You can set up a control root by adding a [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) instruction to the root node of the group, and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel) to the other nodes in the group.
+You can set up a control root by adding a [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) instruction to the root node of the group, and [`ControlMember`](bevy_cobweb_ui::prelude::ControlMember) to the other nodes in the group.
 
 ### Anonymous control groups
 
-If an entity has `Static/Responsive/Animated` but no `ControlRoot`/`ControlLabel`, then the entity will have an *anonymous* control group that only applies to itself.
+If an entity has `Static/Responsive/Animated` but no `ControlRoot`/`ControlMember`, then the entity will have an *anonymous* control group that only applies to itself.
 
 ### DynamicStyle
 
@@ -110,33 +110,34 @@ By default, the `Responsive` and `Animated` attributes will respond to interacti
 #scenes
 "node_a"
     FlexNode{width:100px height:100px}
-    ControlRoot("a")
+    ControlRoot
 
     "node_b"
         FlexNode{width:50px height:50px}
-        ControlLabel("b")
+        ControlMember
         Responsive<BackgroundColor>{idle:#002200 press:#004400}
 ```
 
-Interactions on the node with label "a" will cause the "b"-labeled node's color to change. Interactions on "b" will do nothing.
+Interactions on the root node will cause the member node's color to change. Interactions on the member node will do nothing.
 
-For other behavior, you can manually specify the interaction source that attributes respond to:
+For other behavior, you can manually specify the interaction source that attributes respond to. This requires setting the `id` field of the `ControlRoot` or `ControlMember` that should be the interaction source.
 
 ```rust
 #scenes
 "node_a"
     FlexNode{width:100px height:100px}
-    ControlRoot("a")
+    ControlRoot
     BackgroundColor(#111111)
 
     "node_b"
         FlexNode{width:50px height:50px}
-        ControlLabel("b")
+        ControlMember
         // Here the source is set to 'c'.
         Responsive<BackgroundColor>{respond_to:"c" idle:#002200 hover:#004400}
 
     "node_c"
         FlexNode{width:50px height:50px}
-        ControlLabel("c")
+        // Here we include an explicit ID.
+        ControlMember{id:"c"}
         BackgroundColor(#888888)
 ```

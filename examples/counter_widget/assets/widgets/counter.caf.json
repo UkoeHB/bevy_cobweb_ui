@@ -49,7 +49,7 @@
             "!button":"",
 
             "text": {
-                "ControlLabel": ["CounterWidgetText"],
+                "ControlMember": ["CounterWidgetText"],
                 "!text":""
             }
         }

@@ -63,7 +63,7 @@ pub trait ControlBuilderExt
     /// Provides access to a sub-entity of a widget.
     ///
     /// Does nothing if the current entity doesn't have `ControlMap` (see [`ControlRoot`]), or if there is no
-    /// child entity with a [`ControlLabel`] equal to the requested `child`.
+    /// child entity with a [`ControlMember`] ID equal to the requested `child`.
     ///
     /// The callback paramaters are: commands, current entity, child entity.
     fn edit_child(
@@ -94,7 +94,7 @@ impl ControlBuilderExt for UiBuilder<'_, Entity>
             let Some(child_entity) = control_map.get_entity(child) else {
                 tracing::warn!(
                     "failed editing child {child} of entity {entity:?}, \
-                    entity's ControlMap does not have an entry for {child} (see ControlLabel)"
+                    entity's ControlMap does not have an entry for {child} (see ControlMember)"
                 );
                 return;
             };

@@ -253,7 +253,7 @@ pub struct ResponsiveCursor
     /// Specifies which [`PseudoStates`](PseudoState) the entity must be in for these cursor settings to be
     /// active.
     ///
-    /// Only used if this instruction is applied to an entity with a [`ControlLabel`].
+    /// Only used if this instruction is applied to an entity with [`ControlRoot`]/[`ControlMember`].
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
     /// The cursor to display when the entity is hovered.
@@ -279,7 +279,7 @@ impl Instruction for ResponsiveCursor
         let hover = self.hover.map(|cursor| TempCursor { priority: 1, cursor });
 
         // Get the label if this entity has one. We always want the interaction source to be self.
-        let respond_to = world.get::<ControlLabel>(entity).map(|l| (**l).clone());
+        let respond_to = world.get::<ControlMember>(entity).map(|m| m.id.clone());
 
         // Make a Responsive instruction and apply it.
         let responsive = Responsive::<TempCursor> {

@@ -19,7 +19,7 @@
         }
 
         "inner_rect"
-            ControlRoot("Text")
+            ControlRoot
             FlexNode{ min_width:100px min_height:75px }
             BackgroundColor(Hsla{ hue:0 saturation:0 lightness:0.65 alpha:1 })
             Animated<PropagateOpacity>{
@@ -43,7 +43,7 @@
                     }
 
                     "content"
-                        ControlLabel("Label")
+                        ControlMember
                         FlexNode{ left:7px bottom:5px right:auto top:auto }
                         BackgroundColor(Hsla{ hue:0 saturation:0 lightness:0 alpha:1 })
                         Animated<PropagateOpacity>{

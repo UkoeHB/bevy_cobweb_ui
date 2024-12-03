@@ -2,7 +2,9 @@
 
 ## WIP
 
-- Update `ControlRoot` and `ControlLabel` to create anonymous labels if an empty string is set.
+- Rename `ControlLabel` to `ControlMember`.
+- Update `ControlRoot` and `ControlMember` to create anonymous labels if an empty string is set for the ID.
+- Update `ControlRoot` and `ControlMember` to be structs instead of newtypes. This allows eliding the container when using anonymous ids.
 - Remove `Copy` derive from `AnimationSettings`, `AnimationConfig`, and `LoopedAnimationConfig` to avoid silent copies causing issues when editing values.
 - Expand API of `NodeAttributes` component to make editing attributes easier.
 

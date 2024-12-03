@@ -364,7 +364,7 @@ The scene section must be the *last* section in a cob file.
                 // Macro parameters can be marked.
                 margin: uirect!(t:10.0% b:10.0% l:18.0px r:18.0px)
             )
-            ControlLabel("ExampleButtonText")
+            ControlMember("ExampleButtonText")
             // Using marked parameters lets you skip other parameters. This text has no text because it is dynamically
             // updated in-code.
             Text!(s: 50.0)
@@ -396,7 +396,7 @@ The scene section must be the *last* section in a cob file.
 
         "txt"
             F!(m{10% 10% 18px 18px})
-            ControlLabel("ExampleButtonText")
+            ControlMember("ExampleButtonText")
             Text!(s: 50.0)
             Animate!(TextLineColor #000000 h:#112345 p:#F01111AA on_over{0.15 OutExpo} on_press{0.2 OutExpo})
             MultiAnimate!(DimsTop

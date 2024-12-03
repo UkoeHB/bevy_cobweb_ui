@@ -6,13 +6,13 @@ TODO: THIS IS OUT OF DATE, REQUIRES COB SCENE MACROS
 
 This crate uses a custom widget framework inspired by `sickle_ui`'s theming framework. We continue to use `sickle_ui` attributes and `PseudoStates`, and collect them into `DynamicStyles`, but we don't use `Theme<C>` or `C` components.
 
-Instead, we have a simple interface with two loadables: [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlLabel`](bevy_cobweb_ui::prelude::ControlLabel). You add a `ControlRoot` to the root entity of a widget, and `ControlLabels` to sub-entities. When those loadables are present in a UI node tree, the `Static`/`Responsive`/`Animated` control loadables will recognize them and adjust their behavior. By default, control loadables on an entity with `ControlLabel` will receive interactions from the root entity. You can also manually specify the `source` and `target` entities within those loadables. Control loadables will respond to `PseudoStates` on the root entity.
+Instead, we have a simple interface with two loadables: [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlMember`](bevy_cobweb_ui::prelude::ControlMember). You add a `ControlRoot` to the root entity of a widget, and `ControlMembers` to sub-entities. When those loadables are present in a UI node tree, the `Static`/`Responsive`/`Animated` control loadables will recognize them and adjust their behavior. By default, control loadables on an entity with `ControlMember` will receive interactions from the root entity. You can also manually specify the `source` and `target` entities within those loadables. Control loadables will respond to `PseudoStates` on the root entity.
 
 ### Example widget
 
 Below we showcase the [counter_widget](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter_widget) example from the repository (simplified, abbreviated, and annotated).
 
-First we define a builder for our widget. Note that we don't add `ControlRoot` or `ControlLabel` here. Those are added in the spec file (shown below).
+First we define a builder for our widget. Note that we don't add `ControlRoot` or `ControlMember` here. Those are added in the spec file (shown below).
 
 ```rust
 #[derive(Default)]
@@ -117,7 +117,7 @@ Now we construct a `spec` for the widget containing default structure and stylin
             "!button":0,
 
             "text": {
-                "ControlLabel": ["CounterWidgetText"],
+                "ControlMember": ["CounterWidgetText"],
                 "!text":0
             }
         }
