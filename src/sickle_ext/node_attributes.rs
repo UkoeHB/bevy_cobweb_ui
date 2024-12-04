@@ -1,4 +1,4 @@
-use std::any::{type_name, TypeId};
+use std::any::{type_name, Any, TypeId};
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -18,11 +18,11 @@ struct CachedStaticAttribute<T: StaticAttribute>
 
 impl<T: StaticAttribute> CachedStaticAttribute<T>
 {
-    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    fn try_resolve(val: &dyn Any) -> Option<&Self>
     {
         val.downcast_ref::<Self>()
     }
-    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    fn try_resolve_mut(val: &mut dyn Any) -> Option<&mut Self>
     {
         val.downcast_mut::<Self>()
     }
@@ -49,11 +49,11 @@ impl<T: StaticAttribute> Clone for CachedStaticAttribute<T>
 
 impl<T: StaticAttribute> StaticAttributeObject for CachedStaticAttribute<T>
 {
-    fn as_anyclone(&self) -> &dyn AnyClone
+    fn as_any(&self) -> &dyn Any
     {
         self
     }
-    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    fn as_any_mut(&mut self) -> &mut dyn Any
     {
         self
     }
@@ -73,11 +73,11 @@ struct CachedResponsiveAttribute<T: ResponsiveAttribute>
 
 impl<T: ResponsiveAttribute> CachedResponsiveAttribute<T>
 {
-    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    fn try_resolve(val: &dyn Any) -> Option<&Self>
     {
         val.downcast_ref::<Self>()
     }
-    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    fn try_resolve_mut(val: &mut dyn Any) -> Option<&mut Self>
     {
         val.downcast_mut::<Self>()
     }
@@ -104,11 +104,11 @@ impl<T: ResponsiveAttribute> Clone for CachedResponsiveAttribute<T>
 
 impl<T: ResponsiveAttribute> ResponsiveAttributeObject for CachedResponsiveAttribute<T>
 {
-    fn as_anyclone(&self) -> &dyn AnyClone
+    fn as_any(&self) -> &dyn Any
     {
         self
     }
-    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    fn as_any_mut(&mut self) -> &mut dyn Any
     {
         self
     }
@@ -129,11 +129,11 @@ struct CachedAnimatedAttribute<T: AnimatedAttribute>
 
 impl<T: AnimatedAttribute> CachedAnimatedAttribute<T>
 {
-    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    fn try_resolve(val: &dyn Any) -> Option<&Self>
     {
         val.downcast_ref::<Self>()
     }
-    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    fn try_resolve_mut(val: &mut dyn Any) -> Option<&mut Self>
     {
         val.downcast_mut::<Self>()
     }
@@ -160,11 +160,11 @@ impl<T: AnimatedAttribute> Clone for CachedAnimatedAttribute<T>
 
 impl<T: AnimatedAttribute> AnimatedAttributeObject for CachedAnimatedAttribute<T>
 {
-    fn as_anyclone(&self) -> &dyn AnyClone
+    fn as_any(&self) -> &dyn Any
     {
         self
     }
-    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    fn as_any_mut(&mut self) -> &mut dyn Any
     {
         self
     }
@@ -448,7 +448,7 @@ impl NodeAttribute
     {
         match &self.cached {
             CachedAttribute::Static(attr) => {
-                CachedStaticAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.value)
+                CachedStaticAttribute::<T>::try_resolve(attr.as_any()).map(|c| &c.value)
             }
             _ => None,
         }
@@ -461,7 +461,7 @@ impl NodeAttribute
     {
         match &self.cached {
             CachedAttribute::Responsive(attr) => {
-                CachedResponsiveAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.vals)
+                CachedResponsiveAttribute::<T>::try_resolve(attr.as_any()).map(|c| &c.vals)
             }
             _ => None,
         }
@@ -474,7 +474,7 @@ impl NodeAttribute
     {
         match &self.cached {
             CachedAttribute::Animated(attr) => {
-                CachedAnimatedAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.vals)
+                CachedAnimatedAttribute::<T>::try_resolve(attr.as_any()).map(|c| &c.vals)
             }
             _ => None,
         }
@@ -496,7 +496,7 @@ impl NodeAttribute
         match &mut self.cached {
             CachedAttribute::Static(attr) => {
                 let attr = dyn_clone::arc_make_mut(attr);
-                CachedStaticAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.value)
+                CachedStaticAttribute::<T>::try_resolve_mut(attr.as_any_mut()).map(|c| &mut c.value)
             }
             _ => None,
         }
@@ -510,7 +510,7 @@ impl NodeAttribute
         match &mut self.cached {
             CachedAttribute::Responsive(attr) => {
                 let attr = dyn_clone::arc_make_mut(attr);
-                CachedResponsiveAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.vals)
+                CachedResponsiveAttribute::<T>::try_resolve_mut(attr.as_any_mut()).map(|c| &mut c.vals)
             }
             _ => None,
         }
@@ -524,7 +524,7 @@ impl NodeAttribute
         match &mut self.cached {
             CachedAttribute::Animated(attr) => {
                 let attr = dyn_clone::arc_make_mut(attr);
-                CachedAnimatedAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.vals)
+                CachedAnimatedAttribute::<T>::try_resolve_mut(attr.as_any_mut()).map(|c| &mut c.vals)
             }
             _ => None,
         }

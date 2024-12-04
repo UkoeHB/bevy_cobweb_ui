@@ -14,7 +14,10 @@
     - Add `AnimatedAttribute::get_value` trait method.
     - Add `Splattable::splat_value` trait method.
     - Rename `Animated::enter_ref` to `Animated::enter_ref_override`. If the override is not set, then `AnimatedAttribute::get_value` will be used to extract the current value for an animation when entering a new state.
+- Remove `AnyClone` trait.
 - Add tooltip widget.
+- Bugfixes
+    - Cursor compile error on WASM.
 
 ## 0.5.1
 
