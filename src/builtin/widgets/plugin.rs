@@ -11,7 +11,9 @@ impl Plugin for BuiltinWidgetsPlugin
     fn build(&self, app: &mut App)
     {
         app.add_plugins(radio_button::CobwebRadioButtonPlugin)
-            .add_plugins(slider::CobwebSliderPlugin);
+            .add_plugins(slider::CobwebSliderPlugin)
+            //.add_plugins(slider::CobwebTooltipPlugin)
+            ;
     }
 }
 

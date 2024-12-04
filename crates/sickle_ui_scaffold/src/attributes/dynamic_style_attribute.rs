@@ -83,13 +83,23 @@ impl DynamicStyleAttribute
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum EnterState
+{
+    Unspecified,
+    Entering,
+    Entered,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct DynamicStyleController
 {
     pub animation: AnimationSettings,
     current_state: AnimationState,
     dirty: bool,
-    entering: bool,
+    enter_state: EnterState,
+    /// True the first tick entering state changed from Unspecified to Entering.
+    just_started_entering: bool,
 }
 
 impl Default for DynamicStyleController
@@ -100,7 +110,8 @@ impl Default for DynamicStyleController
             animation: Default::default(),
             current_state: Default::default(),
             dirty: Default::default(),
-            entering: true,
+            enter_state: EnterState::Unspecified,
+            just_started_entering: false,
         }
     }
 }
@@ -121,27 +132,28 @@ impl DynamicStyleController
 
         // Pre-check if we should tick an enter frame
         let entering = match self.animation.enter_idle_with.is_some() {
-            true => self.entering,
-            false => false,
+            true => self.enter_state,
+            false => EnterState::Entered,
         };
 
         let mut target_style: InteractionStyle = match entering {
-            true => InteractionStyle::Idle,
-            false => flux_interaction.into(),
+            EnterState::Unspecified | EnterState::Entering => InteractionStyle::Idle,
+            EnterState::Entered => flux_interaction.into(),
         };
         // In case a button switches it's own dynamic style and the new style has an enter animation
         // The animation will be played, HOWEVER it's flux will still be "Released". This means that the
         // Idle -> Hover animation would be skipped if there is no Release tween set (otherwise the Release
         // tween will be used instead of the PointerEnter).
         let mut tween = match entering {
-            true => self.animation.enter_idle_with.clone(),
-            false => self.animation.to_tween(&flux_interaction),
+            EnterState::Unspecified | EnterState::Entering => self.animation.enter_idle_with.clone(),
+            EnterState::Entered => self.animation.to_tween(&flux_interaction),
         };
         let loop_tween = match entering {
-            true => None,
-            false => self.animation.to_loop_tween(&flux_interaction),
+            EnterState::Unspecified | EnterState::Entering => None,
+            EnterState::Entered => self.animation.to_loop_tween(&flux_interaction),
         };
 
+        // This only activates post-entering.
         if target_style == InteractionStyle::Cancel {
             if let Some(cancel_tween) = tween.clone() {
                 let cancel_tween_length = cancel_tween.duration + cancel_tween.delay;
@@ -161,10 +173,20 @@ impl DynamicStyleController
             .current_state
             .tick(target_style, tween.clone(), loop_tween, elapsed);
 
-        // Remove entering flag post tick, to allow Hold to occur
-        self.entering = match self.animation.enter_idle_with.clone() {
-            Some(tween) => self.entering && elapsed < (tween.duration + tween.delay),
-            None => false,
+        // Update entering state post tick, to allow Hold to occur
+        self.just_started_entering = false;
+        self.enter_state = match self.animation.enter_idle_with.clone() {
+            Some(tween) => {
+                if elapsed < (tween.duration + tween.delay) {
+                    if matches!(self.enter_state, EnterState::Unspecified) {
+                        self.just_started_entering = true;
+                    }
+                    EnterState::Entering
+                } else {
+                    EnterState::Entered
+                }
+            }
+            None => EnterState::Entered,
         };
 
         self.dirty = new_state != self.current_state;
@@ -183,15 +205,26 @@ impl DynamicStyleController
         self.dirty
     }
 
-    pub fn entering(&self) -> bool
+    pub fn enter_state(&self) -> EnterState
     {
-        self.entering
+        self.enter_state
+    }
+
+    pub fn is_entered(&self) -> bool
+    {
+        self.enter_state == EnterState::Entered
+    }
+
+    /// Returns `true` after the first time the controller is updated if the controller has not yet fully entered.
+    pub fn just_started_entering(&self) -> bool
+    {
+        self.just_started_entering
     }
 
     pub fn copy_state_from(&mut self, other: &DynamicStyleController)
     {
         self.current_state = other.current_state().clone();
-        self.entering = other.entering;
+        self.enter_state = other.enter_state;
         self.dirty = other.dirty;
     }
 }

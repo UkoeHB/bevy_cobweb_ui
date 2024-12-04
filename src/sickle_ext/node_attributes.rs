@@ -11,52 +11,180 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_static_value<T: StaticAttribute>(entity: Entity, world: &mut World, ref_val: &dyn AnyClone)
+struct CachedStaticAttribute<T: StaticAttribute>
 {
-    let Some(ref_val) = ref_val.downcast_ref::<T::Value>() else {
-        tracing::error!("failed downcasting static attribute ref value for extraction of {} (this is a bug)",
-            type_name::<T>());
-        return;
-    };
-    T::update(entity, world, ref_val.clone());
+    value: T::Value,
+}
+
+impl<T: StaticAttribute> CachedStaticAttribute<T>
+{
+    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    {
+        val.downcast_ref::<Self>()
+    }
+    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    {
+        val.downcast_mut::<Self>()
+    }
+}
+
+impl<T: StaticAttribute> Debug for CachedStaticAttribute<T>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    {
+        f.write_str("CachedStaticAttribute<")?;
+        f.write_str(type_name::<T>())?;
+        f.write_str(">")?;
+        Ok(())
+    }
+}
+
+impl<T: StaticAttribute> Clone for CachedStaticAttribute<T>
+{
+    fn clone(&self) -> Self
+    {
+        Self { value: self.value.clone() }
+    }
+}
+
+impl<T: StaticAttribute> StaticAttributeObject for CachedStaticAttribute<T>
+{
+    fn as_anyclone(&self) -> &dyn AnyClone
+    {
+        self
+    }
+    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    {
+        self
+    }
+
+    fn apply(&self, entity: Entity, world: &mut World)
+    {
+        T::update(entity, world, self.value.clone());
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_responsive_value<T: ResponsiveAttribute>(
-    entity: Entity,
-    state: FluxInteraction,
-    world: &mut World,
-    ref_vals: &dyn AnyClone,
-)
+struct CachedResponsiveAttribute<T: ResponsiveAttribute>
 {
-    let Some(ref_vals) = ref_vals.downcast_ref::<ResponsiveVals<T::Value>>() else {
-        tracing::error!("failed downcasting responsive attribute ref value for extraction of {} (this is a bug)",
-            type_name::<T>());
-        return;
-    };
+    vals: ResponsiveVals<T::Value>,
+}
 
-    let value = T::extract(entity, world, ref_vals, state);
-    T::update(entity, world, value);
+impl<T: ResponsiveAttribute> CachedResponsiveAttribute<T>
+{
+    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    {
+        val.downcast_ref::<Self>()
+    }
+    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    {
+        val.downcast_mut::<Self>()
+    }
+}
+
+impl<T: ResponsiveAttribute> Debug for CachedResponsiveAttribute<T>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    {
+        f.write_str("CachedResponsiveAttribute<")?;
+        f.write_str(type_name::<T>())?;
+        f.write_str(">")?;
+        Ok(())
+    }
+}
+
+impl<T: ResponsiveAttribute> Clone for CachedResponsiveAttribute<T>
+{
+    fn clone(&self) -> Self
+    {
+        Self { vals: self.vals.clone() }
+    }
+}
+
+impl<T: ResponsiveAttribute> ResponsiveAttributeObject for CachedResponsiveAttribute<T>
+{
+    fn as_anyclone(&self) -> &dyn AnyClone
+    {
+        self
+    }
+    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    {
+        self
+    }
+
+    fn apply(&self, entity: Entity, world: &mut World, state: FluxInteraction)
+    {
+        let value = T::extract(entity, world, &self.vals, state);
+        T::update(entity, world, value);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn extract_animation_value<T: AnimatedAttribute>(
-    entity: Entity,
-    state: AnimationState,
-    world: &mut World,
-    ref_vals: &dyn AnyClone,
-)
+struct CachedAnimatedAttribute<T: AnimatedAttribute>
 {
-    let Some(ref_vals) = ref_vals.downcast_ref::<AnimatedVals<T::Value>>() else {
-        tracing::error!("failed downcasting animated attribute ref value for extraction of {} (this is a bug)",
-            type_name::<T>());
-        return;
-    };
+    vals: AnimatedVals<T::Value>,
+}
 
-    let value = T::extract(entity, world, ref_vals, &state);
-    T::update(entity, world, value);
+impl<T: AnimatedAttribute> CachedAnimatedAttribute<T>
+{
+    fn try_resolve(val: &dyn AnyClone) -> Option<&Self>
+    {
+        val.downcast_ref::<Self>()
+    }
+    fn try_resolve_mut(val: &mut dyn AnyClone) -> Option<&mut Self>
+    {
+        val.downcast_mut::<Self>()
+    }
+}
+
+impl<T: AnimatedAttribute> Debug for CachedAnimatedAttribute<T>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+    {
+        f.write_str("CachedAnimatedAttribute<")?;
+        f.write_str(type_name::<T>())?;
+        f.write_str(">")?;
+        Ok(())
+    }
+}
+
+impl<T: AnimatedAttribute> Clone for CachedAnimatedAttribute<T>
+{
+    fn clone(&self) -> Self
+    {
+        Self { vals: self.vals.clone() }
+    }
+}
+
+impl<T: AnimatedAttribute> AnimatedAttributeObject for CachedAnimatedAttribute<T>
+{
+    fn as_anyclone(&self) -> &dyn AnyClone
+    {
+        self
+    }
+    fn as_anyclone_mut(&mut self) -> &mut dyn AnyClone
+    {
+        self
+    }
+
+    fn initialize_enter(&mut self, entity: Entity, world: &World)
+    {
+        // If an enter_ref was pre-specified then we don't overwrite it.
+        if self.vals.enter_ref.is_some() {
+            return;
+        }
+        if let Some(current_value) = T::get_value(entity, world) {
+            self.vals.enter_ref = Some(current_value);
+        }
+    }
+
+    fn apply(&self, entity: Entity, world: &mut World, state: AnimationState)
+    {
+        let value = T::extract(entity, world, &self.vals, &state);
+        T::update(entity, world, value);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -189,12 +317,12 @@ impl PseudoTheme
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug)]
-enum AttributeExtractor
+#[derive(Clone, Debug)]
+enum CachedAttribute
 {
-    Static(fn(Entity, &mut World, &dyn AnyClone)),
-    Responsive(fn(Entity, FluxInteraction, &mut World, &dyn AnyClone)),
-    Animated(fn(Entity, AnimationState, &mut World, &dyn AnyClone)),
+    Static(Arc<dyn StaticAttributeObject>),
+    Responsive(Arc<dyn ResponsiveAttributeObject>),
+    Animated(Arc<dyn AnimatedAttributeObject>),
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -230,27 +358,26 @@ pub struct NodeAttribute
 {
     name: Option<SmolStr>,
     attribute_type: AttributeType,
-    extractor: AttributeExtractor,
     type_id: TypeId,
+
     respond_to: Option<SmolStr>,
-    /// Reference value for this attribute.
-    reference: Arc<dyn AnyClone>,
+
+    cached: CachedAttribute,
     settings: Option<AnimationSettings>,
 }
 
 impl NodeAttribute
 {
     /// Makes a new static attribute.
-    pub fn new_static<T: StaticAttribute>(name: Option<SmolStr>, reference: T::Value) -> Self
+    pub fn new_static<T: StaticAttribute>(name: Option<SmolStr>, value: T::Value) -> Self
     {
         let type_id = TypeId::of::<T>();
         Self {
             name,
             attribute_type: AttributeType::Static,
-            extractor: AttributeExtractor::Static(extract_static_value::<T>),
             type_id,
             respond_to: None,
-            reference: Arc::new(reference),
+            cached: CachedAttribute::Static(Arc::new(CachedStaticAttribute::<T> { value })),
             settings: None,
         }
     }
@@ -259,17 +386,16 @@ impl NodeAttribute
     pub fn new_responsive<T: ResponsiveAttribute>(
         name: Option<SmolStr>,
         respond_to: Option<SmolStr>,
-        reference: ResponsiveVals<T::Value>,
+        vals: ResponsiveVals<T::Value>,
     ) -> Self
     {
         let type_id = TypeId::of::<T>();
         Self {
             name,
             attribute_type: AttributeType::Responsive,
-            extractor: AttributeExtractor::Responsive(extract_responsive_value::<T>),
             type_id,
             respond_to,
-            reference: Arc::new(reference),
+            cached: CachedAttribute::Responsive(Arc::new(CachedResponsiveAttribute::<T> { vals })),
             settings: None,
         }
     }
@@ -278,7 +404,7 @@ impl NodeAttribute
     pub fn new_animated<T: AnimatedAttribute>(
         name: Option<SmolStr>,
         respond_to: Option<SmolStr>,
-        reference: AnimatedVals<T::Value>,
+        vals: AnimatedVals<T::Value>,
         settings: AnimationSettings,
     ) -> Self
     {
@@ -286,10 +412,9 @@ impl NodeAttribute
         Self {
             name,
             attribute_type: AttributeType::Animated,
-            extractor: AttributeExtractor::Animated(extract_animation_value::<T>),
             type_id,
             respond_to,
-            reference: Arc::new(reference),
+            cached: CachedAttribute::Animated(Arc::new(CachedAnimatedAttribute::<T> { vals })),
             settings: Some(settings),
         }
     }
@@ -321,7 +446,12 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Static` or the requested type doesn't match.
     pub fn static_val<T: StaticAttribute>(&self) -> Option<&T::Value>
     {
-        self.reference.downcast_ref::<T::Value>()
+        match &self.cached {
+            CachedAttribute::Static(attr) => {
+                CachedStaticAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.value)
+            }
+            _ => None,
+        }
     }
 
     /// Gets the inner responsive reference values.
@@ -329,7 +459,12 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Responsive` or the requested type doesn't match.
     pub fn responsive_vals<T: ResponsiveAttribute>(&self) -> Option<&ResponsiveVals<T::Value>>
     {
-        self.reference.downcast_ref::<ResponsiveVals<T::Value>>()
+        match &self.cached {
+            CachedAttribute::Responsive(attr) => {
+                CachedResponsiveAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.vals)
+            }
+            _ => None,
+        }
     }
 
     /// Gets the inner animated reference values.
@@ -337,7 +472,12 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Animated` or the requested type doesn't match.
     pub fn animated_vals<T: AnimatedAttribute>(&self) -> Option<&AnimatedVals<T::Value>>
     {
-        self.reference.downcast_ref::<AnimatedVals<T::Value>>()
+        match &self.cached {
+            CachedAttribute::Animated(attr) => {
+                CachedAnimatedAttribute::<T>::try_resolve(attr.as_anyclone()).map(|c| &c.vals)
+            }
+            _ => None,
+        }
     }
 
     /// Gets `AnimationSettings.
@@ -353,8 +493,13 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Static` or the requested type doesn't match.
     pub fn static_val_mut<T: StaticAttribute>(&mut self) -> Option<&mut T::Value>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<T::Value>()
+        match &mut self.cached {
+            CachedAttribute::Static(attr) => {
+                let attr = dyn_clone::arc_make_mut(attr);
+                CachedStaticAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.value)
+            }
+            _ => None,
+        }
     }
 
     /// Gets the inner responsive reference values.
@@ -362,8 +507,13 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Responsive` or the requested type doesn't match.
     pub fn responsive_vals_mut<T: ResponsiveAttribute>(&mut self) -> Option<&mut ResponsiveVals<T::Value>>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<ResponsiveVals<T::Value>>()
+        match &mut self.cached {
+            CachedAttribute::Responsive(attr) => {
+                let attr = dyn_clone::arc_make_mut(attr);
+                CachedResponsiveAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.vals)
+            }
+            _ => None,
+        }
     }
 
     /// Gets the inner animated reference values.
@@ -371,8 +521,13 @@ impl NodeAttribute
     /// Returns `None` if self is not `AttributeType::Animated` or the requested type doesn't match.
     pub fn animated_vals_mut<T: AnimatedAttribute>(&mut self) -> Option<&mut AnimatedVals<T::Value>>
     {
-        let val = dyn_clone::arc_make_mut(&mut self.reference);
-        val.downcast_mut::<AnimatedVals<T::Value>>()
+        match &mut self.cached {
+            CachedAttribute::Animated(attr) => {
+                let attr = dyn_clone::arc_make_mut(attr);
+                CachedAnimatedAttribute::<T>::try_resolve_mut(attr.as_anyclone_mut()).map(|c| &mut c.vals)
+            }
+            _ => None,
+        }
     }
 
     /// Gets a mutable reference to `AnimationSettings.
@@ -386,15 +541,15 @@ impl NodeAttribute
     /// Makes a new `DynamicStyleAttribute` from self.
     pub fn dynamic_style_attribute(&self) -> DynamicStyleAttribute
     {
-        match self.extractor {
-            AttributeExtractor::Static(callback) => DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-                CustomStaticStyleAttribute::new(self.type_id, self.reference.clone(), callback),
+        match self.cached.clone() {
+            CachedAttribute::Static(attr) => DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
+                CustomStaticStyleAttribute::new(self.type_id, attr),
             )),
-            AttributeExtractor::Responsive(callback) => DynamicStyleAttribute::Responsive(
-                ResponsiveStyleAttribute::new(self.type_id, self.reference.clone(), callback),
-            ),
-            AttributeExtractor::Animated(callback) => DynamicStyleAttribute::Animated {
-                attribute: AnimatedStyleAttribute::new(self.type_id, self.reference.clone(), callback),
+            CachedAttribute::Responsive(attr) => {
+                DynamicStyleAttribute::Responsive(ResponsiveStyleAttribute::new(self.type_id, attr))
+            }
+            CachedAttribute::Animated(attr) => DynamicStyleAttribute::Animated {
+                attribute: AnimatedStyleAttribute::new(self.type_id, attr),
                 controller: DynamicStyleController::new(
                     self.settings.clone().unwrap_or_default(),
                     AnimationState::default(),

@@ -10,6 +10,11 @@
 - Expand API of `NodeAttributes` component to make editing attributes easier.
 - Validate loadable names on registration. Only named structs that start uppercase are allowed.
 - Simplify `AnimationConfig` and `LoopedAnimationConfig` definitions. Allow the `duration` field to be ignored (e.g. if you only want the delay).
+- Add auto-value-extraction for enter animations.
+    - Add `AnimatedAttribute::get_value` trait method.
+    - Add `Splattable::splat_value` trait method.
+    - Rename `Animated::enter_ref` to `Animated::enter_ref_override`. If the override is not set, then `AnimatedAttribute::get_value` will be used to extract the current value for an animation when entering a new state.
+- Add tooltip widget.
 
 ## 0.5.1
 

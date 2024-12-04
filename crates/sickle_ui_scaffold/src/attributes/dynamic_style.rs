@@ -90,7 +90,7 @@ fn update_dynamic_style_on_flux_change(
                     style.apply(*interaction, &mut commands.style(target));
                 }
                 DynamicStyleAttribute::Animated { controller, .. } => {
-                    let animation_lock = if controller.entering() {
+                    let animation_lock = if !controller.is_entered() {
                         keep_stop_watch = true;
 
                         controller.animation.lock_duration(&FluxInteraction::None)
@@ -128,78 +128,93 @@ fn tick_dynamic_style_stopwatch(time: Res<Time<Real>>, mut q_stopwatches: Query<
 }
 
 fn update_dynamic_style_on_stopwatch_change(
-    mut q_styles: Query<
-        (
-            Entity,
-            &mut DynamicStyle,
-            &FluxInteraction,
-            Option<&DynamicStyleStopwatch>,
-        ),
-        Or<(
-            Changed<DynamicStyle>,
-            Changed<FluxInteraction>,
-            Changed<DynamicStyleStopwatch>,
-        )>,
-    >,
-    par_commands: ParallelCommands,
+    mut p: ParamSet<(
+        &World,
+        Query<
+            (
+                Entity,
+                &mut DynamicStyle,
+                &FluxInteraction,
+                Option<&DynamicStyleStopwatch>,
+            ),
+            Or<(
+                Changed<DynamicStyle>,
+                Changed<FluxInteraction>,
+                Changed<DynamicStyleStopwatch>,
+            )>,
+        >,
+    )>,
+    mut commands: Commands,
 )
 {
-    // TODO: is this par_iter actually faster than single-threaded? the computational burden for most tasks is very
-    // small
-    q_styles
-        .par_iter_mut()
-        .for_each(|(entity, mut style, interaction, stopwatch)| {
-            let style_changed = style.is_changed();
-            let style = style.bypass_change_detection();
-            let mut enter_completed = true;
-            let mut filter_entered = false;
+    let world_ptr: *const World = std::ptr::from_ref(p.p0());
 
-            for context_attribute in &mut style.attributes {
-                let DynamicStyleAttribute::Animated { attribute, controller } = &mut context_attribute.attribute
-                else {
-                    continue;
+    for (entity, mut style, interaction, stopwatch) in p.p1().iter_mut() {
+        let style_changed = style.is_changed();
+        let style = style.bypass_change_detection();
+        let mut enter_completed = true;
+        let mut filter_entered = false;
+
+        for context_attribute in &mut style.attributes {
+            let DynamicStyleAttribute::Animated { attribute, controller } = &mut context_attribute.attribute
+            else {
+                continue;
+            };
+
+            if let Some(stopwatch) = stopwatch {
+                controller.update(interaction, stopwatch.0.elapsed_secs());
+            }
+
+            if style_changed || controller.dirty() {
+                let target = match context_attribute.target {
+                    Some(context) => context,
+                    None => entity,
                 };
 
-                if let Some(stopwatch) = stopwatch {
-                    controller.update(interaction, stopwatch.0.elapsed_secs());
+                // Initialize the attribute's enter_ref value immediately before the first time we apply the
+                // attribute.
+                // - We need to do this here so the initialized value gets saved in the DynamicStyle component for
+                //   reuse.
+                if controller.just_started_entering() {
+                    let mut init_attribute = attribute.clone();
+                    {
+                        // SAFETY:
+                        // - The current system is exclusive because of the &World parameter.
+                        // - The current iterator is not parallel, so there are no concurrent mutable accesses.
+                        // - This world reference is read-only, so it can't invalidate the current iterator.
+                        // - The attribute being mutated is a local variable that's not in the world.
+                        let world = unsafe { &*world_ptr };
+                        init_attribute.initialize_enter(target, world);
+                    }
+                    *attribute = init_attribute;
                 }
 
-                if style_changed || controller.dirty() {
-                    let target = match context_attribute.target {
-                        Some(context) => context,
-                        None => entity,
-                    };
-
-                    par_commands.command_scope(|mut commands| {
-                        attribute.apply(controller.current_state(), &mut commands.style(target));
-                    });
-                }
-
-                if controller.entering() {
-                    enter_completed = false;
-                } else if controller.animation.delete_on_entered {
-                    filter_entered = true;
-                }
+                attribute.apply(controller.current_state(), &mut commands.style(target));
             }
 
-            if !style.enter_completed && enter_completed {
-                style.enter_completed = true;
+            if !controller.is_entered() {
+                enter_completed = false;
+            } else if controller.animation.delete_on_entered {
+                filter_entered = true;
             }
+        }
 
-            if filter_entered {
-                style.attributes.retain(|csa| {
-                    let DynamicStyleAttribute::Animated { controller, .. } = &csa.attribute else { return true };
+        if !style.enter_completed && enter_completed {
+            style.enter_completed = true;
+        }
 
-                    !(controller.animation.delete_on_entered && !controller.entering())
-                });
+        if filter_entered {
+            style.attributes.retain(|csa| {
+                let DynamicStyleAttribute::Animated { controller, .. } = &csa.attribute else { return true };
 
-                if style.attributes.len() == 0 {
-                    par_commands.command_scope(|mut commands| {
-                        commands.entity(entity).remove::<DynamicStyle>();
-                    });
-                }
+                !(controller.animation.delete_on_entered && controller.is_entered())
+            });
+
+            if style.attributes.len() == 0 {
+                commands.entity(entity).remove::<DynamicStyle>();
             }
-        });
+        }
+    }
 }
 
 fn cleanup_dynamic_style_stopwatch(

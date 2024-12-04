@@ -101,15 +101,10 @@ impl StyleBuilder
         }
     }
 
-    pub fn custom(
-        &mut self,
-        type_id: TypeId,
-        reference: Arc<dyn AnyClone + Send + Sync + 'static>,
-        callback: fn(Entity, &mut World, &dyn AnyClone),
-    ) -> &mut Self
+    pub fn custom(&mut self, type_id: TypeId, attr: Arc<dyn StaticAttributeObject>) -> &mut Self
     {
         self.add(DynamicStyleAttribute::Static(StaticStyleAttribute::Custom(
-            CustomStaticStyleAttribute::new(type_id, reference, callback),
+            CustomStaticStyleAttribute::new(type_id, attr),
         )));
 
         self

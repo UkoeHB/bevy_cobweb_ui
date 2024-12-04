@@ -107,6 +107,14 @@ fn apply_to_node<T: ApplyToNode>(param: T, entity: Entity, world: &mut World)
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn get_node_value<T>(entity: Entity, world: &World, callback: impl FnOnce(&Node) -> T) -> Option<T>
+{
+    let node = world.get::<Node>(entity)?;
+    Some((callback)(node))
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Initializes [`AbsoluteNode`] on an entity.
 ///
 /// This instruction should be inserted before all other node field wrappers.
@@ -218,7 +226,13 @@ impl StaticAttribute for Width
     }
 }
 impl ResponsiveAttribute for Width {}
-impl AnimatedAttribute for Width {}
+impl AnimatedAttribute for Width
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.width)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -265,7 +279,13 @@ impl StaticAttribute for Height
     }
 }
 impl ResponsiveAttribute for Height {}
-impl AnimatedAttribute for Height {}
+impl AnimatedAttribute for Height
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.height)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -312,7 +332,13 @@ impl StaticAttribute for MinWidth
     }
 }
 impl ResponsiveAttribute for MinWidth {}
-impl AnimatedAttribute for MinWidth {}
+impl AnimatedAttribute for MinWidth
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.min_width)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -359,7 +385,13 @@ impl StaticAttribute for MinHeight
     }
 }
 impl ResponsiveAttribute for MinHeight {}
-impl AnimatedAttribute for MinHeight {}
+impl AnimatedAttribute for MinHeight
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.min_height)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -406,7 +438,13 @@ impl StaticAttribute for MaxWidth
     }
 }
 impl ResponsiveAttribute for MaxWidth {}
-impl AnimatedAttribute for MaxWidth {}
+impl AnimatedAttribute for MaxWidth
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.max_width)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -453,7 +491,13 @@ impl StaticAttribute for MaxHeight
     }
 }
 impl ResponsiveAttribute for MaxHeight {}
-impl AnimatedAttribute for MaxHeight {}
+impl AnimatedAttribute for MaxHeight
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.max_height)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -500,7 +544,13 @@ impl StaticAttribute for AspectRatio
     }
 }
 impl ResponsiveAttribute for AspectRatio {}
-impl AnimatedAttribute for AspectRatio {}
+impl AnimatedAttribute for AspectRatio
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.aspect_ratio)?
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -543,7 +593,13 @@ impl StaticAttribute for Border
     }
 }
 impl ResponsiveAttribute for Border {}
-impl AnimatedAttribute for Border {}
+impl AnimatedAttribute for Border
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.border.into())
+    }
+}
 
 impl Splattable for Border
 {
@@ -551,6 +607,10 @@ impl Splattable for Border
     fn splat(single: Self::Splat) -> Self
     {
         Border(StyleRect::splat(single))
+    }
+    fn splat_value(self) -> Option<Self::Splat>
+    {
+        Some(self.0.top)
     }
 }
 
@@ -599,7 +659,13 @@ impl StaticAttribute for DimsTop
     }
 }
 impl ResponsiveAttribute for DimsTop {}
-impl AnimatedAttribute for DimsTop {}
+impl AnimatedAttribute for DimsTop
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.top)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -646,7 +712,13 @@ impl StaticAttribute for DimsBottom
     }
 }
 impl ResponsiveAttribute for DimsBottom {}
-impl AnimatedAttribute for DimsBottom {}
+impl AnimatedAttribute for DimsBottom
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.bottom)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -693,7 +765,13 @@ impl StaticAttribute for DimsLeft
     }
 }
 impl ResponsiveAttribute for DimsLeft {}
-impl AnimatedAttribute for DimsLeft {}
+impl AnimatedAttribute for DimsLeft
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.left)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -740,7 +818,13 @@ impl StaticAttribute for DimsRight
     }
 }
 impl ResponsiveAttribute for DimsRight {}
-impl AnimatedAttribute for DimsRight {}
+impl AnimatedAttribute for DimsRight
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.right)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -829,7 +913,13 @@ impl StaticAttribute for Padding
     }
 }
 impl ResponsiveAttribute for Padding {}
-impl AnimatedAttribute for Padding {}
+impl AnimatedAttribute for Padding
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.padding.into())
+    }
+}
 
 impl Splattable for Padding
 {
@@ -837,6 +927,10 @@ impl Splattable for Padding
     fn splat(single: Self::Splat) -> Self
     {
         Padding(StyleRect::splat(single))
+    }
+    fn splat_value(self) -> Option<Self::Splat>
+    {
+        Some(self.0.top)
     }
 }
 
@@ -1115,7 +1209,13 @@ impl StaticAttribute for ColumnGap
     }
 }
 impl ResponsiveAttribute for ColumnGap {}
-impl AnimatedAttribute for ColumnGap {}
+impl AnimatedAttribute for ColumnGap
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.column_gap)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1162,7 +1262,13 @@ impl StaticAttribute for RowGap
     }
 }
 impl ResponsiveAttribute for RowGap {}
-impl AnimatedAttribute for RowGap {}
+impl AnimatedAttribute for RowGap
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.row_gap)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1202,7 +1308,13 @@ impl StaticAttribute for Margin
     }
 }
 impl ResponsiveAttribute for Margin {}
-impl AnimatedAttribute for Margin {}
+impl AnimatedAttribute for Margin
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.margin.into())
+    }
+}
 
 impl Splattable for Margin
 {
@@ -1210,6 +1322,10 @@ impl Splattable for Margin
     fn splat(single: Self::Splat) -> Self
     {
         Margin(StyleRect::splat(single))
+    }
+    fn splat_value(self) -> Option<Self::Splat>
+    {
+        Some(self.0.top)
     }
 }
 
@@ -1255,7 +1371,13 @@ impl StaticAttribute for FlexBasis
     }
 }
 impl ResponsiveAttribute for FlexBasis {}
-impl AnimatedAttribute for FlexBasis {}
+impl AnimatedAttribute for FlexBasis
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.flex_basis)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1299,7 +1421,13 @@ impl StaticAttribute for FlexGrow
     }
 }
 impl ResponsiveAttribute for FlexGrow {}
-impl AnimatedAttribute for FlexGrow {}
+impl AnimatedAttribute for FlexGrow
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.flex_grow)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1343,7 +1471,13 @@ impl StaticAttribute for FlexShrink
     }
 }
 impl ResponsiveAttribute for FlexShrink {}
-impl AnimatedAttribute for FlexShrink {}
+impl AnimatedAttribute for FlexShrink
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        get_node_value(entity, world, |n| n.flex_shrink)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 

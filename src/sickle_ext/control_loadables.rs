@@ -63,6 +63,11 @@ where
     T: Splattable + AnimatedAttribute,
     <T as Splattable>::Splat: Lerp,
 {
+    fn get_value(entity: Entity, world: &World) -> Option<T::Splat>
+    {
+        let val = T::get_value(entity, world)?;
+        <T as Splattable>::splat_value(T::construct(val))
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -258,10 +263,13 @@ pub struct Animated<T: AnimatedAttribute>
     #[reflect(default)]
     pub respond_to: Option<SmolStr>,
 
-    /// Reference value to use when animating to [`Self::idle`] with [`Self::enter_idle_with`] when the attribute
-    /// is first applied.
+    /// Reference value override to use when animating to [`Self::idle`] with [`Self::enter_idle_with`] when the
+    /// attribute is first applied.
+    ///
+    /// If this is not set, then the enter value will be automatically extracted using
+    /// [`AnimatedAttribute::get_value`].
     #[reflect(default)]
-    pub enter_ref: Option<T::Value>,
+    pub enter_ref_override: Option<T::Value>,
 
     /// The value when idle.
     pub idle: T::Value,
@@ -328,7 +336,7 @@ impl<T: AnimatedAttribute> Instruction for Animated<T>
     fn apply(self, entity: Entity, world: &mut World)
     {
         let ref_vals = AnimatedVals::<T::Value> {
-            enter_ref: self.enter_ref,
+            enter_ref: self.enter_ref_override,
             idle: self.idle,
             hover: self.hover,
             press: self.press,

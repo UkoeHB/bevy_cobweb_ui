@@ -267,7 +267,14 @@ impl StaticAttribute for TextLineColor
 }
 
 impl ResponsiveAttribute for TextLineColor {}
-impl AnimatedAttribute for TextLineColor {}
+impl AnimatedAttribute for TextLineColor
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let color = world.get::<Self>(entity)?;
+        Some(color.0)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 

@@ -63,6 +63,13 @@ pub trait ResponsiveAttribute: StaticAttribute
 /// See [`Animated`].
 pub trait AnimatedAttribute: StaticAttribute<Value: Lerp>
 {
+    /// Tries to get the current value of the attribute on the entity.
+    ///
+    /// Used to set the `AnimatedVals::enter_ref` field when entering a new state if the attribute includes an
+    /// on-enter animation. Note there is [`Animated::enter_ref_override`] if you want to manually specify an
+    /// enter value.
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>;
+
     /// Extracts a value that should be applied to the entity.
     ///
     /// The `reference_vals` are set in [`Animated`].

@@ -108,6 +108,9 @@ pub trait Splattable: Loadable
 
     /// Constructs a full `Self` from a single inner `splat` value.
     fn splat(splat: Self::Splat) -> Self;
+
+    /// Tries to convert self into a splat value.
+    fn splat_value(self) -> Option<Self::Splat>;
 }
 
 /// Helper loadable for cases where a loadable can be 'splat-constructed' from a single inner value.

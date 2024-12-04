@@ -335,7 +335,7 @@ fn prepare_static_style_attribute(style_attributes: &Vec<StyleAttribute>) -> pro
                 match self {
                     #(#apply_variants)*
                     Self::Custom(attr) => {
-                        ui_style.entity_commands().queue(ApplyCustomStaticStyleAttribute{ attr: attr.clone() });
+                        attr.apply(ui_style);
                     }
                 }
             }

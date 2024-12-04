@@ -31,22 +31,6 @@ fn insert_ui_image(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn update_ui_image_color(In((entity, color)): In<(Entity, Color)>, mut q: Query<&mut ImageNode>)
-{
-    let Ok(mut img) = q.get_mut(entity) else { return };
-    img.color = color;
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn update_ui_image_index(In((entity, index)): In<(Entity, usize)>, mut q: Query<&mut ImageNode>)
-{
-    let Ok(mut img) = q.get_mut(entity) else { return };
-    img.texture_atlas.as_mut().map(|a| a.index = index);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Mirrors [`ImageNode`] for serialization.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -167,7 +151,8 @@ impl Instruction for ImageNodeColor
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.syscall((entity, self.0), update_ui_image_color);
+        let Some(mut img) = world.get_mut::<ImageNode>(entity) else { return };
+        img.color = self.0;
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -186,7 +171,14 @@ impl StaticAttribute for ImageNodeColor
 }
 
 impl ResponsiveAttribute for ImageNodeColor {}
-impl AnimatedAttribute for ImageNodeColor {}
+impl AnimatedAttribute for ImageNodeColor
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let img = world.get::<ImageNode>(entity)?;
+        Some(img.color)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -205,7 +197,8 @@ impl Instruction for ImageNodeIndex
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        world.syscall((entity, self.0), update_ui_image_index);
+        let Some(mut img) = world.get_mut::<ImageNode>(entity) else { return };
+        img.texture_atlas.as_mut().map(|a| a.index = self.0);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -224,7 +217,15 @@ impl StaticAttribute for ImageNodeIndex
 }
 
 impl ResponsiveAttribute for ImageNodeIndex {}
-impl AnimatedAttribute for ImageNodeIndex {}
+impl AnimatedAttribute for ImageNodeIndex
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let img = world.get::<ImageNode>(entity)?;
+        let atlas = img.texture_atlas.as_ref()?;
+        Some(atlas.index)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 

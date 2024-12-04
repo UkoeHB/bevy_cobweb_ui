@@ -100,7 +100,14 @@ impl StaticAttribute for BackgroundColor
 }
 
 impl ResponsiveAttribute for BackgroundColor {}
-impl AnimatedAttribute for BackgroundColor {}
+impl AnimatedAttribute for BackgroundColor
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let bg = world.get::<BackgroundColor>(entity).copied()?;
+        Some(bg.0)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -131,7 +138,14 @@ impl StaticAttribute for BorderColor
 }
 
 impl ResponsiveAttribute for BorderColor {}
-impl AnimatedAttribute for BorderColor {}
+impl AnimatedAttribute for BorderColor
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderColor>(entity).copied()?;
+        Some(br.0)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -174,7 +188,14 @@ impl StaticAttribute for BrRadius
 }
 
 impl ResponsiveAttribute for BrRadius {}
-impl AnimatedAttribute for BrRadius {}
+impl AnimatedAttribute for BrRadius
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderRadius>(entity).copied()?;
+        Some(br.top_left)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -214,7 +235,14 @@ impl StaticAttribute for BrRadiusTopLeft
 }
 
 impl ResponsiveAttribute for BrRadiusTopLeft {}
-impl AnimatedAttribute for BrRadiusTopLeft {}
+impl AnimatedAttribute for BrRadiusTopLeft
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderRadius>(entity).copied()?;
+        Some(br.top_left)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -254,7 +282,14 @@ impl StaticAttribute for BrRadiusTopRight
 }
 
 impl ResponsiveAttribute for BrRadiusTopRight {}
-impl AnimatedAttribute for BrRadiusTopRight {}
+impl AnimatedAttribute for BrRadiusTopRight
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderRadius>(entity).copied()?;
+        Some(br.top_right)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -294,7 +329,14 @@ impl StaticAttribute for BrRadiusBottomLeft
 }
 
 impl ResponsiveAttribute for BrRadiusBottomLeft {}
-impl AnimatedAttribute for BrRadiusBottomLeft {}
+impl AnimatedAttribute for BrRadiusBottomLeft
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderRadius>(entity).copied()?;
+        Some(br.bottom_left)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -334,7 +376,14 @@ impl StaticAttribute for BrRadiusBottomRight
 }
 
 impl ResponsiveAttribute for BrRadiusBottomRight {}
-impl AnimatedAttribute for BrRadiusBottomRight {}
+impl AnimatedAttribute for BrRadiusBottomRight
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let br = world.get::<BorderRadius>(entity).copied()?;
+        Some(br.bottom_right)
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -355,6 +404,18 @@ impl Into<Outline> for NodeOutline
     fn into(self) -> Outline
     {
         Outline { width: self.width, offset: self.offset, color: self.color }
+    }
+}
+
+impl From<Outline> for NodeOutline
+{
+    fn from(outline: Outline) -> Self
+    {
+        Self {
+            width: outline.width,
+            offset: outline.offset,
+            color: outline.color,
+        }
     }
 }
 
@@ -399,7 +460,14 @@ impl StaticAttribute for NodeOutline
 }
 
 impl ResponsiveAttribute for NodeOutline {}
-impl AnimatedAttribute for NodeOutline {}
+impl AnimatedAttribute for NodeOutline
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let outline = world.get::<Outline>(entity).copied()?;
+        Some(outline.into())
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -466,6 +534,20 @@ impl Into<BoxShadow> for NodeShadow
     }
 }
 
+impl From<BoxShadow> for NodeShadow
+{
+    fn from(shadow: BoxShadow) -> Self
+    {
+        Self {
+            color: shadow.color,
+            x_offset: shadow.x_offset,
+            y_offset: shadow.y_offset,
+            spread_radius: shadow.spread_radius,
+            blur_radius: shadow.blur_radius,
+        }
+    }
+}
+
 impl Lerp for NodeShadow
 {
     fn lerp(&self, to: Self, t: f32) -> Self
@@ -508,7 +590,14 @@ impl StaticAttribute for NodeShadow
 }
 
 impl ResponsiveAttribute for NodeShadow {}
-impl AnimatedAttribute for NodeShadow {}
+impl AnimatedAttribute for NodeShadow
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let shadow = world.get::<BoxShadow>(entity).copied()?;
+        Some(shadow.into())
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 

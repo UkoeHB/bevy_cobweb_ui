@@ -54,6 +54,12 @@ impl StaticAttribute for SliderZoom
 
 impl AnimatedAttribute for SliderZoom
 {
+    fn get_value(entity: Entity, world: &World) -> Option<SliderValue>
+    {
+        let val = world.get::<React<SliderValue>>(entity)?;
+        Some(val.get().clone())
+    }
+
     fn extract(
         entity: Entity,
         world: &mut World,
@@ -343,7 +349,6 @@ fn slider_bar_ptr_down(
                 a.into_inner()
                     .animated_vals_mut::<SliderZoom>(SLIDER_ZOOM_ATTR)
             }) {
-                zoom.enter_ref = Some(**slider_value);
                 zoom.idle = target_val;
             }
         }
@@ -750,7 +755,7 @@ impl Instruction for Slider
                     name: Some(SmolStr::new_static(SLIDER_ZOOM_ATTR)),
                     state: Some(SmallVec::from_elem(SLIDER_ZOOM_PSEUDO_STATE.clone(), 1)),
                     enter_idle_with: Some(enter_idle_with),
-                    idle: SliderValue::default(), // We override the idle value in `SliderZoom::extract`.
+                    idle: SliderValue::default(), // We override the idle value as needed.
                     delete_on_entered: true,
                     ..default()
                 };

@@ -38,9 +38,9 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
         flex_direction:Row justify_main:FlexStart justify_cross:Center
     }
     Static<Splat<Border>>{value:2px}
-    Animated<Splat<Border>>{state:[Selected] enter_ref:2px idle:3px enter_idle_with:$animation_settings_fast}
+    Animated<Splat<Border>>{state:[Selected] idle:3px enter_idle_with:$animation_settings_fast}
     Static<Splat<Padding>>{value:2px}
-    Animated<Splat<Padding>>{state:[Selected] enter_ref:2px idle:1px enter_idle_with:$animation_settings_fast}
+    Animated<Splat<Padding>>{state:[Selected] idle:1px enter_idle_with:$animation_settings_fast}
     BrRadius(6px)
     Multi<Animated<BackgroundColor>>[
         {
@@ -51,7 +51,6 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
         }
         {
             state: [Selected]
-            enter_ref: Hsla{hue:192 saturation:0.05 lightness:0.88 alpha:1}
             idle: Hsla{hue:197 saturation:0.05 lightness:0.88 alpha:1}
             hover: Hsla{hue:202 saturation:0.05 lightness:0.84 alpha:1}
             enter_idle_with: $animation_settings_medium
@@ -79,7 +78,6 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
             Static<BackgroundColor>{value:#00000000}
             Animated<BackgroundColor>{
                 state: [Selected]
-                enter_ref:#00000000
                 idle:#FF000000
             }
 

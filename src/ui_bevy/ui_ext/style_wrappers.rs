@@ -50,6 +50,19 @@ impl Into<UiRect> for StyleRect
     }
 }
 
+impl From<UiRect> for StyleRect
+{
+    fn from(rect: UiRect) -> Self
+    {
+        Self {
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+        }
+    }
+}
+
 impl Default for StyleRect
 {
     fn default() -> Self

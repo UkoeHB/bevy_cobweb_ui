@@ -69,7 +69,7 @@ pub(crate) fn derive_animated_component_impl(mut ast: DeriveInput) -> TokenStrea
     let instruction_impl = get_component_instruction(&ast);
     let static_attr_impl = get_component_static_attr(&ast);
     let responsive_attr_impl = get_responsive_attr(&ast);
-    let animated_attr_impl = get_animated_attr(&ast);
+    let animated_attr_impl = get_component_animated_attr(&ast);
 
     quote! {
         #instruction_impl
@@ -129,7 +129,7 @@ pub(crate) fn derive_animated_react_component_impl(mut ast: DeriveInput) -> Toke
     let instruction_impl = get_react_component_instruction(&ast);
     let static_attr_impl = get_component_static_attr(&ast);
     let responsive_attr_impl = get_responsive_attr(&ast);
-    let animated_attr_impl = get_animated_attr(&ast);
+    let animated_attr_impl = get_react_component_animated_attr(&ast);
 
     quote! {
         #instruction_impl
@@ -189,7 +189,7 @@ pub(crate) fn derive_animated_newtype_impl(mut ast: DeriveInput) -> TokenStream
     let instruction_impl = get_component_instruction(&ast);
     let static_attr_impl = get_newtype_static_attr("AnimatedNewtype", &ast);
     let responsive_attr_impl = get_responsive_attr(&ast);
-    let animated_attr_impl = get_animated_attr(&ast);
+    let animated_attr_impl = get_newtype_animated_attr(&ast);
 
     quote! {
         #instruction_impl
@@ -249,7 +249,7 @@ pub(crate) fn derive_animated_react_newtype_impl(mut ast: DeriveInput) -> TokenS
     let instruction_impl = get_react_component_instruction(&ast);
     let static_attr_impl = get_newtype_static_attr("AnimatedReactNewtype", &ast);
     let responsive_attr_impl = get_responsive_attr(&ast);
-    let animated_attr_impl = get_animated_attr(&ast);
+    let animated_attr_impl = get_react_newtype_animated_attr(&ast);
 
     quote! {
         #instruction_impl
@@ -383,13 +383,78 @@ fn get_responsive_attr(ast: &DeriveInput) -> TokenStream
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn get_animated_attr(ast: &DeriveInput) -> TokenStream
+fn get_component_animated_attr(ast: &DeriveInput) -> TokenStream
 {
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
     let struct_name = &ast.ident;
 
     quote!{
-        impl #impl_generics AnimatedAttribute for #struct_name #ty_generics #where_clause {}
+        impl #impl_generics AnimatedAttribute for #struct_name #ty_generics #where_clause
+        {
+            fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+            {
+                let comp = world.get::<Self>(entity)?;
+                Some(comp.clone())
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_react_component_animated_attr(ast: &DeriveInput) -> TokenStream
+{
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+    let struct_name = &ast.ident;
+
+    quote!{
+        impl #impl_generics AnimatedAttribute for #struct_name #ty_generics #where_clause
+        {
+            fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+            {
+                let comp = world.get::<React<Self>>(entity)?;
+                Some(comp.get().clone())
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_newtype_animated_attr(ast: &DeriveInput) -> TokenStream
+{
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+    let struct_name = &ast.ident;
+
+    quote!{
+        impl #impl_generics AnimatedAttribute for #struct_name #ty_generics #where_clause
+        {
+            fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+            {
+                let Self(inner_val) = world.get::<Self>(entity)?;
+                Some(inner_val.clone())
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn get_react_newtype_animated_attr(ast: &DeriveInput) -> TokenStream
+{
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+    let struct_name = &ast.ident;
+
+    quote!{
+        impl #impl_generics AnimatedAttribute for #struct_name #ty_generics #where_clause
+        {
+            fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+            {
+                let comp = world.get::<React<Self>>(entity)?;
+                let Self(inner_val) = comp.get();
+                Some(inner_val.clone())
+            }
+        }
     }
 }
 
