@@ -3,6 +3,7 @@
 ## WIP
 
 - Rename `ControlLabel` to `ControlMember`.
+- Rename `RadioButtonGroup` to `RadioGroup`.
 - Update `ControlRoot` and `ControlMember` to create anonymous labels if an empty string is set for the ID.
 - Update `ControlRoot` and `ControlMember` to be structs instead of newtypes. This allows eliding the container when using anonymous ids.
 - Remove `Copy` derive from `AnimationSettings`, `AnimationConfig`, and `LoopedAnimationConfig` to avoid silent copies causing issues when editing values.

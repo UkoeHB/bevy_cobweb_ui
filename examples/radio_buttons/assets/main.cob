@@ -18,7 +18,7 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
             TextLine{size:25}
 
     "radio_frame"
-        RadioButtonGroup // <--- Sets up a radio button group.
+        RadioGroup // <--- Sets up a radio button group.
         FlexNode{
             margin:{top:20px}
             border:{top:2px bottom:2px left:2px right:2px}

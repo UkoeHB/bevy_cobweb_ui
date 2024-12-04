@@ -222,17 +222,8 @@ pub struct AnimationSettings
 
 macro_rules! transition_animation_setter {
     ($setter:ident, $setter_edit:ident) => {
-        pub fn $setter(
-            &mut self,
-            duration: f32,
-            ease: Ease,
-            delay: f32,
-        ) -> &mut Self {
-            let config = AnimationConfig {
-                duration,
-                ease,
-                delay,
-            };
+        pub fn $setter(&mut self, duration: f32, ease: Ease, delay: f32) -> &mut Self {
+            let config = AnimationConfig { duration, ease, delay };
             self.$setter = Some(config);
 
             self

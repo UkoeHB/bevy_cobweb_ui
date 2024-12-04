@@ -70,9 +70,9 @@ impl RadioButtonHandlers
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct RadioButtonGroup;
+pub struct RadioGroup;
 
-impl Instruction for RadioButtonGroup
+impl Instruction for RadioGroup
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -97,7 +97,7 @@ impl Instruction for RadioButtonGroup
 /// Adds an `on_pressed` handler for selecting the button. Adds an `on_select` handler for updating the nearest
 /// `RadioButtonManager`.
 ///
-/// See [`RadioButtonGroup`].
+/// See [`RadioGroup`].
 #[derive(Reflect, Default, PartialEq, Copy, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -186,7 +186,7 @@ impl Plugin for CobwebRadioButtonPlugin
         // TODO: re-enable once COB scene macros are implemented
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/radio_button",
         // "radio_button.cob");
-        app.register_instruction_type::<RadioButtonGroup>()
+        app.register_instruction_type::<RadioGroup>()
             .register_instruction_type::<RadioButton>();
     }
 }
