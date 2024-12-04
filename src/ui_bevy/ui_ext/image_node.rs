@@ -120,9 +120,7 @@ impl Instruction for LoadedImageNode
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            // TODO: requires https://github.com/bevyengine/bevy/pull/16288
-            //e.remove_with_requires::<ImageNode>();
-            e.remove::<(ImageNode, ContentSize, ImageNodeSize)>();
+            e.remove_with_requires::<(ImageNode, ContentSize)>();
         });
     }
 }

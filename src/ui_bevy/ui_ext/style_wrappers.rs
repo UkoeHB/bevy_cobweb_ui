@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_cobweb::prelude::*;
+use bevy::ui::UiSystem;
 
 use crate::prelude::*;
 use crate::sickle::Lerp;
@@ -758,14 +758,14 @@ impl Default for SelfFlex
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// UI style for absolute-positioned nodes.
+/// Instruction loadable for absolute-positioned nodes.
 ///
-/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Absolute`].
+/// Inserts a [`Node`] with [`Display::Flex`] and [`PositionType::Absolute`].
 /// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
-/// See [`FlexNode`] for flexbox-controlled nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+/// See [`FlexNode`] for flexbox-controlled nodes. See [`DisplayControl`] for setting [`Display::None`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AbsoluteNode
 {
@@ -890,36 +890,30 @@ impl Instruction for AbsoluteNode
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        match emut.get_mut::<React<AbsoluteNode>>() {
-            Some(mut component) => {
-                *component.get_noreact() = self;
-                React::<AbsoluteNode>::trigger_mutation(entity, world);
-            }
-            None => {
-                world.react(|rc| rc.insert(entity, self));
-            }
-        }
+
+        let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
+        let mut node: Node = self.into();
+        node.display = display.into();
+
+        emut.insert(node);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            //e.remove::<(React<AbsoluteNode>, React<FlexNode>, Node)>();
-            // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
-            e.remove::<(React<AbsoluteNode>, React<FlexNode>)>();
-            e.insert(Node::default());
+            e.remove_with_requires::<Node>();
         });
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// UI style for flexbox-controlled nodes.
+/// Instruction loadable for flexbox-controlled nodes.
 ///
-/// Represents a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
+/// Inserts a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
-/// See [`AbsoluteNode`] for absolute-positioned nodes.
-#[derive(ReactComponent, Reflect, Default, Debug, Clone, PartialEq)]
+/// See [`AbsoluteNode`] for absolute-positioned nodes. See [`DisplayControl`] for setting [`Display::None`].
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FlexNode
 {
@@ -1071,32 +1065,29 @@ impl Instruction for FlexNode
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        match emut.get_mut::<React<FlexNode>>() {
-            Some(mut component) => {
-                *component.get_noreact() = self;
-                React::<FlexNode>::trigger_mutation(entity, world);
-            }
-            None => {
-                world.react(|rc| rc.insert(entity, self));
-            }
-        }
+
+        let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
+        let mut node: Node = self.into();
+        node.display = display.into();
+
+        emut.insert(node);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            //e.remove::<(React<AbsoluteNode>, React<FlexNode>, Node)>();
-            // TODO: need https://github.com/bevyengine/bevy/pull/16288 to remove Node
-            e.remove::<(React<AbsoluteNode>, React<FlexNode>, ComputedNode)>();
-            e.insert(Node::default());
+            e.remove_with_requires::<Node>();
         });
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Reactive component that toggles the [`Node::display`] field.
-#[derive(ReactComponent, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+/// Instruction loadable that toggles the [`Node::display`] field.
+///
+/// Inserts self as a component so the `AbsoluteNode` and `FlexNode` loadables can read the correct display value
+/// when they are applied.
+#[derive(Component, Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -1109,6 +1100,18 @@ pub enum DisplayControl
     Display,
     /// Corresponds to [`Display::None`].
     Hide,
+}
+
+impl DisplayControl
+{
+    fn refresh(mut nodes: Query<(&mut Node, &DisplayControl), Or<(Changed<Node>, Changed<DisplayControl>)>>)
+    {
+        for (mut node, control) in nodes.iter_mut() {
+            if node.display != (*control).into() {
+                node.display = (*control).into();
+            }
+        }
+    }
 }
 
 impl Into<Display> for DisplayControl
@@ -1127,107 +1130,17 @@ impl Instruction for DisplayControl
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        match emut.get_mut::<React<DisplayControl>>() {
-            Some(mut component) => {
-                *component.get_noreact() = self;
-                React::<DisplayControl>::trigger_mutation(entity, world);
-            }
-            None => {
-                world.react(|rc| rc.insert(entity, self));
-            }
-        }
+        emut.insert(self);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<React<DisplayControl>>();
+            e.remove::<Self>();
             if let Some(mut node) = e.get_mut::<Node>() {
                 node.display = Self::Display.into();
             }
         });
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn detect_absolute_node(
-    mut commands: Commands,
-    insertion: InsertionEvent<AbsoluteNode>,
-    mutation: MutationEvent<AbsoluteNode>,
-    absnodes: Query<(&React<AbsoluteNode>, Option<&React<DisplayControl>>)>,
-)
-{
-    let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((absnode, maybe_display_control)) = absnodes.get(entity) else { return };
-    let mut node: Node = (*absnode).clone().into();
-    if let Some(control) = maybe_display_control {
-        node.display = (**control).into();
-    }
-    commands.entity(entity).try_insert(node);
-}
-
-struct DetectAbsoluteNode;
-impl WorldReactor for DetectAbsoluteNode
-{
-    type StartingTriggers = (InsertionTrigger<AbsoluteNode>, MutationTrigger<AbsoluteNode>);
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_absolute_node)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn detect_flex_node(
-    mut commands: Commands,
-    insertion: InsertionEvent<FlexNode>,
-    mutation: MutationEvent<FlexNode>,
-    flexnodes: Query<(&React<FlexNode>, Option<&React<DisplayControl>>)>,
-)
-{
-    let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((flexnode, maybe_display_control)) = flexnodes.get(entity) else { return };
-    let mut node: Node = (*flexnode).clone().into();
-    if let Some(control) = maybe_display_control {
-        node.display = (**control).into();
-    }
-    commands.entity(entity).try_insert(node);
-}
-
-struct DetectFlexNode;
-impl WorldReactor for DetectFlexNode
-{
-    type StartingTriggers = (InsertionTrigger<FlexNode>, MutationTrigger<FlexNode>);
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_flex_node)
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn detect_display_control(
-    insertion: InsertionEvent<DisplayControl>,
-    mutation: MutationEvent<DisplayControl>,
-    mut node: Query<(&mut Node, &React<DisplayControl>)>,
-)
-{
-    let entity = insertion.get().unwrap_or_else(|| mutation.entity());
-    let Ok((mut node, control)) = node.get_mut(entity) else { return };
-    node.display = (**control).into();
-}
-
-struct DetectDisplayControl;
-impl WorldReactor for DetectDisplayControl
-{
-    type StartingTriggers = (InsertionTrigger<DisplayControl>, MutationTrigger<DisplayControl>);
-    type Triggers = ();
-    fn reactor(self) -> SystemCommandCallback
-    {
-        SystemCommandCallback::new(detect_display_control)
     }
 }
 
@@ -1239,18 +1152,10 @@ impl Plugin for StyleWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_world_reactor_with(
-            DetectAbsoluteNode,
-            (insertion::<AbsoluteNode>(), mutation::<AbsoluteNode>()),
-        )
-        .add_world_reactor_with(DetectFlexNode, (insertion::<FlexNode>(), mutation::<FlexNode>()))
-        .add_world_reactor_with(
-            DetectDisplayControl,
-            (insertion::<DisplayControl>(), mutation::<DisplayControl>()),
-        )
-        .register_instruction_type::<AbsoluteNode>()
-        .register_instruction_type::<FlexNode>()
-        .register_instruction_type::<DisplayControl>();
+        app.register_instruction_type::<AbsoluteNode>()
+            .register_instruction_type::<FlexNode>()
+            .register_instruction_type::<DisplayControl>()
+            .add_systems(PostUpdate, DisplayControl::refresh.before(UiSystem::Prepare));
     }
 }
 

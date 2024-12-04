@@ -141,19 +141,7 @@ impl Instruction for TextLine
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            // TODO: requires https://github.com/bevyengine/bevy/pull/16288
-            //e.remove_with_requires::<Text>();
-            e.remove::<(
-                Text,
-                TextFont,
-                TextColor,
-                TextLayout,
-                TextNodeFlags,
-                ContentSize,
-                ComputedTextBlock,
-                ComputedNode,
-            )>();
-            e.insert(Node::default());
+            e.remove_with_requires::<(Text, ContentSize)>();
         });
     }
 }

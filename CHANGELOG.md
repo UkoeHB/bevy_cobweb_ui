@@ -15,6 +15,12 @@
     - Add `Splattable::splat_value` trait method.
     - Rename `Animated::enter_ref` to `Animated::enter_ref_override`. If the override is not set, then `AnimatedAttribute::get_value` will be used to extract the current value for an animation when entering a new state.
 - Remove `AnyClone` trait.
+- Simplify `FlexNode`/`AbsoluteNode`/`DisplayControl`.
+    - These are no longer `ReactComponents`.
+    - `DisplayControl` is now a normal component.
+    - Removed `WithAbsoluteNode` and `WithFlexNode`.
+- Add `SetClipMargin` loadable.
+- Re-enable `remove_with_requires` in instruction reversion now that the bevy bug is fixed.
 - Add tooltip widget.
 - Bugfixes
     - Cursor compile error on WASM.
