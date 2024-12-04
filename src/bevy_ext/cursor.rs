@@ -152,7 +152,7 @@ impl LoadableCursor
             Self::Url { url, hotspot: _hotspot } => {
                 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
                 {
-                    Some(CursorIcon::Custom(CustomCursor::Url { url, hotspot: _hotspot }))
+                    Some(CursorIcon::Custom(CustomCursor::Url { url.to_string(), hotspot: _hotspot }))
                 }
 
                 #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
