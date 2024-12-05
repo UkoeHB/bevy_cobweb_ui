@@ -80,56 +80,86 @@ pub trait UiInteractionExt
     /// Adds a reactor to a [`PointerEnter`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PointerEnter>().r(callback)`.
-    fn on_pointer_enter<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_pointer_enter<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`PointerLeave`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PointerLeave>().r(callback)`.
-    fn on_pointer_leave<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_pointer_leave<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Pressed`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Pressed>().r(callback)`.
-    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_pressed<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Released`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Released>().r(callback)`.
-    fn on_released<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_released<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`PressCanceled`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<PressCanceled>().r(callback)`.
-    fn on_press_canceled<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_press_canceled<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 }
 
 impl UiInteractionExt for UiBuilder<'_, Entity>
 {
-    fn on_pointer_enter<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_pointer_enter<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Pressed>().r(callback);
         self
     }
 
-    fn on_pointer_leave<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_pointer_leave<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<PointerLeave>().r(callback);
         self
     }
 
-    fn on_pressed<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_pressed<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Pressed>().r(callback);
         self
     }
 
-    fn on_released<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_released<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Released>().r(callback);
         self
     }
 
-    fn on_press_canceled<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_press_canceled<R: ReactorResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<PressCanceled>().r(callback);
         self

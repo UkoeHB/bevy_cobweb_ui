@@ -28,15 +28,19 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let button_id = l.id();
             l.insert_reactive(Counter(0)).on_pressed(
                 move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
-                    counters.get_mut(&mut c, button_id).map(Counter::increment);
+                    counters
+                        .get_mut(&mut c, button_id)
+                        .map(Counter::increment)?;
+                    OK
                 },
             );
 
             l.get("text").update_on(
                 entity_mutation::<Counter>(button_id),
                 move |text_id: UpdateId, mut e: TextEditor, counters: Reactive<Counter>| {
-                    let Some(counter) = counters.get(button_id) else { return };
+                    let counter = counters.get(button_id)?;
                     write_text!(e, *text_id, "Counter: {}", **counter);
+                    OK
                 },
             );
         });

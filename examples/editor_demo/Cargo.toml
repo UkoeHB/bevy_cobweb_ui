@@ -10,7 +10,7 @@ editor = ["bevy_cobweb_ui/editor"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = true }
-bevy_cobweb = { version = "0.13" }
+bevy_cobweb = { version = "0.14" }
 bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
 rand = { version = "0.8" }
 rand_chacha = { version = "0.3" }

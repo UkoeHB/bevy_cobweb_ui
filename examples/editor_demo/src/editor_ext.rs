@@ -114,8 +114,9 @@ fn make_draggable_field_widget<'a>(
         l.get("value::text").update_on(
             entity_mutation::<FieldValue<f32>>(widget_id),
             move |id: UpdateId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
-                let Some(val) = vals.get(widget_id) else { return };
+                let val = vals.get(widget_id)?;
                 write_text!(e, *id, "{:.1}", val.get());
+                OK
             },
         );
 
@@ -128,8 +129,8 @@ fn make_draggable_field_widget<'a>(
         // Convert drag values to field value changes.
         l.on_event::<DragValue>().r(
             move |event: EntityEvent<DragValue>, mut c: Commands, mut fields: ReactiveMut<FieldValue<f32>>| {
-                let Some((_, delta)) = event.try_read() else { return };
-                let Some(val) = fields.get(widget_id) else { return };
+                let (_, delta) = event.try_read()?;
+                let val = fields.get(widget_id)?;
                 let bounds_width = *bounds.end() - *bounds.start();
                 let mut new_val = delta.get() * bounds_width + val.get();
                 if new_val > *bounds.end() {
@@ -139,6 +140,7 @@ fn make_draggable_field_widget<'a>(
                     new_val = *bounds.start();
                 }
                 fields.set_if_neq(&mut c, widget_id, FieldValue::new(new_val));
+                OK
             },
         );
     });
@@ -203,8 +205,8 @@ impl CobEditorWidget for DemoOrbiterWidget
                     mut c: Commands,
                     vals: Reactive<FieldValue<f32>>//
                 | {
-                    let Some(entity) = mutation.get() else { return };
-                    let Some(val) = vals.get(entity) else { return };
+                    let entity = mutation.get()?;
+                    let val = vals.get(entity)?;
 
                     let mut new_orbiter = orbiter_tracked;
                     if entity == radius_id {
@@ -214,7 +216,7 @@ impl CobEditorWidget for DemoOrbiterWidget
                         new_orbiter.velocity = *val.get();
                     }
                     if new_orbiter == orbiter_tracked {
-                        return;
+                        return OK;
                     }
                     orbiter_tracked = new_orbiter;
 
@@ -223,6 +225,8 @@ impl CobEditorWidget for DemoOrbiterWidget
                         editor_ref: editor_ref.clone(),
                         value: Box::new(new_orbiter),
                     });
+
+                    OK
                 },
                 );
             });

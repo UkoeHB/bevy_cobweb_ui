@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::ui::widget::ImageNodeSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 

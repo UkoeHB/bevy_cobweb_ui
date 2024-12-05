@@ -183,12 +183,12 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             editor: Res<CobEditor>,//
         | {
             // If we are running this system because of an event, exit if the event targets a different file.
-            if let Some(external) = external_change.try_read() {
+            if let Ok(external) = external_change.try_read() {
                 if external.file != file {
                     return;
                 }
             }
-            if let Some(file_saved) = file_saved.try_read() {
+            if let Ok(file_saved) = file_saved.try_read() {
                 // We watch for when the file gets saved. If saving a file makes a new file hash, then
                 // existing widgets are invalid and need to be replaced.
                 if file_saved.file != file || Some(file_saved.hash) == *tracked_hash {

@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-use bevy::text::{ComputedTextBlock, LineBreak};
-use bevy::ui::widget::TextNodeFlags;
+use bevy::text::LineBreak;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 

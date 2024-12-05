@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::io::ErrorKind;
 
+use derive_more::From;
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Result for the [`CobLoadable`](crate::prelude::CobLoadable) and [`CobValue`](crate::prelude::CobValue)
@@ -31,7 +33,7 @@ pub enum ErrorCategory
 
 /// This type represents all possible errors that can occur when serializing or
 /// deserializing Cob values.
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum CobError
 {
     /// Catchall for syntax error messages
@@ -121,22 +123,6 @@ impl From<CobError> for std::io::Error
                 ErrorCategory::Syntax | ErrorCategory::Data => std::io::Error::new(ErrorKind::InvalidData, e),
             }
         }
-    }
-}
-
-impl From<std::io::Error> for CobError
-{
-    fn from(e: std::io::Error) -> Self
-    {
-        Self::Io(e)
-    }
-}
-
-impl From<String> for CobError
-{
-    fn from(e: String) -> Self
-    {
-        Self::Message(e)
     }
 }
 

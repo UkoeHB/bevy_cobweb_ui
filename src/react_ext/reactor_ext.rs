@@ -98,7 +98,10 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
     }
 
     /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.
-    pub fn r<M>(mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> EntityCommands<'a>
+    pub fn r<R: ReactorResult, M>(
+        mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> EntityCommands<'a>
     {
         let id = self.ec.id();
         self.ec.react().on(entity_event::<T>(id), callback);
@@ -170,7 +173,10 @@ pub trait UiReactEntityCommandsExt
     /// - Immediately after being registered.
     /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
     ///   only).
-    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self;
+    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: C,
+    ) -> &mut Self;
 
     /// Updates an entity with a reactor system.
     ///
@@ -179,10 +185,11 @@ pub trait UiReactEntityCommandsExt
     /// - Whenever the triggers fire.
     /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
     ///   only).
-    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
+    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
+        R: ReactorResult,
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
 
     /// Provides access to entity commands for the entity.
     ///
@@ -232,20 +239,25 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn update<M, C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static>(&mut self, reactor: C) -> &mut Self
+    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: C,
+    ) -> &mut Self
     {
         self.update_on((), reactor)
     }
 
-    fn update_on<M, C, T>(&mut self, triggers: T, reactor: C) -> &mut Self
+    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
+        R: ReactorResult,
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
         let mut reactor = RawCallbackSystem::new(reactor);
         let callback = move |world: &mut World| {
-            reactor.run_with_cleanup(world, id, |_| {});
+            let result = reactor.run_with_cleanup(world, id, |_| {});
+            result.handle(world);
         };
         let syscommand = self.commands().spawn_system_command(callback);
         #[cfg(feature = "hot_reload")]

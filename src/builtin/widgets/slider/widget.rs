@@ -837,9 +837,10 @@ pub trait SliderWidgetExt
             settings: Res<Settings>,
             mut value: ReactiveMut<SliderValue>,
         | {
-            let val = value.get_mut(&mut c, *id).unwrap();
+            let val = value.get_mut(&mut c, *id)?;
             *val = SliderValue::Single(settings.audio_level / 100.0);
             val.normalize();
+            OK
         }
     );
     ```
@@ -849,9 +850,9 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_insertion::<SliderValue>(entity), callback)
     /// ```
-    fn initialize_slider<M, C>(&mut self, callback: C) -> &mut Self
+    fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
 
     /// Adds a callback for reacting to changes in the `React<SliderValue>` component on the current entity.
     ///
@@ -865,8 +866,9 @@ pub trait SliderWidgetExt
             mut settings: ResMut<Settings>,
             value: Reactive<SliderValue>,
         | {
-            let Some(SliderValue::Single(val)) = value.get(*id) else { return };
+            let SliderValue::Single(val) = value.get(*id)?;
             settings.audio_level = val * 100.0;
+            OK
         }
     );
     ```
@@ -876,23 +878,23 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_mutation::<SliderValue>(entity), callback)
     /// ```
-    fn on_slider<M, C>(&mut self, callback: C) -> &mut Self
+    fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static;
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
 }
 
 impl SliderWidgetExt for UiBuilder<'_, Entity>
 {
-    fn initialize_slider<M, C>(&mut self, callback: C) -> &mut Self
+    fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
     {
         self.update_on(entity_insertion::<SliderValue>(self.id()), callback)
     }
 
-    fn on_slider<M, C>(&mut self, callback: C) -> &mut Self
+    fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, (), M> + Send + Sync + 'static,
+        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
     {
         self.update_on(entity_mutation::<SliderValue>(self.id()), callback)
     }

@@ -1,67 +1,4 @@
-/*
-// Demo
-
-// Basic vertical
-- slider bar line (or rectangle)
-    - press not animated
-    - blocks picking
-    - FocusPolicy::Block
-    - visible background
-
-    - handle
-        - visible background
-
-// Basic vertical reversed
-- slider bar line (or rectangle)
-    - press not animated
-    - blocks picking
-    - FocusPolicy::Block
-    - visible background
-
-    - handle
-        - visible background
-
-// Visible regions detached for alignment
-- slider bar line (or rectangle)
-    - animate press
-
-    - visible bar centered over slider bar
-        - blocks picking
-        - FocusPolicy::Block
-
-    - handle dot
-
-        - visible handle centered over dot
-
-// Handle as inset
-- slider bar line (or rectangle)
-    - animate press
-    - blocks picking
-    - FocusPolicy::Block
-    - visible background
-
-    - handle
-        - set width/height
-        - visible background
-
-// Discretized values (slider snaps to integer)
-- on value change, modify value to equal integer without triggering reactions
-    - add custom SliderIntegerValue reactive component that stores the rounded slider value and is used for
-    behavior-reactions
-- slider bar line (or rectangle)
-    - animate press
-
-    - visible bar centered over slider bar
-        - blocks picking
-        - FocusPolicy::Block
-
-    - handle dot
-
-        - visible handle centered over dot
-
-// Planar
-- ...
-*/
+//! Example demonstrating the slider widget.
 
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
@@ -80,9 +17,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let basic_text = l.get_entity_from_root("basic::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let val = sliders.get(*id).unwrap().single().unwrap();
+                let val = sliders.get(*id)?.single().warn_err()?;
                 let val = val * 100.;
                 write_text!(e, basic_text, "{}", val as usize);
+                OK
             });
         });
 
@@ -91,9 +29,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let reverse_text = l.get_entity_from_root("reverse::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let val = sliders.get(*id).unwrap().single().unwrap();
+                let val = sliders.get(*id)?.single().warn_err()?;
                 let val = val * 100.;
                 write_text!(e, reverse_text, "{}", val as usize);
+                OK
             });
         });
 
@@ -103,9 +42,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let fancy_text = l.get_entity_from_root("fancy::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let val = sliders.get(*id).unwrap().single().unwrap();
+                let val = sliders.get(*id)?.single().warn_err()?;
                 let val = val * 100.;
                 write_text!(e, fancy_text, "{}", val as usize);
+                OK
             });
         });
 
@@ -114,9 +54,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             let planar_text = l.get_entity_from_root("planar::text").unwrap();
 
             l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
-                let val = sliders.get(*id).unwrap().planar().unwrap();
+                let val = sliders.get(*id)?.planar().warn_err()?;
                 let val = val * 100.;
                 write_text!(e, planar_text, "({}, {})", val.x as usize, val.y as usize);
+                OK
             });
         });
     });
