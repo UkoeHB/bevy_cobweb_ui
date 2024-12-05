@@ -212,6 +212,7 @@ pub enum CobMapEntryResult
 {
     Success(CobMapEntry),
     UnusedValue(CobValue),
+    FieldFailure(SmolStr),
     Failure,
 }
 
@@ -263,7 +264,9 @@ impl CobMapEntry
                     CobMapKey::Value(non_constant_val) => {
                         Ok((CobMapEntryResult::UnusedValue(non_constant_val), next_fill, remaining))
                     }
-                    CobMapKey::FieldName { fill, .. } => Ok((CobMapEntryResult::Failure, fill, content)),
+                    CobMapKey::FieldName { fill, name } => {
+                        Ok((CobMapEntryResult::FieldFailure(name), fill, content))
+                    }
                 };
             }
             (CobMapKVParseResult::Failure, next_fill, _) => next_fill,
@@ -409,8 +412,15 @@ impl CobMap
                     remaining = after_entry;
                 }
                 (CobMapEntryResult::UnusedValue(_), _, _) => {
-                    tracing::warn!("failed parsing map at {}; entry #{} is a value-like key without a value",
+                    tracing::warn!("failed parsing map at {}; entry #{} is a value-like key without a value (use \
+                        key:value syntax)",
                         get_location(content).as_str(), entries.len() + 1);
+                    return Err(span_verify_error(content));
+                }
+                (CobMapEntryResult::FieldFailure(name), _, _) => {
+                    tracing::warn!("failed parsing map at {}; entry #{} is a struct-field key \"{}\" without a value (use \
+                        key:value syntax)",
+                        get_location(content).as_str(), entries.len() + 1, name.as_str());
                     return Err(span_verify_error(content));
                 }
                 (CobMapEntryResult::Failure, end_fill, after_end) => {

@@ -38,7 +38,8 @@ impl CobValueGroupEntry
                 return Ok((Some(Self::Value(value)), next_fill, remaining));
             }
             (CobMapKVParseResult::KeyNoValue(CobMapKey::FieldName { name, .. }), _, _) => {
-                tracing::warn!("failed parsing value group entry at {}; found field name without value: {}",
+                tracing::warn!("failed parsing value group entry at {}; found field name without value: {} (use \
+                    key:value syntax)",
                     get_location(content).as_str(), name.as_str());
                 return Err(span_verify_error(content));
             }
