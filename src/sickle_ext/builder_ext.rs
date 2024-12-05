@@ -17,6 +17,8 @@ pub trait NodeLoadingExt
     ///
     /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
+    ///
+    /// Will do nothing if the current entity does not exist.
     fn load(
         &mut self,
         scene_ref: SceneRef,
@@ -47,6 +49,10 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
+        let id = self.id();
+        if self.commands().get_entity(id).is_none() {
+            return self.reborrow();
+        }
         let mut child = self.spawn(Node::default());
         child.entity_commands().load(scene_ref.clone());
         (callback)(&mut child, scene_ref);

@@ -86,27 +86,24 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 /// Call [`Self::r`] to add a reactor.
 pub struct OnEventExt<'a, T: Send + Sync + 'static>
 {
-    ec: EntityCommands<'a>,
+    c: Commands<'a, 'a>,
+    entity: Entity,
     _p: PhantomData<T>,
 }
 
 impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 {
-    pub(crate) fn new(ec: EntityCommands<'a>) -> OnEventExt<'a, T>
+    pub(crate) fn new(c: Commands<'a, 'a>, entity: Entity) -> OnEventExt<'a, T>
     {
-        Self { ec, _p: PhantomData }
+        Self { c, entity, _p: PhantomData }
     }
 
     /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.
-    pub fn r<R: ReactorResult, M>(
-        mut self,
-        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
-    ) -> EntityCommands<'a>
+    ///
+    /// Does nothing if the target entity doesn't exist.
+    pub fn r<R: ReactorResult, M>(mut self, callback: impl IntoSystem<(), R, M> + Send + Sync + 'static)
     {
-        let id = self.ec.id();
-        self.ec.react().on(entity_event::<T>(id), callback);
-
-        self.ec
+        self.c.react().on(entity_event::<T>(self.entity), callback);
     }
 }
 
@@ -218,7 +215,8 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
 
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
     {
-        OnEventExt::new(self.reborrow())
+        let id = self.id();
+        OnEventExt::new(self.commands(), id)
     }
 
     fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self

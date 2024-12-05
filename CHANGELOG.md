@@ -24,7 +24,7 @@
 - Integrate `ReactorResult` from `bevy_cobweb`. All built-in callbacks like `.on_pressed` now let you early-out with `?`, so long as you return `Ok` (warns on error) or `DONE` (drops errors).
 - Bugfixes
     - Cursor compile error on WASM.
-
+    - Avoid panicking when accessing UiBuilder if the entity doesn't exist.
 - Add tooltip widget.
 
 

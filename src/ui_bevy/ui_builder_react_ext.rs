@@ -27,24 +27,36 @@ impl InstructionExt for UiBuilder<'_, Entity>
 pub trait UiBuilderReactExt
 {
     /// Mirrors [`ReactEntityCommandsExt::add_world_reactor`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local);
 
     /// Mirrors [`UiReactEntityCommandsExt::insert_reactive`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self;
 
     /// Mirrors [`ReactEntityCommandsExt::react`].
     fn react(&mut self) -> ReactCommands<'_, '_>;
 
     /// Mirrors [`UiReactEntityCommandsExt::on_event`].
+    ///
+    /// The `OneEventExt` will do nothing if the entity doesn't exist.
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>;
 
     /// Mirrors [`UiReactEntityCommandsExt::despawn_on_event`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
     /// Mirrors [`UiReactEntityCommandsExt::despawn_on_broadcast`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
     /// Mirrors [`UiReactEntityCommandsExt::update_on`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
@@ -52,12 +64,16 @@ pub trait UiBuilderReactExt
         C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
 
     /// Mirrors [`UiReactEntityCommandsExt::update`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
         &mut self,
         reactor: C,
     ) -> &mut Self;
 
     /// Mirrors [`UiReactEntityCommandsExt::modify`].
+    ///
+    /// Does nothing if the entity doesn't exist.
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self;
 }
 
@@ -65,12 +81,18 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
 {
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
     {
-        self.entity_commands().add_world_reactor::<T>(data);
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.add_world_reactor::<T>(data);
+        }
     }
 
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
-        self.entity_commands().insert_reactive(component);
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.insert_reactive(component);
+        }
         self
     }
 
@@ -81,18 +103,25 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
 
     fn on_event<T: Send + Sync + 'static>(&mut self) -> OnEventExt<'_, T>
     {
-        OnEventExt::new(self.entity_commands())
+        let id = self.id();
+        OnEventExt::new(self.commands().reborrow(), id)
     }
 
     fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self
     {
-        self.entity_commands().despawn_on_event::<T>();
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.despawn_on_event::<T>();
+        }
         self
     }
 
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self
     {
-        self.entity_commands().despawn_on_broadcast::<T>();
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.despawn_on_broadcast::<T>();
+        }
         self
     }
 
@@ -102,7 +131,10 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         R: ReactorResult,
         C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
     {
-        self.entity_commands().update_on(triggers, reactor);
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.update_on(triggers, reactor);
+        }
         self
     }
 
@@ -111,13 +143,19 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         reactor: C,
     ) -> &mut Self
     {
-        self.entity_commands().update_on((), reactor);
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.update_on((), reactor);
+        }
         self
     }
 
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
     {
-        self.entity_commands().modify(callback);
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.modify(callback);
+        }
         self
     }
 }

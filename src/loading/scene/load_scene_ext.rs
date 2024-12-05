@@ -265,6 +265,8 @@ pub trait LoadSceneExt: scene_traits::SceneNodeLoader
     ///
     /// The `callback` can be used to edit the scene's root node, which in turn can be used to edit inner nodes
     /// of the scene via [`LoadedScene::edit`].
+    ///
+    /// Will log a warning and do nothing if the parent entity does not exist.
     fn load_scene_and_edit<C>(
         &mut self,
         path: impl Into<SceneRef>,
@@ -293,15 +295,22 @@ where
     where
         C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
     {
+        let path = path.into();
+
         // Spawn either a child or a raw entity to be the scene's root node.
         let root_entity = self
             .scene_parent_entity()
             .map(|parent| self.commands().spawn_empty().set_parent(parent).id())
             .unwrap_or_else(|| self.commands().spawn_empty().id());
 
+        // Avoid panicking if the parent is invalid.
+        if self.commands().get_entity(root_entity).is_none() {
+            tracing::warn!("failed loading scene at {:?}; parent {root_entity:?} does not exist", path);
+            return self;
+        }
+
         // Load the scene into the root entity.
         let mut commands = self.commands();
-        let path = path.into();
         if !scene_loader.load_scene::<T>(&mut commands, root_entity, path.clone()) {
             return self;
         }
