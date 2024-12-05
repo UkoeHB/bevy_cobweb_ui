@@ -10,13 +10,19 @@ impl InstructionExt for UiBuilder<'_, Entity>
 {
     fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
-        self.entity_commands().apply(instruction);
+        let id = self.id();
+        if let Some(mut ec) = self.commands().get_entity(id) {
+            ec.apply(instruction);
+        }
         self
     }
 
     fn revert<T: Instruction>(&mut self) -> &mut Self
     {
-        self.entity_commands().revert::<T>();
+        let id = self.id();
+        if let Some(mut ec) = self.commands().get_entity(id) {
+            ec.revert::<T>();
+        }
         self
     }
 }

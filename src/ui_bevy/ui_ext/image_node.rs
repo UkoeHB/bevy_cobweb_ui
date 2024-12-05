@@ -58,6 +58,8 @@ pub struct LoadedImageNode
     pub color: Color,
     /// The size of the image.
     ///
+    /// Serialized as a tuple, like `(200.0, 125.0)`.
+    ///
     /// Set this if you want to force the node to stretch to a specific size.
     ///
     /// When [`LoadedImageMode::Auto`] is used, the node will automatically size itself to fit the image.

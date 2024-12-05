@@ -1,6 +1,6 @@
 #defs
-$animation_settings_medium = {duration:0.0265, ease:Linear}
-$animation_settings_fast = {duration:0.025, ease:Linear},
+$animation_settings_medium = {duration:0.0265 ease:Linear}
+$animation_settings_fast = {duration:0.025 ease:Linear}
 
 #scenes
 "scene"
@@ -76,15 +76,10 @@ $animation_settings_fast = {duration:0.025, ease:Linear},
             Splat<Margin>(2px)
             BrRadius(4.5px)
             Static<BackgroundColor>{value:#00000000}
-            Animated<BackgroundColor>{
-                state: [Selected]
-                idle:#FF000000
-            }
+            Animated<BackgroundColor>{state:[Selected] idle:#FF000000}
 
     "text"
         ControlMember
-        FlexNode{
-            margin:{top:5px bottom:5px left:10px right:10px}
-        }
+        FlexNode{margin:{top:5px bottom:5px left:10px right:10px}}
         TextLine{size:35}
         TextLineColor(#000000)

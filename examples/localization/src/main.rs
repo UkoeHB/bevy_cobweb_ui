@@ -12,7 +12,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     let scene = ("localization", "root");
     c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
         // Header
-        // - Localized image from file (see `assets/main.cob.json`).
+        // - Localized image from file (see `assets/main.cob`).
 
         // Content
         l.edit("content", |l| {
@@ -21,31 +21,41 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 // Update the selection whenever the manifest is updated with a new base language list.
                 .update_on(
                     broadcast::<LocalizationManifestUpdated>(),
-                    move |id: UpdateId, mut c: Commands, _manifest: Res<LocalizationManifest>| {
+                    move |//
+                        id: UpdateId,
+                        mut c: Commands,
+                        mut s: ResMut<SceneLoader>,
+                        manifest: Res<LocalizationManifest>//
+                    | {
                         // Despawn existing buttons.
                         c.entity(*id).despawn_descendants();
 
                         // Spawn new buttons for everything in the manifest.
-                        // let mut n = c.ui_builder(id);
-                        // //let manager_entity = RadioButtonManager::insert(&mut n);
-                        // let current_lang = &manifest.negotiated()[0];
+                        let mut n = c.ui_builder(*id);
+                        //let manager_entity = RadioButtonManager::insert(&mut n);
+                        let current_lang = &manifest.negotiated()[0];
+                        let button_scene = SceneRef::new("localization", "selection_button");
 
-                        // for language in manifest.languages() {
-                        //     let name = language.display_name();
-                        //     let lang = language.id.clone();
+                        for language in manifest.languages() {
+                            let name = language.display_name();
+                            let lang = language.id.clone();
 
-                        // let button_id = RadioButtonBuilder::new_in_box(name)
-                        //     .build(manager_entity, &mut n)
-                        //     .on_select(move |mut locale: ResMut<Locale>| {
-                        //         *locale = Locale::new_from_id(lang.clone());
-                        //     })
-                        //     .id();
+                            n.load_scene_and_edit(button_scene.clone(), &mut s, |l| {
+                                l.on_select(move |mut locale: ResMut<Locale>| {
+                                    *locale = Locale::new_from_id(lang.clone());
+                                });
 
-                        // // Select the current locale.
-                        // if language.id == *current_lang {
-                        //     n.react().entity_event(button_id, Select);
-                        // }
-                        // }
+                                l.get("text").update(move |id: UpdateId, mut e: TextEditor| {
+                                    write_text!(e, *id, "{}", name.as_str());
+                                });
+
+                                // Select the current locale.
+                                if language.id == *current_lang {
+                                    let button_id = l.id();
+                                    l.react().entity_event(button_id, Select);
+                                }
+                            });
+                        }
                     },
                 );
 
@@ -88,7 +98,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         },
                     );
 
-                // Localized text from file (see `assets/main.cob.json`).
+                // Localized text from file (see `assets/main.cob`).
             });
         });
     });
@@ -111,7 +121,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.cob.json")
+        .load("main.cob")
         .add_systems(PreStartup, setup)
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();

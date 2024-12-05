@@ -107,7 +107,9 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
 
     /// The `EntityCommands` of the builder
     ///
-    /// Poits to the entity currently being built upon (see [`UiBuilder<'_, Entity>::id()`]).
+    /// Points to the entity currently being built upon (see [`UiBuilder<'_, Entity>::id()`]).
+    ///
+    /// Panics if the entity doesn't exist.
     pub fn entity_commands(&mut self) -> EntityCommands
     {
         let entity = self.id();
@@ -169,36 +171,55 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
     }
 
     /// Spawn a child node as a child of the current entity identified by [`UiBuilder<'_, Entity>::id()`]
+    ///
+    /// Does nothing if the entity does not exist.
     pub fn spawn(&mut self, bundle: impl Bundle) -> UiBuilder<Entity>
     {
         let mut new_entity = Entity::PLACEHOLDER;
 
         let entity = self.id();
-        self.commands().entity(entity).with_children(|parent| {
-            new_entity = parent.spawn(bundle).id();
-        });
+        if let Some(mut ec) = self.commands().get_entity(entity) {
+            ec.with_children(|parent| {
+                new_entity = parent.spawn(bundle).id();
+            });
+        }
 
         self.commands().ui_builder(new_entity)
     }
 
     /// Inserts a [`Bundle`] of components to the current entity (identified by [`UiBuilder<'_, Entity>::id()`])
+    ///
+    /// Does nothing if the entity does not exist.
     pub fn insert(&mut self, bundle: impl Bundle) -> &mut Self
     {
-        self.entity_commands().insert(bundle);
+        let entity = self.id();
+        if let Some(mut ec) = self.commands().get_entity(entity) {
+            ec.insert(bundle);
+        }
         self
     }
 
     /// Insert a [`Name`] component to the current entity (identified by [`UiBuilder<'_, Entity>::id()`])
+    ///
+    /// Does nothing if the entity does not exist.
     pub fn named(&mut self, name: impl Into<String>) -> &mut Self
     {
-        self.entity_commands().named(name);
+        let entity = self.id();
+        if let Some(mut ec) = self.commands().get_entity(entity) {
+            ec.named(name);
+        }
         self
     }
 
     /// Mount an observer to the current entity (identified by [`UiBuilder<'_, Entity>::id()`])
+    ///
+    /// Does nothing if the entity does not exist.
     pub fn observe<E: Event, B: Bundle, M>(&mut self, system: impl IntoObserverSystem<E, B, M>) -> &mut Self
     {
-        self.entity_commands().observe(system);
+        let entity = self.id();
+        if let Some(mut ec) = self.commands().get_entity(entity) {
+            ec.observe(system);
+        }
         self
     }
 }

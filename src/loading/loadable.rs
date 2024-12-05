@@ -41,9 +41,13 @@ pub trait Instruction: Loadable
 pub trait InstructionExt
 {
     /// Applies an instruction to the entity.
+    ///
+    /// Will do nothing if the entity doesn't exist.
     fn apply(&mut self, instruction: impl Instruction) -> &mut Self;
 
     /// Reverts an instruction on the entity.
+    ///
+    /// Will do nothing if the entity doesn't exist.
     fn revert<T: Instruction>(&mut self) -> &mut Self;
 }
 
