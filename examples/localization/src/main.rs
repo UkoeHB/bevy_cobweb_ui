@@ -45,9 +45,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                                     *locale = Locale::new_from_id(lang.clone());
                                 });
 
-                                l.get("text").update(move |id: UpdateId, mut e: TextEditor| {
-                                    write_text!(e, *id, "{}", name.as_str());
-                                });
+                                l.get("text").update_text(name);
 
                                 // Select the current locale.
                                 if language.id == *current_lang {
@@ -62,23 +60,23 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
             l.edit("text_section", |l| {
                 // Unlocalized text.
                 l.get("unlocalized")
-                    .apply(TextLine::from_text("This text is not localized."));
+                    .update_text("This text is not localized.");
 
                 // Untranslated text (only localized in the default language).
                 l.get("untranslated")
                     .insert(LocalizedText::default())
-                    .apply(TextLine::from_text("untranslated"));
+                    .update_text("untranslated");
 
                 // Localized and partly translated text (localized in only some, but not all, alternate
                 // languages).
                 l.get("partially_translated")
                     .insert(LocalizedText::default())
-                    .apply(TextLine::from_text("partly-translated"));
+                    .update_text("partly-translated");
 
                 // Localized and fully translated text.
                 l.get("fully_translated")
                     .insert(LocalizedText::default())
-                    .apply(TextLine::from_text("fully-translated"));
+                    .update_text("fully-translated");
 
                 // Localized text with different font fallbacks for different languages.
                 l.get("font_fallbacks")
@@ -86,17 +84,14 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     .apply(TextLine::from_text("font-fallbacks").with_font(FontFamily::new("Fira Sans").bold()));
 
                 // Localized dynamic text.
-                l.get("dynamic")
-                    .insert(LocalizedText::default())
-                    .apply(TextLine::default())
-                    .update_on(
-                        broadcast::<RelocalizeApp>(),
-                        move |id: UpdateId, mut count: Local<usize>, mut e: TextEditor| {
-                            // Displays count for the number of times the app was localized.
-                            write_text!(e, *id, "locale-counter?count={:?}", *count);
-                            *count += 1;
-                        },
-                    );
+                l.get("dynamic").insert(LocalizedText::default()).update_on(
+                    broadcast::<RelocalizeApp>(),
+                    move |id: UpdateId, mut count: Local<usize>, mut e: TextEditor| {
+                        // Displays count for the number of times the app was localized.
+                        write_text!(e, *id, "locale-counter?count={:?}", *count);
+                        *count += 1;
+                    },
+                );
 
                 // Localized text from file (see `assets/main.cob`).
             });

@@ -92,21 +92,27 @@ LoadLocalizedImages[
 
             "unlocalized"
                 FlexNode{$text_margin}
+                TextLine
 
             "untranslated"
                 FlexNode{$text_margin}
+                TextLine
 
             "partially_translated"
                 FlexNode{$text_margin}
+                TextLine
 
             "fully_translated"
                 FlexNode{$text_margin}
+                TextLine
 
             "font_fallbacks"
                 FlexNode{$text_margin}
+                TextLine
 
             "dynamic"
                 FlexNode{$text_margin}
+                TextLine
 
             "from_file"
                 FlexNode{$text_margin}

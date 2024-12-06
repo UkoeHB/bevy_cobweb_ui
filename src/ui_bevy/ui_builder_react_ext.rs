@@ -77,6 +77,11 @@ pub trait UiBuilderReactExt
         reactor: C,
     ) -> &mut Self;
 
+    /// Updates text with a static string using [`Self::update`].
+    ///
+    /// Does nothing if the entity doesn't exist.
+    fn update_text(&mut self, text: impl Into<String>) -> &mut Self;
+
     /// Mirrors [`UiReactEntityCommandsExt::modify`].
     ///
     /// Does nothing if the entity doesn't exist.
@@ -154,6 +159,14 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
             emut.update_on((), reactor);
         }
         self
+    }
+
+    fn update_text(&mut self, text: impl Into<String>) -> &mut Self
+    {
+        let text = text.into();
+        self.update(move |id: UpdateId, mut e: TextEditor| {
+            write_text!(e, *id, "{}", text.as_str());
+        })
     }
 
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
