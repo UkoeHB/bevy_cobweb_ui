@@ -81,7 +81,7 @@ Check the repository examples for how to build different kinds of UI.
 - [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization): Showcases localized text and font.
 - [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix builder-pattern-based UI construction with `bevy_cobweb_ui` convenience tools for interactions.
 - [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.
-    - Not yet migrated to use COB, it is waiting for a dropdown widget to be implemented.
+    - Not yet migrated to use COB. It is waiting for a dropdown widget to be implemented.
 - [`editor_demo`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/editor_demo): Showcases the editor with custom editor widgets.
 
 
