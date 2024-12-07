@@ -24,7 +24,8 @@
 - Integrate `ReactorResult` from `bevy_cobweb`. All built-in callbacks like `.on_pressed` now let you early-out with `?`, so long as you return `Ok` (warns on error) or `DONE` (drops errors).
 - Update localization example to the COB format.
 - Add `.update_text()` extension method for UiBuilder to simplify updating a TextLine with static text.
-- Add `Picking` loadable for controlling the `Pickable` component.
+- Add `Picking` instruction loadable for inserting the `PickingBehavior` component.
+- Add `Visibility` component loadable.
 - Bugfixes
     - Cursor compile error on WASM.
     - Avoid panicking when accessing UiBuilder if the entity doesn't exist.

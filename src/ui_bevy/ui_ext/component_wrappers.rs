@@ -660,6 +660,36 @@ impl ResponsiveAttribute for ZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
+impl Instruction for Visibility
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let visibility: Visibility = self.into();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(visibility);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Visibility>();
+        });
+    }
+}
+
+impl StaticAttribute for Visibility
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+impl ResponsiveAttribute for Visibility {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct UiComponentWrappersPlugin;
 
 impl Plugin for UiComponentWrappersPlugin
@@ -676,7 +706,8 @@ impl Plugin for UiComponentWrappersPlugin
             .register_animatable::<NodeOutline>()
             .register_animatable::<NodeShadow>()
             .register_responsive::<FocusPolicy>()
-            .register_responsive::<ZIndex>();
+            .register_responsive::<ZIndex>()
+            .register_responsive::<Visibility>();
     }
 }
 
