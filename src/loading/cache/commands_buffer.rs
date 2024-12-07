@@ -482,11 +482,19 @@ impl CommandsBuffer
                     let prev_orphaned = entry.is_orphaned;
 
                     // Repair the previous parent.
-                    tracing::warn!("reparenting file {:?} from {:?} to {:?}", descendant, prev_parent, entry.parent);
+                    if prev_parent.as_str() == GLOBAL_PSEUDO_FILE {
+                        tracing::warn!("reparenting file {:?} from the root to {:?}; you are both loading the \
+                            file and have it in the manifest of {:?}, it is recommended to remove the \
+                            manual load (i.e. the app.load({:?}))", descendant, entry.parent, entry.parent, **descendant);
+                    } else {
+                        tracing::warn!("reparenting file {:?} from {:?} to {:?}; you probably have the file in two manifests, \
+                            it is recommended to remove one of those entries", descendant, prev_parent, entry.parent);
+                    }
 
                     match prev_parent {
                         FileParent::SelfIsRoot => {
-                            tracing::error!("error while reparenting root file {:?}; the root can't be reparented",
+                            tracing::error!("error while reparenting root file {:?}; the root can't be reparented (this \
+                                is a bug)",
                                 descendant);
                         }
                         FileParent::SelfIsOrphan => (),

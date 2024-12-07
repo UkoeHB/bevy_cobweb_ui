@@ -1,3 +1,3 @@
 #scenes
 "scene"
-    TextLine{ text: "Hello, World!" }
+    TextLine{ text: "Tooltip isn't ready yet, check back again later!" }

@@ -1,3 +1,5 @@
+//! Syntax experiments for COB files.
+
 /*
 # Manifest
 
