@@ -6,29 +6,6 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[cfg(feature = "hot_reload")]
-fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<Entity>)
-{
-    // Terminate at control maps.
-    if world.get::<ControlMap>(child).is_some() {
-        return;
-    }
-
-    // Collect dangling label.
-    if world.get::<ControlMember>(child).is_some() {
-        dangling.push(child);
-    }
-
-    // Iterate into children.
-    if let Some(children) = world.get::<Children>(child) {
-        for child in children.iter() {
-            collect_dangling_controlled(*child, world, dangling);
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Instruction loadable for setting up the root entity of a multi-entity widget.
 ///
 /// Applies a [`ControlMember`] instruction and inserts an internal `ControlMap` component to the entity.
@@ -38,31 +15,8 @@ fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<
 ///
 /// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
 /// performance.
-#[derive(Reflect, Default, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
-pub struct ControlRoot
-{
-    /// Optional ID for the root. Use this if you want to use [`Responsive::respond_to`] or
-    /// [`Animated::respond_to`].
-    #[reflect(default)]
-    pub id: SmolStr,
-}
-
-impl ControlRoot
-{
-    /// Makes a control root from a static string.
-    pub fn new(id: &'static str) -> Self
-    {
-        Self { id: SmolStr::new_static(id) }
-    }
-}
-
-impl<T: Into<SmolStr>> From<T> for ControlRoot
-{
-    fn from(string: T) -> Self
-    {
-        Self { id: string.into() }
-    }
-}
+#[derive(Reflect, Default, Clone, Debug, Eq, PartialEq)]
+pub struct ControlRoot;
 
 impl Instruction for ControlRoot
 {
@@ -95,13 +49,9 @@ impl Instruction for ControlRoot
                 //   removed when the entity was switched to ControlRoot. When a ControlMember is removed, the
                 //   entity will be removed from the associated ControlMap, which should ensure no stale attributes
                 //   related to this entity will linger in other maps.
-                let mut current = entity;
-                while let Some(parent) = world.get::<Parent>(current) {
-                    current = parent.get();
-                    let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-                    if control_map.is_anonymous() {
-                        continue;
-                    }
+                if let Some((_, control_map)) =
+                    get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+                {
                     let labels: Vec<_> = control_map.remove_all_labels().collect();
 
                     // Labels
@@ -109,16 +59,21 @@ impl Instruction for ControlRoot
                     for (label, label_entity) in labels {
                         ControlMember { id: label }.apply(label_entity, world);
                     }
-
-                    break;
                 }
 
                 // Iterate children (stopping at control maps) to identify children with ControlMember. Refresh
                 // those nodes in case they have attributes that are 'dangling'.
                 let mut dangling = vec![];
-                for child in world.get::<Children>(entity).unwrap().iter() {
-                    collect_dangling_controlled(*child, world, &mut dangling);
-                }
+                iter_descendants_filtered(
+                    world,
+                    entity,
+                    |world, entity| world.get::<ControlMap>(entity).is_none(),
+                    |world, entity| {
+                        if world.get::<ControlMember>(entity).is_some() {
+                            dangling.push(entity);
+                        }
+                    },
+                );
 
                 let mut scene_buffer = world.resource_mut::<SceneBuffer>();
                 for controlled_entity in dangling {
@@ -128,7 +83,7 @@ impl Instruction for ControlRoot
         }
 
         // Update control label.
-        ControlMember::from(self.id).apply(entity, world);
+        ControlMember::from(SmolStr::default()).apply(entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -216,13 +171,9 @@ impl Instruction for ControlMember
             }
         }
 
-        let mut current = entity;
-        while let Some(parent) = world.get::<Parent>(current) {
-            current = parent.get();
-            let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-            if control_map.is_anonymous() {
-                continue;
-            }
+        if let Some((_, control_map)) =
+            get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+        {
             control_map.insert(label_str, entity);
             return;
         }
@@ -250,15 +201,10 @@ impl Instruction for ControlMember
                 control_map.remove(entity);
             }
         } else {
-            let mut current = entity;
-            while let Some(parent) = world.get::<Parent>(current) {
-                current = parent.get();
-                let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-                if control_map.is_anonymous() {
-                    continue;
-                }
+            if let Some((_, control_map)) =
+                get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+            {
                 control_map.remove(entity);
-                break;
             }
         }
 

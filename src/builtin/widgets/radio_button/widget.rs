@@ -122,7 +122,7 @@ impl Instruction for RadioButton
             rc.on_revokable(
                 entity_event::<Pressed>(entity),
                 move |mut c: Commands, states: PseudoStateParam| {
-                    states.try_select(entity, &mut c);
+                    states.try_select(&mut c, entity);
                 },
             )
         });

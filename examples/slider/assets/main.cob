@@ -10,7 +10,7 @@
             TextLine{size:30}
 
         "slider"
-            FlexNode{width:10px height:200px flex_direction:Row justify_cross:Center}
+            FlexNode{width:10px height:200px}
             BackgroundColor(#00FF00)
             Slider{axis:Y}
 
@@ -27,7 +27,7 @@
             TextLine{size:30}
 
         "slider"
-            FlexNode{width:10px height:200px flex_direction:Row justify_cross:Center}
+            FlexNode{width:10px height:200px}
             BackgroundColor(#00FF00)
             Slider{axis:Y direction:Reverse}
 
@@ -97,7 +97,7 @@
             TextLine{size:30}
 
         "slider"
-            FlexNode{width:200px height:200px flex_direction:Row justify_cross:Center}
+            FlexNode{width:200px height:200px}
             BackgroundColor(#00FF00)
             Slider{axis:Planar}
 

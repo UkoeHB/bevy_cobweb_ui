@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 pub use std::ops::{Deref, DerefMut}; // Re-export for ease of use.
 
 use bevy::ecs::system::EntityCommands;
@@ -49,17 +48,16 @@ pub mod scene_traits
 /// The struct will dereference to the inner `T`, which should be a [`Commands`]-based entity builder (e.g.
 /// [`EntityCommands`] or [`UiBuilder<Entity>`](crate::prelude::UiBuilder)) that can be used to arbitrarily
 /// modify the scene node entity.
-pub struct LoadedScene<'a, 'b, T>
+pub struct LoadedScene<'a, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
-    scene_loader: &'b mut SceneLoader,
+    scene_loader: &'a mut SceneLoader,
     builder: T,
     scene: SceneRef,
-    _p: PhantomData<&'a ()>,
 }
 
-impl<'a, 'b, T> LoadedScene<'a, 'b, T>
+impl<'a, T> LoadedScene<'a, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
@@ -84,7 +82,6 @@ where
                 scene_loader: self.scene_loader,
                 builder: self.builder.new_with(Entity::PLACEHOLDER),
                 scene: self.scene.clone(),
-                _p: PhantomData::default(),
             };
         };
 
@@ -92,13 +89,12 @@ where
             scene_loader: self.scene_loader,
             builder: self.builder.new_with(entity),
             scene,
-            _p: PhantomData::default(),
         }
     }
 
     fn edit_impl<C>(&mut self, scene: SceneRef, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
     {
         let Some(entity) = self
             .scene_loader
@@ -124,7 +120,6 @@ where
                 scene_loader: self.scene_loader,
                 builder: T::loaded_scene_builder(&mut commands, entity),
                 scene,
-                _p: PhantomData::default(),
             };
 
             (callback)(&mut child_scene);
@@ -155,7 +150,7 @@ where
     /// Note that looking up the scene node allocates.
     pub fn edit<C>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
     {
         let scene = self.scene.e(child);
         self.edit_impl(scene, callback)
@@ -169,7 +164,7 @@ where
     /// Note that looking up the scene node allocates.
     pub fn edit_from_root<C>(&mut self, path: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
     {
         let scene = self.scene.extend_from_index(0, path);
         self.edit_impl(scene, callback)
@@ -209,7 +204,7 @@ where
     /// See [`LoadSceneExt::load_scene_and_edit`].
     pub fn load_scene_and_edit<C>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut LoadedScene<'c, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
     {
         self.builder
             .load_scene_and_edit(path, self.scene_loader, callback);
@@ -229,7 +224,7 @@ where
     }
 }
 
-impl<'a, 'b, T> Deref for LoadedScene<'a, 'b, T>
+impl<'a, T> Deref for LoadedScene<'a, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
@@ -241,7 +236,7 @@ where
     }
 }
 
-impl<'a, 'b, T> DerefMut for LoadedScene<'a, 'b, T>
+impl<'a, T> DerefMut for LoadedScene<'a, T>
 where
     T: scene_traits::LoadedSceneBuilder<'a>,
 {
@@ -274,7 +269,7 @@ pub trait LoadSceneExt: scene_traits::SceneNodeLoader
         callback: C,
     ) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <Self as scene_traits::SceneNodeLoader>::Loaded<'c>>);
+        C: for<'a> FnOnce(&mut LoadedScene<'a, <Self as scene_traits::SceneNodeLoader>::Loaded<'a>>);
 }
 
 impl<T> LoadSceneExt for T
@@ -293,7 +288,7 @@ where
         callback: C,
     ) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, '_, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
+        C: for<'a> FnOnce(&mut LoadedScene<'a, <T as scene_traits::SceneNodeLoader>::Loaded<'a>>),
     {
         let path = path.into();
 
@@ -321,7 +316,6 @@ where
                 scene_loader,
                 builder: T::loaded_scene_builder(&mut commands, root_entity),
                 scene: path,
-                _p: PhantomData::default(),
             };
 
             (callback)(&mut root_node);

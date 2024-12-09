@@ -491,8 +491,23 @@ impl SceneLoader
     ///
     /// Used to repair hierarchies after a scene structure change is hot reloaded.
     #[cfg(feature = "hot_reload")]
-    pub(crate) fn cleanup_deleted_scene_node(&mut self, c: &mut Commands, scene: &SceneRef, deleted: &ScenePath)
+    pub(crate) fn cleanup_deleted_scene_node(
+        &mut self,
+        c: &mut Commands,
+        scene_buffer: &mut SceneBuffer,
+        loadables: &LoadableRegistry,
+        scene: &SceneRef,
+        deleted: &ScenePath,
+    )
     {
+        // Revert loadables on the removed node.
+        // TODO: revisit if bevy adds command batching that moves despawns before normal commands.
+        scene_buffer.remove_scene_node(
+            c,
+            loadables,
+            SceneRef { file: scene.file.clone(), path: deleted.clone() },
+        );
+
         // Look up scene.
         let Some(scene_instances) = self.scene_instances.get_mut(scene) else { return };
 

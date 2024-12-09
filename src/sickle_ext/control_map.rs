@@ -508,6 +508,7 @@ impl Plugin for ControlMapPlugin
             .configure_sets(
                 PostUpdate,
                 ControlSet
+                    .after(FileProcessingSet)
                     .after(RefreshPseudoStates)
                     .before(DynamicStylePostUpdate)
                     .before(UiSystem::Prepare),

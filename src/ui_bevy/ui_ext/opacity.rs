@@ -65,6 +65,7 @@ struct RestorableOpacity
     text: SmallVec<[f32; 1]>,
     border_color: f32,
     background_color: f32,
+    box_shadow: f32,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -85,14 +86,22 @@ fn recursively_propagate_opacity_value(
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
+            Option<&mut BoxShadow>,
         ),
         With<Node>,
     >,
     entity: Entity,
 )
 {
-    let Ok((maybe_propagator, maybe_restorable, maybe_img, has_text, maybe_br_color, maybe_bg_color)) =
-        nodes.get_mut(entity)
+    let Ok((
+        maybe_propagator,
+        maybe_restorable,
+        maybe_img,
+        has_text,
+        maybe_br_color,
+        maybe_bg_color,
+        maybe_box_shadow,
+    )) = nodes.get_mut(entity)
     else {
         return;
     };
@@ -122,7 +131,12 @@ fn recursively_propagate_opacity_value(
     }
 
     // Update restorable value.
-    if maybe_img.is_some() || has_text || maybe_br_color.is_some() || maybe_bg_color.is_some() {
+    if maybe_img.is_some()
+        || has_text
+        || maybe_br_color.is_some()
+        || maybe_bg_color.is_some()
+        || maybe_box_shadow.is_some()
+    {
         let update_restorable = |restorable: &mut RestorableOpacity| {
             if let Some(mut img) = maybe_img {
                 if first_traversal {
@@ -166,6 +180,15 @@ fn recursively_propagate_opacity_value(
                 let computed = restorable.background_color * accumulated_opacity;
                 if (color_alpha(&bg_color.0) - computed).abs() > ALPHA_ROUNDING_ERROR {
                     set_color_alpha(&mut bg_color.0, computed);
+                }
+            }
+            if let Some(mut box_shadow) = maybe_box_shadow {
+                if first_traversal {
+                    restorable.box_shadow = color_alpha(&box_shadow.color);
+                }
+                let computed = restorable.box_shadow * accumulated_opacity;
+                if (color_alpha(&box_shadow.color) - computed).abs() > ALPHA_ROUNDING_ERROR {
+                    set_color_alpha(&mut box_shadow.color, computed);
                 }
             }
         };
@@ -224,6 +247,7 @@ fn propagate_opacity_values(
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
+            Option<&mut BoxShadow>,
         ),
         With<Node>,
     >,
@@ -267,6 +291,7 @@ fn restore_opacity(
             Has<Text>,
             Option<&mut BorderColor>,
             Option<&mut BackgroundColor>,
+            Option<&mut BoxShadow>,
         ),
         Changed<RestorableOpacity>,
     >,
@@ -274,7 +299,9 @@ fn restore_opacity(
 )
 {
     // Restore alphas while avoiding excess change detection.
-    for (entity, restorable, maybe_img, has_text, maybe_br_color, maybe_bg_color) in nodes.iter_mut() {
+    for (entity, restorable, maybe_img, has_text, maybe_br_color, maybe_bg_color, maybe_box_shadow) in
+        nodes.iter_mut()
+    {
         if let Some(mut img) = maybe_img {
             if color_alpha(&img.color) != restorable.ui_image {
                 set_color_alpha(&mut img.color, restorable.ui_image);
@@ -299,6 +326,11 @@ fn restore_opacity(
         if let Some(mut bg_color) = maybe_bg_color {
             if color_alpha(&bg_color.0) != restorable.background_color {
                 set_color_alpha(&mut bg_color.0, restorable.background_color);
+            }
+        }
+        if let Some(mut box_shadow) = maybe_box_shadow {
+            if color_alpha(&box_shadow.color) != restorable.box_shadow {
+                set_color_alpha(&mut box_shadow.color, restorable.box_shadow);
             }
         }
     }

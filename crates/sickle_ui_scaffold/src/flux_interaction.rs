@@ -232,19 +232,23 @@ fn update_flux_interaction(
             continue;
         }
 
-        if *prev == PrevInteraction::None && *curr == Interaction::Hovered {
-            *flux = FluxInteraction::PointerEnter;
-        } else if *prev == PrevInteraction::None && *curr == Interaction::Pressed
-            || *prev == PrevInteraction::Hovered && *curr == Interaction::Pressed
-        {
-            *flux = FluxInteraction::Pressed;
-        } else if *prev == PrevInteraction::Hovered && *curr == Interaction::None {
-            *flux = FluxInteraction::PointerLeave;
-        } else if *prev == PrevInteraction::Pressed && *curr == Interaction::None {
-            *flux = FluxInteraction::PressCanceled;
-        } else if *prev == PrevInteraction::Pressed && *curr == Interaction::Hovered {
-            *flux = FluxInteraction::Released;
-        }
+        *flux = match *prev {
+            PrevInteraction::None => match *curr {
+                Interaction::Hovered => FluxInteraction::PointerEnter,
+                Interaction::Pressed => FluxInteraction::Pressed,
+                Interaction::None => FluxInteraction::None,
+            },
+            PrevInteraction::Hovered => match *curr {
+                Interaction::Hovered => FluxInteraction::None,
+                Interaction::Pressed => FluxInteraction::Pressed,
+                Interaction::None => FluxInteraction::PointerLeave,
+            },
+            PrevInteraction::Pressed => match *curr {
+                Interaction::Hovered => FluxInteraction::Released,
+                Interaction::Pressed => FluxInteraction::None,
+                Interaction::None => FluxInteraction::PressCanceled,
+            },
+        };
     }
 }
 

@@ -7,28 +7,30 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands)
+fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
-        ec.add_pseudo_state(PseudoState::Enabled);
-    });
-    c.get_entity(entity).map(|mut ec| {
-        ec.remove_pseudo_state(PseudoState::Disabled);
-    });
+    let Some(mut ec) = c.get_entity(entity) else { return };
+    ec.add_pseudo_state(PseudoState::Enabled);
+    ec.remove_pseudo_state(PseudoState::Disabled);
+    if let Ok(prev_flux) = fluxes.get(entity) {
+        if *prev_flux == FluxInteraction::Disabled {
+            ec.insert(FluxInteraction::None);
+        }
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands)
+fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
-        ec.add_pseudo_state(PseudoState::Disabled);
-    });
-    c.get_entity(entity).map(|mut ec| {
-        ec.remove_pseudo_state(PseudoState::Enabled);
-    });
+    let Some(mut ec) = c.get_entity(entity) else { return };
+    ec.add_pseudo_state(PseudoState::Disabled);
+    ec.remove_pseudo_state(PseudoState::Enabled);
+    if let Ok(_) = fluxes.get(entity) {
+        ec.insert(FluxInteraction::Disabled);
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -78,8 +80,6 @@ fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
     let entity = event.entity();
     c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Open);
-    });
-    c.get_entity(entity).map(|mut ec| {
         ec.remove_pseudo_state(PseudoState::Closed);
     });
 }
@@ -91,8 +91,6 @@ fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
     let entity = event.entity();
     c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Closed);
-    });
-    c.get_entity(entity).map(|mut ec| {
         ec.remove_pseudo_state(PseudoState::Open);
     });
 }
@@ -121,9 +119,13 @@ fn detect_unfold_reactor(event: EntityEvent<Unfold>, mut c: Commands)
 
 /// Entity event that can be sent to set [`PseudoState::Enabled`] on an entity (and remove
 /// [`PseudoState::Disabled`]).
+///
+/// Also sets [`FluxInteraction::None`] on the entity if it currently has [`FluxInteraction::Disabled`].
 pub struct Enable;
 /// Entity event that can be sent to set [`PseudoState::Disabled`] on an entity (and remove
 /// [`PseudoState::Enabled`]).
+///
+/// Also sets [`FluxInteraction::Disabled`] on the entity.
 pub struct Disable;
 /// Entity event that can be sent to set [`PseudoState::Selected`] on an entity.
 pub struct Select;
@@ -299,7 +301,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Inserts the pseudo state to the entity if it doesn't have it.
-    pub fn try_insert(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
+    pub fn try_insert(&self, c: &mut Commands, entity: Entity, state: PseudoState) -> bool
     {
         if self
             .states
@@ -315,7 +317,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Removes the pseudo state from the entity if it has it.
-    pub fn try_remove(&self, entity: Entity, c: &mut Commands, state: PseudoState) -> bool
+    pub fn try_remove(&self, c: &mut Commands, entity: Entity, state: PseudoState) -> bool
     {
         if !self
             .states
@@ -331,7 +333,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Enable`] entity event if the entity does not have [`PseudoState::Enabled`].
-    pub fn try_enable(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_enable(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Enabled) {
             return false;
@@ -342,7 +344,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Disable`] entity event if the entity does not have [`PseudoState::Disabled`].
-    pub fn try_disable(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_disable(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Disabled) {
             return false;
@@ -353,7 +355,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Select`] entity event if the entity does not have [`PseudoState::Selected`].
-    pub fn try_select(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_select(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Selected) {
             return false;
@@ -364,7 +366,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Deselect`] entity event if the entity has [`PseudoState::Selected`].
-    pub fn try_deselect(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_deselect(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if !self.entity_has(entity, PseudoState::Selected) {
             return false;
@@ -375,7 +377,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Check`] entity event if the entity does not have [`PseudoState::Checked`].
-    pub fn try_check(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_check(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Checked) {
             return false;
@@ -386,7 +388,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Uncheck`] entity event if the entity has [`PseudoState::Checked`].
-    pub fn try_uncheck(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_uncheck(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if !self.entity_has(entity, PseudoState::Checked) {
             return false;
@@ -397,7 +399,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Open`] entity event if the entity does not have [`PseudoState::Open`].
-    pub fn try_open(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_open(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Open) {
             return false;
@@ -408,7 +410,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Close`] entity event if the entity does not have [`PseudoState::Closed`].
-    pub fn try_close(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_close(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Closed) {
             return false;
@@ -419,7 +421,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Fold`] entity event if the entity does not have [`PseudoState::Folded`].
-    pub fn try_fold(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_fold(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if self.entity_has(entity, PseudoState::Folded) {
             return false;
@@ -430,7 +432,7 @@ impl PseudoStateParam<'_, '_>
     }
 
     /// Queues the [`Unfold`] entity event if the entity has [`PseudoState::Folded`].
-    pub fn try_unfold(&self, entity: Entity, c: &mut Commands) -> bool
+    pub fn try_unfold(&self, c: &mut Commands, entity: Entity) -> bool
     {
         if !self.entity_has(entity, PseudoState::Folded) {
             return false;

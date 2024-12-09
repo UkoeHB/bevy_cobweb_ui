@@ -312,7 +312,7 @@ fn add_menu_option<'a>(
         .localized()
         .build(manager_entity, l.deref_mut())
         .on_select(move |mut c: Commands| {
-            c.entity(page_entity).apply(DisplayControl::Display);
+            c.entity(page_entity).apply(DisplayControl::Show);
         })
         .on_deselect(move |mut c: Commands| {
             c.entity(page_entity).apply(DisplayControl::Hide);

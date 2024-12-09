@@ -19,7 +19,7 @@ struct EditorFileSelection(Option<CobFile>);
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_widgets<'a>(
-    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
+    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
     widgets: &CobWidgetRegistry,
     file_hash: CobFileHash,
     scene_ref: SceneRef,
@@ -66,7 +66,7 @@ fn build_widgets<'a>(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_loadable<'a>(
-    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
+    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
@@ -113,7 +113,7 @@ fn build_loadable<'a>(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_scene_layer<'a>(
-    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
+    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
@@ -442,9 +442,9 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
             (broadcast::<EditorFileUnsaved>(), broadcast::<EditorFileSaved>()),
             move |mut c: Commands, p: PseudoStateParam, editor: Res<CobEditor>| {
                 if editor.any_unsaved() {
-                    p.try_enable(unsaved, &mut c);
+                    p.try_enable(&mut c, unsaved);
                 } else {
-                    p.try_disable(unsaved, &mut c);
+                    p.try_disable(&mut c, unsaved);
                 }
             },
         );
@@ -460,6 +460,8 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 //-------------------------------------------------------------------------------------------------------------------
 
 // TODO: try to make auto-moving the window smoother
+// - winit supports 'child windows' which should solve these problems. Need to manually construct the window, see
+//   WinitWindow::create_window.
 // TODO: the editor's position does not sync with the window on startup until you move the window
 // - maybe infer it from window starting size + monitor dimensions?
 // TODO: the editor does not sync properly if you shrink the window from the top down

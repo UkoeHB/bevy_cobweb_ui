@@ -475,6 +475,23 @@ impl SceneBuffer
         }
     }
 
+    /// Does not clean up subscriptions. We assume subscribed entities will be despawned and cleaned up with
+    /// `Self::remove_entity`.
+    #[cfg(feature = "hot_reload")]
+    pub(crate) fn remove_scene_node(&mut self, c: &mut Commands, callbacks: &LoadableRegistry, scene_ref: SceneRef)
+    {
+        let Some(subscriptions) = self.subscriptions.get(&scene_ref) else { return };
+
+        // Revert all loadables on the node.
+        let mut loadables = self.loadables.remove(&scene_ref);
+        for removed in loadables.as_mut().into_iter().flat_map(|l| l.drain(..)) {
+            let Some(reverter) = callbacks.get_for_revert(removed.type_id) else { continue };
+            for subscription in subscriptions {
+                c.queue(RevertCommand { entity: subscription.entity, reverter });
+            }
+        }
+    }
+
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
     pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)

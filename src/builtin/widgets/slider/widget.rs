@@ -125,61 +125,6 @@ impl ComputedSlider
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// More performant than `.iter_descendants`, which internally allocates every time you call it.
-#[derive(Resource, Default)]
-struct ChildrenIterScratch
-{
-    stack: Vec<Entity>,
-}
-
-impl ChildrenIterScratch
-{
-    fn search<R>(
-        &mut self,
-        initial_entity: Entity,
-        children_query: &Query<&Children>,
-        search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        self.stack.clear();
-        self.stack.push(initial_entity);
-        self.search_impl(children_query, search_fn)
-    }
-
-    fn search_descendants<R>(
-        &mut self,
-        initial_children: &Children,
-        children_query: &Query<&Children>,
-        search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        self.stack.clear();
-        self.stack.extend(initial_children);
-        self.search_impl(children_query, search_fn)
-    }
-
-    fn search_impl<R>(
-        &mut self,
-        children_query: &Query<&Children>,
-        mut search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        while let Some(entity) = self.stack.pop() {
-            if let Some(entry) = (search_fn)(entity) {
-                return Some(entry);
-            }
-
-            if let Ok(next_children) = children_query.get(entity) {
-                self.stack.extend(next_children);
-            }
-        }
-
-        None
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn get_camera_scale_factor(
     ui_camera: &DefaultUiCamera,
     cameras: &Query<&Camera>,
@@ -234,7 +179,7 @@ fn compute_value_for_target_position(
 
 fn slider_bar_ptr_down(
     mut event: Trigger<Pointer<Down>>,
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
     cameras: Query<&Camera>,
@@ -271,7 +216,7 @@ fn slider_bar_ptr_down(
     };
 
     let maybe_handle =
-        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
+        iter_children.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
     let Some((handle_entity, handle_node, handle_transform)) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
@@ -291,7 +236,7 @@ fn slider_bar_ptr_down(
 
     // Check if pointer targets the handle or any of its descendants.
     let pointer_target = event.event().target;
-    let targets_handle = iter_scratch
+    let targets_handle = iter_children
         .search(handle_entity, &children_query, |entity| {
             if entity == pointer_target {
                 Some(())
@@ -342,8 +287,8 @@ fn slider_bar_ptr_down(
         SliderPress::Animate(_) => {
             // If adding state fails, we are already in this state. The animation framework does not support
             // changing reference values in the middle of an animation, so we fall back to 'jump to position'.
-            if !ps.try_insert(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE) {
-                ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
+            if !ps.try_insert(&mut c, slider_entity, SLIDER_ZOOM_PSEUDO_STATE) {
+                ps.try_remove(&mut c, slider_entity, SLIDER_ZOOM_PSEUDO_STATE);
                 React::set_if_neq(&mut slider_value, &mut c, target_val);
             } else if let Some(zoom) = maybe_attrs.and_then(|a| {
                 a.into_inner()
@@ -360,7 +305,7 @@ fn slider_bar_ptr_down(
 
 fn slider_bar_drag(
     mut event: Trigger<Pointer<Drag>>,
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
     cameras: Query<&Camera>,
@@ -401,7 +346,7 @@ fn slider_bar_drag(
 
     // Look up the handle.
     let maybe_handle =
-        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
+        iter_children.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
     let Some(handle_node) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
@@ -441,37 +386,30 @@ fn slider_bar_drag(
 
     // Cleanup zoom effect.
     if matches!(slider.config.bar_press, SliderPress::Animate(_)) {
-        ps.try_remove(slider_entity, &mut c, SLIDER_ZOOM_PSEUDO_STATE);
+        ps.try_remove(&mut c, slider_entity, SLIDER_ZOOM_PSEUDO_STATE);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
 fn update_slider_handle_positions(
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
-    mut sliders: Query<(
-        &ComputedSlider,
-        &React<SliderValue>,
-        &Node,
-        &ComputedNode,
-        &Children,
-        &ViewVisibility,
-    )>,
+    mut iter_children: ResMut<IterChildren>,
+    mut sliders: Query<(&ComputedSlider, &React<SliderValue>, &Node, &ComputedNode, &Children)>,
     children_q: Query<&Children>,
     handles: Query<(Entity, &ComputedNode), (With<SliderHandle>, Without<ComputedSlider>)>,
     mut transforms: Query<&mut Transform>,
 )
 {
-    for (slider, slider_value, slider_node, slider_computed_node, children, view_visibility) in sliders.iter_mut()
-    {
+    for (slider, slider_value, slider_node, slider_computed_node, children) in sliders.iter_mut() {
         // Skip sliders that won't be displayed.
-        if !view_visibility.get() || slider_node.display == Display::None {
+        // - Note: ViewVisibility updates *after* TransformPropagate, so we can't use it here.
+        if slider_node.display == Display::None {
             continue;
         }
 
         // Look up handle.
         let Some((handle_entity, handle_node)) =
-            iter_scratch.search_descendants(children, &children_q, |c| handles.get(c).ok())
+            iter_children.search_descendants(children, &children_q, |c| handles.get(c).ok())
         else {
             continue;
         };
@@ -902,6 +840,12 @@ impl SliderWidgetExt for UiBuilder<'_, Entity>
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// System set in `PostUpdate` where slider widgets are updated.
+#[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
+pub struct SliderUpdateSet;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct CobwebSliderPlugin;
 
 impl Plugin for CobwebSliderPlugin
@@ -912,13 +856,13 @@ impl Plugin for CobwebSliderPlugin
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/slider", "slider.cob");
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
-            .init_resource::<ChildrenIterScratch>()
-            .add_systems(
+            .configure_sets(
                 PostUpdate,
-                update_slider_handle_positions
+                SliderUpdateSet
                     .after(UiSystem::Layout)
                     .before(TransformPropagate),
-            );
+            )
+            .add_systems(PostUpdate, update_slider_handle_positions.in_set(SliderUpdateSet));
     }
 }
 

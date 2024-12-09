@@ -11,4 +11,5 @@ dev = ["bevy_cobweb_ui/dev"]
 bevy = { version = "0.15", default-features = true }
 bevy_cobweb = { version = "0.14" }
 bevy_cobweb_ui = { path = "../../", default-features = false, features = ["widgets"] }
+smol_str = { version = "0.2" }
 tracing = { version = "0.1" }

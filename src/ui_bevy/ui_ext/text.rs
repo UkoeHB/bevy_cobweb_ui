@@ -159,6 +159,15 @@ impl Default for TextLine
     }
 }
 
+impl StaticAttribute for TextLine
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction for setting the font size of a [`TextLine`] on an entity.
@@ -271,8 +280,8 @@ impl Plugin for UiTextExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_instruction_type::<TextLine>()
-            .register_themed::<TextLineSize>()
+        app.register_static::<TextLine>()
+            .register_static::<TextLineSize>()
             .register_animatable::<TextLineColor>();
     }
 }

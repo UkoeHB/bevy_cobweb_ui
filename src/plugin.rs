@@ -25,6 +25,7 @@ impl Plugin for CobwebUiPlugin
             .add_plugins(LoadingPlugin)
             .add_plugins(LocalizationPlugin)
             .add_plugins(SickleExtPlugin)
+            .add_plugins(ToolsPlugin)
             .add_plugins(AssetsExtPlugin)
             .add_plugins(CobwebBevyUiPlugin);
 

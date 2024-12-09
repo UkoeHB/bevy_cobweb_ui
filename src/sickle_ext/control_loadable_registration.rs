@@ -9,7 +9,7 @@ use crate::sickle::Lerp;
 /// Helper methods for registering controlled instructions.
 pub trait ControlRegistrationExt
 {
-    fn register_themed<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
+    fn register_static<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
     where
         <T as StaticAttribute>::Value: GetTypeRegistration;
     fn register_responsive<T: GetTypeRegistration + Instruction + StaticAttribute + ResponsiveAttribute>(
@@ -28,7 +28,7 @@ pub trait ControlRegistrationExt
 
 impl ControlRegistrationExt for App
 {
-    fn register_themed<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
+    fn register_static<T: GetTypeRegistration + Instruction + StaticAttribute>(&mut self) -> &mut Self
     where
         <T as StaticAttribute>::Value: GetTypeRegistration,
     {
@@ -43,7 +43,7 @@ impl ControlRegistrationExt for App
     where
         <T as StaticAttribute>::Value: GetTypeRegistration,
     {
-        self.register_themed::<T>()
+        self.register_static::<T>()
             .register_instruction_type::<Responsive<T>>()
             .register_instruction_type::<Multi<Responsive<T>>>()
     }

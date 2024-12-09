@@ -234,7 +234,7 @@ impl Plugin for ImageNodeExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.register_themed::<LoadedImageNode>()
+        app.register_static::<LoadedImageNode>()
             .register_animatable::<ImageNodeColor>()
             .register_animatable::<ImageNodeIndex>();
     }

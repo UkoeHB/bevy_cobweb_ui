@@ -83,7 +83,7 @@ fn setup_drag(ec: &mut EntityCommands, widget_id: Entity)
 
 // TODO: how to make this generic? might need a trait
 fn make_draggable_field_widget<'a>(
-    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
+    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
     name: &'static str,
     initial_value: f32,
     bounds: RangeInclusive<f32>,

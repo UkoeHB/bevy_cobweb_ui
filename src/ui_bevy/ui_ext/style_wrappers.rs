@@ -91,7 +91,7 @@ impl Lerp for StyleRect
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Overflow`] for stylesheet serialization.
+/// Mirrors [`Overflow`] for the [`FlexNode`] and [`AbsoluteNode`] loadables.
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -1097,7 +1097,7 @@ pub enum DisplayControl
 {
     /// Corresponds to [`Display::Flex`].
     #[default]
-    Display,
+    Show,
     /// Corresponds to [`Display::None`].
     Hide,
 }
@@ -1119,7 +1119,7 @@ impl Into<Display> for DisplayControl
     fn into(self) -> Display
     {
         match self {
-            Self::Display => Display::Flex,
+            Self::Show => Display::Flex,
             Self::Hide => Display::None,
         }
     }
@@ -1138,9 +1138,18 @@ impl Instruction for DisplayControl
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
             if let Some(mut node) = e.get_mut::<Node>() {
-                node.display = Self::Display.into();
+                node.display = Self::Show.into();
             }
         });
+    }
+}
+
+impl StaticAttribute for DisplayControl
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
     }
 }
 
@@ -1154,7 +1163,7 @@ impl Plugin for StyleWrappersPlugin
     {
         app.register_instruction_type::<AbsoluteNode>()
             .register_instruction_type::<FlexNode>()
-            .register_instruction_type::<DisplayControl>()
+            .register_static::<DisplayControl>()
             .add_systems(PostUpdate, DisplayControl::refresh.before(UiSystem::Prepare));
     }
 }

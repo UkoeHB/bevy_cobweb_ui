@@ -224,7 +224,7 @@ fn extract_scene_layer(
     for SceneLayerData { id, .. } in scene_layer.end_update() {
         #[cfg(feature = "hot_reload")]
         {
-            scene_loader.cleanup_deleted_scene_node(c, scene, &id);
+            scene_loader.cleanup_deleted_scene_node(c, scene_buffer, loadables, scene, &id);
         }
         #[cfg(not(feature = "hot_reload"))]
         {

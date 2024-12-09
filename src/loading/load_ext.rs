@@ -197,12 +197,10 @@ fn load_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-// TODO: use `remove_with_requires`
-// - need https://github.com/bevyengine/bevy/pull/16288
 fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 {
     let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-    emut.remove::<T>();
+    emut.remove_with_requires::<T>();
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -156,14 +156,14 @@ pub struct Responsive<T: ResponsiveAttribute>
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
 
-    /// The [`ControlMember`] of an entity in the current widget. This attribute responds to interactions on
-    /// that entity.
+    /// The [`ControlMember`] of a non-root entity in the current widget. This attribute responds to interactions
+    /// on that entity.
     ///
     /// If `None`, then:
+    /// - If the current entity has a [`ControlMember`], then interactions on the nearest [`ControlRoot`] entity
+    ///   will control the value.
     /// - If the current entity has no [`ControlMember`], then interactions on the current entity will control the
     ///   value.
-    /// - If the current entity *does* have a [`ControlMember`], then interactions on the nearest [`ControlRoot`]
-    ///   entity will control the value.
     #[reflect(default)]
     pub respond_to: Option<SmolStr>,
 
@@ -252,14 +252,14 @@ pub struct Animated<T: AnimatedAttribute>
     #[reflect(default)]
     pub state: Option<SmallVec<[PseudoState; 3]>>,
 
-    /// The [`ControlMember`] of an entity in the current widget. Interactions on that entity will control this
-    /// value.
+    /// The [`ControlMember`] of a non-root entity in the current widget. Interactions on that entity will control
+    /// this value.
     ///
     /// If `None`, then:
+    /// - If the current entity has a [`ControlMember`], then interactions on the nearest [`ControlRoot`] entity
+    ///   will control the value.
     /// - If the current entity has no [`ControlMember`], then interactions on the current entity will control the
     ///   value.
-    /// - If the current entity *does* have a [`ControlMember`], then interactions on the nearest [`ControlRoot`]
-    ///   entity will control the value.
     #[reflect(default)]
     pub respond_to: Option<SmolStr>,
 
