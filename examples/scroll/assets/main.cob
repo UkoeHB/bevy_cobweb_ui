@@ -34,14 +34,13 @@ Note: add name to all scroll areas
         - Update
             - Update scroll timers
                 - when timer ends, remove 'is scrolling' and 'hover activated' states
-        - ScrollBase
+        - ScrollBar
             - On MouseScroll event
                 - if no scrolling timer
                     - initialize timer
                     - add 'is scrolling' state to relevant scrollbar
                 - if scrolling timer
                     - refresh timer
-        - ScrollBar
             - Initial bar and handle opacity: zero
             - On pointer hover or press while in state 'is scrolling'
                 - refresh scrolling timer

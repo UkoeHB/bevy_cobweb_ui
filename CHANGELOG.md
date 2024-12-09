@@ -2,6 +2,12 @@
 
 ## WIP
 
+### Highlights
+- Update README to point to the new cobweb ui book!
+- Integrate `ReactorResult` from `bevy_cobweb`. All built-in callbacks like `.on_pressed` now let you early-out with `?`, so long as you return `OK` (warns on error) or `DONE` (drops errors).
+- Add scroll widget with new scroll example.
+
+### Updates
 - Rename `ControlLabel` to `ControlMember`.
 - Rename `RadioButtonGroup` to `RadioGroup`.
 - Update `ControlRoot` and `ControlMember` to create anonymous labels if an empty string is set for the ID.
@@ -21,25 +27,31 @@
     - Removed `WithAbsoluteNode` and `WithFlexNode`.
 - Add `SetClipMargin` loadable.
 - Re-enable `remove_with_requires` in instruction reversion now that the bevy bug is fixed.
-- Integrate `ReactorResult` from `bevy_cobweb`. All built-in callbacks like `.on_pressed` now let you early-out with `?`, so long as you return `OK` (warns on error) or `DONE` (drops errors).
 - Update localization example to the COB format.
 - Add `.update_text()` extension method for UiBuilder to simplify updating a TextLine with static text.
 - Add `Picking` instruction loadable for inserting the `PickingBehavior` component.
 - Add `Visibility` component loadable.
-- Bugfixes
-    - Cursor compile error on WASM.
-    - Avoid panicking when accessing UiBuilder if the entity doesn't exist.
-    - `on_pointer_enter` now works properly instead of being an alias for `on_pressed`
+- Add hierarchy traversal tools.
+
+### Fixes
+- Cursor compile error on WASM.
+- `on_pointer_enter` now works properly instead of being an alias for `on_pressed`
+- Avoid panicking when accessing UiBuilder if the entity doesn't exist.
 
 
 ## 0.5.1
 
+### Highlights
+- Refactor control attributes so they are stored on target entities. You can use the `NodeAttributes` component to add/remove/modify attributes at runtime.
+
+### Updates
 - Add `SliderValue::single` and `SliderValue::planar` helpers.
 - Rename `AnimatableAttribute` to `AnimatedAttribute`.
 - Add derives for setting up animated components and newtype components: `StaticComponent`, `ResponsiveComponent`, `AnimatedComponent`, `StaticReactComponent`, `ResponsiveReactComponent`, `AnimatedReactComponent`, `StaticNewtype`, `ResponsiveNewtype`, `AnimatedNewtype`, `StaticReactNewtype`, `ResponsiveReactNewtype`, `AnimatedReactNewtype`.
-- Bugfix: internal panic when there is an invalid loadable in a scene node.
-- Refactor control attributes so they are stored on target entities. You can use the `NodeAttributes` component to add/remove/modify attributes at runtime.
 - Add `AnyClone` trait that mirrors `Any` but allows cloning the underlying type. Also bounded by `Debug + Send + Sync + 'static` for convenience.
+
+### Fixes
+- Internal panic when there is an invalid loadable in a scene node.
 
 ## 0.5.0
 

@@ -72,7 +72,9 @@ impl Instruction for ControlRoot
                 //   removed when the entity was switched to ControlRoot. When a ControlMember is removed, the
                 //   entity will be removed from the associated ControlMap, which should ensure no stale attributes
                 //   related to this entity will linger in other maps.
-                if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
+                if let Some((_, control_map)) =
+                    get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+                {
                     let labels: Vec<_> = control_map.remove_all_labels().collect();
 
                     // Labels
@@ -93,7 +95,7 @@ impl Instruction for ControlRoot
                         if world.get::<ControlMember>(entity).is_some() {
                             dangling.push(entity);
                         }
-                    }
+                    },
                 );
 
                 let mut scene_buffer = world.resource_mut::<SceneBuffer>();
@@ -192,7 +194,9 @@ impl Instruction for ControlMember
             }
         }
 
-        if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
+        if let Some((_, control_map)) =
+            get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+        {
             control_map.insert(label_str, entity);
             return;
         }
@@ -220,7 +224,9 @@ impl Instruction for ControlMember
                 control_map.remove(entity);
             }
         } else {
-            if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
+            if let Some((_, control_map)) =
+                get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous())
+            {
                 control_map.remove(entity);
             }
         }

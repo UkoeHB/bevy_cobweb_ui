@@ -20,15 +20,24 @@ pub fn get_ancestor_mut<T: Component>(world: &mut World, entity: Entity) -> Opti
 pub fn get_ancestor_mut_filtered<T: Component>(
     world: &mut World,
     entity: Entity,
-    filter: impl Fn(&mut T) -> bool
+    filter: impl Fn(&T) -> bool,
 ) -> Option<(Entity, &mut T)>
 {
     let mut current = entity;
+    let mut found = false;
     while let Some(parent) = world.get::<Parent>(current) {
         current = parent.get();
-        let Some(mut component) = world.get_mut::<T>(current) else { continue };
-        if !(filter)(&mut component) { continue }
-        return Some((current, &mut component));
+        let Some(component) = world.get::<T>(current) else { continue };
+        if !(filter)(&component) {
+            continue;
+        }
+        found = true;
+    }
+
+    // Outside loop due to borrow checker limitations.
+    if found {
+        let component = world.get_mut::<T>(current).unwrap();
+        return Some((current, component.into_inner()));
     }
 
     None
@@ -62,14 +71,14 @@ pub fn iter_descendants_filtered(
         (*callback)(world, entity);
 
         // Iterate into children.
-        if let Some(children) = world.get::<Children>(child) {
+        if let Some(children) = world.get::<Children>(entity) {
             for child in children.iter() {
-                iter_impl(*child, world, filter, callback);
+                iter_impl(world, *child, filter, callback);
             }
         }
     }
 
-    iter_impl(world, entity, *filter, &mut callback)
+    iter_impl(world, entity, &filter, &mut callback)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
