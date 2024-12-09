@@ -125,7 +125,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
-        self.on_event::<Pressed>().r(callback);
+        self.on_event::<PointerEnter>().r(callback);
         self
     }
 
