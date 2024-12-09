@@ -6,29 +6,6 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[cfg(feature = "hot_reload")]
-fn collect_dangling_controlled(child: Entity, world: &World, dangling: &mut Vec<Entity>)
-{
-    // Terminate at control maps.
-    if world.get::<ControlMap>(child).is_some() {
-        return;
-    }
-
-    // Collect dangling label.
-    if world.get::<ControlMember>(child).is_some() {
-        dangling.push(child);
-    }
-
-    // Iterate into children.
-    if let Some(children) = world.get::<Children>(child) {
-        for child in children.iter() {
-            collect_dangling_controlled(*child, world, dangling);
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Instruction loadable for setting up the root entity of a multi-entity widget.
 ///
 /// Applies a [`ControlMember`] instruction and inserts an internal `ControlMap` component to the entity.
@@ -95,13 +72,7 @@ impl Instruction for ControlRoot
                 //   removed when the entity was switched to ControlRoot. When a ControlMember is removed, the
                 //   entity will be removed from the associated ControlMap, which should ensure no stale attributes
                 //   related to this entity will linger in other maps.
-                let mut current = entity;
-                while let Some(parent) = world.get::<Parent>(current) {
-                    current = parent.get();
-                    let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-                    if control_map.is_anonymous() {
-                        continue;
-                    }
+                if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
                     let labels: Vec<_> = control_map.remove_all_labels().collect();
 
                     // Labels
@@ -109,16 +80,21 @@ impl Instruction for ControlRoot
                     for (label, label_entity) in labels {
                         ControlMember { id: label }.apply(label_entity, world);
                     }
-
-                    break;
                 }
 
                 // Iterate children (stopping at control maps) to identify children with ControlMember. Refresh
                 // those nodes in case they have attributes that are 'dangling'.
                 let mut dangling = vec![];
-                for child in world.get::<Children>(entity).unwrap().iter() {
-                    collect_dangling_controlled(*child, world, &mut dangling);
-                }
+                iter_descendants_filtered(
+                    world,
+                    entity,
+                    |world, entity| world.get::<ControlMap>(entity).is_none(),
+                    |world, entity| {
+                        if world.get::<ControlMember>(entity).is_some() {
+                            dangling.push(entity);
+                        }
+                    }
+                );
 
                 let mut scene_buffer = world.resource_mut::<SceneBuffer>();
                 for controlled_entity in dangling {
@@ -216,13 +192,7 @@ impl Instruction for ControlMember
             }
         }
 
-        let mut current = entity;
-        while let Some(parent) = world.get::<Parent>(current) {
-            current = parent.get();
-            let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-            if control_map.is_anonymous() {
-                continue;
-            }
+        if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
             control_map.insert(label_str, entity);
             return;
         }
@@ -250,15 +220,8 @@ impl Instruction for ControlMember
                 control_map.remove(entity);
             }
         } else {
-            let mut current = entity;
-            while let Some(parent) = world.get::<Parent>(current) {
-                current = parent.get();
-                let Some(mut control_map) = world.get_mut::<ControlMap>(current) else { continue };
-                if control_map.is_anonymous() {
-                    continue;
-                }
+            if let Some((_, control_map)) = get_ancestor_mut_filtered::<ControlMap>(world, entity, |cm| !cm.is_anonymous()) {
                 control_map.remove(entity);
-                break;
             }
         }
 

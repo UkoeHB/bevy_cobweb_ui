@@ -125,61 +125,6 @@ impl ComputedSlider
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// More performant than `.iter_descendants`, which internally allocates every time you call it.
-#[derive(Resource, Default)]
-struct ChildrenIterScratch
-{
-    stack: Vec<Entity>,
-}
-
-impl ChildrenIterScratch
-{
-    fn search<R>(
-        &mut self,
-        initial_entity: Entity,
-        children_query: &Query<&Children>,
-        search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        self.stack.clear();
-        self.stack.push(initial_entity);
-        self.search_impl(children_query, search_fn)
-    }
-
-    fn search_descendants<R>(
-        &mut self,
-        initial_children: &Children,
-        children_query: &Query<&Children>,
-        search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        self.stack.clear();
-        self.stack.extend(initial_children);
-        self.search_impl(children_query, search_fn)
-    }
-
-    fn search_impl<R>(
-        &mut self,
-        children_query: &Query<&Children>,
-        mut search_fn: impl FnMut(Entity) -> Option<R>,
-    ) -> Option<R>
-    {
-        while let Some(entity) = self.stack.pop() {
-            if let Some(entry) = (search_fn)(entity) {
-                return Some(entry);
-            }
-
-            if let Ok(next_children) = children_query.get(entity) {
-                self.stack.extend(next_children);
-            }
-        }
-
-        None
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn get_camera_scale_factor(
     ui_camera: &DefaultUiCamera,
     cameras: &Query<&Camera>,
@@ -234,7 +179,7 @@ fn compute_value_for_target_position(
 
 fn slider_bar_ptr_down(
     mut event: Trigger<Pointer<Down>>,
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
     cameras: Query<&Camera>,
@@ -271,7 +216,7 @@ fn slider_bar_ptr_down(
     };
 
     let maybe_handle =
-        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
+        iter_children.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
     let Some((handle_entity, handle_node, handle_transform)) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
@@ -291,7 +236,7 @@ fn slider_bar_ptr_down(
 
     // Check if pointer targets the handle or any of its descendants.
     let pointer_target = event.event().target;
-    let targets_handle = iter_scratch
+    let targets_handle = iter_children
         .search(handle_entity, &children_query, |entity| {
             if entity == pointer_target {
                 Some(())
@@ -360,7 +305,7 @@ fn slider_bar_ptr_down(
 
 fn slider_bar_drag(
     mut event: Trigger<Pointer<Drag>>,
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
     cameras: Query<&Camera>,
@@ -401,7 +346,7 @@ fn slider_bar_drag(
 
     // Look up the handle.
     let maybe_handle =
-        iter_scratch.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
+        iter_children.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
 
     let Some(handle_node) = maybe_handle else {
         tracing::warn!("failed finding a SliderHandle on a descendant of Slider entity {:?}", slider_entity);
@@ -448,7 +393,7 @@ fn slider_bar_drag(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn update_slider_handle_positions(
-    mut iter_scratch: ResMut<ChildrenIterScratch>,
+    mut iter_children: ResMut<IterChildren>,
     mut sliders: Query<(
         &ComputedSlider,
         &React<SliderValue>,
@@ -471,7 +416,7 @@ fn update_slider_handle_positions(
 
         // Look up handle.
         let Some((handle_entity, handle_node)) =
-            iter_scratch.search_descendants(children, &children_q, |c| handles.get(c).ok())
+            iter_children.search_descendants(children, &children_q, |c| handles.get(c).ok())
         else {
             continue;
         };
@@ -912,7 +857,6 @@ impl Plugin for CobwebSliderPlugin
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/slider", "slider.cob");
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
-            .init_resource::<ChildrenIterScratch>()
             .add_systems(
                 PostUpdate,
                 update_slider_handle_positions

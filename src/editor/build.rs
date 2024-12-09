@@ -460,6 +460,8 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 //-------------------------------------------------------------------------------------------------------------------
 
 // TODO: try to make auto-moving the window smoother
+// - winit supports 'child windows' which should solve these problems. Need to manually construct the window, see
+//   WinitWindow::create_window.
 // TODO: the editor's position does not sync with the window on startup until you move the window
 // - maybe infer it from window starting size + monitor dimensions?
 // TODO: the editor does not sync properly if you shrink the window from the top down

@@ -248,7 +248,8 @@ impl Plugin for CobAssetCachePlugin
                 )
                     .chain()
                     .before(bevy::ui::UiSystem::Prepare)
-                    .before(bevy::prelude::TransformSystem::TransformPropagate),
+                    .before(bevy::prelude::TransformSystem::TransformPropagate)
+                    .in_set(FileProcessingSet),
             );
         }
 

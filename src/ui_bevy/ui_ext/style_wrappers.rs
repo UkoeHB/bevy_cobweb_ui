@@ -91,7 +91,7 @@ impl Lerp for StyleRect
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`Overflow`] for stylesheet serialization.
+/// Mirrors [`Overflow`] for the [`FlexNode`] and [`AbsoluteNode`] loadables.
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
