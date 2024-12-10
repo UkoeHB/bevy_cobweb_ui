@@ -27,18 +27,48 @@ unimplemented
 - robust framework for deciding when to receive scroll events vs when not to
 
 unsolved problems
-- we set the scrollbar handle's size before layout, which means if the scroll area or view area sizes change, it won't
-be reflected in handle size until the next tick (an off-by-1 glitch)
-    - Solving this requires more flexibility from bevy's layout system. ComputedNode is not outwardly mutable, and
-    ContentSize doesn't give enough information about other nodes. There is no way post-layout to adjust the handle size.
 - if content size changes, we want the scroll view to 'stay in place' pointing at the same spot on the content
     - How to figure out if content size increased above or below the view?
 */
 
+use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
+use bevy::input::InputSystem;
+use bevy::picking::pointer::{PointerId, PointerInteraction};
+use bevy::picking::PickSet;
+use bevy::prelude::TransformSystem::TransformPropagate;
 use bevy::prelude::*;
+use bevy::reflect::ReflectMut;
+use bevy::ui::{FocusPolicy, UiSystem};
+use bevy_cobweb::prelude::*;
+use smol_str::SmolStr;
 
-use crate::prelude::*;
 use crate::builtin::widgets::slider::*;
+use crate::prelude::*;
+use crate::sickle::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+// fn get_content_size(
+//     view_entity: Entity,
+//     ui_surface: &UiSurface,
+// ) -> Option<Vec2>
+// {
+// ui_surface
+//     .get_layout(view_entity).map(|(l, _)| Vec2::new(l.content_size.width, l.content_size.height))
+// }
+
+fn get_content_size(
+    view_entity: Entity,
+    children: &Query<&Children>,
+    shims: &Query<&ComputedNode, With<ScrollShim>>,
+) -> Option<Vec2>
+{
+    let view_children = children.get(view_entity).ok()?;
+    view_children
+        .iter()
+        .find_map(|child| shims.get(*child).ok())
+        .map(|shim_node| shim_node.size())
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -64,119 +94,6 @@ fn cleanup_dead_bases(mut c: Commands, dying: Query<Entity, With<ScrollBaseDying
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// This is separate from updating scroll position because we add/remove states based on whether a given axis
-/// has scrollable content.
-// TODO: move this to after layout if bevy's ComputedNode struct's fields become public, so we can edit the handle
-// size directly and escape 1-tick-delay glitchiness
-// TODO: consider setting slider value to zero when content shrinks smaller than the area
-fn refresh_scroll_handles(
-    mut c: Commands,
-    ps: PseudoStateParam,
-    mut iter_children: IterChildren,
-    parents: Query<&Parent>,
-    children: Query<&Children>,
-    ui_surface: Res<UiSurface>,
-    bases: Query<(Entity, &ComputedScrollBase, &Node, &ViewVisibility)>,
-    areas: Query<(Entity, &ScrollArea, &ComputedNode)>,
-    mut bar_handles: Query<&mut Node, (With<SliderHandle>, With<ScrollHandle>)>,
-)
-{
-    for (area_entity, scroll_area, area_node) in areas.iter() {
-        // Get area size.
-        let area_size = area_node.size();
-
-        // Get area content size.
-        // - Skipping here helps avoid initialization glitchiness where handle sizes are wrong because
-        // we don't know content size yet. Any handle that has no minimum size will be zero-sized, and appear to just
-        // 'pop into place' once content size is available. Handles with a minimum size will still have glitchiness.
-        let Some(content_size) = ui_surface
-            .get_layout(area_entity).map(|l| Vec2::new(l.content_size.width, l.content_size.height))
-        else {
-            continue
-        };
-
-        // Look up base.
-        // - Note: base and area can be the same entity.
-        let mut current = area_entity;
-        let res = loop {
-            if let Ok(res) = bases.get_mut(current) {
-                break Some(res);
-            }
-
-            let Some(parent) = parents.get(current) else { break None };
-            current = *parent;
-        };
-        let Some((base_entity, computed_base, base_node, _base_visibility)) = res else { continue };
-
-        // Skip if base is not visible.
-        // - ViewVisibility is updated after TransformPropagate, so we can't use it until this system moves there.
-        // if base_node.display == Display::None || !base_visibility.get() {
-        //     continue;
-        // }
-        if base_node.display == Display::None {
-            continue;
-        }
-
-        // Update handle sizes.
-        if let Some(horizontal) = computed_base.horizontal {
-            // Look up scrollbar's handle.
-            if let Some(bar_children) = children.get(horizontal) {
-                if let Some(mut handle_node) = iter_children.search_descendants(bar_children, &children, |entity|
-                    bar_handles.get_mut(entity)
-                ) {
-                    let new_width = if content_size.x > 0.0 {
-                        area_size.x / content_size.x
-                    else {
-                        1.0
-                    };
-                    let new_width = (new_width * 100.0).clamp(0.0, 100.0);
-
-                    // We try add/remove these every tick to make sure they are correct, especially on init.
-                    if new_width == 100.0 {
-                        ps.try_remove(base_entity, &mut c, HORIZONTAL_SCROLL_PSEUDO_STATE.clone());
-                    } else {
-                        ps.try_insert(base_entity, &mut c, HORIZONTAL_SCROLL_PSEUDO_STATE.clone());
-                    }
-
-                    let new_width = Val::Percent(new_width);
-                    if handle_node.width != new_width {
-                        handle_node.width = new_width;
-                    }
-                }
-            }
-        }
-        if let Some(vertical) = computed_base.vertical {
-            // Look up scrollbar's handle.
-            if let Some(bar_children) = children.get(vertical) {
-                if let Some(mut handle_node) = iter_children.search_descendants(bar_children, &children, |entity|
-                    bar_handles.get_mut(entity)
-                ) {
-                    let new_height = if content_size.y > 0.0 {
-                        area_size.y / content_size.y
-                    else {
-                        1.0
-                    };
-                    let new_height = (new_height * 100.0).clamp(0.0, 100.0);
-
-                    // We try add/remove these every tick to make sure they are correct, especially on init.
-                    if new_height == 100.0 {
-                        ps.try_remove(base_entity, &mut c, VERTICAL_SCROLL_PSEUDO_STATE.clone());
-                    } else {
-                        ps.try_insert(base_entity, &mut c, VERTICAL_SCROLL_PSEUDO_STATE.clone());
-                    }
-
-                    let new_height = Val::Percent(new_height);
-                    if handle_node.height != new_height {
-                        handle_node.height = new_height;
-                    }
-                }
-            }
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Consumes scroll delta in one direction.
 ///
 /// Also dispatches `MouseScroll` entity events.
@@ -189,18 +106,20 @@ fn consume_scroll_delta(
     unconsumed_delta: &mut f32,
 )
 {
-    if unconsumed_delta == 0.0 || scroll_size <= 0.0 { return }
-    let Ok(val) = slider_vals.get(entity).and_then(|val| val.single()) else { return };
+    if *unconsumed_delta == 0.0 || scroll_size <= 0.0 {
+        return;
+    }
+    let Some(val) = slider_vals.get(entity).ok().and_then(|val| val.single()) else { return };
 
-    if unconsumed_delta > 0.0 && val < 1.0 {
+    if *unconsumed_delta > 0.0 && val < 1.0 {
         let available = (1. - val) * scroll_size;
 
-        let val_mut = slider_vals.get_mut(entity, c).unwrap();
+        let val_mut = slider_vals.get_mut(c, entity).unwrap();
 
-        if available >= unconsumed_delta * correction_factor {
-            let remaining = available - unconsumed_delta * correction_factor;
+        if available >= (*unconsumed_delta) * correction_factor {
+            let remaining = available - (*unconsumed_delta) * correction_factor;
             *val_mut = SliderValue::Single(1. - (remaining / scroll_size));
-            *val_mut.normalize();
+            val_mut.normalize();
             *unconsumed_delta = 0.;
         } else {
             *val_mut = SliderValue::Single(1.);
@@ -211,15 +130,15 @@ fn consume_scroll_delta(
             };
             *unconsumed_delta -= consumed;
         }
-    } else if unconsumed_delta < 0.0 && val > 0.0 {
+    } else if *unconsumed_delta < 0.0 && val > 0.0 {
         let available = val * scroll_size;
 
-        let val_mut = slider_vals.get_mut(entity).unwrap();
+        let val_mut = slider_vals.get_mut(c, entity).unwrap();
 
-        if available >= -unconsumed_delta * correction_factor {
-            let remaining = available + unconsumed_delta * correction_factor;
+        if available >= -(*unconsumed_delta) * correction_factor {
+            let remaining = available + (*unconsumed_delta) * correction_factor;
             *val_mut = SliderValue::Single(remaining / scroll_size);
-            *val_mut.normalize();
+            val_mut.normalize();
             *unconsumed_delta = 0.;
         } else {
             *val_mut = SliderValue::Single(0.);
@@ -240,10 +159,11 @@ fn consume_scroll_delta(
 fn apply_mouse_scroll_impl(
     c: &mut Commands,
     iter_children: &mut IterChildren,
-    ui_surface: &UiSurface,
+    // ui_surface: &UiSurface,
     children: &Query<&Children>,
     bases: &Query<(Entity, &ScrollBase, &ComputedScrollBase)>,
-    areas: &Query<(Entity, &ComputedNode), With<ScrollArea>>,
+    views: &Query<(Entity, &ComputedNode), With<ScrollView>>,
+    shims: &Query<&ComputedNode, With<ScrollShim>>,
     slider_vals: &mut ReactiveMut<SliderValue>,
     hit_entity: Entity,
     mouse_scroll_unit: MouseScrollUnit,
@@ -252,18 +172,19 @@ fn apply_mouse_scroll_impl(
 {
     let Ok((base_entity, scroll_base, computed_base)) = bases.get(hit_entity) else { return };
 
-    // Look up scroll area.
-    let Some((area_entity, area_node)) = iter_children.search(base_entity, children, |entity| areas.get(entity)) else { return };
-    let area_size = area_node.size();
-
-    // Get content size.
-    let Some(content_size) = ui_surface
-        .get_layout(area_entity).map(|l| Vec2::new(l.content_size.width, l.content_size.height))
+    // Look up scroll view.
+    let Some((view_entity, view_node)) =
+        iter_children.search(base_entity, children, |entity| views.get(entity).ok())
     else {
         return;
     };
+    let view_size = view_node.size();
 
-    let scroll_size = (content_size - area_size).max(Vec2::default());
+    // Get content size.
+    //let Some(content_size) = get_content_size(view_entity, &ui_surface) else { return };
+    let Some(content_size) = get_content_size(view_entity, children, shims) else { return };
+
+    let scroll_size = (content_size - view_size).max(Vec2::default());
 
     let correction_factor = match mouse_scroll_unit {
         MouseScrollUnit::Pixel => 1.0,
@@ -278,7 +199,7 @@ fn apply_mouse_scroll_impl(
             horizontal,
             correction_factor,
             scroll_size.x,
-            &mut unconsumed_delta.x
+            &mut unconsumed_delta.x,
         );
     }
     if let Some(vertical) = computed_base.vertical {
@@ -288,7 +209,7 @@ fn apply_mouse_scroll_impl(
             vertical,
             correction_factor,
             scroll_size.y,
-            &mut unconsumed_delta.y
+            &mut unconsumed_delta.y,
         );
     }
 }
@@ -297,24 +218,25 @@ fn apply_mouse_scroll_impl(
 
 fn apply_mouse_scroll(
     mut c: Commands,
-    mut iter_children: IterChildren,
-    ui_surface: Res<UiSurface>,
+    mut iter_children: ResMut<IterChildren>,
+    //ui_surface: Res<UiSurface>,
     children: Query<&Children>,
     mouse_scroll: Res<AccumulatedMouseScroll>,
     pointers: Query<(&PointerId, &PointerInteraction)>,
     bases: Query<(Entity, &ScrollBase, &ComputedScrollBase)>,
-    areas: Query<(Entity, &ComputedNode), With<ScrollArea>>,
+    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
+    shims: Query<&ComputedNode, With<ScrollShim>>,
     mut slider_vals: ReactiveMut<SliderValue>,
     focus_policies: Query<&FocusPolicy>,
 )
 {
     // Find mouse pointer.
     // - We assume there's only one of these.
-    let Some((ptr_id, ptr_interaction)) = pointers.iter().find(|(id, _)| *id == PointerId::Mouse) else { return };
+    let Some((_, ptr_interaction)) = pointers.iter().find(|(id, _)| **id == PointerId::Mouse) else { return };
 
     // Apply scroll delta to entities under the cursor.
     // - If an entity in the stack has blocked picking or FocusPolicy::Block, then scroll delta won't 'spill over'
-    // to lower scroll areas.
+    // to lower scroll views.
     let mut unconsumed_delta = mouse_scroll.delta;
 
     for (hit_entity, _) in ptr_interaction.iter() {
@@ -322,22 +244,23 @@ fn apply_mouse_scroll(
             return;
         }
 
-        // Apply scroll delta to scroll areas.
+        // Apply scroll delta to scroll views.
         apply_mouse_scroll_impl(
             &mut c,
             &mut iter_children,
-            &ui_surface,
+            // &ui_surface,
             &children,
             &bases,
-            &areas,
+            &views,
+            &shims,
             &mut slider_vals,
-            hit_entity,
+            *hit_entity,
             mouse_scroll.unit,
-            &mut unconsumed_delta
+            &mut unconsumed_delta,
         );
 
         // Terminate on blocked entities.
-        if let Some(focus_policy) = focus_policies.get(hit_entity) {
+        if let Ok(focus_policy) = focus_policies.get(*hit_entity) {
             if *focus_policy == FocusPolicy::Block {
                 return;
             }
@@ -348,36 +271,35 @@ fn apply_mouse_scroll(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn refresh_scroll_position(
-    ui_surface: Res<UiSurface>,
-    bases: Query<(&mut ScrollPosition, &ComputedScrollBase)>,
-    areas: Query<(Entity, &ScrollArea, &Node)>,
+    // ui_surface: Res<UiSurface>,
+    mut bases: Query<(&mut ScrollPosition, &ComputedScrollBase)>,
+    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
+    shims: Query<&ComputedNode, With<ScrollShim>>,
     parents: Query<&Parent>,
+    children: Query<&Children>,
     slider_vals: Reactive<SliderValue>,
 )
 {
-    for (area_entity, scroll_area, area_node) in areas.iter() {
-        // Get area size.
-        let area_size = area_node.size();
+    for (view_entity, view_node) in views.iter() {
+        // Get view size.
+        let view_size = view_node.size();
 
-        // Get area content size.
-        let Some(content_size) = ui_surface
-            .get_layout(area_entity).map(|l| Vec2::new(l.content_size.width, l.content_size.height))
-        else {
-            continue
-        };
+        // Get view content size.
+        //let Some(content_size) = get_content_size(view_entity, &ui_surface) else { continue };
+        let Some(content_size) = get_content_size(view_entity, &children, &shims) else { continue };
 
-        let scroll_size = (content_size - area_size).max(Vec2::default());
+        let scroll_size = (content_size - view_size).max(Vec2::default());
 
         // Look up base.
-        // - Note: base and area can be the same entity.
-        let mut current = area_entity;
+        // - Note: base and view can be the same entity.
+        let mut current = view_entity;
         let res = loop {
-            if let Ok((scroll_pos, computed_base)) = bases.get_mut(current) {
-                break Some((scroll_pos, computed_base));
+            if let Ok(res) = bases.get_mut(current) {
+                break Some(res);
             }
 
-            let Some(parent) = parents.get(current) else { break None };
-            current = *parent;
+            let Ok(parent) = parents.get(current) else { break None };
+            current = **parent;
         };
         let Some((mut scroll_pos, computed_base)) = res else { continue };
 
@@ -407,6 +329,172 @@ fn refresh_scroll_position(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn update_scrollbar_handle_size(
+    base_entity: Entity,
+    bar_entity: Entity,
+    c: &mut Commands,
+    ps: &PseudoStateParam,
+    bars: &Query<(&ComputedNode, &Children), With<ScrollBar>>,
+    iter_children: &mut IterChildren,
+    children: &Query<&Children>,
+    bar_handles: &Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
+    computed_nodes: &mut Query<&mut ComputedNode, Without<ScrollBar>>,
+    content_dim: f32,
+    view_dim: f32,
+    pseudo_state: PseudoState,
+    get_dim_fn: impl Fn(&ComputedNode) -> f32,
+    get_unrounded_size_fn: impl Fn(f32, &ComputedNode) -> Vec2,
+    get_rounded_size_fn: impl Fn(f32, &ComputedNode) -> Vec2,
+    variant: &str,
+)
+{
+    // Look up scrollbar's handle.
+    let Ok((bar_node, bar_children)) = bars.get(bar_entity) else { return };
+    let Some(handle_entity) =
+        iter_children.search_descendants(bar_children, &children, |entity| bar_handles.get(entity).ok())
+    else {
+        return;
+    };
+    let Ok(mut handle_node) = computed_nodes.get_mut(handle_entity) else { return };
+
+    let proportion = if content_dim > 0.0 {
+        view_dim / content_dim
+    } else {
+        1.0
+    };
+    let proportion = proportion.clamp(0.0, 1.0);
+
+    // We try add/remove these every tick to make sure they are correct, especially on init.
+    if proportion == 1.0 {
+        ps.try_remove(base_entity, c, pseudo_state.clone());
+    } else {
+        ps.try_insert(base_entity, c, pseudo_state.clone());
+    }
+
+    let bar_dim = (get_dim_fn)(bar_node);
+    let dim_unrounded = bar_dim * proportion;
+    let dim_rounded = dim_unrounded.round().clamp(0., bar_dim);
+    let new_size_unrounded = (get_unrounded_size_fn)(dim_unrounded, &handle_node);
+    let new_size_rounded = (get_rounded_size_fn)(dim_rounded, &handle_node);
+
+    // Use reflection to force-edit the computed node's private fields.
+    let ReflectMut::Struct(handle_reflect) = handle_node.as_partial_reflect_mut().reflect_mut() else {
+        unreachable!()
+    };
+    if let Err(err) = handle_reflect
+        .field_mut("unrounded_size")
+        .unwrap()
+        .try_apply(new_size_unrounded.as_partial_reflect())
+    {
+        error_once!("failed updating scrollbar handle unrounded {variant} for {bar_entity:?}: {err:?} (this \
+            error only prints once; this is a bug)");
+    }
+    if let Err(err) = handle_reflect
+        .field_mut("size")
+        .unwrap()
+        .try_apply(new_size_rounded.as_partial_reflect())
+    {
+        error_once!("failed updating scrollbar handle {variant} for {bar_entity:?}: {err:?} (this error only \
+            prints once; this is a bug)");
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// This is post-layout to ensure handle sizes are always accurately rendered.
+// TODO: We add/remove states here and the effects of those states will be 1 frame late.
+// - That delay should be low impact because state changes only occur when the line between scrollable
+// content and no scrollable content is crossed (i.e. it's a somewhat rare boundary condition).
+// TODO: consider setting slider value to zero when content shrinks smaller than the view.
+// - Need to do it in a separate system in PreUpdate because users may react to slider value changes.
+fn refresh_scroll_handles(
+    mut c: Commands,
+    ps: PseudoStateParam,
+    mut iter_children: ResMut<IterChildren>,
+    parents: Query<&Parent>,
+    children: Query<&Children>,
+    // ui_surface: Res<UiSurface>,
+    bases: Query<(Entity, &ComputedScrollBase, &Node)>,
+    bars: Query<(&ComputedNode, &Children), With<ScrollBar>>,
+    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
+    shims: Query<&ComputedNode, With<ScrollShim>>,
+    bar_handles: Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
+    mut computed_nodes: Query<&mut ComputedNode, Without<ScrollBar>>,
+)
+{
+    for (view_entity, view_node) in views.iter() {
+        // Get view size.
+        let view_size = view_node.size();
+
+        // Get view content size.
+        //let content_size = get_content_size(view_entity, &ui_surface).unwrap_or_default();
+        let content_size = get_content_size(view_entity, &children, &shims).unwrap_or_default();
+
+        // Look up base.
+        // - Note: base and view can be the same entity.
+        let mut current = view_entity;
+        let res = loop {
+            if let Ok(res) = bases.get(current) {
+                break Some(res);
+            }
+
+            let Ok(parent) = parents.get(current) else { break None };
+            current = **parent;
+        };
+        let Some((base_entity, computed_base, base_node)) = res else { continue };
+
+        // Skip if base is not visible.
+        // - Note: ViewVisibility updates *after* TransformPropagate, so we can't use it here.
+        if base_node.display == Display::None {
+            continue;
+        }
+
+        // Update handle sizes.
+        if let Some(horizontal) = computed_base.horizontal {
+            update_scrollbar_handle_size(
+                base_entity,
+                horizontal,
+                &mut c,
+                &ps,
+                &bars,
+                &mut iter_children,
+                &children,
+                &bar_handles,
+                &mut computed_nodes,
+                content_size.x,
+                view_size.x,
+                HORIZONTAL_SCROLL_PSEUDO_STATE.clone(),
+                |node| node.size().x,
+                |w_unrounded, handle_node| Vec2::new(w_unrounded, handle_node.unrounded_size().y),
+                |w_rounded, handle_node| Vec2::new(w_rounded, handle_node.size().y),
+                "width",
+            );
+        }
+        if let Some(vertical) = computed_base.vertical {
+            update_scrollbar_handle_size(
+                base_entity,
+                vertical,
+                &mut c,
+                &ps,
+                &bars,
+                &mut iter_children,
+                &children,
+                &bar_handles,
+                &mut computed_nodes,
+                content_size.y,
+                view_size.y,
+                VERTICAL_SCROLL_PSEUDO_STATE.clone(),
+                |node| node.size().y,
+                |h_unrounded, handle_node| Vec2::new(handle_node.unrounded_size().x, h_unrounded),
+                |h_rounded, handle_node| Vec2::new(handle_node.size().x, h_rounded),
+                "height",
+            );
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Marker component for cleaning up dead scrollbases after a hot reload removes ScrollBase from a node.
 #[derive(Component)]
 struct ScrollBaseDying;
@@ -422,7 +510,7 @@ impl EntityCommand for RemoveDeadScrollBase
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Some(old_scroll_base) = world
-            .get_entity(entity)
+            .get_entity_mut(entity)
             .ok()
             .and_then(|mut emut| emut.take::<ComputedScrollBase>())
         else {
@@ -436,7 +524,7 @@ impl EntityCommand for RemoveDeadScrollBase
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Tracks scrollbar entities associated with a slider widget.
-#[derive(Component, Default, Copy, Clone, Debug)]
+#[derive(Component, Default, Clone, Debug)]
 struct ComputedScrollBase
 {
     horizontal: Option<Entity>,
@@ -444,17 +532,17 @@ struct ComputedScrollBase
 
     /// Tracks scroll bars that are 'redundant' because we already have a horizontal or vertical bar. Used to
     /// repair bar mappings on hot reload.
-    dangling: Vec<Entity>
+    dangling: Vec<Entity>,
 }
 
 impl ComputedScrollBase
 {
-    fn add_bar(&mut self, entity: Entity, axis: SliderAxis)
+    fn add_bar(&mut self, entity: Entity, axis: ScrollAxis)
     {
         match axis {
-            SliderAxis::X => {
+            ScrollAxis::X => {
                 if let Some(prev) = self.horizontal.as_ref() {
-                    if prev != entity {
+                    if *prev != entity {
                         tracing::warn!("failed adding horizontal scroll bar {entity:?} to nearest scroll base; there \
                             is already a horizontal scroll bar {prev:?}");
                         self.dangling.push(entity);
@@ -463,9 +551,9 @@ impl ComputedScrollBase
                     self.horizontal = Some(entity);
                 }
             }
-            SliderAxis::Y => {
+            ScrollAxis::Y => {
                 if let Some(prev) = self.vertical.as_ref() {
-                    if prev != entity {
+                    if *prev != entity {
                         tracing::warn!("failed adding vertical scroll bar {entity:?} to nearest scroll base; there \
                             is already a vertical scroll bar {prev:?}");
                         self.dangling.push(entity);
@@ -474,30 +562,25 @@ impl ComputedScrollBase
                     self.vertical = Some(entity);
                 }
             }
-            SliderAxis::Planar => {
-                tracing::warn!("failed adding scroll bar {entity:?} to nearest scroll base; scroll bar has SliderAxis::Planar \
-                    but only X and Y axes are supported");
-                self.dangling.push(entity);
-            }
         }
     }
 
     fn reapply_bars(self, world: &mut World)
     {
         if let Some(horizontal) = self.horizontal {
-            if let Ok(bar) = world.get::<ScrollBar>(horizontal) {
+            if let Some(bar) = world.get::<ScrollBar>(horizontal) {
                 bar.clone().apply(horizontal, world);
             }
         }
 
         if let Some(vertical) = self.vertical {
-            if let Ok(bar) = world.get::<ScrollBar>(vertical) {
+            if let Some(bar) = world.get::<ScrollBar>(vertical) {
                 bar.clone().apply(vertical, world);
             }
         }
 
         for dangling in self.dangling {
-            if let Ok(bar) = world.get::<ScrollBar>(dangling) {
+            if let Some(bar) = world.get::<ScrollBar>(dangling) {
                 bar.clone().apply(dangling, world);
             }
         }
@@ -506,35 +589,44 @@ impl ComputedScrollBase
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Pseudo state added to a scroll base when its scroll area has horizontally-scrollable content.
+/// Pseudo state added to a scroll base when its scroll view has horizontally-scrollable content.
 ///
 /// It can be used in COB as `Custom("HorizontalScroll")`.
-pub const HORIZONTAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolStr::new_static("HorizontalScroll"));
+pub const HORIZONTAL_SCROLL_PSEUDO_STATE: PseudoState =
+    PseudoState::Custom(SmolStr::new_static("HorizontalScroll"));
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Pseudo state added to a scroll base when its scroll area has vertically-scrollable content.
+/// Pseudo state added to a scroll base when its scroll view has vertically-scrollable content.
 ///
 /// It can be used in COB as `Custom("VerticalScroll")`.
 pub const VERTICAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolStr::new_static("VerticalScroll"));
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Loadable that sets up the base of a scroll area widget.
+/// Loadable that sets up the base of a scroll view widget.
 ///
-/// A scroll area widget is composed of a [`ScrollBase`], a [`ScrollArea`] (where content goes), and one or two
+/// A scroll view widget is composed of a [`ScrollBase`], a [`ScrollView`] (where content goes), and one or two
 /// [`ScrollBars`](ScrollBar) (which each have a [`ScrollHandle`]).
 ///
-/// There are two broad categories of scroll area widgets:
+/// In the current version, you must insert a [`ScrollShim`] entity between the `ScrollView` and your scroll
+/// content. This requirement will be removed once `bevy` provides access to the content size of the view node.
+///
+/// There are two broad categories of scroll view widgets:
 /// 1. Scrollbars overlay on top of scroll content. You can use absolute positioning like this:
 /**
 ```rust
 "base"
     ScrollBase
-    ScrollArea
+    ScrollView
     FlexNode{clipping:ScrollXY width:500px height:700px flex_direction:Column}
 
     "shim"
+        ScrollShim
+
+        // Scroll content goes here.
+
+    "bars"
         AbsoluteNode{width:100% height:100% flex_direction:Column justify_cross:FlexEnd}
 
         "vertical"
@@ -561,14 +653,17 @@ pub const VERTICAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolSt
     ScrollBase
     FlexNode{width:500px height:700px flex_direction:Column}
 
-    "shim"
+    "view_shim"
         FlexNode{width:100% flex_grow:1 flex_direction:Row}
 
-        "area"
-            ScrollArea
+        "view"
+            ScrollView
             FlexNode{clipping:ScrollXY height:100% flex_grow:1 flex_direction:Column}
 
-            // Scroll content goes here
+            "shim"
+                ScrollShim
+
+                // Scroll content goes here
 
         "vertical"
             ScrollBar{axis:Y}
@@ -588,10 +683,7 @@ pub const VERTICAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolSt
 ```
 */
 #[derive(Reflect, Component, PartialEq, Copy, Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScrollBase
 {
     /// Size of lines for mouse scrolling.
@@ -620,7 +712,7 @@ impl Instruction for ScrollBase
         emut.insert(self);
 
         // Add computed scroll base if missing.
-        if let Some(mut computed_base) = emut.get_mut::<ComputedScrollBase>() {
+        if emut.contains::<ComputedScrollBase>() {
             // We are not actually dying, just refreshing the scroll base, so this can be removed.
             emut.remove::<ScrollBaseDying>();
         } else {
@@ -631,7 +723,7 @@ impl Instruction for ScrollBase
             if emut.contains::<Children>() {
                 // Look backward for ComputedScrollBase to maybe 'steal' its scroll bars.
                 if let Some((_, computed_base)) = get_ancestor_mut::<ComputedScrollBase>(world, entity) {
-                    let other_computed_base = std::mem::take(&mut computed_base);
+                    let other_computed_base = std::mem::take(computed_base);
                     other_computed_base.reapply_bars(world);
                 }
 
@@ -645,7 +737,7 @@ impl Instruction for ScrollBase
                         if let Some(bar) = world.get::<ScrollBar>(entity) {
                             dangling.push((entity, bar.clone()));
                         }
-                    }
+                    },
                 );
 
                 for (entity, bar) in dangling {
@@ -667,9 +759,7 @@ impl Default for ScrollBase
 {
     fn default() -> Self
     {
-        Self{
-            line_size: Self::default_line_size(),
-        }
+        Self { line_size: Self::default_line_size() }
     }
 }
 
@@ -677,12 +767,12 @@ impl Default for ScrollBase
 
 /// Loadable component for the node of a scroll widget that will be scrolled.
 ///
-/// The scroll area's [`Node`] must be manually set to scroll. For example, use
+/// The scroll view's [`Node`] must be manually set to scroll. For example, use
 /// `FlexNode{ clipping:ScrollY }` for vertical scrolling. See [`Clipping`].
 ///
 /// Inserts a [`ScrollPosition`] component, which is updated in the [`ScrollUpdateSet`] in [`PostUpdate`].
 ///
-/// See [`ScrollBase`] and [`ScrollBar`].
+/// See [`ScrollBase`], [`ScrollShim`], and [`ScrollBar`].
 #[derive(Reflect, Component, Default, PartialEq, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -690,7 +780,24 @@ impl Default for ScrollBase
     reflect(Serialize, Deserialize)
 )]
 #[require(ScrollPosition)]
-pub struct ScrollArea;
+pub struct ScrollView;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Loadable component for the node of a scroll widget that contains scrollable content.
+///
+/// This should be on a child of an entity with [`ScrollView`]. All children of this entity will be the 'content'
+/// of the scroll view. This component exists as a temporary hack until `bevy` makes the `content_size` of
+/// the view node accessible.
+///
+/// See [`ScrollBase`], [`ScrollView`], and [`ScrollBar`].
+#[derive(Reflect, Component, Default, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct ScrollShim;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -728,12 +835,9 @@ impl Into<SliderAxis> for ScrollAxis
 /// Inserts a [`Slider`] to the entity. The slider direction will be inferred from the scroll axis
 /// (standard for `X` and reverse for `Y`).
 ///
-/// See [`ScrollBase`], [`ScrollArea`], and [`ScrollHandle`].
+/// See [`ScrollBase`], [`ScrollView`], and [`ScrollHandle`].
 #[derive(Reflect, Component, Default, PartialEq, Clone)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize)
-)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScrollBar
 {
     /// Mirrors [`SliderAxis`].
@@ -749,19 +853,20 @@ impl Instruction for ScrollBar
     fn apply(self, entity: Entity, world: &mut World)
     {
         let direction = match self.axis {
-            SliderAxis::X => SliderDirection::Standard,
-            SliderAxis::Y => SliderDirection::Reverse,
+            ScrollAxis::X => SliderDirection::Standard,
+            ScrollAxis::Y => SliderDirection::Reverse,
         };
 
-        Slider{
+        Slider {
             axis: self.axis.into(),
             direction,
-            bar_press: self.bar_press.clone()
-        }.apply(entity, world);
+            bar_press: self.bar_press.clone(),
+        }
+        .apply(entity, world);
 
         // Add self to nearest ancestor scroll base.
         if let Some((_, computed_base)) = get_ancestor_mut::<ComputedScrollBase>(world, entity) {
-            computed_base.add_bar(entity, slider.axis);
+            computed_base.add_bar(entity, self.axis);
         } else {
             tracing::warn!("failed adding ScrollBar {entity:?} to scroll widget; no ancestor has ScrollBase");
         }
@@ -776,7 +881,7 @@ impl Instruction for ScrollBar
         // Reapply nearest computed scroll base in case reverting this bar causes a 'dangling' bar to become
         // non-dangling.
         if let Some((_, computed_base)) = get_ancestor_mut::<ComputedScrollBase>(world, entity) {
-            let other_computed_base = std::mem::take(&mut computed_base);
+            let other_computed_base = std::mem::take(computed_base);
             other_computed_base.reapply_bars(world);
         }
     }
@@ -788,7 +893,7 @@ impl Instruction for ScrollBar
 ///
 /// Inserts a [`SliderHandle`] to the target entity.
 ///
-/// See [`ScrollBase`], [`ScrollArea`], and [`ScrollBar`].
+/// See [`ScrollBase`], [`ScrollView`], and [`ScrollBar`].
 #[derive(Reflect, Component, Default, PartialEq, Clone)]
 #[cfg_attr(
     feature = "serde",
@@ -808,13 +913,20 @@ pub struct MouseScroll;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// System set where scroll widgets are update.
+/// System set where scroll widgets are updated.
 ///
-/// - **PreUpdate**: The size of scrollbar handles is updated. Note that this will lag by 1 tick from content
-/// size changes until bevy makes the UI layout algorithm more flexible.
-/// - **PostUpdate**: The [`ScrollPosition`] of [`ScrollAreas`](ScrollArea) is updated.
+/// - **PreUpdate**: Mouse scroll is applied to scroll views.
+/// - **PostUpdate**: The [`ScrollPosition`] of [`ScrollViews`](ScrollView) is updated.
 #[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
 pub struct ScrollUpdateSet;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// System set in `PostUpdate` where the handles of scroll widget scrollbares are updated.
+///
+/// Runs between layout and transform propagation.
+#[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
+pub struct ScrollHandleUpdateSet;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -827,46 +939,55 @@ impl Plugin for CobwebScrollPlugin
         // TODO: re-enable once COB scene macros are implemented
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/scroll", "scroll.cob");
         app.register_instruction_type::<ScrollBase>()
-            .register_component_type::<ScrollArea>()
+            .register_component_type::<ScrollView>()
+            .register_component_type::<ScrollShim>()
             .register_instruction_type::<ScrollBar>()
             .register_component_type::<ScrollHandle>()
-            .init_resource::<ChildrenIterScratch>()
-            .add_systems(First, cleanup_dead_bases.after(FileProcessingSet))
-            .add_systems(
+            .configure_sets(
                 PreUpdate,
-                (
-                    refresh_scroll_handles,
-                    // We want the effects of picking events to override mouse scroll, so this is ordered before
-                    // pointer events.
-                    apply_mouse_scroll
-                )
-                    .in_set(ScrollUpdateSet)
+                ScrollUpdateSet
                     .after(InputSystem)
                     .in_set(PickSet::Focus)
                     .after(update_interactions_hack)
-                    .before(bevy::picking::events::pointer_events)
+                    .before(bevy::picking::events::pointer_events),
+            )
+            .configure_sets(
+                PostUpdate,
+                ScrollUpdateSet
+                    .after(FileProcessingSet)
+                    .after(DynamicStylePostUpdate)
+                    .before(UiSystem::Prepare),
+            )
+            .configure_sets(
+                PostUpdate,
+                ScrollHandleUpdateSet
+                    .after(UiSystem::Layout)
+                    .before(SliderUpdateSet)
+                    .before(TransformPropagate),
+            )
+            .add_systems(First, cleanup_dead_bases.after(FileProcessingSet))
+            .add_systems(
+                PreUpdate,
+                // We want the effects of picking events to override mouse scroll, so this is ordered before
+                // pointer events.
+                apply_mouse_scroll.in_set(ScrollUpdateSet),
             )
             // TODO: this is just a hack because bevy's update_interactions system runs after pointer_events. This
-            // system is fairly cheap to run. Revisit in bevy 0.16
+            // system is fairly cheap to run. Revisit in bevy 0.15.1
             .add_systems(
                 PreUpdate,
                 update_interactions_hack
                     .in_set(PickSet::Focus)
                     .after(bevy::picking::focus::update_focus)
                     .before(bevy::picking::events::pointer_events),
-            );
+            )
             .add_systems(
                 PostUpdate,
-                (
-                    cleanup_dead_bases,
-                    refresh_scroll_position
-                )
+                (cleanup_dead_bases, refresh_scroll_position)
                     .chain()
-                    .in_set(ScrollUpdateSet)
-                    .after(FileProcessingSet)
-                    .after(DynamicStylePostUpdate)
-                    .before(UiSystem::Prepare),
-            );
+                    .in_set(ScrollUpdateSet),
+            )
+            .add_systems(PostUpdate, refresh_scroll_handles.in_set(ScrollHandleUpdateSet));
     }
 }
 

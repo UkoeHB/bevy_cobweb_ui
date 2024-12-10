@@ -394,23 +394,16 @@ fn slider_bar_drag(
 
 fn update_slider_handle_positions(
     mut iter_children: ResMut<IterChildren>,
-    mut sliders: Query<(
-        &ComputedSlider,
-        &React<SliderValue>,
-        &Node,
-        &ComputedNode,
-        &Children,
-        &ViewVisibility,
-    )>,
+    mut sliders: Query<(&ComputedSlider, &React<SliderValue>, &Node, &ComputedNode, &Children)>,
     children_q: Query<&Children>,
     handles: Query<(Entity, &ComputedNode), (With<SliderHandle>, Without<ComputedSlider>)>,
     mut transforms: Query<&mut Transform>,
 )
 {
-    for (slider, slider_value, slider_node, slider_computed_node, children, view_visibility) in sliders.iter_mut()
-    {
+    for (slider, slider_value, slider_node, slider_computed_node, children) in sliders.iter_mut() {
         // Skip sliders that won't be displayed.
-        if !view_visibility.get() || slider_node.display == Display::None {
+        // - Note: ViewVisibility updates *after* TransformPropagate, so we can't use it here.
+        if slider_node.display == Display::None {
             continue;
         }
 
@@ -847,6 +840,12 @@ impl SliderWidgetExt for UiBuilder<'_, Entity>
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// System set in `PostUpdate` where slider widgets are updated.
+#[derive(SystemSet, Debug, Hash, Eq, PartialEq, Copy, Clone)]
+pub struct SliderUpdateSet;
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct CobwebSliderPlugin;
 
 impl Plugin for CobwebSliderPlugin
@@ -857,12 +856,13 @@ impl Plugin for CobwebSliderPlugin
         //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/slider", "slider.cob");
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
-            .add_systems(
+            .configure_sets(
                 PostUpdate,
-                update_slider_handle_positions
+                SliderUpdateSet
                     .after(UiSystem::Layout)
                     .before(TransformPropagate),
-            );
+            )
+            .add_systems(PostUpdate, update_slider_handle_positions.in_set(SliderUpdateSet));
     }
 }
 
