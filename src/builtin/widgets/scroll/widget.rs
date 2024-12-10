@@ -31,6 +31,8 @@ unsolved problems
     - How to figure out if content size increased above or below the view?
 */
 
+use bevy::ecs::entity::EntityHashSet;
+use bevy::ecs::system::SystemChangeTick;
 use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
 use bevy::input::InputSystem;
 use bevy::picking::pointer::{PointerId, PointerInteraction};
@@ -38,7 +40,7 @@ use bevy::picking::PickSet;
 use bevy::prelude::TransformSystem::TransformPropagate;
 use bevy::prelude::*;
 use bevy::reflect::ReflectMut;
-use bevy::ui::{FocusPolicy, UiSystem};
+use bevy::ui::UiSystem;
 use bevy_cobweb::prelude::*;
 use smol_str::SmolStr;
 
@@ -106,10 +108,12 @@ fn consume_scroll_delta(
     unconsumed_delta: &mut f32,
 )
 {
+tracing::error!("ss {scroll_size} cf {correction_factor} ud {unconsumed_delta}");
     if *unconsumed_delta == 0.0 || scroll_size <= 0.0 {
         return;
     }
     let Some(val) = slider_vals.get(entity).ok().and_then(|val| val.single()) else { return };
+tracing::error!("val {val}");
 
     if *unconsumed_delta > 0.0 && val < 1.0 {
         let available = (1. - val) * scroll_size;
@@ -156,33 +160,82 @@ fn consume_scroll_delta(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn apply_mouse_scroll_impl(
-    c: &mut Commands,
-    iter_children: &mut IterChildren,
-    // ui_surface: &UiSurface,
-    children: &Query<&Children>,
-    bases: &Query<(Entity, &ScrollBase, &ComputedScrollBase)>,
-    views: &Query<(Entity, &ComputedNode), With<ScrollView>>,
-    shims: &Query<&ComputedNode, With<ScrollShim>>,
-    slider_vals: &mut ReactiveMut<SliderValue>,
-    hit_entity: Entity,
-    mouse_scroll_unit: MouseScrollUnit,
-    unconsumed_delta: &mut Vec2,
+#[derive(Default)]
+struct MouseScrollEventTracker
+{
+    active_id: Option<u32>,
+    seen_entities: EntityHashSet,
+}
+
+impl MouseScrollEventTracker
+{
+    fn update(&mut self, event: &Trigger<MouseScrollEvent>) -> bool
+    {
+        if self.active_id != Some(event.event().id) {
+            self.active_id = Some(event.event().id);
+            self.seen_entities.clear();
+        }
+
+        let is_new = self.seen_entities.insert(event.entity());
+        is_new
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn handle_mouse_scroll_event(
+    mut event: Trigger<MouseScrollEvent>,
+    mut event_tracker: Local<MouseScrollEventTracker>,
+    mut c: Commands,
+    mut iter_children: ResMut<IterChildren>,
+    //ui_surface: Res<UiSurface>,
+    children: Query<&Children>,
+    bases: Query<(Entity, &ScrollBase, &ComputedScrollBase)>,
+    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
+    shims: Query<&ComputedNode, With<ScrollShim>>,
+    mut slider_vals: ReactiveMut<SliderValue>,
 )
 {
+tracing::error!("scroll event");
+    // Update tracker.
+    if !event_tracker.update(&event) {
+tracing::error!("canceling");
+        event.propagate(false);
+        return;
+    }
+
+    let mouse_scroll_unit = event.event().mouse_unit;
+    let hit_entity = event.entity();
+
     let Ok((base_entity, scroll_base, computed_base)) = bases.get(hit_entity) else { return };
+
+tracing::error!("scroll apply {base_entity:?}");
+    // Block event from going anywhere else.
+    if !scroll_base.allow_multiscroll {
+        event.propagate(false);
+    }
+
+    // Prep to mutate delta.
+    let unconsumed_delta = &mut event.event_mut().unconsumed_delta;
+
+    if *unconsumed_delta == Vec2::default() {
+        event.propagate(false);
+        return;
+    }
 
     // Look up scroll view.
     let Some((view_entity, view_node)) =
-        iter_children.search(base_entity, children, |entity| views.get(entity).ok())
+        iter_children.search(base_entity, &children, |entity| views.get(entity).ok())
     else {
         return;
     };
+tracing::error!("scroll apply view {view_entity:?}");
     let view_size = view_node.size();
 
     // Get content size.
     //let Some(content_size) = get_content_size(view_entity, &ui_surface) else { return };
-    let Some(content_size) = get_content_size(view_entity, children, shims) else { return };
+    let Some(content_size) = get_content_size(view_entity, &children, &shims) else { return };
+tracing::error!("scroll apply content size {content_size} view size {view_size}");
 
     let scroll_size = (content_size - view_size).max(Vec2::default());
 
@@ -193,9 +246,10 @@ fn apply_mouse_scroll_impl(
 
     // Consume scroll delta and dispatch MouseScroll events to scrollbars.
     if let Some(horizontal) = computed_base.horizontal {
+tracing::error!("horizontal {horizontal:?}");
         consume_scroll_delta(
-            c,
-            slider_vals,
+            &mut c,
+            &mut slider_vals,
             horizontal,
             correction_factor,
             scroll_size.x,
@@ -203,9 +257,10 @@ fn apply_mouse_scroll_impl(
         );
     }
     if let Some(vertical) = computed_base.vertical {
+tracing::error!("vertical {vertical:?}");
         consume_scroll_delta(
-            c,
-            slider_vals,
+            &mut c,
+            &mut slider_vals,
             vertical,
             correction_factor,
             scroll_size.y,
@@ -216,54 +271,37 @@ fn apply_mouse_scroll_impl(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Applies scroll delta to entities under the cursor via an observer that will propagate up the hierarchy.
+/// - We use an observer instead of `PointerInteraction` because `PointerInteraction` will not contain the full
+/// stack of entities under the cursor if any of them block picking (which is all entities without
+/// `PickingBehavior`). Hierarchy traversal gives more precise control of what entities handle mouse scroll.
 fn apply_mouse_scroll(
+    change_tick: SystemChangeTick,
     mut c: Commands,
-    mut iter_children: ResMut<IterChildren>,
-    //ui_surface: Res<UiSurface>,
-    children: Query<&Children>,
     mouse_scroll: Res<AccumulatedMouseScroll>,
     pointers: Query<(&PointerId, &PointerInteraction)>,
-    bases: Query<(Entity, &ScrollBase, &ComputedScrollBase)>,
-    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
-    shims: Query<&ComputedNode, With<ScrollShim>>,
-    mut slider_vals: ReactiveMut<SliderValue>,
-    focus_policies: Query<&FocusPolicy>,
 )
 {
+    if mouse_scroll.delta == Vec2::default() {
+        return;
+    }
+
     // Find mouse pointer.
     // - We assume there's only one of these.
     let Some((_, ptr_interaction)) = pointers.iter().find(|(id, _)| **id == PointerId::Mouse) else { return };
 
-    // Apply scroll delta to entities under the cursor.
-    // - If an entity in the stack has blocked picking or FocusPolicy::Block, then scroll delta won't 'spill over'
-    // to lower scroll views.
-    let mut unconsumed_delta = mouse_scroll.delta;
+    tracing::error!("scroll {}; {ptr_interaction:?}", mouse_scroll.delta);
 
-    for (hit_entity, _) in ptr_interaction.iter() {
-        if unconsumed_delta == Vec2::default() {
-            return;
-        }
-
-        // Apply scroll delta to scroll views.
-        apply_mouse_scroll_impl(
-            &mut c,
-            &mut iter_children,
-            // &ui_surface,
-            &children,
-            &bases,
-            &views,
-            &shims,
-            &mut slider_vals,
-            *hit_entity,
-            mouse_scroll.unit,
-            &mut unconsumed_delta,
-        );
-
-        // Terminate on blocked entities.
-        if let Ok(focus_policy) = focus_policies.get(*hit_entity) {
-            if *focus_policy == FocusPolicy::Block {
-                return;
-            }
+    // Send event to entities hit by the mouse cursor.
+    // TODO: propagation like this allows scrolls on scroll area children that 'hang outside' the scroll area to
+    // send events erroneously
+    for (entity, _) in ptr_interaction.iter() {
+        if let Some(mut ec) = c.get_entity(*entity) {
+            ec.trigger(MouseScrollEvent{
+                unconsumed_delta: mouse_scroll.delta,
+                mouse_unit: mouse_scroll.unit,
+                id: change_tick.this_run().get()
+            });
         }
     }
 }
@@ -324,6 +362,7 @@ fn refresh_scroll_position(
                 scroll_pos.offset_y = computed_y_offset;
             }
         }
+//tracing::error!("scroll pos {scroll_pos:?}");
     }
 }
 
@@ -338,25 +377,29 @@ fn update_scrollbar_handle_size(
     iter_children: &mut IterChildren,
     children: &Query<&Children>,
     bar_handles: &Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    computed_nodes: &mut Query<&mut ComputedNode, Without<ScrollBar>>,
+    handles: &mut Query<(&mut ComputedNode, &mut Transform), (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
     content_dim: f32,
     view_dim: f32,
     pseudo_state: PseudoState,
     get_dim_fn: impl Fn(&ComputedNode) -> f32,
-    get_unrounded_size_fn: impl Fn(f32, &ComputedNode) -> Vec2,
-    get_rounded_size_fn: impl Fn(f32, &ComputedNode) -> Vec2,
+    get_unrounded_size_fn: impl FnOnce(f32, &ComputedNode) -> Vec2,
+    get_rounded_size_fn: impl FnOnce(f32, &ComputedNode) -> Vec2,
+    update_transform_fn: impl FnOnce(&mut Transform, f32),
     variant: &str,
 )
 {
+tracing::error!("lookup {bar_entity:?}");
     // Look up scrollbar's handle.
     let Ok((bar_node, bar_children)) = bars.get(bar_entity) else { return };
+tracing::error!("bar");
     let Some(handle_entity) =
         iter_children.search_descendants(bar_children, &children, |entity| bar_handles.get(entity).ok())
     else {
         return;
     };
-    let Ok(mut handle_node) = computed_nodes.get_mut(handle_entity) else { return };
-
+tracing::error!("handle");
+    let Ok((mut handle_node, handle_transform)) = handles.get_mut(handle_entity) else { return };
+tracing::error!("handle {handle_entity:?}");
     let proportion = if content_dim > 0.0 {
         view_dim / content_dim
     } else {
@@ -377,10 +420,17 @@ fn update_scrollbar_handle_size(
     let new_size_unrounded = (get_unrounded_size_fn)(dim_unrounded, &handle_node);
     let new_size_rounded = (get_rounded_size_fn)(dim_rounded, &handle_node);
 
+    // Correct the handle's transform based on the size adjustment.
+    // - Do this before updating the handle node size.
+    let handle_dim = (get_dim_fn)(&handle_node);
+    let adjustment = (dim_rounded - handle_dim) / 2.;
+    (update_transform_fn)(handle_transform.into_inner(), adjustment);
+
     // Use reflection to force-edit the computed node's private fields.
     let ReflectMut::Struct(handle_reflect) = handle_node.as_partial_reflect_mut().reflect_mut() else {
         unreachable!()
     };
+tracing::error!("handle size {new_size_rounded} bar {bar_dim} view {view_dim} content {content_dim}");
     if let Err(err) = handle_reflect
         .field_mut("unrounded_size")
         .unwrap()
@@ -419,7 +469,7 @@ fn refresh_scroll_handles(
     views: Query<(Entity, &ComputedNode), With<ScrollView>>,
     shims: Query<&ComputedNode, With<ScrollShim>>,
     bar_handles: Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    mut computed_nodes: Query<&mut ComputedNode, Without<ScrollBar>>,
+    mut handles: Query<(&mut ComputedNode, &mut Transform), (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
 )
 {
     for (view_entity, view_node) in views.iter() {
@@ -460,13 +510,16 @@ fn refresh_scroll_handles(
                 &mut iter_children,
                 &children,
                 &bar_handles,
-                &mut computed_nodes,
+                &mut handles,
                 content_size.x,
                 view_size.x,
                 HORIZONTAL_SCROLL_PSEUDO_STATE.clone(),
                 |node| node.size().x,
                 |w_unrounded, handle_node| Vec2::new(w_unrounded, handle_node.unrounded_size().y),
                 |w_rounded, handle_node| Vec2::new(w_rounded, handle_node.size().y),
+                |transform, adjustment| {
+                    transform.translation.x -= adjustment;
+                },
                 "width",
             );
         }
@@ -480,13 +533,16 @@ fn refresh_scroll_handles(
                 &mut iter_children,
                 &children,
                 &bar_handles,
-                &mut computed_nodes,
+                &mut handles,
                 content_size.y,
                 view_size.y,
                 VERTICAL_SCROLL_PSEUDO_STATE.clone(),
                 |node| node.size().y,
                 |h_unrounded, handle_node| Vec2::new(handle_node.unrounded_size().x, h_unrounded),
                 |h_rounded, handle_node| Vec2::new(handle_node.size().x, h_rounded),
+                |transform, adjustment| {
+                    transform.translation.y += adjustment;
+                },
                 "height",
             );
         }
@@ -686,6 +742,11 @@ pub const VERTICAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolSt
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScrollBase
 {
+    /// If `true` then [`MouseScrollEvent`] will propagate to lower scroll areas.
+    ///
+    /// Defaults to `false`.
+    #[reflect(default)]
+    pub allow_multiscroll: bool,
     /// Size of lines for mouse scrolling.
     ///
     /// Defaults to 16 pixels.
@@ -759,7 +820,7 @@ impl Default for ScrollBase
 {
     fn default() -> Self
     {
-        Self { line_size: Self::default_line_size() }
+        Self { allow_multiscroll: false, line_size: Self::default_line_size() }
     }
 }
 
@@ -852,6 +913,9 @@ impl Instruction for ScrollBar
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        emut.insert(self.clone());
+
         let direction = match self.axis {
             ScrollAxis::X => SliderDirection::Standard,
             ScrollAxis::Y => SliderDirection::Reverse,
@@ -875,7 +939,7 @@ impl Instruction for ScrollBar
     fn revert(entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        emut.remove::<ScrollBar>();
+        emut.remove::<Self>();
         Slider::revert(entity, world);
 
         // Reapply nearest computed scroll base in case reverting this bar causes a 'dangling' bar to become
@@ -910,6 +974,29 @@ pub struct ScrollHandle;
 /// Will be sent even if the scrollbar can't consume any of the mouse scroll because the handle is already at the
 /// end of the bar.
 pub struct MouseScroll;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Observer event sent to [`ScrollBase`] entities when mouse scroll is received.
+///
+/// Block these events with [`Trigger::propagate`] if you don't want scroll events to propagate up the hierarchy.
+#[derive(Component)]
+pub struct MouseScrollEvent
+{
+    /// Mouse delta that hasn't been consumed by scroll areas yet.
+    pub unconsumed_delta: Vec2,
+    /// See [`MouseScrollUnit`].
+    pub mouse_unit: MouseScrollUnit,
+
+    /// Unique ID for the current tick. Used to avoid duplicate-propagation of events.
+    id: u32,
+}
+
+impl Event for MouseScrollEvent
+{
+    type Traversal = &'static Parent;
+    const AUTO_PROPAGATE: bool = true;
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -965,6 +1052,7 @@ impl Plugin for CobwebScrollPlugin
                     .before(SliderUpdateSet)
                     .before(TransformPropagate),
             )
+            .add_observer(handle_mouse_scroll_event)
             .add_systems(First, cleanup_dead_bases.after(FileProcessingSet))
             .add_systems(
                 PreUpdate,

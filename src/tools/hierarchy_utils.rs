@@ -32,6 +32,7 @@ pub fn get_ancestor_mut_filtered<T: Component>(
             continue;
         }
         found = true;
+        break;
     }
 
     // Outside loop due to borrow checker limitations.

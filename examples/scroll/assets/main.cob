@@ -66,6 +66,113 @@ Note: add name to all scroll areas
                     - set width to 'large'
                         - note: need to set radius of handle to 50% of bar width
 */
+#import
+builtin.colors.tailwind as tw
+
 #scenes
+"button_add"
+    FlexNode{width:75px height:75px justify_main:Center justify_cross:Center}
+    Splat<Border>(2px)
+    BrRadius(15px)
+    BorderColor(#000000)
+    BackgroundColor{idle:#00000000 hover:$tw::GRAY_400}
+
+    ""
+        TextLine{text:"+" size:40}
+        TextLineColor(#000000)
+
+"add_row"
+    Margin{top:20px left:20px}
+
+    //button_add
+
+"blob_row"
+    FlexNode{flex_direction:Row justify_main:Center justify_cross:FlexStart}
+    Border{bottom:1px}
+    BorderColor(#60000000)
+
+    "kill"
+        AbsoluteNode{top:5px left:5px}
+        Splat<Border>(1px)
+        BorderColor(#000000)
+        BackgroundColor{idle:#00000000 hover:$tw::GRAY_400}
+
+        ""
+            Margin{top:5px bottom:5px left:7px right:7px}
+            TextLine{text:"X" size:20}
+            TextLineColor(#000000)
+
+    //blob
+
+    //button_add
+
+"blob"
+    FlexNode{width:150px height:150px}
+    BrRadius(25px)
+    BackgroundColor($tw::ROSE_600)
+
+    "kill"
+        AbsoluteNode{top:30px left:30px}
+        Splat<Border>(1px)
+        BorderColor(#000000)
+        BackgroundColor{idle:#00000000 hover:$tw::GRAY_400}
+
+        ""
+            Margin{top:5px bottom:5px left:7px right:7px}
+            TextLine{text:"X" size:20}
+            TextLineColor(#000000)
+
+
 "scene"
-    TextLine{ text: "Scroll isn't ready yet, check back again later!" }
+    FlexNode{width:100vw flex_direction:Column justify_main:FlexStart}
+
+    ""
+        FlexNode{width:100% flex_direction:Row justify_main:SpaceEvenly}
+
+        //-------------------------------------------------------------------------------------------------------------------
+        // Simplest possible scrollview.
+        // - Scrollbars are always present and are placed adjacent to content.
+        //-------------------------------------------------------------------------------------------------------------------
+        "basic"
+            FlexNode{flex_direction:Column justify_main:FlexStart justify_cross:Center}
+
+            "header"
+                TextLine{text:"Basic"}
+
+            "scroll"
+                ScrollBase
+                FlexNode{width:250px height:254px flex_direction:Row justify_main:FlexStart justify_cross:FlexStart}
+                Splat<Border>(2px)
+                BorderColor(#000000)
+                BackgroundColor($tw::STONE_500)
+
+                "view"
+                    ScrollView
+                    FlexNode{max_height:100% flex_grow:1 clipping:ScrollY}
+
+                    // TODO: remove this extra node in bevy 0.15.1
+                    "shim"
+                        ScrollShim
+                        FlexNode{width:100% height:300px flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
+
+                        ""
+                            FlexNode{width:50px height:50px}
+                            BackgroundColor(#888888)
+
+                "vertical"
+                    ScrollBar{axis:Y}
+                    FlexNode{height:100% width:14px}
+                    BackgroundColor($tw::STONE_600)
+
+                    "handle"
+                        ScrollHandle
+                        AbsoluteNode{width:100%}
+                        BackgroundColor($tw::STONE_700)
+
+
+
+
+
+
+
+
