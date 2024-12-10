@@ -442,8 +442,7 @@ fn update_slider_handle_positions(
             }
             SliderAxis::Planar => val_pos,
         };
-tracing::error!("slider t {transform_offset_corrected} bar {bar_size} handle {handle_size} action {bar_action_size} \
-    valpos {val_pos}");
+
         // Update handle's position relative to the slider bar.
         // NOTE: This position adjustment may not be 'correct' if the handle isn't a direct child of the slider.
         handle_transform.translation += transform_offset_corrected.extend(0.);

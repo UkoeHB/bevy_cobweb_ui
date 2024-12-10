@@ -153,10 +153,15 @@ builtin.colors.tailwind as tw
                     // TODO: remove this extra node in bevy 0.15.1
                     "shim"
                         ScrollShim
-                        FlexNode{width:100% height:300px flex_direction:Column justify_main:FlexStart justify_cross:FlexStart}
+                        FlexNode{
+                            width:100% height:300px
+                            flex_direction:Column justify_main:FlexStart justify_cross:FlexStart
+                            clipping:None
+                        }
+                        BackgroundColor(#005500)
 
                         ""
-                            FlexNode{width:50px height:50px}
+                            FlexNode{width:50px height:150px}
                             BackgroundColor(#888888)
 
                 "vertical"
@@ -167,12 +172,4 @@ builtin.colors.tailwind as tw
                     "handle"
                         ScrollHandle
                         AbsoluteNode{width:100%}
-                        BackgroundColor($tw::STONE_700)
-
-
-
-
-
-
-
-
+                        BackgroundColor($tw::STONE_800)

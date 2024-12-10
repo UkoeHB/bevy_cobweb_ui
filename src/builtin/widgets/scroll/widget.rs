@@ -108,12 +108,10 @@ fn consume_scroll_delta(
     mut unconsumed_delta: f32,
 ) -> Option<f32>
 {
-tracing::error!("ss {scroll_size} cf {correction_factor} ud {unconsumed_delta}");
     if unconsumed_delta == 0.0 || scroll_size <= 0.0 {
         return None;
     }
     let Some(val) = slider_vals.get(entity).ok().and_then(|val| val.single()) else { return None };
-tracing::error!("val {val}");
 
     if unconsumed_delta > 0.0 && val < 1.0 {
         let available = (1. - val) * scroll_size;
@@ -198,10 +196,8 @@ fn handle_mouse_scroll_event(
     mut slider_vals: ReactiveMut<SliderValue>,
 )
 {
-tracing::error!("scroll event");
     // Update tracker.
     if !event_tracker.update(&event) {
-tracing::error!("canceling");
         event.propagate(false);
         return;
     }
@@ -211,7 +207,6 @@ tracing::error!("canceling");
 
     let Ok((base_entity, scroll_base, computed_base)) = bases.get(hit_entity) else { return };
 
-tracing::error!("scroll apply {base_entity:?}");
     // Block event from going anywhere else.
     if !scroll_base.allow_multiscroll {
         event.propagate(false);
@@ -231,13 +226,11 @@ tracing::error!("scroll apply {base_entity:?}");
     else {
         return;
     };
-tracing::error!("scroll apply view {view_entity:?}");
     let view_size = view_node.size();
 
     // Get content size.
     //let Some(content_size) = get_content_size(view_entity, &ui_surface) else { return };
     let Some(content_size) = get_content_size(view_entity, &children, &shims) else { return };
-tracing::error!("scroll apply content size {content_size} view size {view_size}");
 
     let scroll_size = (content_size - view_size).max(Vec2::default());
 
@@ -248,7 +241,6 @@ tracing::error!("scroll apply content size {content_size} view size {view_size}"
 
     // Consume scroll delta and dispatch MouseScroll events to scrollbars.
     if let Some(horizontal) = computed_base.horizontal {
-tracing::error!("horizontal {horizontal:?}");
         if let Some(new) = consume_scroll_delta(
             &mut c,
             &mut slider_vals,
@@ -261,7 +253,6 @@ tracing::error!("horizontal {horizontal:?}");
         }
     }
     if let Some(vertical) = computed_base.vertical {
-tracing::error!("vertical {vertical:?}");
         if let Some(new) = consume_scroll_delta(
             &mut c,
             &mut slider_vals,
@@ -296,17 +287,15 @@ fn apply_mouse_scroll(
     // - We assume there's only one of these.
     let Some((_, ptr_interaction)) = pointers.iter().find(|(id, _)| **id == PointerId::Mouse) else { return };
 
-    tracing::error!("scroll {}; {ptr_interaction:?}", mouse_scroll.delta);
-
     // Send event to entities hit by the mouse cursor.
     // TODO: propagation like this allows scrolls on scroll area children that 'hang outside' the scroll area to
     // send events erroneously
     for (entity, _) in ptr_interaction.iter() {
         if let Some(mut ec) = c.get_entity(*entity) {
-            ec.trigger(MouseScrollEvent{
+            ec.trigger(MouseScrollEvent {
                 unconsumed_delta: mouse_scroll.delta,
                 mouse_unit: mouse_scroll.unit,
-                id: change_tick.this_run().get()
+                id: change_tick.this_run().get(),
             });
         }
     }
@@ -316,15 +305,15 @@ fn apply_mouse_scroll(
 
 fn refresh_scroll_position(
     // ui_surface: Res<UiSurface>,
-    mut bases: Query<(&mut ScrollPosition, &ComputedScrollBase)>,
-    views: Query<(Entity, &ComputedNode), With<ScrollView>>,
+    bases: Query<&ComputedScrollBase>,
+    mut views: Query<(Entity, &mut ScrollPosition, &ComputedNode), With<ScrollView>>,
     shims: Query<&ComputedNode, With<ScrollShim>>,
     parents: Query<&Parent>,
     children: Query<&Children>,
     slider_vals: Reactive<SliderValue>,
 )
 {
-    for (view_entity, view_node) in views.iter() {
+    for (view_entity, mut scroll_pos, view_node) in views.iter_mut() {
         // Get view size.
         let view_size = view_node.size();
 
@@ -338,14 +327,14 @@ fn refresh_scroll_position(
         // - Note: base and view can be the same entity.
         let mut current = view_entity;
         let res = loop {
-            if let Ok(res) = bases.get_mut(current) {
+            if let Ok(res) = bases.get(current) {
                 break Some(res);
             }
 
             let Ok(parent) = parents.get(current) else { break None };
             current = **parent;
         };
-        let Some((mut scroll_pos, computed_base)) = res else { continue };
+        let Some(computed_base) = res else { continue };
 
         // Update scroll position.
         if let Some(horizontal) = computed_base.horizontal {
@@ -368,7 +357,6 @@ fn refresh_scroll_position(
                 scroll_pos.offset_y = computed_y_offset;
             }
         }
-//tracing::error!("scroll pos {scroll_pos:?}");
     }
 }
 
@@ -383,7 +371,10 @@ fn update_scrollbar_handle_size(
     iter_children: &mut IterChildren,
     children: &Query<&Children>,
     bar_handles: &Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    handles: &mut Query<(&mut ComputedNode, &mut Transform), (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
+    handles: &mut Query<
+        (&mut ComputedNode, &mut Transform),
+        (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
+    >,
     content_dim: f32,
     view_dim: f32,
     pseudo_state: PseudoState,
@@ -394,18 +385,15 @@ fn update_scrollbar_handle_size(
     variant: &str,
 )
 {
-tracing::error!("lookup {bar_entity:?}");
     // Look up scrollbar's handle.
     let Ok((bar_node, bar_children)) = bars.get(bar_entity) else { return };
-tracing::error!("bar");
     let Some(handle_entity) =
         iter_children.search_descendants(bar_children, &children, |entity| bar_handles.get(entity).ok())
     else {
         return;
     };
-tracing::error!("handle");
     let Ok((mut handle_node, handle_transform)) = handles.get_mut(handle_entity) else { return };
-tracing::error!("handle {handle_entity:?}");
+
     let proportion = if content_dim > 0.0 {
         view_dim / content_dim
     } else {
@@ -436,7 +424,6 @@ tracing::error!("handle {handle_entity:?}");
     let ReflectMut::Struct(handle_reflect) = handle_node.as_partial_reflect_mut().reflect_mut() else {
         unreachable!()
     };
-tracing::error!("handle size {new_size_rounded} bar {bar_dim} view {view_dim} content {content_dim}");
     if let Err(err) = handle_reflect
         .field_mut("unrounded_size")
         .unwrap()
@@ -475,7 +462,10 @@ fn refresh_scroll_handles(
     views: Query<(Entity, &ComputedNode), With<ScrollView>>,
     shims: Query<&ComputedNode, With<ScrollShim>>,
     bar_handles: Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    mut handles: Query<(&mut ComputedNode, &mut Transform), (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
+    mut handles: Query<
+        (&mut ComputedNode, &mut Transform),
+        (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
+    >,
 )
 {
     for (view_entity, view_node) in views.iter() {
@@ -826,7 +816,10 @@ impl Default for ScrollBase
 {
     fn default() -> Self
     {
-        Self { allow_multiscroll: false, line_size: Self::default_line_size() }
+        Self {
+            allow_multiscroll: false,
+            line_size: Self::default_line_size(),
+        }
     }
 }
 
@@ -938,7 +931,8 @@ impl Instruction for ScrollBar
         if let Some((_, computed_base)) = get_ancestor_mut::<ComputedScrollBase>(world, entity) {
             computed_base.add_bar(entity, self.axis);
         } else {
-            tracing::warn!("failed adding ScrollBar {entity:?} to scroll widget; no ancestor has ScrollBase");
+            tracing::warn!("failed adding ScrollBar {entity:?} to scroll widget; no ancestor has ScrollBase \
+                (fixing this requires a restart)");
         }
     }
 
