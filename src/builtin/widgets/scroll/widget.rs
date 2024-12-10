@@ -105,26 +105,26 @@ fn consume_scroll_delta(
     entity: Entity,
     correction_factor: f32,
     scroll_size: f32,
-    unconsumed_delta: &mut f32,
-)
+    mut unconsumed_delta: f32,
+) -> Option<f32>
 {
 tracing::error!("ss {scroll_size} cf {correction_factor} ud {unconsumed_delta}");
-    if *unconsumed_delta == 0.0 || scroll_size <= 0.0 {
-        return;
+    if unconsumed_delta == 0.0 || scroll_size <= 0.0 {
+        return None;
     }
-    let Some(val) = slider_vals.get(entity).ok().and_then(|val| val.single()) else { return };
+    let Some(val) = slider_vals.get(entity).ok().and_then(|val| val.single()) else { return None };
 tracing::error!("val {val}");
 
-    if *unconsumed_delta > 0.0 && val < 1.0 {
+    if unconsumed_delta > 0.0 && val < 1.0 {
         let available = (1. - val) * scroll_size;
 
         let val_mut = slider_vals.get_mut(c, entity).unwrap();
 
-        if available >= (*unconsumed_delta) * correction_factor {
-            let remaining = available - (*unconsumed_delta) * correction_factor;
+        if available >= unconsumed_delta * correction_factor {
+            let remaining = available - unconsumed_delta * correction_factor;
             *val_mut = SliderValue::Single(1. - (remaining / scroll_size));
             val_mut.normalize();
-            *unconsumed_delta = 0.;
+            unconsumed_delta = 0.;
         } else {
             *val_mut = SliderValue::Single(1.);
             let consumed = if correction_factor != 1.0 {
@@ -132,18 +132,18 @@ tracing::error!("val {val}");
             } else {
                 available
             };
-            *unconsumed_delta -= consumed;
+            unconsumed_delta -= consumed;
         }
-    } else if *unconsumed_delta < 0.0 && val > 0.0 {
+    } else if unconsumed_delta < 0.0 && val > 0.0 {
         let available = val * scroll_size;
 
         let val_mut = slider_vals.get_mut(c, entity).unwrap();
 
-        if available >= -(*unconsumed_delta) * correction_factor {
-            let remaining = available + (*unconsumed_delta) * correction_factor;
+        if available >= -unconsumed_delta * correction_factor {
+            let remaining = available + unconsumed_delta * correction_factor;
             *val_mut = SliderValue::Single(remaining / scroll_size);
             val_mut.normalize();
-            *unconsumed_delta = 0.;
+            unconsumed_delta = 0.;
         } else {
             *val_mut = SliderValue::Single(0.);
             let consumed = if correction_factor != 1.0 {
@@ -151,11 +151,13 @@ tracing::error!("val {val}");
             } else {
                 available
             };
-            *unconsumed_delta += consumed;
+            unconsumed_delta += consumed;
         }
     }
 
     c.react().entity_event(entity, MouseScroll);
+
+    Some(unconsumed_delta)
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -247,25 +249,29 @@ tracing::error!("scroll apply content size {content_size} view size {view_size}"
     // Consume scroll delta and dispatch MouseScroll events to scrollbars.
     if let Some(horizontal) = computed_base.horizontal {
 tracing::error!("horizontal {horizontal:?}");
-        consume_scroll_delta(
+        if let Some(new) = consume_scroll_delta(
             &mut c,
             &mut slider_vals,
             horizontal,
             correction_factor,
             scroll_size.x,
-            &mut unconsumed_delta.x,
-        );
+            unconsumed_delta.x,
+        ) {
+            unconsumed_delta.x = new;
+        }
     }
     if let Some(vertical) = computed_base.vertical {
 tracing::error!("vertical {vertical:?}");
-        consume_scroll_delta(
+        if let Some(new) = consume_scroll_delta(
             &mut c,
             &mut slider_vals,
             vertical,
             correction_factor,
             scroll_size.y,
-            &mut unconsumed_delta.y,
-        );
+            -unconsumed_delta.y,
+        ) {
+            unconsumed_delta.y = new;
+        }
     }
 }
 
