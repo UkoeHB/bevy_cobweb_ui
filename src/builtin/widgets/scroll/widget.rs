@@ -29,6 +29,8 @@ unimplemented
 unsolved problems
 - if content size changes, we want the scroll view to 'stay in place' pointing at the same spot on the content
     - How to figure out if content size increased above or below the view?
+    - Sometimes you want the size increase to be relative to an element that causes it. For example an accordion
+    element will open 'below'/'after' itself, while an 'add item' buttom will add content 'before'/'above' itself.
 */
 
 use bevy::ecs::entity::EntityHashSet;
@@ -247,7 +249,7 @@ fn handle_mouse_scroll_event(
             horizontal,
             correction_factor,
             scroll_size.x,
-            unconsumed_delta.x,
+            -unconsumed_delta.x,
         ) {
             unconsumed_delta.x = new;
         }
@@ -514,7 +516,7 @@ fn refresh_scroll_handles(
                 |w_unrounded, handle_node| Vec2::new(w_unrounded, handle_node.unrounded_size().y),
                 |w_rounded, handle_node| Vec2::new(w_rounded, handle_node.size().y),
                 |transform, adjustment| {
-                    transform.translation.x -= adjustment;
+                    transform.translation.x += adjustment;
                 },
                 "width",
             );
