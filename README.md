@@ -77,7 +77,7 @@ Check the repository examples for how to build different kinds of UI.
 - [`help_text`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/help_text): Help text that appears on hover. Showcases [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity), which allows controlling (and animating) the opacity of entire node trees, and even layering multiple [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity) within a single tree.
 - [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons): A set of buttons where only one is selected at a time. Uses the built-in radio button widget.
 - [`slider`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/slider): Uses the built-in slider widget.
-- [`tooltip`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/tooltip): Uses the built-in tooltip widget (WIP).
+- [`scroll`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/scroll): Uses the built-in scroll widget.
 - [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization): Showcases localized text and font.
 - [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix builder-pattern-based UI construction with `bevy_cobweb_ui` convenience tools for interactions.
 - [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.

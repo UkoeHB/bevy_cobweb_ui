@@ -259,52 +259,13 @@ $blob_big = 600px
                     BrRadius(2px)
                     Responsive<BackgroundColor>{idle:#80BBBBBB hover:#B9EEEEEE}
 
-//-------------------------------------------------------------------------------------------------------------------                     
+//-------------------------------------------------------------------------------------------------------------------
 // Root scene with FireFox-like vertical scrolling.
 // - Scrollbar overlays content
 // - Scroll handle is only visible after scrolling the mouse. It will fade away after a delay.
 // - Scrollbar is only visibile if it is hovered after the scroll handle becomes visible.
 // - Scrollbar and handle grow in size if the scrollbar becomes visible.
 //-------------------------------------------------------------------------------------------------------------------
-/*
-Demos (TODO)
-- Firefox (for entire scroll area)
-    - Show scroll bar when scrolling
-        - Update
-            - Update scroll timers
-                - when timer ends, remove 'is scrolling' and 'hover activated' states
-        - ScrollBar
-            - On MouseScroll event
-                - if no scrolling timer
-                    - initialize timer
-                    - add 'is scrolling' state to relevant scrollbar
-                - if scrolling timer
-                    - refresh timer
-            - Initial bar and handle opacity: zero
-            - On pointer hover or press while in state 'is scrolling'
-                - refresh scrolling timer
-                - add 'hover activated' state
-            - On enter 'not scrolling' state
-                - animate opacity of bar and handle to zero after delay
-                - add Disabled state (disables interactions)
-                - static
-                    - add picking behavior: Picking::Ignore
-                    - set width to 'small'
-            - On enter 'is scrolling' state
-                - animate opacity of bar and handle to target
-                - add Enabled state (enables interactions)
-                - static
-                    - add picking behavior: Picking::Pass
-                        - don't block lower so scrolls can reach the scroll base (scrolls don't use picking, but we use
-                        picking hit stacks to decide where scroll amounts should go)
-                    - add Visibility::Hidden to bar (opacity animates 'hidden')
-                        - need Visibility::Visible on handle to avoid inheritance
-            - On enter 'hover activated' state
-                - static
-                    - add Visibility::Visible
-                    - set width to 'large'
-                        - note: need to set radius of handle to 50% of bar width
-*/
 "scene"
     ScrollBase
     FlexNode{width:100vw height:100vh flex_direction:Column justify_main:FlexStart}
