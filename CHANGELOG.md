@@ -2,10 +2,13 @@
 
 ## WIP
 
+
+## 0.6.0
+
 ### Highlights
 - Update README to point to the new cobweb ui book!
 - Integrate `ReactorResult` from `bevy_cobweb`. All built-in callbacks like `.on_pressed` now let you early-out with `?`, so long as you return `OK` (warns on error) or `DONE` (drops errors).
-- Add scroll widget with new `scroll` example.
+- Add scroll view widget with new `scroll` example.
 
 ### Updates
 - Rename `ControlLabel` to `ControlMember`.

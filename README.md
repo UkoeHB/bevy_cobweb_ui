@@ -17,52 +17,12 @@ Depends on `bevy` and [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb).
 
 ## Getting Started
 
-1. *(Optional)* Install syntax highlighting for the COB asset format.
-    - [VSCode](https://github.com/UkoeHB/vscode-cob/)
-    - [vim](https://github.com/UkoeHB/vim-cob/)
-    - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
+Check out the `bevy_cobweb_ui` [book](https://ukoehb.github.io/cobweb_book/), which is a guide tailored to new users.
 
-2. Add [`CobwebUiPlugin`](bevy_cobweb_ui::prelude::CobwebUiPlugin) to your app.
-
-```rust
-app
-    .add_plugins(bevy::prelude::DefaultPlugins)
-    .add_plugins(CobwebUiPlugin);
-```
-
-3. Add a COB file to your `assets` directory. Use the `.cob` file extension.
-
-```rust
-#scenes
-"hello"
-    TextLine{ text: "Hello, World!" }
-```
-
-4. Load the COB file to your app in a plugin.
-
-```rust
-app.load("main.cob");
-```
-
-You can load other COB files recursively using `#manifest` sections (see the loading module [docs](bevy_cobweb_ui::loading)).
-
-5. Add a system for spawning a scene.
-
-```rust
-fn build_ui(mut commands: Commands, mut s: ResMut<SceneLoader>)
-{
-    // Spawns entities
-    commands.ui_root().load_scene(("main.cob", "hello"), &mut s);
-}
-```
-
-6. Add the system to your app.
-
-```rust
-app.add_systems(OnEnter(LoadState::Done), build_ui);
-```
-
-We put the system in `OnEnter(LoadState::Done)` so it runs after all COB files and assets loaded into this crate's [asset managers](bevy_cobweb_ui::assets_ext) have been loaded.
+*(Optional)* Install syntax highlighting for the COB asset format.
+- [VSCode](https://github.com/UkoeHB/vscode-cob/)
+- [vim](https://github.com/UkoeHB/vim-cob/)
+- [SublimeText](https://github.com/UkoeHB/sublime-cob/)
 
 Check the loading module [docs](bevy_cobweb_ui::loading) for how to write COB files. COB files can be hot reloaded with the `hot_reload` feature. Hot-reloaded changes will cause affected scene nodes to be refreshed (or cause commands to be re-applied). Hot-reloading is minimally destructive. Entities are only despawned when you delete scene nodes from a COB file.
 

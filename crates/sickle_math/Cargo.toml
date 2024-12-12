@@ -1,6 +1,6 @@
 [package]
 name = "cob_sickle_math"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 description = "Math dependencies for sickle_ui"
 license = "MIT OR Apache-2.0"
