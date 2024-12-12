@@ -104,7 +104,7 @@ impl<T: Command + Loadable> Command for Multi<T>
 
 /// Trait that enables loadables to use the [`Splat`] wrapper loadable.
 ///
-/// For example, a UI `Border` could be splatted with `Splat<Border>(Val::Px(2.0))`.
+/// For example, a UI `Border` could be splatted with `Splat<Border>(2px)`.
 pub trait Splattable: Loadable
 {
     /// The inner value used to splat-construct `Self`.
