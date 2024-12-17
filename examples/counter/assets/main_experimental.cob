@@ -266,37 +266,31 @@ F!(w h dir jm jc dm{t b l r = (10)}) = Flex!(
     justify_main:?jm justify_cross:?jc margin{top:?m.t bottom:?m.b left:?m.l right:?m.r}
 )
 Nice!() = TheEnd
-+basic_spec(
-    param1 = 58
-    flex{..}
-    // Single-quotes means it is inserted to a scene node. These parameters only support .. and nested single-quoted params.
-    'inner'{.. 'innermost'{..}}
-    // There is no 'catch all' at the base layer because scene macros are inserted in-line to a scene layer.
-    // The user can just add stuff directly to the scene layer where the macro is inserted.
-) = \
-    FlexNode{
-        dims: {width: ?param1}
-        flex: {..flex}
-    }
++basic_scene_macro = \
+    FlexNode
     BorderColor(#0053AA)
     "inner"
-        ..*  // Infer the parameter this refers to from this scene node's name.
         "innermost"
-            ..*
 \
-+spec_override(
-    param1
-    flex{..}
-    'inner'{.. 'innermost'{..}}
-) = \
-    +basic_spec(
-        param1: ?param1
-        flex{..flex}
-        // We map inputs to this spec into the basic spec's inputs.
-        // The parameters these '..*' refer to are inferred from the target parameter names.
-        'inner'{..* 'innermost'{..*}}
-    )
-    +a::b::imported_spec()
++scene_macro_with_inner = \
+    +basic_scene_macro{
+        // Removes FlexNode from basic_scene_macro's base layer.
+        -FlexNode
+        // Replaces BorderColor in the base layer (no reordering).
+        BorderColor(#008800)
+        // Inserts AbsoluteNode at the bottom of the base layer.
+        AbsoluteNode
+        // Moves BorderColor to the top of the base layer.
+        ^BorderColor
+        // Moves BorderColor to the bottom of the base layer.
+        !BorderColor
+        // Scene macro invocations inside a scene macro def must reproduce the def's structure. This way
+        // anyone reading a macro def can know the entire node structure (even if they don't know all
+        // the node content without tracing out the inner macro calls).
+        "inner"
+            "innermost"
+    }
+    +a::b::imported_scene_macro{}
     TextLine{ text: "testing multi \
         line text \u{abcd} \n\t\r\\"
     }
@@ -313,23 +307,19 @@ A2("aaa")
 /*
 # Scenes
 
-The scene section must be the *last* section in a cob file.
-
-
 */
 #scenes
-// A spec invocation will bring in parameterized content for the scene.
+// A spec invocation will bring in pre-built content for a scene.
 "scene_from_spec"
     // This one is inserted to the base node
     BackgroundColor($colors::tailwind::AMBER_50)
-    +spec_override(
-        'inner'{
-            // This is inserted to the 'inner' node (named "inner").
+    +spec_override{
+        "inner"
+            // This is inserted to the "inner" node.
             BackgroundColor($colors::tailwind::AMBER_50)
             "add-node"
                 ImplicitNode
-        }
-    )
+    }
     A2("aaa")
 
 // Custom node structure for the example app.
@@ -406,7 +396,7 @@ The scene section must be the *last* section in a cob file.
                 animate!([Selected] 20px h:30px on_over{0.3 InExpo}))
 
             "inserted"
-                +spec_in_tree(num: 42)
+                +spec_in_tree{}
 
             "another"
                 F!(10px 11px)
