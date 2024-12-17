@@ -48,12 +48,10 @@ impl CobSceneNodeName
 #[derive(Debug, Clone, PartialEq)]
 pub enum CobSceneLayerEntry
 {
-    LoadableMacroCall(CobLoadableMacroCall),
     Loadable(CobLoadable),
     SceneMacroCall(CobSceneMacroCall),
+    SceneMacroCommand(CobSceneMacroCommand),
     Layer(CobSceneLayer),
-    /// This is the `..'node_name'` and `..*` syntax.
-    SceneMacroParam(CobSceneMacroParam),
 }
 
 impl CobSceneLayerEntry
@@ -61,19 +59,16 @@ impl CobSceneLayerEntry
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         match self {
-            Self::LoadableMacroCall(entry) => {
-                entry.write_to(writer)?;
-            }
             Self::Loadable(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacroCall(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::Layer(entry) => {
+            Self::SceneMacroCommand(entry) => {
                 entry.write_to(writer)?;
             }
-            Self::SceneMacroParam(entry) => {
+            Self::Layer(entry) => {
                 entry.write_to(writer)?;
             }
         }
@@ -110,11 +105,6 @@ impl CobSceneLayerEntry
         }
 
         // Parse item.
-        // - Parse loadable macro calls before loadables to avoid conflicts.
-        let fill = match rc(content, move |c| CobLoadableMacroCall::try_parse(fill, c))? {
-            (Some(item), fill, remaining) => return Ok((Some(Self::LoadableMacroCall(item)), fill, remaining)),
-            (None, fill, _) => fill,
-        };
         let fill = match rc(content, move |c| CobLoadable::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::Loadable(item)), fill, remaining)),
             (None, fill, _) => fill,
@@ -123,12 +113,12 @@ impl CobSceneLayerEntry
             (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCall(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match rc(content, move |c| CobSceneLayer::try_parse(fill, c))? {
-            (Some(item), fill, remaining) => return Ok((Some(Self::Layer(item)), fill, remaining)),
+        let fill = match rc(content, move |c| CobSceneMacroCommand::try_parse(fill, c))? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCommand(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match rc(content, move |c| CobSceneMacroParam::try_parse(fill, c))? {
-            (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroParam(item)), fill, remaining)),
+        let fill = match rc(content, move |c| CobSceneLayer::try_parse(fill, c))? {
+            (Some(item), fill, remaining) => return Ok((Some(Self::Layer(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
 
@@ -138,24 +128,70 @@ impl CobSceneLayerEntry
     pub fn recover_fill(&mut self, other: &Self)
     {
         match (self, other) {
-            (Self::LoadableMacroCall(entry), Self::LoadableMacroCall(other_entry)) => {
-                entry.recover_fill(other_entry);
-            }
             (Self::Loadable(entry), Self::Loadable(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
             (Self::SceneMacroCall(entry), Self::SceneMacroCall(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
-            (Self::Layer(entry), Self::Layer(other_entry)) => {
+            (Self::SceneMacroCommand(entry), Self::SceneMacroCommand(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
-            (Self::SceneMacroParam(entry), Self::SceneMacroParam(other_entry)) => {
+            (Self::Layer(entry), Self::Layer(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
             _ => (),
         }
     }
+
+    pub fn resolve(
+        &mut self,
+        resolver: &mut CobResolver,
+        resolve_mode: SceneResolveMode,
+    ) -> Result<Option<Vec<CobSceneLayerEntry>>, String>
+    {
+        match self {
+            Self::Loadable(entry) => match resolve_mode {
+                SceneResolveMode::OneLayerSceneOnly | SceneResolveMode::SceneOnly => (),
+                SceneResolveMode::Full => {
+                    entry.resolve(&resolver.loadables)?;
+                }
+            },
+            Self::SceneMacroCall(entry) => {
+                // Upgrade resolve mode to ensure macro call gets resolved properly.
+                let resolve_mode = if resolve_mode == SceneResolveMode::OneLayerSceneOnly {
+                    SceneResolveMode::SceneOnly
+                } else {
+                    resolve_mode
+                };
+                return entry.resolve(resolver, resolve_mode).map(|e| Some(e));
+            }
+            // These can be skipped over when resolving a scene macro. They will be used when expanding the macro.
+            Self::SceneMacroCommand(_) => (),
+            Self::Layer(entry) => match resolve_mode {
+                SceneResolveMode::OneLayerSceneOnly => (),
+                SceneResolveMode::SceneOnly | SceneResolveMode::Full => {
+                    entry.resolve(resolver, resolve_mode)?;
+                }
+            },
+        }
+
+        Ok(None)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SceneResolveMode
+{
+    /// Only resolve scene structure in the current scene layer.
+    ///
+    /// Scene macros will be fully expanded.
+    OneLayerSceneOnly,
+    SceneOnly,
+    /// Resolve everything, including loadables and child scene layers.
+    Full,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -237,6 +273,53 @@ impl CobSceneLayer
         for (entry, other) in self.entries.iter_mut().zip(other.entries.iter()) {
             entry.recover_fill(other);
         }
+    }
+
+    pub fn resolve(&mut self, resolver: &mut CobResolver, resolve_mode: SceneResolveMode) -> Result<(), String>
+    {
+        Self::resolve_entries_impl(self.name.as_str(), &mut self.entries, resolver, resolve_mode)
+    }
+
+    pub fn resolve_entries_impl(
+        name: &str,
+        entries: &mut Vec<CobSceneLayerEntry>,
+        resolver: &mut CobResolver,
+        resolve_mode: SceneResolveMode,
+    ) -> Result<(), String>
+    {
+        let mut idx = 0;
+        while idx < entries.len() {
+            // If resolving the entry returns a group of entries, they need to be flattened into this layer.
+            let Some(mut group) = entries[idx].resolve(resolver, resolve_mode)? else {
+                idx += 1;
+                continue;
+            };
+
+            // Remove the old entry.
+            entries.remove(idx);
+
+            // Flatten the group into the layer.
+            for entry in group.drain(..) {
+                match entry {
+                    CobSceneLayerEntry::Loadable(_) | CobSceneLayerEntry::Layer(_) => {
+                        entries.insert(idx, entry);
+                        idx += 1;
+                    }
+                    CobSceneLayerEntry::SceneMacroCall(_) => {
+                        return Err(format!("failed resolving scene layer named {}; scene macro call unexpectedly not resolved",
+                            name));
+                    }
+                    CobSceneLayerEntry::SceneMacroCommand(_) => {
+                        return Err(
+                            format!("failed resolving scene layer named {}; unexpected scene macro command",
+                            name),
+                        );
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 

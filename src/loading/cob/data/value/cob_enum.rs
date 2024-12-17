@@ -95,13 +95,13 @@ impl CobEnumVariant
         }
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
             Self::Unit => Ok(()),
-            Self::Array(arr) => arr.resolve(constants),
-            Self::Tuple(tup) => tup.resolve(constants),
-            Self::Map(map) => map.resolve(constants),
+            Self::Array(arr) => arr.resolve(resolver),
+            Self::Tuple(tup) => tup.resolve(resolver),
+            Self::Map(map) => map.resolve(resolver),
         }
     }
 }
@@ -146,9 +146,9 @@ impl CobEnum
         self.variant.recover_fill(&other.variant);
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
-        self.variant.resolve(constants)
+        self.variant.resolve(resolver)
     }
 
     pub fn unit(variant: &str) -> Self

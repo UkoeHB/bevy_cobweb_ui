@@ -9,8 +9,6 @@ use crate::prelude::*;
 pub enum CobDefEntry
 {
     Constant(CobConstantDef),
-    DataMacro(CobDataMacroDef),
-    LoadableMacro(CobLoadableMacroDef),
     SceneMacro(CobSceneMacroDef),
 }
 
@@ -20,12 +18,6 @@ impl CobDefEntry
     {
         match self {
             Self::Constant(entry) => {
-                entry.write_to(writer)?;
-            }
-            Self::DataMacro(entry) => {
-                entry.write_to(writer)?;
-            }
-            Self::LoadableMacro(entry) => {
                 entry.write_to(writer)?;
             }
             Self::SceneMacro(entry) => {
@@ -49,20 +41,6 @@ impl CobDefEntry
             (Some(def), next_fill, remaining) => {
                 (check_newline)()?;
                 return Ok((Some(Self::Constant(def)), next_fill, remaining));
-            }
-            (None, fill, _) => fill,
-        };
-        let fill = match rc(content, move |c| CobDataMacroDef::try_parse(fill, c))? {
-            (Some(def), next_fill, remaining) => {
-                (check_newline)()?;
-                return Ok((Some(Self::DataMacro(def)), next_fill, remaining));
-            }
-            (None, fill, _) => fill,
-        };
-        let fill = match rc(content, move |c| CobLoadableMacroDef::try_parse(fill, c))? {
-            (Some(def), next_fill, remaining) => {
-                (check_newline)()?;
-                return Ok((Some(Self::LoadableMacro(def)), next_fill, remaining));
             }
             (None, fill, _) => fill,
         };

@@ -70,26 +70,20 @@ pub(crate) fn preprocess_cob_file(
 /// Extracts importable values (defs sections).
 ///
 /// This is semi-destructive, because definitions will be removed and inserted to appropriate maps/buffers.
-pub(crate) fn extract_cob_importables(
-    file: CobFile,
-    data: &mut Cob,
-    constants_buffer: &mut ConstantsBuffer,
-    // tracks specs
-    _specs: &mut SpecsMap,
-)
+pub(crate) fn extract_cob_importables(file: CobFile, data: &mut Cob, resolver: &mut CobResolver)
 {
     tracing::info!("extracting COB file {:?}", file.as_str());
 
-    constants_buffer.start_new_file();
+    resolver.start_new_file();
 
     for section in data.sections.iter_mut() {
         match section {
-            CobSection::Defs(section) => extract_defs_section(&file, section, constants_buffer),
+            CobSection::Defs(section) => extract_defs_section(&file, section, resolver),
             _ => (),
         }
     }
 
-    constants_buffer.end_new_file();
+    resolver.end_new_file();
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -101,23 +95,16 @@ pub(crate) fn extract_cob_commands(
     file: CobFile,
     data: &mut Cob,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
-    // tracks specs
-    _specs: &SpecsMap,
+    resolver: &CobResolver,
 )
 {
     let mut commands = vec![];
 
     for section in data.sections.iter_mut() {
         match section {
-            CobSection::Commands(section) => extract_commands_section(
-                type_registry,
-                &mut commands,
-                &file,
-                section,
-                loadables,
-                constants_buffer,
-            ),
+            CobSection::Commands(section) => {
+                extract_commands_section(type_registry, &mut commands, &file, section, loadables, resolver)
+            }
             _ => (),
         }
     }
@@ -136,9 +123,7 @@ pub(crate) fn extract_cob_scenes(
     file: CobFile,
     mut data: Cob,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
-    // tracks specs
-    _specs: &SpecsMap,
+    resolver: &mut CobResolver,
 )
 {
     for section in data.sections.iter_mut() {
@@ -151,22 +136,11 @@ pub(crate) fn extract_cob_scenes(
                 &file,
                 section,
                 loadables,
-                constants_buffer,
+                resolver,
             ),
             _ => (),
         }
     }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-// TODO: remove/replace/implement this
-#[derive(Default, Debug)]
-pub(crate) struct SpecsMap;
-
-impl SpecsMap
-{
-    pub(crate) fn import_specs(&mut self, _import_file: &CobFile, _file: &CobFile, _imported: &SpecsMap) {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------

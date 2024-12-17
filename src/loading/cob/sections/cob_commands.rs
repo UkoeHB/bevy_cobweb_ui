@@ -7,25 +7,13 @@ use crate::prelude::*;
 
 /// Commands are parsed as loadables.
 #[derive(Debug, Clone, PartialEq)]
-pub enum CobCommandEntry
-{
-    Loadable(CobLoadable),
-    LoadableMacroCall(CobLoadableMacroCall),
-}
+pub struct CobCommandEntry(pub CobLoadable);
 
 impl CobCommandEntry
 {
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
-        match self {
-            Self::Loadable(loadable) => {
-                loadable.write_to(writer)?;
-            }
-            Self::LoadableMacroCall(call) => {
-                call.write_to(writer)?;
-            }
-        }
-        Ok(())
+        self.0.write_to(writer)
     }
 
     pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
@@ -45,14 +33,7 @@ impl CobCommandEntry
                 // of traversing the structure. Allow errors to be detected downstream (e.g. when deserializing).
                 // TODO: re-evaluate if this is useful; the perf cost of traversing everything again is
                 // non-negligible
-                return Ok((Some(Self::Loadable(loadable)), next_fill, remaining));
-            }
-            (None, fill, _) => fill,
-        };
-        let fill = match rc(content, move |c| CobLoadableMacroCall::try_parse(fill, c))? {
-            (Some(call), next_fill, remaining) => {
-                (check_newline)()?;
-                return Ok((Some(Self::LoadableMacroCall(call)), next_fill, remaining));
+                return Ok((Some(Self(loadable)), next_fill, remaining));
             }
             (None, fill, _) => fill,
         };

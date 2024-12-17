@@ -225,22 +225,15 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                         Some(commands)
                     }) {
                         for command in commands_section.entries.iter() {
-                            match command {
-                                CobCommandEntry::Loadable(loadable) => {
-                                    build_loadable(
-                                        l,
-                                        &registry,
-                                        &loadables,
-                                        &widgets,
-                                        file_data.last_save_hash,
-                                        commands_ref.clone(),
-                                        loadable,
-                                    );
-                                }
-                                CobCommandEntry::LoadableMacroCall(_) => {
-                                    l.load_scene(("editor.frame", "unsupported"));
-                                }
-                            }
+                            build_loadable(
+                                l,
+                                &registry,
+                                &loadables,
+                                &widgets,
+                                file_data.last_save_hash,
+                                commands_ref.clone(),
+                                &command.0,
+                            );
                         }
                     }
                 });

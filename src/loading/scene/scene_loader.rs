@@ -116,7 +116,7 @@ impl SceneLayer
     pub(crate) fn start_update(&mut self, layer_size: usize)
     {
         self.children
-            .reserve(self.children.len().saturating_sub(layer_size));
+            .reserve(layer_size.saturating_sub(self.children.len()));
         self.end_index = 0;
         self.total_child_nodes = 0;
     }

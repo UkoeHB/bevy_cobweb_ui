@@ -44,8 +44,6 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
             CobValue::None(_) => visitor.visit_none(),
             CobValue::String(s) => visitor.visit_borrowed_str(s.as_str()),
             CobValue::Constant(_) => Err(self.invalid_type(&visitor)),
-            CobValue::DataMacro(_) => Err(self.invalid_type(&visitor)),
-            CobValue::MacroParam(_) => Err(self.invalid_type(&visitor)),
         }
     }
 
@@ -286,8 +284,6 @@ impl CobValue
             CobValue::None(_) => Unexpected::Option,
             CobValue::String(s) => Unexpected::Str(s.as_str()),
             CobValue::Constant(_) => Unexpected::Other("constant"),
-            CobValue::DataMacro(_) => Unexpected::Other("data macro"),
-            CobValue::MacroParam(_) => Unexpected::Other("macro param"),
         }
     }
 }

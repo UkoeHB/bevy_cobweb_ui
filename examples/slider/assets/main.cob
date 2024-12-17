@@ -87,7 +87,6 @@
                     BrRadius(23.5px)
                     BackgroundColor(#550000FF)
                     BorderColor(#FFFFFF)
-                    SliderHandle
 
     "planar"
         FlexNode{flex_direction:Row justify_main:Center justify_cross:Center}

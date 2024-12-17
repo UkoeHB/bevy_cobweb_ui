@@ -15,7 +15,7 @@ fn handle_loadable(
     current_path: &ScenePath,
     loadable: &mut CobLoadable,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
+    resolver: &CobLoadableResolver,
 ) -> String
 {
     // Get the loadable's longname.
@@ -34,7 +34,7 @@ fn handle_loadable(
     }
 
     // Resolve defs.
-    if let Err(err) = loadable.resolve(constants_buffer) {
+    if let Err(err) = loadable.resolve(resolver) {
         tracing::warn!("failed extracting loadable {:?} at {:?} in {:?}; error resolving defs: {:?}",
             short_name, current_path, file, err.as_str());
         return id_scratch;
@@ -75,7 +75,7 @@ fn handle_scene_node(
     parent_path: &ScenePath,
     cob_layer: &mut CobSceneLayer,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
+    resolver: &mut CobResolver,
     anonymous_count: &mut usize,
 ) -> String
 {
@@ -126,7 +126,7 @@ fn handle_scene_node(
         &node_path,
         cob_layer,
         loadables,
-        constants_buffer,
+        resolver,
     )
 }
 
@@ -144,12 +144,19 @@ fn extract_scene_layer(
     current_path: &ScenePath,
     cob_layer: &mut CobSceneLayer,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
+    resolver: &mut CobResolver,
 ) -> String
 {
     // Prep the node.
     let scene_location = SceneRef { file: scene.file.clone(), path: current_path.clone() };
     scene_buffer.prepare_scene_node(scene_location.clone());
+
+    // Resolve the scene layer.
+    if let Err(err) = cob_layer.resolve(resolver, SceneResolveMode::OneLayerSceneOnly) {
+        tracing::warn!("failed extracting scene layer {:?} at {:?} in {:?}; error resolving defs: {:?}",
+            cob_layer.name.as_str(), current_path, scene.file, err.as_str());
+        return id_scratch;
+    }
 
     // Begin layer update.
     scene_layer.start_update(cob_layer.entries.len());
@@ -172,22 +179,18 @@ fn extract_scene_layer(
                     current_path,
                     loadable,
                     loadables,
-                    constants_buffer,
+                    &resolver.loadables,
                 );
             }
             // Do this one after we are done using the `seen_shortnames` buffer.
             CobSceneLayerEntry::Layer(_) => (),
-            CobSceneLayerEntry::LoadableMacroCall(_) => {
-                // TODO: resolve
-                tracing::warn!("ignoring loadable macro call in scene node {:?} in {:?}", current_path, scene.file);
+            CobSceneLayerEntry::SceneMacroCommand(_) => {
+                tracing::error!("ignoring unexpectedly unresolved scene macro command in scene layer {:?} at {:?} \
+                    in {:?} (this is a bug)", cob_layer.name.as_str(), current_path, scene.file);
             }
             CobSceneLayerEntry::SceneMacroCall(_) => {
-                // TODO: resolve
-                tracing::warn!("ignoring scene macro call in scene node {:?} in {:?}", current_path, scene.file);
-            }
-            CobSceneLayerEntry::SceneMacroParam(_) => {
-                // TODO: these are not allowed to appear here, they should already be resolved
-                tracing::warn!("ignoring scene macro param in scene node {:?} in {:?}", current_path, scene.file);
+                tracing::error!("ignoring unexpectedly unresolved scene macro call in scene layer {:?} at {:?} \
+                    in {:?} (this is a bug)", cob_layer.name.as_str(), current_path, scene.file);
             }
         }
     }
@@ -212,7 +215,7 @@ fn extract_scene_layer(
                     current_path,
                     next_cob_layer,
                     loadables,
-                    constants_buffer,
+                    resolver,
                     &mut anonymous_count,
                 );
             }
@@ -247,7 +250,7 @@ pub(super) fn extract_scenes(
     file: &CobFile,
     section: &mut CobScenes,
     loadables: &LoadableRegistry,
-    constants_buffer: &ConstantsBuffer,
+    resolver: &mut CobResolver,
 )
 {
     let mut scene_registry = scene_loader.take_scene_registry();
@@ -277,7 +280,7 @@ pub(super) fn extract_scenes(
             &scene_ref.path,
             cob_layer,
             loadables,
-            constants_buffer,
+            resolver,
         );
     }
 

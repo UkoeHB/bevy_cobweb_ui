@@ -55,14 +55,11 @@ impl CobLoadableIdentifier
         }
     }
 
-    pub fn is_resolved(&self) -> bool
-    {
-        let Some(generics) = &self.generics else { return true };
-        generics.is_resolved()
-    }
-
-    //todo: resolve_constants
-    //todo: resolve_macro
+    // pub fn is_resolved(&self) -> bool
+    // {
+    //     let Some(generics) = &self.generics else { return true };
+    //     generics.is_resolved()
+    // }
 }
 
 impl TryFrom<&'static str> for CobLoadableIdentifier
@@ -176,14 +173,14 @@ impl CobLoadableVariant
         }
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
             Self::Unit => Ok(()),
-            Self::Tuple(tuple) => tuple.resolve(constants),
-            Self::Array(array) => array.resolve(constants),
-            Self::Map(map) => map.resolve(constants),
-            Self::Enum(variant) => variant.resolve(constants),
+            Self::Tuple(tuple) => tuple.resolve(resolver),
+            Self::Array(array) => array.resolve(resolver),
+            Self::Map(map) => map.resolve(resolver),
+            Self::Enum(variant) => variant.resolve(resolver),
         }
     }
 }
@@ -224,9 +221,9 @@ impl CobLoadable
         self.variant.recover_fill(&other.variant);
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
-        self.variant.resolve(constants)
+        self.variant.resolve(resolver)
     }
 
     pub fn extract<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>

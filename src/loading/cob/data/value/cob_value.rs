@@ -20,9 +20,6 @@ pub enum CobValue
     None(CobNone),
     String(CobString),
     Constant(CobConstant),
-    DataMacro(CobDataMacroCall),
-    /// Only valid inside a macro definition.
-    MacroParam(CobMacroParam),
 }
 
 impl CobValue
@@ -63,12 +60,6 @@ impl CobValue
                 val.write_to_with_space(writer, space)?;
             }
             Self::Constant(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
-            Self::DataMacro(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
-            Self::MacroParam(val) => {
                 val.write_to_with_space(writer, space)?;
             }
         }
@@ -117,14 +108,6 @@ impl CobValue
             (Some(value), fill, remaining) => return Ok((Some(Self::Constant(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        let fill = match rc(content, move |c| CobDataMacroCall::try_parse(fill, c))? {
-            (Some(value), fill, remaining) => return Ok((Some(Self::DataMacro(value)), fill, remaining)),
-            (None, fill, _) => fill,
-        };
-        let fill = match rc(content, move |c| CobMacroParam::try_parse(fill, c))? {
-            (Some(value), fill, remaining) => return Ok((Some(Self::MacroParam(value)), fill, remaining)),
-            (None, fill, _) => fill,
-        };
 
         Ok((None, fill, content))
     }
@@ -162,28 +145,22 @@ impl CobValue
             (Self::Constant(val), Self::Constant(other_val)) => {
                 val.recover_fill(other_val);
             }
-            (Self::DataMacro(val), Self::DataMacro(other_val)) => {
-                val.recover_fill(other_val);
-            }
-            (Self::MacroParam(val), Self::MacroParam(other_val)) => {
-                val.recover_fill(other_val);
-            }
             _ => (),
         }
     }
 
     pub fn resolve<'a>(
         &mut self,
-        constants: &'a ConstantsBuffer,
+        resolver: &'a CobLoadableResolver,
     ) -> Result<Option<&'a [CobValueGroupEntry]>, String>
     {
         match self {
-            Self::Enum(val) => val.resolve(constants)?,
-            Self::Array(val) => val.resolve(constants)?,
-            Self::Tuple(val) => val.resolve(constants)?,
-            Self::Map(val) => val.resolve(constants)?,
+            Self::Enum(val) => val.resolve(resolver)?,
+            Self::Array(val) => val.resolve(resolver)?,
+            Self::Tuple(val) => val.resolve(resolver)?,
+            Self::Map(val) => val.resolve(resolver)?,
             Self::Constant(constant) => {
-                let Some(const_val) = constants.get(constant.path.as_str()) else {
+                let Some(const_val) = resolver.constants.get(constant.path.as_str()) else {
                     return Err(format!("constant lookup failed for ${}", constant.path.as_str()));
                 };
                 match const_val {
@@ -192,13 +169,6 @@ impl CobValue
                         return Ok(Some(&group.entries));
                     }
                 }
-            }
-            Self::DataMacro(_) => {
-                // TODO
-            }
-            Self::MacroParam(param) => {
-                // TODO: need to warn if encountered a param while not resolving a macro call
-                return Err(format!("encountered macro parameter {param:?}"));
             }
             _ => (),
         }

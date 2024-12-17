@@ -160,7 +160,7 @@ impl Cob
             match s {
                 CobSection::Commands(commands) => {
                     for entry in commands.entries.iter_mut() {
-                        let CobCommandEntry::Loadable(loadable) = entry else { continue };
+                        let CobCommandEntry(loadable) = entry;
                         id_scratch = loadable.id.to_canonical(Some(id_scratch));
                         if id_scratch != target_name {
                             continue;

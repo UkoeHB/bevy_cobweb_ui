@@ -1,34 +1,13 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
-use crate::loading::CobConstantValue;
+use super::*;
+use crate::loading::{CobConstantValue, CobFile};
 use crate::prelude::CobImportAlias;
-
-//-------------------------------------------------------------------------------------------------------------------
-
-const CONSTANT_SEPARATOR: &str = "::";
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn path_to_string<T: AsRef<str>>(separator: &str, path: &[T]) -> SmolStr
-{
-    // skip empties and concatenate: a::b::c
-    let mut count = 0;
-    SmolStr::from_iter(
-        path.iter()
-            .filter(|p| !p.as_ref().is_empty())
-            .flat_map(|p| {
-                count += 1;
-                match count {
-                    1 => ["", p.as_ref()],
-                    _ => [separator, p.as_ref()],
-                }
-            }),
-    )
-}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -41,13 +20,13 @@ type ConstantsMap = HashMap<SmolStr, CobConstantValue>;
 ///
 /// Used to efficiently merge constants when importing them into new files.
 #[derive(Default, Debug)]
-pub struct ConstantsBuffer
+pub struct ConstantsResolver
 {
     stack: SmallVec<[(SmolStr, Arc<ConstantsMap>); 5]>,
     new_file: ConstantsMap,
 }
 
-impl ConstantsBuffer
+impl ConstantsResolver
 {
     pub(crate) fn start_new_file(&mut self)
     {
@@ -61,9 +40,17 @@ impl ConstantsBuffer
     }
 
     /// Adds an entry to the new file being collected.
-    pub(crate) fn insert(&mut self, name: SmolStr, value: CobConstantValue)
+    pub(crate) fn insert(&mut self, file: &CobFile, name: SmolStr, value: CobConstantValue)
     {
-        self.new_file.insert(name, value);
+        match self.new_file.entry(name) {
+            Entry::Vacant(vacant) => {
+                vacant.insert(value);
+            }
+            Entry::Occupied(mut occupied) => {
+                tracing::warn!("overwriting constant definition ${} in {:?}", occupied.key().as_str(), file);
+                occupied.insert(value);
+            }
+        }
     }
 
     /// Searches backward through the stack until a match is found.
@@ -73,9 +60,7 @@ impl ConstantsBuffer
         self.new_file.get(path).or_else(|| {
             self.stack.iter().rev().find_map(|(prefix, m)| {
                 let stripped = path.strip_prefix(prefix.as_str())?;
-                let cleaned = stripped
-                    .strip_prefix(CONSTANT_SEPARATOR)
-                    .unwrap_or(stripped);
+                let cleaned = stripped.strip_prefix(DEFS_SEPARATOR).unwrap_or(stripped);
                 m.get(cleaned)
             })
         })
@@ -87,7 +72,7 @@ impl ConstantsBuffer
 
         // Remove duplicate maps in self.
         for (to_append_prefix, to_append) in to_append.stack.iter() {
-            let new_to_append_prefix = path_to_string(CONSTANT_SEPARATOR, &[alias, &*to_append_prefix]);
+            let new_to_append_prefix = path_to_string(DEFS_SEPARATOR, &[alias, &*to_append_prefix]);
             let Some(existing) = self.stack.iter().position(|(prefix, m)| {
                 *prefix == new_to_append_prefix && Arc::as_ptr(m) == Arc::as_ptr(to_append)
             }) else {
@@ -100,7 +85,7 @@ impl ConstantsBuffer
         self.stack.reserve(to_append.stack.len());
         self.stack
             .extend(to_append.stack.iter().map(|(old_prefix, map)| {
-                let new_prefix = path_to_string(CONSTANT_SEPARATOR, &[alias, &*old_prefix]);
+                let new_prefix = path_to_string(DEFS_SEPARATOR, &[alias, &*old_prefix]);
                 (new_prefix, map.clone())
             }));
     }

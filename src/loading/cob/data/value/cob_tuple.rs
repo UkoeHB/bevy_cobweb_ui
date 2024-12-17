@@ -81,12 +81,12 @@ impl CobTuple
         self.end_fill.recover(&other.end_fill);
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         let mut idx = 0;
         while idx < self.entries.len() {
             // If resolving the entry returns a group of values, they need to be flattened into this tuple.
-            let Some(group) = self.entries[idx].resolve(constants)? else {
+            let Some(group) = self.entries[idx].resolve(resolver)? else {
                 idx += 1;
                 continue;
             };

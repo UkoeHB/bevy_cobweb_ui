@@ -32,7 +32,7 @@ There are six section types, all of which are optional and can be written in any
 
 - **`#manifest`**: Requests other COB files to be loaded, assigns *manifest keys*, and controls the global order that commands are applied.
 - **`#import`**: Pulls **`#defs`** sections from other files into the current file using their manifest keys, with an optional import alias.
-- **`#defs`**: Definitions of re-usable constants and macros. **MACROS NOT YET IMPLEMENTED**
+- **`#defs`**: Definitions of re-usable constants and scene macros.
 - **`#commands`**: Bevy commands that are applied when a COB file is initially loaded. COB commands are globally ordered based on the file load order specified in **`#manifest`** sections.
 - **`#scenes`**: Specifies scene hierarchies that can be spawned in-code as entity hierarchies. Scene nodes are composed of loadables (components and instructions).
 
@@ -76,7 +76,7 @@ For example:
 
 ```rust
 // my_project/assets/main.cob
-#manifest
+#import
 home_menu as _
 widgets.slider as slider
 ```
@@ -149,9 +149,90 @@ MyStruct{$entries}
 ```
 
 
-**{macros}**
+**Scene macros**
 
-TODO: macros are not yet implemented
+Scene macros allow 'scene fragements' to be copy-pasted into scenes. Scene fragments can be modified when inserting them to a scene.
+
+Example (COB):
+```rust
+#defs
++hello_world = \
+    TextLine{ text: "Hello, World!" }
+\
+
+#scenes
+"hello"
+    +hello_world{}
+```
+
+In this example, `+hello_world = ...` defines a scene fragment with one scene layer. Then invoking it with `+hello_world{}` pastes it into the `"hello"` scene.
+
+When you invoke a scene macro, you can several kinds of changes to the macro content before it gets pasted.
+1. Overwrite existing loadables.
+1. Add new loadables.
+1. Adjust an existing loadable using scene macro commands:
+    1. Move it to the top: `^LoadableName`
+    1. Move it to the bottom: `!LoadableName`
+    1. Remove it: `-LoadableName`
+1. Add new scene nodes.
+1. Rearrange scene nodes.
+
+Let's look at an example to illustrate these changes.
+
+```rust
+#defs
++base = \
+    FlexNode{width:100px height:100px}
+    BackgroundColor(#009900)
+
+    "a"
+        Width(50px)
+        Height(75px)
+        BackgroundColor(#990000)
+    "b"
+        FlexNode{width:50px height:50px}
+        BackgroundColor(#222222)
+\
++wrapped = \
+    +base{
+        // Overrides BackgroundColor in base layer
+        BackgroundColor(#00FFFF)
+
+        // Moves "b" before "a"
+        "b"
+        "a"
+            // Overrides BackgroundColor in "a"
+            BackgroundColor(#FF00FF)
+    }
+\
+
+#scenes
+"scene"
+    ""
+        +base{}
+
+    ""
+        +wrapped{}
+
+    ""
+        +wrapped{
+            // Overrides FlexNode in base layer
+            FlexNode{width:150px height:150px}
+
+            "b"
+                // Overrides FlexNode in node "b"
+                FlexNode{width:100px height:100px}
+            "a"
+                // Adds FlexNode to node "a" at the end of the loadable list.
+                FlexNode{width:100px}
+                // Removes the Width loadable
+                -Width
+                // Moves the Height loadable below the new FlexNode loadable.
+                !Height
+        }
+```
+
+When wrapping a macro in another macro, it is recommended (but not required) to reproduce the entire node structure of the inner macro (i.e. the node names without loadables (unless you need to modify them)). This way you can see the entire macro structure without needing to trace out nested macro calls.
 
 
 ### Commands section

@@ -683,7 +683,6 @@ pub const VERTICAL_SCROLL_PSEUDO_STATE: PseudoState = PseudoState::Custom(SmolSt
 ///
 /// In the current version, you must insert a [`ScrollShim`] entity between the `ScrollView` and your scroll
 /// content. This requirement will be removed once `bevy` provides access to the content size of the view node.
-*/
 #[derive(Reflect, Component, PartialEq, Copy, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ScrollBase

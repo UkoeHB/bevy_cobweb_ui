@@ -46,7 +46,7 @@ fn test_equivalence_impl<T: Loadable + Debug + Serialize + for<'de> Deserialize<
         Err(err) => panic!("{command_raw}, ERR={err:?}"),
     };
     let CobSection::Commands(commands) = &mut cob_parsed.sections[0] else { unreachable!() };
-    let CobCommandEntry::Loadable(cmd_loadable) = &mut commands.entries[0] else { unreachable!() };
+    let CobCommandEntry(cmd_loadable) = &mut commands.entries[0];
     cmd_loadable.fill = CobFill::default(); // Clear fill so equality test works.
     assert_eq!(*cmd_loadable, loadable_parsed);
 

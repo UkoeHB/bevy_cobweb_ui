@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
-use nom::combinator::{map, recognize, verify};
+use nom::combinator::{map, recognize};
 use nom::multi::{many0, many1};
 use nom::sequence::preceded;
 use nom::{IResult, Parser};
@@ -209,18 +209,18 @@ impl CobGenericItem
         }
     }
 
-    /// Returns `true` if all generic items are types and not macro params.
-    pub fn is_resolved(&self) -> bool
-    {
-        match self {
-            Self::Struct { generics, .. } => match generics {
-                Some(generics) => generics.is_resolved(),
-                None => true,
-            },
-            Self::Tuple { values, .. } => !values.iter().any(|v| !v.is_resolved()),
-            Self::RustPrimitive(_) => true,
-        }
-    }
+    // /// Returns `true` if all generic items are types and not macro params.
+    // pub fn is_resolved(&self) -> bool
+    // {
+    //     match self {
+    //         Self::Struct { generics, .. } => match generics {
+    //             Some(generics) => generics.is_resolved(),
+    //             None => true,
+    //         },
+    //         Self::Tuple { values, .. } => !values.iter().any(|v| !v.is_resolved()),
+    //         Self::RustPrimitive(_) => true,
+    //     }
+    // }
 }
 
 // Parsing:
@@ -228,89 +228,45 @@ impl CobGenericItem
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Note that constants and macros are unavailable inside generics. Only non-optional macro type params can be
-/// used.
+/// Note that constants and macros are unavailable inside generics.
+// This is currently a newtype for `CobGenericItem`, but may in the future be reworked to include macro params.
 #[derive(Debug, Clone, PartialEq)]
-pub enum CobGenericValue
-{
-    Item(CobGenericItem),
-    MacroParam(CobMacroParam),
-}
+pub struct CobGenericValue(pub CobGenericItem);
 
 impl CobGenericValue
 {
     pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
     {
-        match self {
-            Self::Item(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
-            Self::MacroParam(val) => {
-                val.write_to_with_space(writer, space)?;
-            }
-        }
-        Ok(())
+        self.0.write_to_with_space(writer, space)
     }
 
     pub fn write_canonical(&self, buff: &mut String)
     {
-        match self {
-            Self::Item(item) => {
-                item.write_canonical(buff);
-            }
-            Self::MacroParam(param) => {
-                // This warning probably indicates a bug. Please report it so it can be fixed!
-                tracing::warn!("generic contains unresolved macro param {:?} while writing canonical", param);
-            }
-        }
+        self.0.write_canonical(buff);
     }
 
     /// Nomlike means the ok value is `(remaining, result)`.
     pub fn parse_nomlike(content: Span) -> IResult<Span, Self>
     {
         // NOTE: for simplicity, don't test recursion here (items internally check recursion)
-        alt((
-            map(CobGenericItem::parse_nomlike, |i| Self::Item(i)),
-            // TODO: require special macro param type for generic items?
-            map(verify(CobMacroParam::parse_nomlike, |p| p.is_required()), |p| {
-                Self::MacroParam(p)
-            }),
-        ))
-        .parse(content)
+        alt((map(CobGenericItem::parse_nomlike, |i| Self(i)),)).parse(content)
     }
 
     pub fn recover_fill(&mut self, other: &Self)
     {
-        match (self, other) {
-            (Self::Item(val), Self::Item(other_val)) => {
-                val.recover_fill(other_val);
-            }
-            (Self::MacroParam(val), Self::MacroParam(other_val)) => {
-                val.recover_fill(other_val);
-            }
-            _ => (),
-        }
+        self.0.recover_fill(&other.0);
     }
 
-    /// Returns `true` if all generic items are types and not macro params.
-    pub fn is_resolved(&self) -> bool
-    {
-        let Self::Item(item) = self else { return false };
-        item.is_resolved()
-    }
-
-    //todo: resolve_macro
-    // - Only macro params tied to a macro type param def can be used.
+    // /// Returns `true` if all generic items are types.
+    // pub fn is_resolved(&self) -> bool
+    // {
+    //     self.0.is_resolved()
+    // }
 }
-
-/*
-Parsing:
-- Macro param should be non-optional.
-*/
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Note that constants and macros are unavailable inside generics. Only macro type params can be used.
+/// Note that constants and macros are unavailable inside generics.
 #[derive(Debug, Clone, PartialEq)]
 pub struct CobGenerics
 {
@@ -370,11 +326,11 @@ impl CobGenerics
         self.close_fill.recover(&other.close_fill);
     }
 
-    /// Returns `true` if all generic items are types and not macro params.
-    pub fn is_resolved(&self) -> bool
-    {
-        !self.values.iter().any(|v| !v.is_resolved())
-    }
+    // /// Returns `true` if all generic items are types.
+    // pub fn is_resolved(&self) -> bool
+    // {
+    //     !self.values.iter().any(|v| !v.is_resolved())
+    // }
 }
 
 //-------------------------------------------------------------------------------------------------------------------

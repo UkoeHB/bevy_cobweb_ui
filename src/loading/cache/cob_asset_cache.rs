@@ -29,10 +29,8 @@ struct PreprocessedSceneFile
 #[derive(Default, Debug)]
 struct ProcessedSceneFile
 {
-    /// Constants info cached for use by dependents.
-    constants_buff: ConstantsBuffer,
-    /// Specs that can be imported into other files.
-    specs: SpecsMap,
+    /// Resolver info cached for use by dependents.
+    resolver: CobResolver,
     /// Imports for detecting when a re-load is required.
     #[cfg(feature = "hot_reload")]
     imports: HashMap<ManifestKey, CobImportAlias>,
@@ -310,10 +308,8 @@ impl CobAssetCache
         _scene_loader: &mut SceneLoader,
     )
     {
-        // Initialize constants map from dependencies.
-        let mut constants_buff = ConstantsBuffer::default();
-        // specs collector
-        let mut specs = SpecsMap::default();
+        // Initialize resolver from dependencies.
+        let mut resolver = CobResolver::default();
 
         for (dependency, alias) in preprocessed.imports.iter() {
             let Some(dependency) = self.manifest_map().get(&dependency) else {
@@ -327,8 +323,7 @@ impl CobAssetCache
                 continue;
             };
 
-            constants_buff.append(alias, &processed.constants_buff);
-            specs.import_specs(&dependency, &preprocessed.file, &processed.specs);
+            resolver.append(alias, &processed.resolver);
         }
 
         // Prepare to process the file.
@@ -349,12 +344,7 @@ impl CobAssetCache
 
         // Process the file.
         // - This updates the constants/specs maps with info extracted from the file.
-        extract_cob_importables(
-            preprocessed.file.clone(),
-            &mut preprocessed.data,
-            &mut constants_buff,
-            &mut specs,
-        );
+        extract_cob_importables(preprocessed.file.clone(), &mut preprocessed.data, &mut resolver);
 
         extract_cob_commands(
             type_registry,
@@ -362,8 +352,7 @@ impl CobAssetCache
             preprocessed.file.clone(),
             &mut preprocessed.data,
             loadables,
-            &constants_buff,
-            &specs,
+            &resolver,
         );
 
         #[cfg(not(feature = "hot_reload"))]
@@ -377,8 +366,7 @@ impl CobAssetCache
                 preprocessed.file.clone(),
                 preprocessed.data,
                 loadables,
-                &constants_buff,
-                &specs,
+                &mut resolver,
             );
         }
         #[cfg(feature = "hot_reload")]
@@ -389,8 +377,7 @@ impl CobAssetCache
         }
 
         // Save final maps.
-        processed.constants_buff = constants_buff;
-        processed.specs = specs;
+        processed.resolver = resolver;
 
         // Set fully processed
         self.processed.insert(preprocessed.file.clone(), processed);
@@ -543,8 +530,7 @@ impl CobAssetCache
                 file,
                 data,
                 loadables,
-                &processed.constants_buff,
-                &processed.specs,
+                &mut processed.resolver,
             );
 
             // Pass to editor.

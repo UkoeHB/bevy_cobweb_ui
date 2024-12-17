@@ -126,6 +126,7 @@ impl ReflectStructurePath
 
         let mut target_part = target.as_mut();
 
+        // TODO: target_part not used
         for point in self.path.iter() {
             let Some(next) = point.destructure(target_part) else { return Err(None) };
             target_part = next;
@@ -208,7 +209,7 @@ pub trait CobEditorWidget
     /// the value sent to [`SubmitPatch`] to remove fields that should remain defaulted (i.e. if you converted
     /// the `value` here to rust and then reflected it for `SubmitPatch`).
     ///
-    /// Returns `false` to reject the value.
+    /// Return `false` to reject the value.
     fn try_spawn(
         c: &mut Commands,
         s: &mut SceneLoader,

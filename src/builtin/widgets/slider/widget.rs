@@ -804,7 +804,7 @@ pub trait SliderWidgetExt
             mut settings: ResMut<Settings>,
             value: Reactive<SliderValue>,
         | {
-            let SliderValue::Single(val) = value.get(*id)?;
+            let val = value.get(*id)?.single().result()?;
             settings.audio_level = val * 100.0;
             OK
         }

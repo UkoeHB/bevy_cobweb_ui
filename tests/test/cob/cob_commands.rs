@@ -28,7 +28,7 @@ A
     );
     let CobSection::Commands(commands) = &res.sections[0] else { unreachable!() };
     assert_eq!(commands.entries.len(), 1);
-    let CobCommandEntry::Loadable(instruction) = &commands.entries[0] else { unreachable!() };
+    let CobCommandEntry(instruction) = &commands.entries[0];
     assert_eq!(instruction.id.to_canonical(None), "A");
 
     let res = test_cob(
@@ -41,11 +41,11 @@ C<D>::X{ a: 1, b: 2 }
     );
     let CobSection::Commands(commands) = &res.sections[0] else { unreachable!() };
     assert_eq!(commands.entries.len(), 3);
-    let CobCommandEntry::Loadable(instruction) = &commands.entries[0] else { unreachable!() };
+    let CobCommandEntry(instruction) = &commands.entries[0];
     assert_eq!(instruction.id.to_canonical(None), "A");
-    let CobCommandEntry::Loadable(instruction) = &commands.entries[1] else { unreachable!() };
+    let CobCommandEntry(instruction) = &commands.entries[1];
     assert_eq!(instruction.id.to_canonical(None), "B<A>");
-    let CobCommandEntry::Loadable(instruction) = &commands.entries[2] else { unreachable!() };
+    let CobCommandEntry(instruction) = &commands.entries[2];
     assert_eq!(instruction.id.to_canonical(None), "C<D>");
 }
 

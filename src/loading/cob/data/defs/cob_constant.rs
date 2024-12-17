@@ -134,11 +134,11 @@ impl CobConstantValue
         }
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
             Self::Value(value) => {
-                if let Some(group) = value.resolve(constants)? {
+                if let Some(group) = value.resolve(resolver)? {
                     *self = Self::ValueGroup(CobValueGroup {
                         start_fill: CobFill::default(),
                         entries: group.iter().cloned().collect(),
@@ -147,50 +147,8 @@ impl CobConstantValue
                 }
                 Ok(())
             }
-            Self::ValueGroup(group) => group.resolve(constants),
+            Self::ValueGroup(group) => group.resolve(resolver),
         }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct CobConstant
-{
-    pub start_fill: CobFill,
-    pub path: CobConstantPath,
-}
-
-impl CobConstant
-{
-    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
-    {
-        self.write_to_with_space(writer, "")
-    }
-
-    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
-    {
-        self.start_fill.write_to_or_else(writer, space)?;
-        self.path.write_to(writer)?;
-
-        Ok(())
-    }
-
-    pub fn try_parse(start_fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
-    {
-        let Ok((path, remaining)) = rc(content, |c| CobConstantPath::parse(c)) else {
-            return Ok((None, start_fill, content));
-        };
-        let (end_fill, remaining) = CobFill::parse(remaining);
-
-        let constant = Self { start_fill, path };
-        Ok((Some(constant), end_fill, remaining))
-    }
-
-    pub fn recover_fill(&mut self, other: &Self)
-    {
-        self.start_fill.recover(&other.start_fill);
-        // Path doesn't have fill
     }
 }
 
@@ -247,6 +205,48 @@ impl CobConstantDef
         // Name has no fill
         self.pre_eq_fill.recover(&other.pre_eq_fill);
         self.value.recover_fill(&other.value);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CobConstant
+{
+    pub start_fill: CobFill,
+    pub path: CobConstantPath,
+}
+
+impl CobConstant
+{
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
+    {
+        self.write_to_with_space(writer, "")
+    }
+
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
+    {
+        self.start_fill.write_to_or_else(writer, space)?;
+        self.path.write_to(writer)?;
+
+        Ok(())
+    }
+
+    pub fn try_parse(start_fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    {
+        let Ok((path, remaining)) = rc(content, |c| CobConstantPath::parse(c)) else {
+            return Ok((None, start_fill, content));
+        };
+        let (end_fill, remaining) = CobFill::parse(remaining);
+
+        let constant = Self { start_fill, path };
+        Ok((Some(constant), end_fill, remaining))
+    }
+
+    pub fn recover_fill(&mut self, other: &Self)
+    {
+        self.start_fill.recover(&other.start_fill);
+        // Path doesn't have fill
     }
 }
 

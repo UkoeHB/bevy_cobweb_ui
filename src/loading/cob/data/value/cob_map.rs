@@ -71,11 +71,11 @@ impl CobMapKey
         }
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
             Self::Value(value) => {
-                if let Some(_) = value.resolve(constants)? {
+                if let Some(_) = value.resolve(resolver)? {
                     let err_msg = match value {
                         CobValue::Constant(constant) => {
                             format!("constant ${} in a map entry's key points to value group \
@@ -168,10 +168,10 @@ impl CobMapKeyValue
         self.value.recover_fill(&other.value);
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
-        self.key.resolve(constants)?;
-        if let Some(_) = self.value.resolve(constants)? {
+        self.key.resolve(resolver)?;
+        if let Some(_) = self.value.resolve(resolver)? {
             let err_msg = match &self.value {
                 CobValue::Constant(constant) => {
                     format!("constant ${} in a map entry's value points to value group \
@@ -221,8 +221,6 @@ pub enum CobMapEntry
 {
     KeyValue(CobMapKeyValue),
     Constant(CobConstant),
-    /// Only catch-all params are allowed.
-    MacroParam(CobMacroParam),
 }
 
 impl CobMapEntry
@@ -240,9 +238,6 @@ impl CobMapEntry
             }
             Self::Constant(constant) => {
                 constant.write_to_with_space(writer, space)?;
-            }
-            Self::MacroParam(param) => {
-                param.write_to_with_space(writer, space)?;
             }
         }
         Ok(())
@@ -271,21 +266,6 @@ impl CobMapEntry
             }
             (CobMapKVParseResult::Failure, next_fill, _) => next_fill,
         };
-        let fill = match rc(content, move |c| CobMacroParam::try_parse(fill, c))? {
-            (Some(param), next_fill, remaining) => {
-                if !param.is_catch_all() {
-                    tracing::warn!("failed parsing map entry at {}; found macro param that isn't a 'catch all'",
-                        get_location(content));
-                    return Err(span_verify_error(content));
-                }
-                return Ok((
-                    CobMapEntryResult::Success(Self::MacroParam(param)),
-                    next_fill,
-                    remaining,
-                ));
-            }
-            (None, next_fill, _) => next_fill,
-        };
 
         Ok((CobMapEntryResult::Failure, fill, content))
     }
@@ -299,22 +279,19 @@ impl CobMapEntry
             (Self::Constant(constant), Self::Constant(other_constant)) => {
                 constant.recover_fill(other_constant);
             }
-            (Self::MacroParam(param), Self::MacroParam(other_param)) => {
-                param.recover_fill(other_param);
-            }
             _ => (),
         }
     }
 
     pub fn resolve<'a>(
         &mut self,
-        constants: &'a ConstantsBuffer,
+        resolver: &'a CobLoadableResolver,
     ) -> Result<Option<&'a [CobValueGroupEntry]>, String>
     {
         match self {
-            Self::KeyValue(kv) => kv.resolve(constants)?,
+            Self::KeyValue(kv) => kv.resolve(resolver)?,
             Self::Constant(constant) => {
-                let Some(const_val) = constants.get(constant.path.as_str()) else {
+                let Some(const_val) = resolver.constants.get(constant.path.as_str()) else {
                     return Err(format!("constant lookup failed for ${}", constant.path.as_str()));
                 };
                 match const_val {
@@ -328,10 +305,6 @@ impl CobMapEntry
                         return Ok(Some(&group.entries));
                     }
                 }
-            }
-            Self::MacroParam(param) => {
-                // TODO: need to warn if encountered a param while not resolving a macro call
-                return Err(format!("encountered macro parameter {param:?} in map"));
             }
         }
         Ok(None)
@@ -444,12 +417,12 @@ impl CobMap
         self.end_fill.recover(&other.end_fill);
     }
 
-    pub fn resolve(&mut self, constants: &ConstantsBuffer) -> Result<(), String>
+    pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         let mut idx = 0;
         while idx < self.entries.len() {
             // If resolving the entry returns a group of values, they need to be flattened into this map.
-            let Some(group) = self.entries[idx].resolve(constants)? else {
+            let Some(group) = self.entries[idx].resolve(resolver)? else {
                 idx += 1;
                 continue;
             };
