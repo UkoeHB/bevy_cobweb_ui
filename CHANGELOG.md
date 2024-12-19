@@ -5,6 +5,7 @@
 ### Highlights
 - Add scene macros to COB files. Scene macros are re-usable scene fragments whose contents can be overridden.
 - Add checkbox widget with new `checkbox` example.
+- Add tooltip widget with new `tooltip` example.
 
 
 ## 0.6.0

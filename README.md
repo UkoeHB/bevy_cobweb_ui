@@ -37,6 +37,7 @@ Check the repository examples for how to build different kinds of UI.
     - [`radio_buttons`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/radio_buttons)
     - [`slider`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/slider)
     - [`scroll`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/scroll)
+    - [`tooltip`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/tooltip)
 - [`counter`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/counter): Simple counter button. Shows how [`ControlRoot`](bevy_cobweb_ui::prelude::ControlRoot) and [`ControlMember`](bevy_cobweb_ui::prelude::ControlMember) can be used to transfer interactions within a widget. Also demonstrates updating text dynamically on the code side.
 - [`cursors`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/cursors): Set custom cursors that respond to interactions with UI elements.
 - [`help_text`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/help_text): Help text that appears on hover. Showcases [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity), which allows controlling (and animating) the opacity of entire node trees, and even layering multiple [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity) within a single tree.

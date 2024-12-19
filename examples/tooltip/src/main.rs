@@ -1,4 +1,4 @@
-//! Demonstrates the built-in tooltip widget. (WIP)
+//! Demonstrates the built-in tooltip widget.
 
 use bevy::prelude::*;
 use bevy_cobweb_ui::prelude::*;
