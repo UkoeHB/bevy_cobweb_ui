@@ -10,7 +10,8 @@ impl Plugin for BuiltinWidgetsPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_plugins(radio_button::CobwebRadioButtonPlugin)
+        app.add_plugins(checkbox::CobwebCheckboxPlugin)
+            .add_plugins(radio_button::CobwebRadioButtonPlugin)
             .add_plugins(scroll::CobwebScrollPlugin)
             .add_plugins(slider::CobwebSliderPlugin)
             //.add_plugins(slider::CobwebTooltipPlugin)
@@ -22,6 +23,7 @@ impl Plugin for BuiltinWidgetsPlugin
 
 /*
 todo
+- maybe not? kind of convoluted
 
 - enable customizing widget theming
     - radio_button_style_base.caf.json

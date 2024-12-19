@@ -75,6 +75,19 @@ fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn detect_toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
+{
+    let entity = event.entity();
+
+    if !ps.entity_has(entity, PseudoState::Checked) {
+        c.react().entity_event(entity, Check);
+    } else {
+        c.react().entity_event(entity, Uncheck);
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 {
     let entity = event.entity();
@@ -135,6 +148,9 @@ pub struct Deselect;
 pub struct Check;
 /// Entity event that can be sent to remove [`PseudoState::Checked`] from an entity.
 pub struct Uncheck;
+/// Entity event that can be sent to cause either a [`Check`] or an [`Uncheck`] entity event to be sent to the
+/// entity.
+pub struct ToggleCheck;
 /// Entity event that can be sent to set [`PseudoState::Open`] on an entity (and remove
 /// [`PseudoState::Closed`]).
 pub struct Open;
@@ -183,6 +199,14 @@ pub trait PseudoStateExt
     ///
     /// Equivalent to `entity_builder.on_event::<Uncheck>().r(callback)`.
     fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+
+    /// Adds a reactor to an [`ToggleCheck`] entity event.
+    ///
+    /// Note that after a `ToggleCheck` event, a [`Check`] or [`Uncheck`] entity event will automatically
+    /// be sent.
+    ///
+    /// Equivalent to `entity_builder.on_event::<ToggleCheck>().r(callback)`.
+    fn on_toggle_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
 
     /// Adds a reactor to an [`Open`] entity event.
     ///
@@ -240,6 +264,12 @@ impl PseudoStateExt for UiBuilder<'_, Entity>
     fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
     {
         self.on_event::<Uncheck>().r(callback);
+        self
+    }
+
+    fn on_toggle_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    {
+        self.on_event::<ToggleCheck>().r(callback);
         self
     }
 
@@ -457,6 +487,7 @@ impl Plugin for PseudoStatesExtPlugin
         app.add_reactor(any_entity_event::<Deselect>(), detect_deselect_reactor);
         app.add_reactor(any_entity_event::<Check>(), detect_check_reactor);
         app.add_reactor(any_entity_event::<Uncheck>(), detect_uncheck_reactor);
+        app.add_reactor(any_entity_event::<ToggleCheck>(), detect_toggle_check_reactor);
         app.add_reactor(any_entity_event::<Open>(), detect_open_reactor);
         app.add_reactor(any_entity_event::<Close>(), detect_close_reactor);
         app.add_reactor(any_entity_event::<Fold>(), detect_fold_reactor);

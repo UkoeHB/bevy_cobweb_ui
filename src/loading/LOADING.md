@@ -165,9 +165,9 @@ Example (COB):
     +hello_world{}
 ```
 
-In this example, `+hello_world = ...` defines a scene fragment with one scene layer. Then invoking it with `+hello_world{}` pastes it into the `"hello"` scene.
+In this example, `+hello_world = \ ... \` defines a scene fragment with one scene layer. Then invoking it with `+hello_world{}` pastes it into the `"hello"` scene.
 
-When you invoke a scene macro, you can several kinds of changes to the macro content before it gets pasted.
+When you invoke a scene macro, you can make several kinds of changes to the macro content before it gets pasted.
 1. Overwrite existing loadables.
 1. Add new loadables.
 1. Adjust an existing loadable using scene macro commands:
