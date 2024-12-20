@@ -102,6 +102,7 @@ pub struct Tooltip
     /// [`CursorIcon`].
     ///
     /// Defaults to `true`.
+    //TODO: if no custom cursor, try to get cursor size from raw OS APIs (MacOS, Windows, X11; Wayland likely not supported)
     #[reflect(default = "WithTooltip::avoid_cursor_default")]
     pub avoid_cursor: bool,
     /// If set, then the tooltip will be repositioned to stay inside the node's camera view (usually the primary window).

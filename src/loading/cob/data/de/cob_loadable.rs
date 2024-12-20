@@ -1,4 +1,4 @@
-use serde::de::{Expected, Unexpected, Visitor};
+use serde::de::{Expected, Visitor};
 use serde::forward_to_deserialize_any;
 
 use super::{
@@ -150,24 +150,26 @@ impl CobLoadable
     where
         E: serde::de::Error,
     {
-        serde::de::Error::invalid_type(self.unexpected(), exp)
+        serde::de::Error::custom(format!("invalid loadable: {}, expected {}", self.unexpected().as_str(), exp))
     }
 
     #[cold]
-    fn unexpected(&self) -> Unexpected
+    fn unexpected(&self) -> String
     {
+        let id = self.id.to_canonical(None);
+        let id = id.as_str();
         match &self.variant {
-            CobLoadableVariant::Unit => Unexpected::Unit,
+            CobLoadableVariant::Unit => format!("unit struct {id}"),
             CobLoadableVariant::Tuple(tuple) => {
                 if tuple.entries.len() == 1 {
-                    Unexpected::NewtypeStruct
+                    format!("newtype struct {id}(..)")
                 } else {
-                    Unexpected::Seq
+                    format!("tuple struct {id}(..)")
                 }
             }
-            CobLoadableVariant::Array(..) => Unexpected::NewtypeStruct,
-            CobLoadableVariant::Map(..) => Unexpected::Map,
-            CobLoadableVariant::Enum(variant) => variant.unexpected(),
+            CobLoadableVariant::Array(..) => format!("newtype struct {id}(..)"),
+            CobLoadableVariant::Map(..) => format!("struct {id}{{..}}"),
+            CobLoadableVariant::Enum(variant) => format!("enum {id}::{}", variant.unexpected()),
         }
     }
 }

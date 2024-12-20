@@ -1,4 +1,4 @@
-use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, Unexpected, VariantAccess, Visitor};
+use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, VariantAccess, Visitor};
 
 use super::{visit_map_ref, visit_tuple_ref, visit_wrapped_erased_ref, ErasedNewtypeStruct};
 use crate::prelude::*;
@@ -8,19 +8,19 @@ use crate::prelude::*;
 impl CobEnum
 {
     #[cold]
-    pub(super) fn unexpected(&self) -> Unexpected
+    pub(super) fn unexpected(&self) -> String
     {
         match &self.variant {
-            CobEnumVariant::Unit => Unexpected::UnitVariant,
+            CobEnumVariant::Unit => format!("unit variant {}", self.id.as_str()),
             CobEnumVariant::Tuple(tuple) => {
                 if tuple.entries.len() == 1 {
-                    Unexpected::NewtypeVariant
+                    format!("newtype variant {}(..)", self.id.as_str())
                 } else {
-                    Unexpected::TupleVariant
+                    format!("tuple variant {}(..)", self.id.as_str())
                 }
             }
-            CobEnumVariant::Array(..) => Unexpected::NewtypeVariant,
-            CobEnumVariant::Map(..) => Unexpected::StructVariant,
+            CobEnumVariant::Array(..) => format!("newtype variant {}(..)", self.id.as_str()),
+            CobEnumVariant::Map(..) => format!("struct variant {}{{..}}", self.id.as_str()),
         }
     }
 }
@@ -62,10 +62,10 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
     {
         match &self.variant.variant {
             CobEnumVariant::Unit => Ok(()),
-            _ => Err(serde::de::Error::invalid_type(
-                self.variant.unexpected(),
+            _ => Err(serde::de::Error::custom(format!("invalid type: {}, expected {}",
+                self.variant.unexpected().as_str(),
                 &"unit variant",
-            )),
+            ))),
         }
     }
 
@@ -101,16 +101,16 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
                 } else if len == 1 {
                     visit_wrapped_erased_ref(visitor)
                 } else {
-                    Err(serde::de::Error::invalid_type(
-                        self.variant.unexpected(),
+                    Err(serde::de::Error::custom(format!("invalid type: {}, expected {}",
+                        self.variant.unexpected().as_str(),
                         &"tuple variant",
-                    ))
+                    )))
                 }
             }
-            _ => Err(serde::de::Error::invalid_type(
-                self.variant.unexpected(),
+            _ => Err(serde::de::Error::custom(format!("invalid type: {}, expected {}",
+                self.variant.unexpected().as_str(),
                 &"tuple variant",
-            )),
+            ))),
         }
     }
 
@@ -122,10 +122,10 @@ impl<'de> VariantAccess<'de> for VariantRefAccess<'de>
             CobEnumVariant::Map(map) => visit_map_ref(&map.entries, visitor),
             // Special case: flattened
             CobEnumVariant::Unit => visit_map_ref(&[], visitor),
-            _ => Err(serde::de::Error::invalid_type(
-                self.variant.unexpected(),
+            _ => Err(serde::de::Error::custom(format!("invalid type: {}, expected {}",
+                self.variant.unexpected().as_str(),
                 &"struct variant",
-            )),
+            ))),
         }
     }
 }

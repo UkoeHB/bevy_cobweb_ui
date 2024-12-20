@@ -1,4 +1,4 @@
-use serde::de::{Expected, Unexpected, Visitor};
+use serde::de::{Expected, Visitor};
 
 use super::{
     deserialize_builtin, visit_array_ref, visit_map_ref, visit_tuple_ref, visit_wrapped_value_ref,
@@ -261,29 +261,34 @@ impl CobValue
     where
         E: serde::de::Error,
     {
-        serde::de::Error::invalid_type(self.unexpected(), exp)
+        serde::de::Error::custom(format_args!("invalid value: {}, expected {}", self.unexpected().as_str(), exp))
     }
 
     #[cold]
-    fn unexpected(&self) -> Unexpected
+    fn unexpected(&self) -> String
     {
         match self {
             CobValue::Enum(e) => e.unexpected(),
-            CobValue::Builtin(_) => Unexpected::Other("builtin"),
-            CobValue::Array(_) => Unexpected::Seq,
+            CobValue::Builtin(builtin) => {
+                let mut buff = Vec::<u8>::default();
+                let mut serializer = DefaultRawSerializer::new(&mut buff);
+                let _ = builtin.write_to(&mut serializer);
+                format!("builtin {}", String::from_utf8_lossy(&buff))
+            }
+            CobValue::Array(_) => format!("array []"),
             CobValue::Tuple(tuple) => {
                 if tuple.entries.len() == 0 {
-                    Unexpected::Unit
+                    format!("empty tuple ()")
                 } else {
-                    Unexpected::Seq
+                    format!("tuple ()")
                 }
             }
-            CobValue::Map(_) => Unexpected::Map,
-            CobValue::Number(n) => n.unexpected(),
-            CobValue::Bool(b) => Unexpected::Bool(b.value),
-            CobValue::None(_) => Unexpected::Option,
-            CobValue::String(s) => Unexpected::Str(s.as_str()),
-            CobValue::Constant(_) => Unexpected::Other("constant"),
+            CobValue::Map(_) => format!("map {{}}"),
+            CobValue::Number(n) => format!("{}", n.unexpected()),
+            CobValue::Bool(b) => format!("bool {}", b.value),
+            CobValue::None(_) => format!("None"),
+            CobValue::String(s) => format!("string \"{}\"", s.as_str()),
+            CobValue::Constant(constant) => format!("constant ${}", constant.path.as_str()),
         }
     }
 }

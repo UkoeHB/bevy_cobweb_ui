@@ -7,6 +7,8 @@
 - Add checkbox widget with new `checkbox` example.
 - Add tooltip widget with new `tooltip` example.
 
+### Updates
+- Improve deserialization errors for COB loadables.
 
 ## 0.6.0
 
