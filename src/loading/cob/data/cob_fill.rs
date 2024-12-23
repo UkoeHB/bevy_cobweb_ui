@@ -74,7 +74,7 @@ impl CobFill
         let (remaining, fill) = map(
             recognize(many0_count(alt((
                 // collect whitespace and special characters
-                recognize(one_of::<_, _, (Span, ErrorKind)>(" \n,;")),
+                recognize(one_of::<_, _, (Span, ErrorKind)>(" \r\n,;")),
                 // collect line comments until \n or end of file
                 preceded(tag("//"), alt((terminated(take_until("\n"), tag("\n")), rest))),
                 // collect block comments until block terminator or end of file

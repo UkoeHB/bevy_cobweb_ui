@@ -5,10 +5,13 @@
 ### Highlights
 - Add scene macros to COB files. Scene macros are re-usable scene fragments whose contents can be overridden.
 - Add checkbox widget with new `checkbox` example.
-- Add tooltip widget with new `tooltip` example.
 
 ### Updates
 - Improve deserialization errors for COB loadables.
+
+### Fixes
+- Treat carriage returns `\r` as plain whitespace.
+
 
 ## 0.6.0
 
