@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.7.0
 
 ### Highlights
 - Add scene macros to COB files. Scene macros are re-usable scene fragments whose contents can be overridden.
