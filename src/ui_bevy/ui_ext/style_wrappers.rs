@@ -1257,7 +1257,7 @@ impl StaticAttribute for DisplayControl {
 #[derive(Clone, Copy, Default, Debug, Reflect, PartialEq)]
 #[reflect(Default, PartialEq, Debug)]
 #[cfg_attr(
-    feature = "serialize",
+    feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
