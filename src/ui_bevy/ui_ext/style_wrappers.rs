@@ -11,8 +11,7 @@ use crate::sickle::Lerp;
 /// All fields default to `Val::Px(0.)`.
 #[derive(Reflect, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct StyleRect
-{
+pub struct StyleRect {
     #[reflect(default = "StyleRect::default_field")]
     pub top: Val,
     #[reflect(default = "StyleRect::default_field")]
@@ -23,24 +22,19 @@ pub struct StyleRect
     pub right: Val,
 }
 
-impl StyleRect
-{
-    fn default_field() -> Val
-    {
+impl StyleRect {
+    fn default_field() -> Val {
         Val::Px(0.)
     }
 
     /// Constructs a style rect with all sides equal to `single`.
-    pub fn splat(single: Val) -> Self
-    {
+    pub fn splat(single: Val) -> Self {
         Self { top: single, bottom: single, left: single, right: single }
     }
 }
 
-impl Into<UiRect> for StyleRect
-{
-    fn into(self) -> UiRect
-    {
+impl Into<UiRect> for StyleRect {
+    fn into(self) -> UiRect {
         UiRect {
             left: self.left,
             right: self.right,
@@ -50,10 +44,8 @@ impl Into<UiRect> for StyleRect
     }
 }
 
-impl From<UiRect> for StyleRect
-{
-    fn from(rect: UiRect) -> Self
-    {
+impl From<UiRect> for StyleRect {
+    fn from(rect: UiRect) -> Self {
         Self {
             left: rect.left,
             right: rect.right,
@@ -63,10 +55,8 @@ impl From<UiRect> for StyleRect
     }
 }
 
-impl Default for StyleRect
-{
-    fn default() -> Self
-    {
+impl Default for StyleRect {
+    fn default() -> Self {
         Self {
             top: Self::default_field(),
             bottom: Self::default_field(),
@@ -76,10 +66,8 @@ impl Default for StyleRect
     }
 }
 
-impl Lerp for StyleRect
-{
-    fn lerp(&self, to: Self, t: f32) -> Self
-    {
+impl Lerp for StyleRect {
+    fn lerp(&self, to: Self, t: f32) -> Self {
         Self {
             left: self.left.lerp(to.left, t),
             right: self.right.lerp(to.right, t),
@@ -98,8 +86,7 @@ impl Lerp for StyleRect
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum Clipping
-{
+pub enum Clipping {
     #[default]
     None,
     ClipX,
@@ -115,10 +102,8 @@ pub enum Clipping
     ScrollXY,
 }
 
-impl Into<Overflow> for Clipping
-{
-    fn into(self) -> Overflow
-    {
+impl Into<Overflow> for Clipping {
+    fn into(self) -> Overflow {
         match self {
             Self::None => Overflow { x: OverflowAxis::Visible, y: OverflowAxis::Visible },
             Self::ClipX => Overflow { x: OverflowAxis::Clip, y: OverflowAxis::Visible },
@@ -151,8 +136,7 @@ impl Into<Overflow> for Clipping
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum JustifyLines
-{
+pub enum JustifyLines {
     /// Pack lines toward the start of the cross axis.
     ///
     /// Affected by `text_direction` (unimplemented) for [`FlexDirection::Column`].
@@ -182,10 +166,8 @@ pub enum JustifyLines
     SpaceAround,
 }
 
-impl Into<AlignContent> for JustifyLines
-{
-    fn into(self) -> AlignContent
-    {
+impl Into<AlignContent> for JustifyLines {
+    fn into(self) -> AlignContent {
         match self {
             Self::FlexStart => AlignContent::FlexStart,
             Self::FlexEnd => AlignContent::FlexEnd,
@@ -221,8 +203,7 @@ impl Into<AlignContent> for JustifyLines
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum JustifyMain
-{
+pub enum JustifyMain {
     /*
     /// Cluster items at the start of the main axis.
     /// - [`FlexDirection::Row`]: Start according to `text_direction` (unimplemented).
@@ -264,10 +245,8 @@ pub enum JustifyMain
     SpaceAround,
 }
 
-impl Into<JustifyContent> for JustifyMain
-{
-    fn into(self) -> JustifyContent
-    {
+impl Into<JustifyContent> for JustifyMain {
+    fn into(self) -> JustifyContent {
         match self {
             Self::FlexStart => JustifyContent::FlexStart,
             Self::FlexEnd => JustifyContent::FlexEnd,
@@ -298,8 +277,7 @@ impl Into<JustifyContent> for JustifyMain
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum JustifyCross
-{
+pub enum JustifyCross {
     /// Align children to the start of the cross axis in each line.
     #[default]
     FlexStart,
@@ -320,10 +298,8 @@ pub enum JustifyCross
     Stretch,
 }
 
-impl Into<AlignItems> for JustifyCross
-{
-    fn into(self) -> AlignItems
-    {
+impl Into<AlignItems> for JustifyCross {
+    fn into(self) -> AlignItems {
         match self {
             Self::FlexStart => AlignItems::FlexStart,
             Self::FlexEnd => AlignItems::FlexEnd,
@@ -349,8 +325,7 @@ impl Into<AlignItems> for JustifyCross
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub enum JustifySelfCross
-{
+pub enum JustifySelfCross {
     /// Adopt the parent's [`JustifyCross`] setting.
     #[default]
     Auto,
@@ -364,10 +339,8 @@ pub enum JustifySelfCross
     Stretch,
 }
 
-impl Into<AlignSelf> for JustifySelfCross
-{
-    fn into(self) -> AlignSelf
-    {
+impl Into<AlignSelf> for JustifySelfCross {
+    fn into(self) -> AlignSelf {
         match self {
             Self::Auto => AlignSelf::Auto,
             Self::FlexStart => AlignSelf::FlexStart,
@@ -385,8 +358,7 @@ impl Into<AlignSelf> for JustifySelfCross
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Dims
-{
+pub struct Dims {
     /// Indicates the `desired` width of the node.
     ///
     /// Defaults to [`Val::Auto`], which means 'content-sized'.
@@ -487,11 +459,9 @@ pub struct Dims
     pub right: Val,
 }
 
-impl Dims
-{
+impl Dims {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
-    {
+    pub fn set_in_node(&self, node: &mut Node) {
         node.width = self.width;
         node.height = self.height;
         node.max_width = self.max_width;
@@ -506,20 +476,16 @@ impl Dims
         node.bottom = self.bottom;
     }
 
-    fn default_top() -> Val
-    {
+    fn default_top() -> Val {
         Val::Px(0.)
     }
-    fn default_left() -> Val
-    {
+    fn default_left() -> Val {
         Val::Px(0.)
     }
 }
 
-impl Default for Dims
-{
-    fn default() -> Self
-    {
+impl Default for Dims {
+    fn default() -> Self {
         Self {
             width: Default::default(),
             height: Default::default(),
@@ -544,8 +510,7 @@ impl Default for Dims
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ContentFlex
-{
+pub struct ContentFlex {
     /// Determines whether the node contents will be clipped at the node boundary.
     ///
     /// Can be used to make a node scrollable.
@@ -627,11 +592,9 @@ pub struct ContentFlex
     pub row_gap: Val,
 }
 
-impl ContentFlex
-{
+impl ContentFlex {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
-    {
+    pub fn set_in_node(&self, node: &mut Node) {
         node.overflow = self.clipping.into();
         node.overflow_clip_margin = self.clip_margin;
         node.padding = self.padding.into();
@@ -644,16 +607,13 @@ impl ContentFlex
         node.row_gap = self.row_gap;
     }
 
-    fn default_flex_wrap() -> FlexWrap
-    {
+    fn default_flex_wrap() -> FlexWrap {
         FlexWrap::NoWrap
     }
 }
 
-impl Default for ContentFlex
-{
-    fn default() -> Self
-    {
+impl Default for ContentFlex {
+    fn default() -> Self {
         Self {
             flex_wrap: Self::default_flex_wrap(),
 
@@ -677,8 +637,7 @@ impl Default for ContentFlex
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SelfFlex
-{
+pub struct SelfFlex {
     /// Adds space outside the boundary of a node.
     ///
     /// If the main-axis values are set to [`Val::Auto`] then [`JustifyMain`] will do nothing, and similarly for
@@ -729,11 +688,9 @@ pub struct SelfFlex
     pub justify_self_cross: JustifySelfCross,
 }
 
-impl SelfFlex
-{
+impl SelfFlex {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
-    {
+    pub fn set_in_node(&self, node: &mut Node) {
         node.margin = self.margin.into();
         node.flex_basis = self.flex_basis;
         node.flex_grow = self.flex_grow;
@@ -742,10 +699,8 @@ impl SelfFlex
     }
 }
 
-impl Default for SelfFlex
-{
-    fn default() -> Self
-    {
+impl Default for SelfFlex {
+    fn default() -> Self {
         Self {
             margin: Default::default(),
             flex_basis: Default::default(),
@@ -767,8 +722,7 @@ impl Default for SelfFlex
 /// See [`FlexNode`] for flexbox-controlled nodes. See [`DisplayControl`] for setting [`Display::None`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AbsoluteNode
-{
+pub struct AbsoluteNode {
     // TODO: re-enable once #[reflect(flatten)] is available
     // #[reflect(default)]
     // pub dims: Dims,
@@ -846,10 +800,8 @@ pub struct AbsoluteNode
     pub row_gap: Val,
 }
 
-impl Into<Node> for AbsoluteNode
-{
-    fn into(self) -> Node
-    {
+impl Into<Node> for AbsoluteNode {
+    fn into(self) -> Node {
         let mut node = Node::default();
         node.display = Display::Flex;
         node.position_type = PositionType::Absolute;
@@ -885,10 +837,8 @@ impl Into<Node> for AbsoluteNode
     }
 }
 
-impl Instruction for AbsoluteNode
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for AbsoluteNode {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
@@ -898,8 +848,7 @@ impl Instruction for AbsoluteNode
         emut.insert(node);
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove_with_requires::<Node>();
         });
@@ -915,8 +864,7 @@ impl Instruction for AbsoluteNode
 /// See [`AbsoluteNode`] for absolute-positioned nodes. See [`DisplayControl`] for setting [`Display::None`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct FlexNode
-{
+pub struct FlexNode {
     // TODO: re-enable once #[reflect(flatten)] is available
     // #[reflect(default)]
     // pub dims: Dims,
@@ -1013,10 +961,8 @@ pub struct FlexNode
     pub justify_self_cross: JustifySelfCross,
 }
 
-impl Into<Node> for FlexNode
-{
-    fn into(self) -> Node
-    {
+impl Into<Node> for FlexNode {
+    fn into(self) -> Node {
         let mut node = Node::default();
         node.display = Display::Flex;
         node.position_type = PositionType::Relative;
@@ -1060,10 +1006,8 @@ impl Into<Node> for FlexNode
     }
 }
 
-impl Instruction for FlexNode
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
+impl Instruction for FlexNode {
+    fn apply(self, entity: Entity, world: &mut World) {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
@@ -1073,8 +1017,7 @@ impl Instruction for FlexNode
         emut.insert(node);
     }
 
-    fn revert(entity: Entity, world: &mut World)
-    {
+    fn revert(entity: Entity, world: &mut World) {
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove_with_requires::<Node>();
         });

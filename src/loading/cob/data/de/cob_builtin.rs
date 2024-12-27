@@ -1,5 +1,5 @@
 use bevy::color::Srgba;
-use bevy::ui::{GridTrack, Val};
+use bevy::ui::Val;
 use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, Unexpected, VariantAccess, Visitor};
 use serde::forward_to_deserialize_any;
 
@@ -21,13 +21,11 @@ where
 //-------------------------------------------------------------------------------------------------------------------
 
 // TODO: is there an easier way to do this by leveraging the Serialize implementation of Srgba?
-struct ColorSrgbaAccess
-{
+struct ColorSrgbaAccess {
     color: Srgba,
 }
 
-impl<'de> EnumAccess<'de> for ColorSrgbaAccess
-{
+impl<'de> EnumAccess<'de> for ColorSrgbaAccess {
     type Error = CobError;
     type Variant = ColorSrgbaVariantAccess;
 
@@ -43,17 +41,14 @@ impl<'de> EnumAccess<'de> for ColorSrgbaAccess
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct ColorSrgbaVariantAccess
-{
+struct ColorSrgbaVariantAccess {
     color: Srgba,
 }
 
-impl<'de> VariantAccess<'de> for ColorSrgbaVariantAccess
-{
+impl<'de> VariantAccess<'de> for ColorSrgbaVariantAccess {
     type Error = CobError;
 
-    fn unit_variant(self) -> CobResult<()>
-    {
+    fn unit_variant(self) -> CobResult<()> {
         Err(serde::de::Error::invalid_type(
             Unexpected::UnitVariant,
             &"newtype variant Srgba",
@@ -90,13 +85,11 @@ impl<'de> VariantAccess<'de> for ColorSrgbaVariantAccess
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct SrgbaDeserializer
-{
+struct SrgbaDeserializer {
     color: Srgba,
 }
 
-impl<'de> serde::Deserializer<'de> for SrgbaDeserializer
-{
+impl<'de> serde::Deserializer<'de> for SrgbaDeserializer {
     type Error = CobError;
 
     fn deserialize_any<V>(self, visitor: V) -> CobResult<V::Value>
@@ -116,23 +109,19 @@ impl<'de> serde::Deserializer<'de> for SrgbaDeserializer
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct SrgbaAccess
-{
+struct SrgbaAccess {
     next: usize,
     color: Srgba,
     value: Option<f32>,
 }
 
-impl SrgbaAccess
-{
-    fn new(color: Srgba) -> Self
-    {
+impl SrgbaAccess {
+    fn new(color: Srgba) -> Self {
         SrgbaAccess { next: 0, color, value: None }
     }
 }
 
-impl<'de> MapAccess<'de> for SrgbaAccess
-{
+impl<'de> MapAccess<'de> for SrgbaAccess {
     type Error = CobError;
 
     fn next_key_seed<T>(&mut self, seed: T) -> CobResult<Option<T::Value>>
@@ -178,8 +167,7 @@ impl<'de> MapAccess<'de> for SrgbaAccess
         }
     }
 
-    fn size_hint(&self) -> Option<usize>
-    {
+    fn size_hint(&self) -> Option<usize> {
         Some(4usize.saturating_sub(self.next))
     }
 }
@@ -187,13 +175,11 @@ impl<'de> MapAccess<'de> for SrgbaAccess
 //-------------------------------------------------------------------------------------------------------------------
 
 // TODO: is there an easier way to do this by leveraging the Serialize implementation of Val?
-struct ValAccess
-{
+struct ValAccess {
     val: Val,
 }
 
-impl<'de> EnumAccess<'de> for ValAccess
-{
+impl<'de> EnumAccess<'de> for ValAccess {
     type Error = CobError;
     type Variant = ValVariantAccess;
 
@@ -218,17 +204,14 @@ impl<'de> EnumAccess<'de> for ValAccess
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct ValVariantAccess
-{
+struct ValVariantAccess {
     val: Val,
 }
 
-impl<'de> VariantAccess<'de> for ValVariantAccess
-{
+impl<'de> VariantAccess<'de> for ValVariantAccess {
     type Error = CobError;
 
-    fn unit_variant(self) -> CobResult<()>
-    {
+    fn unit_variant(self) -> CobResult<()> {
         match self.val {
             Val::Auto => Ok(()),
             _ => Err(serde::de::Error::invalid_type(
@@ -287,13 +270,11 @@ impl<'de> VariantAccess<'de> for ValVariantAccess
 }
 //-------------------------------------------------------------------------------------------------------------------
 
-struct GridValAccess
-{
+struct GridValAccess {
     val: GridVal,
 }
 
-impl<'de> EnumAccess<'de> for GridValAccess
-{
+impl<'de> EnumAccess<'de> for GridValAccess {
     type Error = CobError;
     type Variant = GridValVariantAccess;
 
@@ -301,7 +282,6 @@ impl<'de> EnumAccess<'de> for GridValAccess
     where
         V: DeserializeSeed<'de>,
     {
-        info!("enum access grid val access");
         let variant = match self.val {
             GridVal::Auto => "Auto",
             GridVal::Px(_) => "Px",
@@ -319,18 +299,14 @@ impl<'de> EnumAccess<'de> for GridValAccess
 }
 //-------------------------------------------------------------------------------------------------------------------
 
-struct GridValVariantAccess
-{
+struct GridValVariantAccess {
     val: GridVal,
 }
 
-impl<'de> VariantAccess<'de> for GridValVariantAccess
-{
+impl<'de> VariantAccess<'de> for GridValVariantAccess {
     type Error = CobError;
 
-    fn unit_variant(self) -> CobResult<()>
-    {
-        info!("unit");
+    fn unit_variant(self) -> CobResult<()> {
         match self.val {
             GridVal::Auto => Ok(()),
             _ => Err(serde::de::Error::invalid_type(
@@ -344,7 +320,6 @@ impl<'de> VariantAccess<'de> for GridValVariantAccess
     where
         T: DeserializeSeed<'de>,
     {
-        info!("newtype");
         match self.val {
             GridVal::Px(f)
             | GridVal::Percent(f)
@@ -364,7 +339,6 @@ impl<'de> VariantAccess<'de> for GridValVariantAccess
     where
         V: Visitor<'de>,
     {
-        info!("tuple");
         match self.val {
             GridVal::Auto => Err(serde::de::Error::invalid_type(
                 Unexpected::UnitVariant,
@@ -381,7 +355,6 @@ impl<'de> VariantAccess<'de> for GridValVariantAccess
     where
         V: Visitor<'de>,
     {
-        info!("struct");
         match self.val {
             GridVal::Auto => Err(serde::de::Error::invalid_type(
                 Unexpected::UnitVariant,
