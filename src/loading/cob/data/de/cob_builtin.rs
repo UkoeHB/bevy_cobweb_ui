@@ -1,5 +1,5 @@
 use bevy::color::Srgba;
-use bevy::ui::Val;
+use bevy::ui::{GridTrack, Val};
 use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, Unexpected, VariantAccess, Visitor};
 use serde::forward_to_deserialize_any;
 
@@ -14,6 +14,7 @@ where
     match builtin {
         CobBuiltin::Color(CobHexColor { color, .. }) => visitor.visit_enum(ColorSrgbaAccess { color: *color }),
         CobBuiltin::Val { val, .. } => visitor.visit_enum(ValAccess { val: *val }),
+        CobBuiltin::GridVal { val, .. } => visitor.visit_enum(GridValAccess { val: *val }),
     }
 }
 
@@ -284,5 +285,112 @@ impl<'de> VariantAccess<'de> for ValVariantAccess
         }
     }
 }
-
 //-------------------------------------------------------------------------------------------------------------------
+
+struct GridValAccess
+{
+    val: GridVal,
+}
+
+impl<'de> EnumAccess<'de> for GridValAccess
+{
+    type Error = CobError;
+    type Variant = GridValVariantAccess;
+
+    fn variant_seed<V>(self, seed: V) -> CobResult<(V::Value, Self::Variant)>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        info!("enum access grid val access");
+        let variant = match self.val {
+            GridVal::Auto => "Auto",
+            GridVal::Px(_) => "Px",
+            GridVal::Percent(_) => "Percent",
+            GridVal::Vw(_) => "Vw",
+            GridVal::Vh(_) => "Vh",
+            GridVal::VMin(_) => "VMin",
+            GridVal::VMax(_) => "VMax",
+            GridVal::Fr(_) => "Fr",
+        };
+        let variant = variant.into_deserializer();
+        let visitor = GridValVariantAccess { val: self.val };
+        seed.deserialize(variant).map(|v| (v, visitor))
+    }
+}
+//-------------------------------------------------------------------------------------------------------------------
+
+struct GridValVariantAccess
+{
+    val: GridVal,
+}
+
+impl<'de> VariantAccess<'de> for GridValVariantAccess
+{
+    type Error = CobError;
+
+    fn unit_variant(self) -> CobResult<()>
+    {
+        info!("unit");
+        match self.val {
+            GridVal::Auto => Ok(()),
+            _ => Err(serde::de::Error::invalid_type(
+                Unexpected::NewtypeVariant,
+                &"unit variant",
+            )),
+        }
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> CobResult<T::Value>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        info!("newtype");
+        match self.val {
+            GridVal::Px(f)
+            | GridVal::Percent(f)
+            | GridVal::Vw(f)
+            | GridVal::Vh(f)
+            | GridVal::VMin(f)
+            | GridVal::VMax(f)
+            | GridVal::Fr(f) => seed.deserialize(f.into_deserializer()),
+            GridVal::Auto => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"newtype variant",
+            )),
+        }
+    }
+
+    fn tuple_variant<V>(self, _len: usize, _visitor: V) -> CobResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        info!("tuple");
+        match self.val {
+            GridVal::Auto => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"tuple variant",
+            )),
+            _ => Err(serde::de::Error::invalid_type(
+                Unexpected::NewtypeVariant,
+                &"tuple variant",
+            )),
+        }
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], _visitor: V) -> CobResult<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        info!("struct");
+        match self.val {
+            GridVal::Auto => Err(serde::de::Error::invalid_type(
+                Unexpected::UnitVariant,
+                &"struct variant",
+            )),
+            _ => Err(serde::de::Error::invalid_type(
+                Unexpected::NewtypeVariant,
+                &"struct variant",
+            )),
+        }
+    }
+}

@@ -159,17 +159,20 @@ pub enum CobBuiltin
         number: Option<CobNumberValue>,
         val: Val,
     },
+    GridVal {
+        fill: CobFill,
+        /// There is no number for `Val::Auto`.
+        number: Option<CobNumberValue>,
+        val: GridVal,
+    },
 }
 
-impl CobBuiltin
-{
-    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
-    {
+impl CobBuiltin {
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error> {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
-    {
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error> {
         match self {
             Self::Color(color) => {
                 color.write_to_with_space(writer, space)?;
@@ -203,12 +206,43 @@ impl CobBuiltin
                     }
                 }
             }
+            Self::GridVal { fill, number, val } => {
+                fill.write_to_or_else(writer, space)?;
+                if let Some(number) = number {
+                    number.write_to(writer)?;
+                }
+                match val {
+                    GridVal::Auto => {
+                        writer.write_bytes("auto".as_bytes())?;
+                    }
+                    GridVal::Percent(_) => {
+                        writer.write_bytes("%".as_bytes())?;
+                    }
+                    GridVal::Px(_) => {
+                        writer.write_bytes("px".as_bytes())?;
+                    }
+                    GridVal::Vw(_) => {
+                        writer.write_bytes("vw".as_bytes())?;
+                    }
+                    GridVal::Vh(_) => {
+                        writer.write_bytes("vh".as_bytes())?;
+                    }
+                    GridVal::VMin(_) => {
+                        writer.write_bytes("vmin".as_bytes())?;
+                    }
+                    GridVal::VMax(_) => {
+                        writer.write_bytes("vmax".as_bytes())?;
+                    }
+                    GridVal::Fr(_) => {
+                        writer.write_bytes("fr".as_bytes())?;
+                    }
+                }
+            }
         }
         Ok(())
     }
 
-    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
-    {
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError> {
         // NOTE: recursion not tested here (not vulnerable)
 
         // Hex color
@@ -231,12 +265,23 @@ impl CobBuiltin
             match number.as_f32_lossy() {
                 Some(num) => Ok(num),
                 None => {
-                    tracing::warn!("failed parsing builtin Val at {}; number failed to convert to f32",
-                        get_location(content).as_str());
+                    tracing::warn!(
+                        "failed parsing builtin Val at {}; number failed to convert to f32",
+                        get_location(content).as_str()
+                    );
                     Err(span_verify_failure(content)) // non-recoverable error
                 }
             }
         };
+
+        if let Ok((remaining, _)) = tag::<_, _, ()>("fr").parse(remaining) {
+            let (next_fill, remaining) = CobFill::parse(remaining);
+            return Ok((
+                Some(Self::GridVal { fill, number: Some(number), val: GridVal::Fr(get_num()?) }),
+                next_fill,
+                remaining,
+            ));
+        }
         let (remaining, val) = if let Ok((remaining, _)) = char::<_, ()>('%').parse(remaining) {
             (remaining, Val::Percent(get_num()?))
         } else if let Ok((remaining, _)) = tag::<_, _, ()>("px").parse(remaining) {
@@ -261,8 +306,7 @@ impl CobBuiltin
         ))
     }
 
-    pub fn try_from_unit_variant(typename: &str, variant: &str) -> CobResult<Option<Self>>
-    {
+    pub fn try_from_unit_variant(typename: &str, variant: &str) -> CobResult<Option<Self>> {
         if typename == "Val" && variant == "Auto" {
             return Ok(Some(Self::Val {
                 fill: CobFill::default(),
@@ -270,13 +314,19 @@ impl CobBuiltin
                 val: Val::Auto,
             }));
         }
+        else if typename == "GridVal" && variant == "Auto"{
+            return Ok(Some(Self::GridVal {
+                fill: CobFill::default(),
+                number: None,
+                val: GridVal::Auto,
+            }));
+        }
 
         Ok(None)
     }
 
     /// The value should not contain any macros/constants.
-    pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CobValue) -> CobResult<Option<Self>>
-    {
+    pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CobValue) -> CobResult<Option<Self>> {
         if typename == "Color" && variant == "Srgba" {
             let CobValue::Map(CobMap { entries, .. }) = value else { return Ok(None) };
             let mut color = Srgba::default();
@@ -326,12 +376,32 @@ impl CobBuiltin
                 val,
             }));
         }
+        if typename == "GridTrack" {
+            let CobValue::Number(num) = value else { return Ok(None) };
+            let Some(float) = num.number.as_f64() else { return Ok(None) };
+            let extracted = float as f32;
+
+            let val = match variant {
+                "Px" => GridVal::Px(extracted),
+                "Percent" => GridVal::Percent(extracted),
+                "Vw" => GridVal::Vw(extracted),
+                "Vh" => GridVal::Vh(extracted),
+                "VMin" => GridVal::VMin(extracted),
+                "VMax" => GridVal::VMax(extracted),
+                _ => return Err(CobError::MalformedBuiltin),
+            };
+
+            return Ok(Some(Self::GridVal {
+                fill: CobFill::default(),
+                number: Some(num.number.clone()),
+                val,
+            }));
+        }
 
         Ok(None)
     }
 
-    pub fn recover_fill(&mut self, other: &Self)
-    {
+    pub fn recover_fill(&mut self, other: &Self) {
         match (self, other) {
             (Self::Color(color), Self::Color(other_color)) => {
                 color.recover_fill(other_color);
