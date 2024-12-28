@@ -1030,7 +1030,7 @@ impl Instruction for FlexNode {
 ///
 /// Inserts a [`Node`] with [`Display::Grid`] and [`PositionType::Relative`].
 ///
-/// **NOTE** This does not support all Gridding features in bevy
+/// **NOTE**: This does not yet support all features of bevy's Grid layout.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GridNode {
