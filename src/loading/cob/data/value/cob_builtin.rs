@@ -105,8 +105,11 @@ impl CobHexColor
 
         let len = start_len.saturating_sub(end_len);
         if len != 8 && len != 6 {
-            tracing::warn!("failed parsing hex color at {}; hex length is {} but expected 6 or 8",
-                get_location(content), len);
+            tracing::warn!(
+                "failed parsing hex color at {}; hex length is {} but expected 6 or 8",
+                get_location(content),
+                len
+            );
             return Err(span_verify_error(content));
         }
 
@@ -159,7 +162,8 @@ pub enum CobBuiltin
         number: Option<CobNumberValue>,
         val: Val,
     },
-    GridVal {
+    GridVal
+    {
         fill: CobFill,
         /// There is no number for `Val::Auto`.
         number: Option<CobNumberValue>,
@@ -167,12 +171,15 @@ pub enum CobBuiltin
     },
 }
 
-impl CobBuiltin {
-    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error> {
+impl CobBuiltin
+{
+    pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
+    {
         self.write_to_with_space(writer, "")
     }
 
-    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error> {
+    pub fn write_to_with_space(&self, writer: &mut impl RawSerializer, space: &str) -> Result<(), std::io::Error>
+    {
         match self {
             Self::Color(color) => {
                 color.write_to_with_space(writer, space)?;
@@ -242,7 +249,8 @@ impl CobBuiltin {
         Ok(())
     }
 
-    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError> {
+    pub fn try_parse(fill: CobFill, content: Span) -> Result<(Option<Self>, CobFill, Span), SpanError>
+    {
         // NOTE: recursion not tested here (not vulnerable)
 
         // Hex color
@@ -304,15 +312,15 @@ impl CobBuiltin {
         ))
     }
 
-    pub fn try_from_unit_variant(typename: &str, variant: &str) -> CobResult<Option<Self>> {
+    pub fn try_from_unit_variant(typename: &str, variant: &str) -> CobResult<Option<Self>>
+    {
         if typename == "Val" && variant == "Auto" {
             return Ok(Some(Self::Val {
                 fill: CobFill::default(),
                 number: None,
                 val: Val::Auto,
             }));
-        }
-        else if typename == "GridVal" && variant == "Auto"{
+        } else if typename == "GridVal" && variant == "Auto" {
             return Ok(Some(Self::GridVal {
                 fill: CobFill::default(),
                 number: None,
@@ -324,7 +332,8 @@ impl CobBuiltin {
     }
 
     /// The value should not contain any macros/constants.
-    pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CobValue) -> CobResult<Option<Self>> {
+    pub fn try_from_newtype_variant(typename: &str, variant: &str, value: &CobValue) -> CobResult<Option<Self>>
+    {
         if typename == "Color" && variant == "Srgba" {
             let CobValue::Map(CobMap { entries, .. }) = value else { return Ok(None) };
             let mut color = Srgba::default();
@@ -374,7 +383,7 @@ impl CobBuiltin {
                 val,
             }));
         }
-        if typename == "GridTrack" {
+        if typename == "GridVal" {
             let CobValue::Number(num) = value else { return Ok(None) };
             let Some(float) = num.number.as_f64() else { return Ok(None) };
             let extracted = float as f32;
@@ -386,6 +395,7 @@ impl CobBuiltin {
                 "Vh" => GridVal::Vh(extracted),
                 "VMin" => GridVal::VMin(extracted),
                 "VMax" => GridVal::VMax(extracted),
+                "Fr" => GridVal::Fr(extracted),
                 _ => return Err(CobError::MalformedBuiltin),
             };
 
@@ -399,7 +409,8 @@ impl CobBuiltin {
         Ok(None)
     }
 
-    pub fn recover_fill(&mut self, other: &Self) {
+    pub fn recover_fill(&mut self, other: &Self)
+    {
         match (self, other) {
             (Self::Color(color), Self::Color(other_color)) => {
                 color.recover_fill(other_color);

@@ -340,6 +340,7 @@ pub struct BuiltinCollection
     pub vmin: Val,
     pub vmax: Val,
     pub color: Color,
+    pub fr: GridVal,
 }
 
 impl Instruction for BuiltinCollection

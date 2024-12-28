@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
+use bevy_cobweb_ui::ui_bevy::GridVal;
 
 use super::helpers::*;
 
@@ -314,7 +315,7 @@ fn aggregate_struct()
             float: 1.0,
             boolean: true,
             string: String::from("hi"),
-            vec: vec![PlainStruct{boolean: true}, PlainStruct{boolean: false}],
+            vec: vec![PlainStruct { boolean: true }, PlainStruct { boolean: false }],
             map,
             s_struct: UnitStruct,
             s_enum: EnumStruct::B(UnitStruct),
@@ -463,8 +464,8 @@ fn builtins()
     let a = prepare_test_app();
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
-        "{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax color:#FFFFFF}",
+        "BuiltinCollection{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr color:#FFFFFF}",
+        "{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr color:#FFFFFF}",
         BuiltinCollection {
             auto_val: Val::Auto,
             px: Val::Px(0.0),
@@ -473,13 +474,14 @@ fn builtins()
             vh: Val::Vh(1.0),
             vmin: Val::VMin(1.0),
             vmax: Val::VMax(1.0),
+            fr:GridVal::Fr(1.0),
             color: Color::Srgba(Default::default()),
         },
     );
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
-        "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax color:#FF0000}",
+        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr color:#FF0000}",
+        "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr color:#FF0000}",
         BuiltinCollection {
             auto_val: Val::Auto,
             px: Val::Px(1.1),
@@ -488,6 +490,7 @@ fn builtins()
             vh: Val::Vh(1.1),
             vmin: Val::VMin(1.1),
             vmax: Val::VMax(1.1),
+            fr:GridVal::Fr(1.1),
             color: Color::Srgba(Srgba::RED),
         },
     );
