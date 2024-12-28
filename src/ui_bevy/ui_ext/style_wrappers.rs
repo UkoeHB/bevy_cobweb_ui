@@ -1072,15 +1072,19 @@ pub struct GridNode {
     #[reflect(default)]
     pub right: Val,
 
-    /// Grid based formating
-    /// Put valuse inside `[]` brackets
-    /// **Note** only GridVal variants are supported, which is not all Bevy supported gridding
+    /// Grid layout
+    /// 
+    /// Put values inside `[]` brackets.
+    /// 
+    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
     #[reflect(default)]
     pub grid_template_rows: Vec<GridVal>,
 
-    /// Grid based formating
-    /// Put valuse inside `[]` brackets
-    /// **Note** only GridVal variants are supported, which is not all Bevy supported gridding
+    /// Grid layout
+    /// 
+    /// Put values inside `[]` brackets.
+    /// 
+    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
     #[reflect(default)]
     pub grid_template_columns: Vec<GridVal>,
 
@@ -1251,9 +1255,9 @@ impl StaticAttribute for DisplayControl {
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Like Val but also accepts additional values for grid based layouts
-/// Derived traits are based on Val's derived traits
-/// After the data is serialised it should be converted to GridTrack
+/// Like [`Val`] but also accepts additional values for grid layouts.
+///
+/// Can be converted to a [`GridTrack`] for use in [`Node`].
 #[derive(Clone, Copy, Default, Debug, Reflect, PartialEq)]
 #[reflect(Default, PartialEq, Debug)]
 #[cfg_attr(

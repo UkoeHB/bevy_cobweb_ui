@@ -265,10 +265,8 @@ impl CobBuiltin {
             match number.as_f32_lossy() {
                 Some(num) => Ok(num),
                 None => {
-                    tracing::warn!(
-                        "failed parsing builtin Val at {}; number failed to convert to f32",
-                        get_location(content).as_str()
-                    );
+                    tracing::warn!("failed parsing builtin Val at {}; number failed to convert to f32",
+                        get_location(content).as_str());
                     Err(span_verify_failure(content)) // non-recoverable error
                 }
             }
