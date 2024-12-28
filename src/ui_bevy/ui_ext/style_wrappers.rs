@@ -1328,11 +1328,10 @@ impl StaticAttribute for DisplayControl
 /// Like [`Val`] but also accepts additional values for grid layouts.
 ///
 /// Can be converted to a [`GridTrack`] for use in [`Node`].
-#[derive(Clone, Copy, Default, Debug, Reflect, PartialEq)]
+#[derive(Clone, Copy, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
 #[reflect(Default, PartialEq, Debug)]
 #[cfg_attr(
     feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
 pub enum GridVal
