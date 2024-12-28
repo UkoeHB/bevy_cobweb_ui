@@ -105,8 +105,11 @@ impl CobHexColor
 
         let len = start_len.saturating_sub(end_len);
         if len != 8 && len != 6 {
-            tracing::warn!("failed parsing hex color at {}; hex length is {} but expected 6 or 8",
-                get_location(content), len);
+            tracing::warn!(
+                "failed parsing hex color at {}; hex length is {} but expected 6 or 8",
+                get_location(content),
+                len
+            );
             return Err(span_verify_error(content));
         }
 
@@ -159,6 +162,13 @@ pub enum CobBuiltin
         number: Option<CobNumberValue>,
         val: Val,
     },
+    GridVal
+    {
+        fill: CobFill,
+        /// There is no number for `Val::Auto`.
+        number: Option<CobNumberValue>,
+        val: GridVal,
+    },
 }
 
 impl CobBuiltin
@@ -203,6 +213,38 @@ impl CobBuiltin
                     }
                 }
             }
+            Self::GridVal { fill, number, val } => {
+                fill.write_to_or_else(writer, space)?;
+                if let Some(number) = number {
+                    number.write_to(writer)?;
+                }
+                match val {
+                    GridVal::Auto => {
+                        writer.write_bytes("auto".as_bytes())?;
+                    }
+                    GridVal::Percent(_) => {
+                        writer.write_bytes("%".as_bytes())?;
+                    }
+                    GridVal::Px(_) => {
+                        writer.write_bytes("px".as_bytes())?;
+                    }
+                    GridVal::Vw(_) => {
+                        writer.write_bytes("vw".as_bytes())?;
+                    }
+                    GridVal::Vh(_) => {
+                        writer.write_bytes("vh".as_bytes())?;
+                    }
+                    GridVal::VMin(_) => {
+                        writer.write_bytes("vmin".as_bytes())?;
+                    }
+                    GridVal::VMax(_) => {
+                        writer.write_bytes("vmax".as_bytes())?;
+                    }
+                    GridVal::Fr(_) => {
+                        writer.write_bytes("fr".as_bytes())?;
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -237,6 +279,15 @@ impl CobBuiltin
                 }
             }
         };
+
+        if let Ok((remaining, _)) = tag::<_, _, ()>("fr").parse(remaining) {
+            let (next_fill, remaining) = CobFill::parse(remaining);
+            return Ok((
+                Some(Self::GridVal { fill, number: Some(number), val: GridVal::Fr(get_num()?) }),
+                next_fill,
+                remaining,
+            ));
+        }
         let (remaining, val) = if let Ok((remaining, _)) = char::<_, ()>('%').parse(remaining) {
             (remaining, Val::Percent(get_num()?))
         } else if let Ok((remaining, _)) = tag::<_, _, ()>("px").parse(remaining) {
@@ -268,6 +319,12 @@ impl CobBuiltin
                 fill: CobFill::default(),
                 number: None,
                 val: Val::Auto,
+            }));
+        } else if typename == "GridVal" && variant == "Auto" {
+            return Ok(Some(Self::GridVal {
+                fill: CobFill::default(),
+                number: None,
+                val: GridVal::Auto,
             }));
         }
 
@@ -321,6 +378,28 @@ impl CobBuiltin
             };
 
             return Ok(Some(Self::Val {
+                fill: CobFill::default(),
+                number: Some(num.number.clone()),
+                val,
+            }));
+        }
+        if typename == "GridVal" {
+            let CobValue::Number(num) = value else { return Ok(None) };
+            let Some(float) = num.number.as_f64() else { return Ok(None) };
+            let extracted = float as f32;
+
+            let val = match variant {
+                "Px" => GridVal::Px(extracted),
+                "Percent" => GridVal::Percent(extracted),
+                "Vw" => GridVal::Vw(extracted),
+                "Vh" => GridVal::Vh(extracted),
+                "VMin" => GridVal::VMin(extracted),
+                "VMax" => GridVal::VMax(extracted),
+                "Fr" => GridVal::Fr(extracted),
+                _ => return Err(CobError::MalformedBuiltin),
+            };
+
+            return Ok(Some(Self::GridVal {
                 fill: CobFill::default(),
                 number: Some(num.number.clone()),
                 val,

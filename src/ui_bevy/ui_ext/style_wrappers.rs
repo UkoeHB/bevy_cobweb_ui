@@ -1083,6 +1083,176 @@ impl Instruction for FlexNode
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Instruction loadable for Grid-controlled nodes.
+///
+/// Inserts a [`Node`] with [`Display::Grid`] and [`PositionType::Relative`].
+///
+/// **NOTE**: This does not yet support all features of bevy's Grid layout.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct GridNode
+{
+    // DIMS
+    /// See [`Dims::width`].
+    #[reflect(default)]
+    pub width: Val,
+    /// See [`Dims::height`].
+    #[reflect(default)]
+    pub height: Val,
+    /// See [`Dims::max_width`].
+    #[reflect(default)]
+    pub max_width: Val,
+    /// See [`Dims::max_height`].
+    #[reflect(default)]
+    pub max_height: Val,
+    /// See [`Dims::min_width`].
+    #[reflect(default)]
+    pub min_width: Val,
+    /// See [`Dims::min_height`].
+    #[reflect(default)]
+    pub min_height: Val,
+    /// See [`Dims::aspect_ratio`].
+    #[reflect(default)]
+    pub aspect_ratio: Option<f32>,
+    /// See [`Dims::border`].
+    #[reflect(default)]
+    pub border: StyleRect,
+    /// See [`Dims::top`].
+    #[reflect(default = "Dims::default_top")]
+    pub top: Val,
+    /// See [`Dims::bottom`].
+    #[reflect(default)]
+    pub bottom: Val,
+    /// See [`Dims::left`].
+    #[reflect(default = "Dims::default_left")]
+    pub left: Val,
+    /// See [`Dims::right`].
+    #[reflect(default)]
+    pub right: Val,
+
+    /// Grid layout
+    ///
+    /// Put values inside `[]` brackets.
+    ///
+    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
+    #[reflect(default)]
+    pub grid_template_rows: Vec<GridVal>,
+
+    /// Grid layout
+    ///
+    /// Put values inside `[]` brackets.
+    ///
+    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
+    #[reflect(default)]
+    pub grid_template_columns: Vec<GridVal>,
+
+    // CONTENT
+    /// See [`ContentFlex::clipping`].
+    #[reflect(default)]
+    pub clipping: Clipping,
+    /// See [`ContentFlex::clip_margin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
+    /// See [`ContentFlex::padding`].
+    #[reflect(default)]
+    pub padding: StyleRect,
+    /// See [`ContentFlex::flex_direction`].
+    #[reflect(default)]
+    pub flex_direction: FlexDirection,
+    /// See [`ContentFlex::flex_wrap`].
+    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    pub flex_wrap: FlexWrap,
+    /// See [`ContentFlex::justify_lines`].
+    #[reflect(default)]
+    pub justify_lines: JustifyLines,
+    /// See [`ContentFlex::justify_main`].
+    #[reflect(default)]
+    pub justify_main: JustifyMain,
+    /// See [`ContentFlex::justify_cross`].
+    #[reflect(default)]
+    pub justify_cross: JustifyCross,
+    /// See [`ContentFlex::column_gap`].
+    #[reflect(default)]
+    pub column_gap: Val,
+    /// See [`ContentFlex::row_gap`].
+    #[reflect(default)]
+    pub row_gap: Val,
+}
+
+impl Instruction for GridNode
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+
+        // let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
+        let mut node: Node = self.into();
+        node.display = Display::Grid;
+
+        emut.insert(node);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<Node>();
+        });
+    }
+}
+
+impl Into<Node> for GridNode
+{
+    fn into(self) -> Node
+    {
+        let mut node = Node::default();
+        node.display = Display::Grid;
+        node.position_type = PositionType::Relative;
+
+        Dims {
+            width: self.width,
+            height: self.height,
+            max_width: self.max_width,
+            max_height: self.max_height,
+            min_width: self.min_width,
+            min_height: self.min_height,
+            aspect_ratio: self.aspect_ratio,
+            border: self.border,
+            top: self.top,
+            bottom: self.bottom,
+            left: self.left,
+            right: self.right,
+        }
+        .set_in_node(&mut node);
+
+        ContentFlex {
+            clipping: self.clipping,
+            clip_margin: self.clip_margin,
+            padding: self.padding,
+            flex_direction: self.flex_direction,
+            flex_wrap: self.flex_wrap,
+            justify_lines: self.justify_lines,
+            justify_main: self.justify_main,
+            justify_cross: self.justify_cross,
+            column_gap: self.column_gap,
+            row_gap: self.row_gap,
+        }
+        .set_in_node(&mut node);
+
+        node.grid_template_rows = self
+            .grid_template_rows
+            .iter()
+            .map(|x| GridTrack::from(*x).into())
+            .collect();
+
+        node.grid_template_columns = self
+            .grid_template_columns
+            .iter()
+            .map(|x| GridTrack::from(*x).into())
+            .collect();
+        node
+    }
+} //-------------------------------------------------------------------------------------------------------------------
+
 /// Instruction loadable that toggles the [`Node::display`] field.
 ///
 /// Inserts self as a component so the `AbsoluteNode` and `FlexNode` loadables can read the correct display value
@@ -1155,6 +1325,47 @@ impl StaticAttribute for DisplayControl
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Like [`Val`] but also accepts additional values for grid layouts.
+///
+/// Can be converted to a [`GridTrack`] for use in [`Node`].
+#[derive(Clone, Copy, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
+#[reflect(Default, PartialEq, Debug)]
+#[cfg_attr(
+    feature = "serde",
+    reflect(Serialize, Deserialize)
+)]
+pub enum GridVal
+{
+    #[default]
+    Auto,
+    Percent(f32),
+    Px(f32),
+    Vw(f32),
+    Vh(f32),
+    VMin(f32),
+    VMax(f32),
+    Fr(f32),
+}
+
+impl From<GridVal> for GridTrack
+{
+    fn from(value: GridVal) -> Self
+    {
+        match value {
+            GridVal::Auto => GridTrack::auto(),
+            GridVal::Percent(f) => GridTrack::percent(f),
+            GridVal::Px(f) => GridTrack::px(f),
+            GridVal::Vw(f) => GridTrack::vw(f),
+            GridVal::Vh(f) => GridTrack::vh(f),
+            GridVal::VMin(f) => GridTrack::vmin(f),
+            GridVal::VMax(f) => GridTrack::vmax(f),
+            GridVal::Fr(f) => GridTrack::fr(f),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct StyleWrappersPlugin;
 
 impl Plugin for StyleWrappersPlugin
@@ -1163,6 +1374,7 @@ impl Plugin for StyleWrappersPlugin
     {
         app.register_instruction_type::<AbsoluteNode>()
             .register_instruction_type::<FlexNode>()
+            .register_instruction_type::<GridNode>()
             .register_static::<DisplayControl>()
             .add_systems(PostUpdate, DisplayControl::refresh.before(UiSystem::Prepare));
     }
