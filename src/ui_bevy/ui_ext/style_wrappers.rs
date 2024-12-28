@@ -1131,17 +1131,17 @@ pub struct GridNode
     pub right: Val,
 
     /// Grid layout
-    /// 
+    ///
     /// Put values inside `[]` brackets.
-    /// 
+    ///
     /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
     #[reflect(default)]
     pub grid_template_rows: Vec<GridVal>,
 
     /// Grid layout
-    /// 
+    ///
     /// Put values inside `[]` brackets.
-    /// 
+    ///
     /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
     #[reflect(default)]
     pub grid_template_columns: Vec<GridVal>,
@@ -1267,7 +1267,7 @@ pub enum DisplayControl
 {
     /// Corresponds to [`Display::Flex`].
     #[default]
-    Flex,
+    Show,
     /// Corresponds to [`Display::None`].
     Hide,
 }
@@ -1289,7 +1289,7 @@ impl Into<Display> for DisplayControl
     fn into(self) -> Display
     {
         match self {
-            Self::Flex => Display::Flex,
+            Self::Show => Display::Flex,
             Self::Hide => Display::None,
         }
     }
@@ -1308,7 +1308,7 @@ impl Instruction for DisplayControl
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
             if let Some(mut node) = e.get_mut::<Node>() {
-                node.display = Self::Flex.into();
+                node.display = Self::Show.into();
             }
         });
     }

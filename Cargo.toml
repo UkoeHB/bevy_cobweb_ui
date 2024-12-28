@@ -22,6 +22,7 @@ test = false
 name = "tests"
 path = "tests/test/mod.rs"
 doctest = false
+required-features = ["serde"]
 
 [package.metadata.docs.rs]
 all-features = true
