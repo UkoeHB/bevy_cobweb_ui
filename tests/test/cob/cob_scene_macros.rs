@@ -7,12 +7,12 @@ use super::helpers::{test_cob, test_cob_fail};
 #[test]
 fn defs_section_scene_macros()
 {
-    // /*
+    /*
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
         .with_max_level(tracing::Level::TRACE)
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-    // */
+    */
     let res = test_cob(
         b"#defs
 ",

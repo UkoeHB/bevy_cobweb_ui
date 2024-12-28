@@ -1,6 +1,6 @@
 [package]
 name = "bevy_cobweb_ui"
-description = "UI tools and widgets built on bevy_cobweb"
+description = "UI framework for the bevy game engine"
 authors = ["koe <ukoe@protonmail.com>"]
 version = "0.7.0"
 edition = "2021"

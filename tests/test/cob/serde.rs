@@ -474,7 +474,7 @@ fn builtins()
             vh: Val::Vh(1.0),
             vmin: Val::VMin(1.0),
             vmax: Val::VMax(1.0),
-            fr:GridVal::Fr(1.0),
+            fr: GridVal::Fr(1.0),
             color: Color::Srgba(Default::default()),
         },
     );
@@ -490,7 +490,7 @@ fn builtins()
             vh: Val::Vh(1.1),
             vmin: Val::VMin(1.1),
             vmax: Val::VMax(1.1),
-            fr:GridVal::Fr(1.1),
+            fr: GridVal::Fr(1.1),
             color: Color::Srgba(Srgba::RED),
         },
     );

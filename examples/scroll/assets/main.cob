@@ -218,7 +218,7 @@ $blob_big = 600px
                             // Note: this will be applied 1 frame late because 'start scroll' is detected after layout (and after
                             // attributes are applied).)
                             Multi<Static<DisplayControl>>[{value:Hide} {state:[Custom("HorizontalScroll")] value:Show}]
-                            NodeShadow{spread_radius:15px blur_radius:10px}
+                            NodeShadow{spread_radius:1px blur_radius:10px}
 
                 "gutter"
                     FlexNode{height:100% width:100% flex_direction:Column justify_cross:Center padding:{top:6px bottom:6px}}

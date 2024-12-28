@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::ui::UiSystem;
+use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 use crate::sickle::Lerp;
@@ -1330,10 +1331,7 @@ impl StaticAttribute for DisplayControl
 /// Can be converted to a [`GridTrack`] for use in [`Node`].
 #[derive(Clone, Copy, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
 #[reflect(Default, PartialEq, Debug)]
-#[cfg_attr(
-    feature = "serde",
-    reflect(Serialize, Deserialize)
-)]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
 pub enum GridVal
 {
     #[default]

@@ -59,14 +59,17 @@ fn whitespace()
     test_fill("\na", "\n");
     test_fill("\na\n", "\n");
 
+    // Filler characters
+    test_fill("\r", "\r");
+    test_fill("\r ", "\r ");
+    test_fill(" \r ", " \r ");
+    test_fill("\n\r ", "\n\r ");
+    test_fill(";,\r", ";,\r");
+
     // Banned characters
-    test_fill("\r", "");
     test_fill("\t", "");
     test_fill("^", "");
     test_fill("ß", "");
-    test_fill("\r ", "");
-    test_fill(" \r ", " ");
-    test_fill("\n\r ", "\n");
 }
 
 //-------------------------------------------------------------------------------------------------------------------
