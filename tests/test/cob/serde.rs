@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
-use bevy_cobweb_ui::ui_bevy::{GridVal, RepeatedGridVal};
+use bevy_cobweb_ui::ui_bevy::{GridVal, GridValRepetition, RepeatedGridVal};
 
 use super::helpers::*;
 
@@ -478,8 +478,8 @@ fn builtins()
             vmax: Val::VMax(1.0),
             fr: GridVal::Fraction(1.0),
             minmax: GridVal::MinMax(vec![GridVal::Auto, GridVal::Px(1.0)]),
-            repeated_single_auto: RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto),
-            repeated_many: RepeatedGridVal(GridTrackRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.0)])),
+            repeated_single_auto: RepeatedGridVal(GridValRepetition::Count(1), GridVal::Auto),
+            repeated_many: RepeatedGridVal(GridValRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.0)])),
             color: Color::Srgba(Default::default()),
         },
     );
@@ -499,8 +499,8 @@ fn builtins()
             vmax: Val::VMax(1.1),
             fr: GridVal::Fraction(1.1),
             minmax: GridVal::MinMax(vec![GridVal::Auto, GridVal::Px(1.1)]),
-            repeated_single_auto: RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto),
-            repeated_many: RepeatedGridVal(GridTrackRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.1)])),
+            repeated_single_auto: RepeatedGridVal(GridValRepetition::Count(1), GridVal::Auto),
+            repeated_many: RepeatedGridVal(GridValRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.1)])),
             color: Color::Srgba(Srgba::RED),
         },
     );
@@ -518,19 +518,19 @@ fn builtins()
         a.world(),
         "BuiltinRepeatedGridVal(auto)",
         "BuiltinRepeatedGridVal(Count(1) auto)",
-        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto)),
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridValRepetition::Count(1), GridVal::Auto)),
     );
     test_equivalence_lossy(
         a.world(),
         "BuiltinRepeatedGridVal(1px)",
         "BuiltinRepeatedGridVal(Count(1) 1px)",
-        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Px(1.0))),
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridValRepetition::Count(1), GridVal::Px(1.0))),
     );
     test_equivalence_lossy(
         a.world(),
         "BuiltinRepeatedGridVal(1fr)",
         "BuiltinRepeatedGridVal(Count(1) 1fr)",
-        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Fraction(1.0))),
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridValRepetition::Count(1), GridVal::Fraction(1.0))),
     );
 }
 

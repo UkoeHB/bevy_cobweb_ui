@@ -41,7 +41,7 @@ Check the repository examples for how to build different kinds of UI.
 - [`cursors`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/cursors): Set custom cursors that respond to interactions with UI elements.
 - [`help_text`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/help_text): Help text that appears on hover. Showcases [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity), which allows controlling (and animating) the opacity of entire node trees, and even layering multiple [`PropagateOpacity`](bevy_cobweb_ui::prelude::PropagateOpacity) within a single tree.
 - [`localization`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/localization): Showcases localized text and font.
-- [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A minimalistic code-only calculator. Shows how to mix builder-pattern-based UI construction with `bevy_cobweb_ui` convenience tools for interactions.
+- [`calculator`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/calculator): A basic calculator. Shows how to use grid layout and scene macros.
 - [`game_menu`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/game_menu): A simple game menu with settings page. Showcases multiple uses of built-in radio buttons, sliders, and drop-downs, localization, non-interactive animations, and how to manage localized image assets using COB files as asset manifests.
     - Not yet migrated to use COB. It is waiting for a dropdown widget to be implemented.
 - [`editor_demo`](https://github.com/UkoeHB/bevy_cobweb_ui/tree/master/examples/editor_demo): Showcases the editor with custom editor widgets.

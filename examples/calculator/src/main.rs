@@ -1,11 +1,10 @@
-//! Demonstrates building a calculator in-code using a mix of `sickle_ui` and `bevy_cobweb_ui` utilities.
+//! Demonstrates building a calculator using grid layout and scene macros.
 
 use bevy::color::palettes::tailwind::*;
 use bevy::prelude::*;
 use bevy::window::WindowTheme;
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui::prelude::*;
-use bevy_cobweb_ui::sickle::*;
 use calc::Context;
 use itertools::Itertools;
 use rust_decimal::prelude::{Decimal, FromPrimitive};
@@ -13,11 +12,6 @@ use rust_decimal::prelude::{Decimal, FromPrimitive};
 //-------------------------------------------------------------------------------------------------------------------
 
 const BACKDROP_COLOR: Srgba = SLATE_950;
-const NORMAL_BUTTON: Srgba = SLATE_500;
-const HOVERED_BUTTON: Srgba = SLATE_400;
-const PRESSED_BUTTON: Srgba = GREEN_400;
-const BORDER_BUTTON: Srgba = SLATE_400;
-const BORDER_DISPLAY: Srgba = SKY_950;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -60,67 +54,41 @@ impl Calculator
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 {
-    let items = vec![
+    let buttons = vec![
         "C", "", "7", "8", "9", "/", "4", "5", "6", "*",
         "1", "2", "3", "-", "0", ".", "=", "+",
     ];
 
-    c.ui_root().container(Node::default(), |ui| {
-        ui.style()
-            .display(Display::Grid)
-            .grid_template_columns(RepeatedGridTrack::auto(4))
-            .margin(UiRect::all(Val::Auto));
-        ui.insert_reactive(Calculator::default());
-        let calc_entity = ui.id();
+    let scene = ("main.cob", "scene");
+    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
+        l.insert_reactive(Calculator::default());
+        let calc_entity = l.id();
 
-        for item in items {
-            let is_display = item == "";
-            let (span, br_radius, br_color) = match is_display {
-                true => (3, Val::Px(0.), BORDER_DISPLAY.into()),
-                false => (1, Val::Px(5.), BORDER_BUTTON.into()),
-            };
-
-            ui.container(Node::default(), |ui| {
-                ui.style()
-                    .grid_column(GridPlacement::span(span))
-                    .border(UiRect::all(Val::Px(1.)))
-                    .padding(UiRect::all(Val::Px(20.)))
-                    .margin(UiRect::all(Val::Px(5.)))
-                    .border_radius(BorderRadius::all(br_radius))
-                    .border_color(br_color)
-                    .justify_content(JustifyContent::Center);
-                if is_display {
-                    ui.style().background_color(NORMAL_BUTTON.into());
-                } else {
-                    ui.apply(Interactive)
-                        .apply(Responsive::<BackgroundColor> {
-                            idle: NORMAL_BUTTON.into(),
-                            hover: Some(HOVERED_BUTTON.into()),
-                            press: Some(PRESSED_BUTTON.into()),
-                            ..default()
-                        })
-                        .on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
-                            calc.get_mut(&mut c, calc_entity)
-                                .unwrap()
-                                .add_instruction(item);
-                        });
-                }
-
-                ui.container(Node::default(), |ui| {
-                    ui.apply(TextLine { text: item.into(), size: 30.0, ..default() });
-
-                    if is_display {
-                        ui.update_on(
-                            entity_mutation::<Calculator>(calc_entity),
-                            move |id: UpdateId, calc: Reactive<Calculator>, mut e: TextEditor| {
-                                let text = calc.get(calc_entity).unwrap().buffer_display();
-                                write_text!(e, *id, "{}", text);
-                            },
-                        );
-                    }
+        for button in buttons {
+            // Insert display at the correct position in the grid
+            if button == "" {
+                l.load_scene_and_edit(("main.cob", "display"), |l| {
+                    l.get("text").update_on(
+                        entity_mutation::<Calculator>(calc_entity),
+                        move |id: UpdateId, calc: Reactive<Calculator>, mut e: TextEditor| {
+                            let text = calc.get(calc_entity)?.buffer_display();
+                            write_text!(e, *id, "{}", text);
+                            OK
+                        },
+                    );
                 });
+
+                continue;
+            }
+
+            l.load_scene_and_edit(("main.cob", "button"), |l| {
+                l.on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
+                    calc.get_mut(&mut c, calc_entity)?.add_instruction(button);
+                    OK
+                });
+                l.get("text").update_text(button);
             });
         }
     });
@@ -144,7 +112,9 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .add_systems(Startup, (setup, build_ui))
+        .load("main.cob")
+        .add_systems(PreStartup, setup)
+        .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
 

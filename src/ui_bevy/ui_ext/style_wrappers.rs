@@ -178,26 +178,69 @@ impl From<GridVal> for MaxTrackSizingFunction
 
 //-------------------------------------------------------------------------------------------------------------------
 
+#[derive(Copy, Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
+#[reflect(Default, PartialEq)]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
+/// How many times to repeat a repeated grid track.
+///
+/// Mirrors [`GridTrackRepetition`].
+pub enum GridValRepetition
+{
+    /// Repeat the track fixed number of times
+    Count(u16),
+    /// Repeat the track to fill available space
+    ///
+    /// <https://developer.mozilla.org/en-US/docs/Web/CSS/repeat#auto-fill>
+    AutoFill,
+    /// Repeat the track to fill available space but collapse any tracks that do not end up with
+    /// an item placed in them.
+    ///
+    /// <https://developer.mozilla.org/en-US/docs/Web/CSS/repeat#auto-fit>
+    AutoFit,
+}
+
+impl Into<GridTrackRepetition> for GridValRepetition
+{
+    fn into(self) -> GridTrackRepetition
+    {
+        match self {
+            Self::Count(count) => GridTrackRepetition::Count(count),
+            Self::AutoFill => GridTrackRepetition::AutoFill,
+            Self::AutoFit => GridTrackRepetition::AutoFit,
+        }
+    }
+}
+
+impl Default for GridValRepetition
+{
+    fn default() -> Self
+    {
+        Self::Count(1)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Like [`Val`] but also accepts additional values for grid layouts.
 ///
 /// Can be converted to a [`RepeatedGridVal`] for use in [`Node`]. Note that many `RepeatedGridVal` variants
-/// only accept a `repetition_count`. If [`GridTrackRepetition::AutoFill`] or [`GridTrackRepetition::AutoFit`]
-/// is set, then it will fall back to `GridTrackRepetition::Count(1)` for those cases.
+/// only accept a `repetition_count`. If [`GridValRepetition::AutoFill`] or [`GridValRepetition::AutoFit`]
+/// is set, then it will fall back to `GridValRepetition::Count(1)` for those cases.
 ///
 /// In COB files, a single [`GridVal`] will implicitly convert to `(Count(1), val)`. This reduces boilerplate
 /// when constructing grid nodes.
 #[derive(Clone, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
 #[reflect(Default, PartialEq, Debug)]
 #[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
-pub struct RepeatedGridVal(pub GridTrackRepetition, pub GridVal);
+pub struct RepeatedGridVal(pub GridValRepetition, pub GridVal);
 
 impl From<RepeatedGridVal> for RepeatedGridTrack
 {
     fn from(value: RepeatedGridVal) -> Self
     {
         let repetition_count = match &value.0 {
-            GridTrackRepetition::Count(count) => *count,
-            GridTrackRepetition::AutoFill | GridTrackRepetition::AutoFit => 1,
+            GridValRepetition::Count(count) => *count,
+            GridValRepetition::AutoFill | GridValRepetition::AutoFit => 1,
         };
         match value.1 {
             GridVal::Auto => RepeatedGridTrack::auto(repetition_count),
@@ -252,7 +295,7 @@ pub struct GridInsertion
     pub start: i16,
     /// How many grid tracks the item should span.
     ///
-    /// Zero is treated as 'no span'.
+    /// Zero is treated as 'no span' if both `start` and `end` are non-zero. Otherwise it falls back to `1`.
     ///
     /// Defaults to 1.
     #[reflect(default = "GridInsertion::default_span")]
@@ -294,6 +337,9 @@ impl Into<GridPlacement> for GridInsertion
         } else {
             if self.start != 0 {
                 placement = placement.set_start(self.start);
+            }
+            if self.span != 0 {
+                placement = placement.set_span(self.span);
             }
             if self.end != 0 {
                 placement = placement.set_end(self.end);
@@ -1391,11 +1437,7 @@ impl Instruction for AbsoluteNode
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Flex);
-        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
-            *cache = DisplayType::Flex;
-        } else {
-            emut.insert(DisplayType::Flex);
-        }
+        emut.insert(DisplayType::Flex);
 
         emut.insert(node);
     }
@@ -1571,11 +1613,7 @@ impl Instruction for FlexNode
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Flex);
-        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
-            *cache = DisplayType::Flex;
-        } else {
-            emut.insert(DisplayType::Flex);
-        }
+        emut.insert(DisplayType::Flex);
 
         emut.insert(node);
     }
@@ -1731,11 +1769,7 @@ impl Instruction for AbsoluteGridNode
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Grid);
-        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
-            *cache = DisplayType::Grid;
-        } else {
-            emut.insert(DisplayType::Grid);
-        }
+        emut.insert(DisplayType::Grid);
 
         emut.insert(node);
     }
@@ -1912,11 +1946,7 @@ impl Instruction for GridNode
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Grid);
-        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
-            *cache = DisplayType::Grid;
-        } else {
-            emut.insert(DisplayType::Grid);
-        }
+        emut.insert(DisplayType::Grid);
 
         emut.insert(node);
     }

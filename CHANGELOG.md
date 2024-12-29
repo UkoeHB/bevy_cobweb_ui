@@ -1,5 +1,16 @@
 # Changelog
 
+## WIP
+
+### Hightlights
+- Add full support for grid layouts.
+    - Added `GridNode` and `AbsoluteGridNode` loadables.
+    - Added `fr` builtin type for `GridVal::Fraction`.
+    - Added deserialization magic so `RepeatedGridVal` can be obtained from a single `GridVal`. This lets you do `GridNode{ grid_template_rows:[10px 20fr] }` for example.
+
+### Updates
+- Rework calculator example to use a COB file with the new grid layout support.
+
 ## 0.7.0
 
 ### Highlights

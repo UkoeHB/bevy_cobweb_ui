@@ -1660,8 +1660,6 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_responsive::<SetClipMargin>()
             .register_animatable::<Padding>()
             .register_animatable::<Splat<Padding>>()
-            .register_responsive::<SetFlexDirection>()
-            .register_responsive::<SetFlexWrap>()
             .register_responsive::<SetJustifyLines>()
             .register_responsive::<SetJustifyMain>()
             .register_responsive::<SetJustifyCross>()
