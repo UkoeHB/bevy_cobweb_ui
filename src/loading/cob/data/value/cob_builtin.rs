@@ -162,12 +162,12 @@ pub enum CobBuiltin
         number: Option<CobNumberValue>,
         val: Val,
     },
-    GridVal
+    /// Corresponds to the [`GridVal::Fraction`] variant.
+    GridValFraction
     {
         fill: CobFill,
-        /// There is no number for `Val::Auto`.
-        number: Option<CobNumberValue>,
-        val: GridVal,
+        number: CobNumberValue,
+        fraction: f32,
     },
 }
 
@@ -213,37 +213,10 @@ impl CobBuiltin
                     }
                 }
             }
-            Self::GridVal { fill, number, val } => {
+            Self::GridValFraction { fill, number, fraction: _ } => {
                 fill.write_to_or_else(writer, space)?;
-                if let Some(number) = number {
-                    number.write_to(writer)?;
-                }
-                match val {
-                    GridVal::Auto => {
-                        writer.write_bytes("auto".as_bytes())?;
-                    }
-                    GridVal::Percent(_) => {
-                        writer.write_bytes("%".as_bytes())?;
-                    }
-                    GridVal::Px(_) => {
-                        writer.write_bytes("px".as_bytes())?;
-                    }
-                    GridVal::Vw(_) => {
-                        writer.write_bytes("vw".as_bytes())?;
-                    }
-                    GridVal::Vh(_) => {
-                        writer.write_bytes("vh".as_bytes())?;
-                    }
-                    GridVal::VMin(_) => {
-                        writer.write_bytes("vmin".as_bytes())?;
-                    }
-                    GridVal::VMax(_) => {
-                        writer.write_bytes("vmax".as_bytes())?;
-                    }
-                    GridVal::Fr(_) => {
-                        writer.write_bytes("fr".as_bytes())?;
-                    }
-                }
+                number.write_to(writer)?;
+                writer.write_bytes("fr".as_bytes())?;
             }
         }
         Ok(())
@@ -267,7 +240,7 @@ impl CobBuiltin
             return Ok((Some(Self::Val { fill, number: None, val }), next_fill, remaining));
         }
 
-        // Val::X(f32)
+        // {Grid}Val::X(f32)
         let Ok((number, remaining)) = CobNumberValue::parse(content) else { return Ok((None, fill, content)) };
         let get_num = || -> Result<f32, SpanError> {
             match number.as_f32_lossy() {
@@ -283,7 +256,7 @@ impl CobBuiltin
         if let Ok((remaining, _)) = tag::<_, _, ()>("fr").parse(remaining) {
             let (next_fill, remaining) = CobFill::parse(remaining);
             return Ok((
-                Some(Self::GridVal { fill, number: Some(number), val: GridVal::Fr(get_num()?) }),
+                Some(Self::GridValFraction { fill, number, fraction: get_num()? }),
                 next_fill,
                 remaining,
             ));
@@ -314,17 +287,11 @@ impl CobBuiltin
 
     pub fn try_from_unit_variant(typename: &str, variant: &str) -> CobResult<Option<Self>>
     {
-        if typename == "Val" && variant == "Auto" {
+        if (typename == "Val" || typename == "GridVal") && variant == "Auto" {
             return Ok(Some(Self::Val {
                 fill: CobFill::default(),
                 number: None,
                 val: Val::Auto,
-            }));
-        } else if typename == "GridVal" && variant == "Auto" {
-            return Ok(Some(Self::GridVal {
-                fill: CobFill::default(),
-                number: None,
-                val: GridVal::Auto,
             }));
         }
 
@@ -362,10 +329,28 @@ impl CobBuiltin
             return Ok(CobHexColor::try_from(color).map(|c| Self::Color(c)).ok());
         }
 
-        if typename == "Val" {
+        if typename == "Val" || typename == "GridVal" {
             let CobValue::Number(num) = value else { return Ok(None) };
             let Some(float) = num.number.as_f64() else { return Ok(None) };
             let extracted = float as f32;
+
+            if typename == "GridVal" {
+                match variant {
+                    "Fraction" => {
+                        return Ok(Some(Self::GridValFraction {
+                            fill: CobFill::default(),
+                            number: num.number.clone(),
+                            fraction: extracted,
+                        }));
+                    }
+                    // These variants are extracted as normal enum variants.
+                    "FitContentPx" | "FitContentPercent" | "Flex" => return Ok(None),
+                    // These are not newtype variants of a single number so they shouldn't show up here.
+                    "MinContent" | "MaxContent" | "MinMax" | "Many" => return Err(CobError::MalformedBuiltin),
+                    // The remaining variants are captured by `Val`.
+                    _ => (),
+                }
+            }
 
             let val = match variant {
                 "Px" => Val::Px(extracted),
@@ -383,28 +368,6 @@ impl CobBuiltin
                 val,
             }));
         }
-        if typename == "GridVal" {
-            let CobValue::Number(num) = value else { return Ok(None) };
-            let Some(float) = num.number.as_f64() else { return Ok(None) };
-            let extracted = float as f32;
-
-            let val = match variant {
-                "Px" => GridVal::Px(extracted),
-                "Percent" => GridVal::Percent(extracted),
-                "Vw" => GridVal::Vw(extracted),
-                "Vh" => GridVal::Vh(extracted),
-                "VMin" => GridVal::VMin(extracted),
-                "VMax" => GridVal::VMax(extracted),
-                "Fr" => GridVal::Fr(extracted),
-                _ => return Err(CobError::MalformedBuiltin),
-            };
-
-            return Ok(Some(Self::GridVal {
-                fill: CobFill::default(),
-                number: Some(num.number.clone()),
-                val,
-            }));
-        }
 
         Ok(None)
     }
@@ -416,6 +379,9 @@ impl CobBuiltin
                 color.recover_fill(other_color);
             }
             (Self::Val { fill, .. }, Self::Val { fill: other_fill, .. }) => {
+                fill.recover(&other_fill);
+            }
+            (Self::GridValFraction { fill, .. }, Self::GridValFraction { fill: other_fill, .. }) => {
                 fill.recover(&other_fill);
             }
             _ => (),

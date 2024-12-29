@@ -330,6 +330,17 @@ impl Instruction for BuiltinColor
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BuiltinRepeatedGridVal(pub RepeatedGridVal);
+
+impl Instruction for BuiltinRepeatedGridVal
+{
+    fn apply(self, _: Entity, _: &mut World) {}
+    fn revert(_: Entity, _: &mut World) {}
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct BuiltinCollection
 {
     pub auto_val: Val,
@@ -340,6 +351,9 @@ pub struct BuiltinCollection
     pub vmin: Val,
     pub vmax: Val,
     pub fr: GridVal,
+    pub minmax: GridVal,
+    pub repeated_single_auto: RepeatedGridVal,
+    pub repeated_many: RepeatedGridVal,
     pub color: Color,
 }
 
@@ -473,6 +487,7 @@ impl Plugin for SerdeTypesPlugin
             .register_instruction_type::<EnumGeneric<UnitStruct>>()
             .register_instruction_type::<EnumGeneric<SingleGeneric<u32>>>()
             .register_instruction_type::<BuiltinColor>()
+            .register_instruction_type::<BuiltinRepeatedGridVal>()
             .register_instruction_type::<BuiltinCollection>()
             .register_instruction_type::<ReflectDefaulted>()
             .register_instruction_type::<ReflectDefaultNewtype>()

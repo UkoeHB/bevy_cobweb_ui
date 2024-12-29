@@ -1,8 +1,8 @@
 use serde::de::{Expected, Visitor};
 
 use super::{
-    deserialize_builtin, visit_array_ref, visit_map_ref, visit_tuple_ref, visit_wrapped_value_ref,
-    EnumRefDeserializer,
+    deserialize_builtin, visit_array_ref, visit_map_ref, visit_raw_repeated_grid_val, visit_tuple_ref,
+    visit_wrapped_value_ref, EnumRefDeserializer,
 };
 use crate::prelude::*;
 
@@ -189,7 +189,7 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
         }
     }
 
-    fn deserialize_tuple_struct<V>(self, _name: &'static str, len: usize, visitor: V) -> CobResult<V::Value>
+    fn deserialize_tuple_struct<V>(self, name: &'static str, len: usize, visitor: V) -> CobResult<V::Value>
     where
         V: Visitor<'de>,
     {
@@ -200,6 +200,13 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
 
         match self {
             CobValue::Tuple(v) => visit_tuple_ref(&v.entries, visitor),
+            CobValue::Builtin(_) => {
+                if name == "RepeatedGridVal" && len == 2 {
+                    visit_raw_repeated_grid_val(self, visitor)
+                } else {
+                    Err(self.invalid_type(&visitor))
+                }
+            }
             _ => Err(self.invalid_type(&visitor)),
         }
     }

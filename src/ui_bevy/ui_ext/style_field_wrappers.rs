@@ -643,7 +643,7 @@ impl AnimatedAttribute for DimsRight
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::clipping`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::clipping`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -685,7 +685,7 @@ impl ResponsiveAttribute for SetClipping {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::clip_margin`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::clip_margin`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -727,7 +727,7 @@ impl ResponsiveAttribute for SetClipMargin {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::padding`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::padding`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Padding(pub StyleRect);
@@ -785,7 +785,7 @@ impl Splattable for Padding
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::flex_direction`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::flex_direction`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -827,7 +827,7 @@ impl ResponsiveAttribute for SetFlexDirection {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::flex_wrap`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::flex_wrap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -869,7 +869,217 @@ impl ResponsiveAttribute for SetFlexWrap {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_lines`], can be loaded as an instruction.
+/// Mirrors [`GridContent::grid_auto_flow`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct SetGridFlow(pub GridAutoFlow);
+
+impl ApplyToNode for SetGridFlow
+{
+    fn apply_to_node(self, node: &mut Node)
+    {
+        node.grid_auto_flow = self.0;
+    }
+}
+
+impl Instruction for SetGridFlow
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for SetGridFlow
+{
+    type Value = GridAutoFlow;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for SetGridFlow {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`GridContent::grid_auto_rows`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridAutoRows(pub Vec<GridVal>);
+
+impl ApplyToNode for GridAutoRows
+{
+    fn apply_to_node(mut self, node: &mut Node)
+    {
+        node.grid_auto_rows = self.0.drain(..).map(|v| v.into()).collect();
+    }
+}
+
+impl Instruction for GridAutoRows
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for GridAutoRows
+{
+    type Value = Vec<GridVal>;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for GridAutoRows {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`GridContent::grid_auto_columns`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridAutoColumns(pub Vec<GridVal>);
+
+impl ApplyToNode for GridAutoColumns
+{
+    fn apply_to_node(mut self, node: &mut Node)
+    {
+        node.grid_auto_columns = self.0.drain(..).map(|v| v.into()).collect();
+    }
+}
+
+impl Instruction for GridAutoColumns
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for GridAutoColumns
+{
+    type Value = Vec<GridVal>;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for GridAutoColumns {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`GridContent::grid_template_rows`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridTemplateRows(pub Vec<RepeatedGridVal>);
+
+impl ApplyToNode for GridTemplateRows
+{
+    fn apply_to_node(mut self, node: &mut Node)
+    {
+        node.grid_template_rows = self.0.drain(..).map(|v| v.into()).collect();
+    }
+}
+
+impl Instruction for GridTemplateRows
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for GridTemplateRows
+{
+    type Value = Vec<RepeatedGridVal>;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for GridTemplateRows {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`GridContent::grid_template_columns`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridTemplateColumns(pub Vec<RepeatedGridVal>);
+
+impl ApplyToNode for GridTemplateColumns
+{
+    fn apply_to_node(mut self, node: &mut Node)
+    {
+        node.grid_template_columns = self.0.drain(..).map(|v| v.into()).collect();
+    }
+}
+
+impl Instruction for GridTemplateColumns
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for GridTemplateColumns
+{
+    type Value = Vec<RepeatedGridVal>;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for GridTemplateColumns {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`FlexContent::justify_lines`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -911,7 +1121,7 @@ impl ResponsiveAttribute for SetJustifyLines {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_main`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::justify_main`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -953,7 +1163,7 @@ impl ResponsiveAttribute for SetJustifyMain {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::justify_cross`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::justify_cross`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -995,7 +1205,7 @@ impl ResponsiveAttribute for SetJustifyCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::column_gap`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::column_gap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -1044,7 +1254,7 @@ impl AnimatedAttribute for ColumnGap
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`ContentFlex::row_gap`], can be loaded as an instruction.
+/// Mirrors [`FlexContent::row_gap`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -1148,6 +1358,48 @@ impl Splattable for Margin
         Some(self.0.top)
     }
 }
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`SelfFlex::justify_self_cross`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct SetJustifySelfCross(pub JustifySelfCross);
+
+impl ApplyToNode for SetJustifySelfCross
+{
+    fn apply_to_node(self, node: &mut Node)
+    {
+        node.align_self = self.0.into();
+    }
+}
+
+impl Instruction for SetJustifySelfCross
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for SetJustifySelfCross
+{
+    type Value = JustifySelfCross;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for SetJustifySelfCross {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1298,24 +1550,24 @@ impl AnimatedAttribute for FlexShrink
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`SelfFlex::justify_self_cross`], can be loaded as an instruction.
+/// Mirrors [`SelfGrid::grid_row`], can be loaded as an instruction.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct SetJustifySelfCross(pub JustifySelfCross);
+pub struct GridRow(pub GridInsertion);
 
-impl ApplyToNode for SetJustifySelfCross
+impl ApplyToNode for GridRow
 {
     fn apply_to_node(self, node: &mut Node)
     {
-        node.align_self = self.0.into();
+        node.grid_row = self.0.into();
     }
 }
 
-impl Instruction for SetJustifySelfCross
+impl Instruction for GridRow
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
@@ -1328,15 +1580,57 @@ impl Instruction for SetJustifySelfCross
     }
 }
 
-impl StaticAttribute for SetJustifySelfCross
+impl StaticAttribute for GridRow
 {
-    type Value = JustifySelfCross;
+    type Value = GridInsertion;
     fn construct(value: Self::Value) -> Self
     {
         Self(value)
     }
 }
-impl ResponsiveAttribute for SetJustifySelfCross {}
+impl ResponsiveAttribute for GridRow {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`SelfGrid::grid_column`], can be loaded as an instruction.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridColumn(pub GridInsertion);
+
+impl ApplyToNode for GridColumn
+{
+    fn apply_to_node(self, node: &mut Node)
+    {
+        node.grid_column = self.0.into();
+    }
+}
+
+impl Instruction for GridColumn
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        apply_to_node_component(self, entity, world);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        remove_node(entity, world);
+    }
+}
+
+impl StaticAttribute for GridColumn
+{
+    type Value = GridInsertion;
+    fn construct(value: Self::Value) -> Self
+    {
+        Self(value)
+    }
+}
+impl ResponsiveAttribute for GridColumn {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -1361,7 +1655,7 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_animatable::<DimsLeft>()
             .register_animatable::<DimsRight>();
 
-        // ContentFlex
+        // Content-shared
         app.register_responsive::<SetClipping>()
             .register_responsive::<SetClipMargin>()
             .register_animatable::<Padding>()
@@ -1374,13 +1668,30 @@ impl Plugin for UiStyleFieldWrappersPlugin
             .register_animatable::<ColumnGap>()
             .register_animatable::<RowGap>();
 
-        // SelfFlex
+        // FlexContent-specific
+        app.register_responsive::<SetFlexDirection>()
+            .register_responsive::<SetFlexWrap>();
+
+        // GridContent-specific
+        app.register_responsive::<SetGridFlow>()
+            .register_responsive::<GridAutoRows>()
+            .register_responsive::<GridAutoColumns>()
+            .register_responsive::<GridTemplateRows>()
+            .register_responsive::<GridTemplateColumns>();
+
+        // Self-shared
         app.register_animatable::<Margin>()
             .register_animatable::<Splat<Margin>>()
-            .register_animatable::<FlexBasis>()
-            .register_animatable::<FlexGrow>()
-            .register_animatable::<FlexShrink>()
             .register_responsive::<SetJustifySelfCross>();
+
+        // SelfFlex-specific
+        app.register_animatable::<FlexBasis>()
+            .register_animatable::<FlexGrow>()
+            .register_animatable::<FlexShrink>();
+
+        // SelfGrid-specific
+        app.register_responsive::<GridRow>()
+            .register_responsive::<GridColumn>();
     }
 }
 

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
-use bevy_cobweb_ui::ui_bevy::GridVal;
+use bevy_cobweb_ui::ui_bevy::{GridVal, RepeatedGridVal};
 
 use super::helpers::*;
 
@@ -464,8 +464,10 @@ fn builtins()
     let a = prepare_test_app();
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr color:#FFFFFF}",
-        "{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr color:#FFFFFF}",
+        "BuiltinCollection{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr minmax:MinMax[auto 1px] \
+            repeated_single_auto:(Count(1) auto) repeated_many:(Count(2) Many[auto 1px]) color:#FFFFFF}",
+        "{auto_val:auto px:0px percent:1% vw:1vw vh:1vh vmin:1vmin vmax:1vmax fr:1fr minmax:MinMax[auto 1px] \
+            repeated_single_auto:(Count(1) auto) repeated_many:(Count(2) Many[auto 1px]) color:#FFFFFF}",
         BuiltinCollection {
             auto_val: Val::Auto,
             px: Val::Px(0.0),
@@ -474,14 +476,19 @@ fn builtins()
             vh: Val::Vh(1.0),
             vmin: Val::VMin(1.0),
             vmax: Val::VMax(1.0),
-            fr: GridVal::Fr(1.0),
+            fr: GridVal::Fraction(1.0),
+            minmax: GridVal::MinMax(vec![GridVal::Auto, GridVal::Px(1.0)]),
+            repeated_single_auto: RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto),
+            repeated_many: RepeatedGridVal(GridTrackRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.0)])),
             color: Color::Srgba(Default::default()),
         },
     );
     test_equivalence(
         a.world(),
-        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr color:#FF0000}",
-        "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr color:#FF0000}",
+        "BuiltinCollection{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr minmax:MinMax[auto 1.1px] \
+            repeated_single_auto:(Count(1) auto) repeated_many:(Count(2) Many[auto 1.1px]) color:#FF0000}",
+        "{auto_val:auto px:1.1px percent:1.1% vw:1.1vw vh:1.1vh vmin:1.1vmin vmax:1.1vmax fr:1.1fr minmax:MinMax[auto 1.1px] \
+            repeated_single_auto:(Count(1) auto) repeated_many:(Count(2) Many[auto 1.1px]) color:#FF0000}",
         BuiltinCollection {
             auto_val: Val::Auto,
             px: Val::Px(1.1),
@@ -490,7 +497,10 @@ fn builtins()
             vh: Val::Vh(1.1),
             vmin: Val::VMin(1.1),
             vmax: Val::VMax(1.1),
-            fr: GridVal::Fr(1.1),
+            fr: GridVal::Fraction(1.1),
+            minmax: GridVal::MinMax(vec![GridVal::Auto, GridVal::Px(1.1)]),
+            repeated_single_auto: RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto),
+            repeated_many: RepeatedGridVal(GridTrackRepetition::Count(2), GridVal::Many(vec![GridVal::Auto, GridVal::Px(1.1)])),
             color: Color::Srgba(Srgba::RED),
         },
     );
@@ -501,6 +511,26 @@ fn builtins()
         "BuiltinColor(#ff0000)",
         "BuiltinColor(#FF0000)",
         BuiltinColor(Color::Srgba(Srgba::RED)),
+    );
+
+    // Lossy conversion: RepeatedGridVal will be expanded
+    test_equivalence_lossy(
+        a.world(),
+        "BuiltinRepeatedGridVal(auto)",
+        "BuiltinRepeatedGridVal(Count(1) auto)",
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Auto)),
+    );
+    test_equivalence_lossy(
+        a.world(),
+        "BuiltinRepeatedGridVal(1px)",
+        "BuiltinRepeatedGridVal(Count(1) 1px)",
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Px(1.0))),
+    );
+    test_equivalence_lossy(
+        a.world(),
+        "BuiltinRepeatedGridVal(1fr)",
+        "BuiltinRepeatedGridVal(Count(1) 1fr)",
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridTrackRepetition::Count(1), GridVal::Fraction(1.0))),
     );
 }
 

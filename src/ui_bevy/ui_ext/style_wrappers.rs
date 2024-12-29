@@ -7,6 +7,304 @@ use crate::sickle::Lerp;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Helper component for caching a `Node::display` value when display is hidden. This way when display is
+/// shown again, the correct layout algorithm can be set.
+///
+/// The `From<Display>` impl converts `Display::None` and `Display::Block` to `Display::Flex`.
+#[derive(Component, Default, Copy, Clone, Debug, PartialEq)]
+enum DisplayType
+{
+    #[default]
+    Flex,
+    Grid,
+}
+
+impl From<Display> for DisplayType
+{
+    fn from(display: Display) -> Self
+    {
+        match display {
+            Display::Flex => Self::Flex,
+            Display::Grid => Self::Grid,
+            Display::None | Display::Block => Self::Flex,
+        }
+    }
+}
+
+impl Into<Display> for DisplayType
+{
+    fn into(self) -> Display
+    {
+        match self {
+            Self::Flex => Display::Flex,
+            Self::Grid => Display::Grid,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Like [`Val`] but also accepts additional values for grid layouts.
+///
+/// Can be converted to a [`GridTrack`] for use in [`Node`].
+///
+/// See [`RepeatedGridVal`] also.
+#[derive(Clone, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
+#[reflect(Default, PartialEq, Debug)]
+#[reflect(no_field_bounds)]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
+pub enum GridVal
+{
+    #[default]
+    Auto,
+    /// Includes a px limit.
+    FitContentPx(f32),
+    /// Includes a percentage limit.
+    FitContentPercent(f32),
+    /// Equivalent to `Self::MinMax(vec![Self::Px(0.0), Seof::Fraction(val)])`.
+    Flex(f32),
+    MinContent,
+    MaxContent,
+    Percent(f32),
+    Px(f32),
+    Vw(f32),
+    Vh(f32),
+    VMin(f32),
+    VMax(f32),
+    /// [Fraction size](https://www.w3.org/TR/css3-grid-layout/#fr-unit).
+    ///
+    /// Fraction of available grid space. Is divided by sum of fractions in the relevant grid dimension to get the
+    /// 'real' fraction assigned to this node.
+    ///
+    /// Will set the minimum size to `Auto`, which makes it content-based. [`Self::Flex`] is recommended if you
+    /// want a minimum size of zero.
+    Fraction(f32),
+    /// Must be a vector of size 2. If size one then the max function will be defaulted. If size zero both will be
+    /// defaulted. If greater than size two, excess entries will be ignored. If an element fails to convert to a
+    /// sizing function then it will fall back to `auto`.
+    ///
+    /// Element 1: maps to [`MinTrackSizingFunction`].
+    /// - Allowed variants: `auto`, `px`, `%`, `vmin`, `vmax`, `vw`, `vh`, `MinContent`, `MaxContent`
+    ///
+    /// Element 2: maps to [`MaxTrackSizingFunction`].
+    /// - Allowed variants: `auto`, `px`, `%`, `fr`, `vmin`, `vmax`, `vw`, `vh`, `FitContentPx`,
+    ///   `FitContentPercent`,
+    /// `MinContent`, `MaxContent`,
+    MinMax(Vec<Self>),
+    /// Used for [`RepeatedGridTrack::repeat_many`] by [`RepeatedGridVal`].
+    ///
+    /// `GridTrack::from(GridVal::Many(...))` will return the first grid value or default to [`GridTrack::auto`].
+    Many(Vec<Self>),
+}
+
+impl From<GridVal> for GridTrack
+{
+    fn from(value: GridVal) -> Self
+    {
+        match value {
+            GridVal::Auto => Self::auto(),
+            GridVal::FitContentPx(v) => Self::fit_content_px(v),
+            GridVal::FitContentPercent(v) => Self::fit_content_percent(v),
+            GridVal::Flex(v) => Self::flex(v),
+            GridVal::MinContent => Self::min_content(),
+            GridVal::MaxContent => Self::max_content(),
+            GridVal::Percent(v) => Self::percent(v),
+            GridVal::Px(v) => Self::px(v),
+            GridVal::Vw(v) => Self::vw(v),
+            GridVal::Vh(v) => Self::vh(v),
+            GridVal::VMin(v) => Self::vmin(v),
+            GridVal::VMax(v) => Self::vmax(v),
+            GridVal::Fraction(v) => Self::fr(v),
+            GridVal::MinMax(mut v) => {
+                let mut vals_iter = v.drain(..);
+                let min_fn: MinTrackSizingFunction = vals_iter.next().map(|v| v.into()).unwrap_or_default();
+                let max_fn: MaxTrackSizingFunction = vals_iter.next().map(|v| v.into()).unwrap_or_default();
+                Self::minmax(min_fn, max_fn)
+            }
+            GridVal::Many(mut v) => {
+                let mut vals_iter = v.drain(..);
+                let single: GridTrack = vals_iter.next().map(|v| v.into()).unwrap_or_default();
+                single
+            }
+        }
+    }
+}
+
+impl From<GridVal> for MinTrackSizingFunction
+{
+    fn from(value: GridVal) -> Self
+    {
+        match value {
+            GridVal::Auto => Self::Auto,
+            GridVal::MinContent => Self::MinContent,
+            GridVal::MaxContent => Self::MaxContent,
+            GridVal::Percent(v) => Self::Percent(v),
+            GridVal::Px(v) => Self::Px(v),
+            GridVal::Vw(v) => Self::Vw(v),
+            GridVal::Vh(v) => Self::Vh(v),
+            GridVal::VMin(v) => Self::VMin(v),
+            GridVal::VMax(v) => Self::VMax(v),
+            GridVal::FitContentPx(_)
+            | GridVal::FitContentPercent(_)
+            | GridVal::Flex(_)
+            | GridVal::Fraction(_)
+            | GridVal::MinMax(_)
+            | GridVal::Many(_) => Self::Auto,
+        }
+    }
+}
+
+impl From<GridVal> for MaxTrackSizingFunction
+{
+    fn from(value: GridVal) -> Self
+    {
+        match value {
+            GridVal::Auto => Self::Auto,
+            GridVal::MinContent => Self::MinContent,
+            GridVal::MaxContent => Self::MaxContent,
+            GridVal::Percent(v) => Self::Percent(v),
+            GridVal::Px(v) => Self::Px(v),
+            GridVal::Vw(v) => Self::Vw(v),
+            GridVal::Vh(v) => Self::Vh(v),
+            GridVal::VMin(v) => Self::VMin(v),
+            GridVal::VMax(v) => Self::VMax(v),
+            GridVal::Fraction(v) => Self::Fraction(v),
+            GridVal::FitContentPx(v) => Self::FitContentPx(v),
+            GridVal::FitContentPercent(v) => Self::FitContentPercent(v),
+            GridVal::Flex(_) | GridVal::MinMax(_) | GridVal::Many(_) => Self::Auto,
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Like [`Val`] but also accepts additional values for grid layouts.
+///
+/// Can be converted to a [`RepeatedGridVal`] for use in [`Node`]. Note that many `RepeatedGridVal` variants
+/// only accept a `repetition_count`. If [`GridTrackRepetition::AutoFill`] or [`GridTrackRepetition::AutoFit`]
+/// is set, then it will fall back to `GridTrackRepetition::Count(1)` for those cases.
+///
+/// In COB files, a single [`GridVal`] will implicitly convert to `(Count(1), val)`. This reduces boilerplate
+/// when constructing grid nodes.
+#[derive(Clone, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
+#[reflect(Default, PartialEq, Debug)]
+#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
+pub struct RepeatedGridVal(pub GridTrackRepetition, pub GridVal);
+
+impl From<RepeatedGridVal> for RepeatedGridTrack
+{
+    fn from(value: RepeatedGridVal) -> Self
+    {
+        let repetition_count = match &value.0 {
+            GridTrackRepetition::Count(count) => *count,
+            GridTrackRepetition::AutoFill | GridTrackRepetition::AutoFit => 1,
+        };
+        match value.1 {
+            GridVal::Auto => RepeatedGridTrack::auto(repetition_count),
+            GridVal::FitContentPx(v) => RepeatedGridTrack::fit_content_px(repetition_count, v),
+            GridVal::FitContentPercent(v) => RepeatedGridTrack::fit_content_percent(repetition_count, v),
+            GridVal::Flex(v) => RepeatedGridTrack::flex(repetition_count, v),
+            GridVal::MinContent => RepeatedGridTrack::min_content(repetition_count),
+            GridVal::MaxContent => RepeatedGridTrack::max_content(repetition_count),
+            GridVal::Percent(v) => RepeatedGridTrack::percent(value.0, v),
+            GridVal::Px(v) => RepeatedGridTrack::px(value.0, v),
+            GridVal::Vw(v) => RepeatedGridTrack::vw(value.0, v),
+            GridVal::Vh(v) => RepeatedGridTrack::vh(value.0, v),
+            GridVal::VMin(v) => RepeatedGridTrack::vmin(value.0, v),
+            GridVal::VMax(v) => RepeatedGridTrack::vmax(value.0, v),
+            GridVal::Fraction(v) => RepeatedGridTrack::fr(repetition_count, v),
+            GridVal::MinMax(mut v) => {
+                let mut vals_iter = v.drain(..);
+                let min_fn: MinTrackSizingFunction = vals_iter.next().map(|v| v.into()).unwrap_or_default();
+                let max_fn: MaxTrackSizingFunction = vals_iter.next().map(|v| v.into()).unwrap_or_default();
+                Self::minmax(value.0, min_fn, max_fn)
+            }
+            GridVal::Many(mut v) => {
+                let tracks: Vec<GridTrack> = v.drain(..).map(|v| GridTrack::from(v)).collect();
+                Self::repeat_many(value.0, tracks)
+            }
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper component for caching a `Node::display` value when display is hidden. This way when display is
+/// shown again, the correct layout algorithm can be set.
+///
+/// The `From<Display>` impl converts `Display::None` to `Display::Flex`.
+#[derive(Reflect, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct GridInsertion
+{
+    /// The grid line at which the item should start.
+    ///
+    /// Lines are 1-indexed.
+    ///
+    /// Negative indexes count backwards from the end of the grid.
+    ///
+    /// Zero is treated as 'no start'.
+    #[reflect(default)]
+    pub start: i16,
+    /// How many grid tracks the item should span.
+    ///
+    /// Zero is treated as 'no span'.
+    ///
+    /// Defaults to 1.
+    #[reflect(default = "GridInsertion::default_span")]
+    pub span: u16,
+    /// The grid line at which the item should end.
+    ///
+    /// Lines are 1-indexed.
+    ///
+    /// Negative indexes count backwards from the end of the grid.
+    ///
+    /// Zero is treated as 'no end'.
+    #[reflect(default)]
+    pub end: i16,
+}
+
+impl GridInsertion
+{
+    fn default_span() -> u16
+    {
+        1
+    }
+}
+
+impl Default for GridInsertion
+{
+    fn default() -> Self
+    {
+        Self { start: 0, span: Self::default_span(), end: 0 }
+    }
+}
+
+impl Into<GridPlacement> for GridInsertion
+{
+    fn into(self) -> GridPlacement
+    {
+        let mut placement = GridPlacement::default();
+        if self.span == 0 && self.start != 0 && self.end != 0 {
+            placement = GridPlacement::start_end(self.start, self.end);
+        } else {
+            if self.start != 0 {
+                placement = placement.set_start(self.start);
+            }
+            if self.end != 0 {
+                placement = placement.set_end(self.end);
+            }
+        }
+        placement
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Mirrors [`UiRect`] for stylesheet serialization.
 ///
 /// All fields default to `Val::Px(0.)`.
@@ -311,7 +609,7 @@ pub enum JustifyCross
     /// Children along the cross-axis are stretched to fill the available space on that axis (respecting min/max
     /// limits).
     ///
-    /// If a cross-axis has multiple lines due to [`ContentFlex::flex_wrap`], stretching will only fill a given
+    /// If a cross-axis has multiple lines due to [`FlexContent::flex_wrap`], stretching will only fill a given
     /// line without overflow.
     ///
     /// Stretch is applied after other sizing and positioning is calculated. It's a kind of 'bonus sizing'.
@@ -473,7 +771,7 @@ pub struct Dims
     /// Defaults to `StyleRect{ left: Val::Pixels(0.), top: Val::Pixels(0.), right: Val::Auto, left: Val::Auto }`.
     /// This ensures [`AbsoluteNode`] nodes will start in the upper left corner of their parents. If the
     /// offset is set to all [`Val::Auto`] then the node's position will be controlled by its parent's
-    /// [`ContentFlex`] parameters. You must set the `left`/`top` fields to auto if using [`FlexNode`] and
+    /// [`FlexContent`] parameters. You must set the `left`/`top` fields to auto if using [`FlexNode`] and
     /// you want to use `right`/`bottom`.
     #[reflect(default = "Dims::default_top")]
     pub top: Val,
@@ -491,7 +789,7 @@ pub struct Dims
 impl Dims
 {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
+    pub fn set_in_node(self, node: &mut Node)
     {
         node.width = self.width;
         node.height = self.height;
@@ -540,12 +838,12 @@ impl Default for Dims
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Controls the layout of a node's children.
+/// Controls the flex layout of a node's children.
 ///
 /// Mirrors fields in [`Node`].
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct ContentFlex
+pub struct FlexContent
 {
     /// Determines whether the node contents will be clipped at the node boundary.
     ///
@@ -584,7 +882,7 @@ pub struct ContentFlex
     /// interlace with it to produce the final layout.
     ///
     /// Defaults to [`FlexWrap::NoWrap`].
-    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    #[reflect(default = "FlexContent::default_flex_wrap")]
     pub flex_wrap: FlexWrap,
     /// Controls how lines containing wrapped children should be aligned within the space of the parent.
     ///
@@ -628,10 +926,10 @@ pub struct ContentFlex
     pub row_gap: Val,
 }
 
-impl ContentFlex
+impl FlexContent
 {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
+    pub fn set_in_node(self, node: &mut Node)
     {
         node.overflow = self.clipping.into();
         node.overflow_clip_margin = self.clip_margin;
@@ -651,7 +949,7 @@ impl ContentFlex
     }
 }
 
-impl Default for ContentFlex
+impl Default for FlexContent
 {
     fn default() -> Self
     {
@@ -688,6 +986,18 @@ pub struct SelfFlex
     /// Defaults to zero margin.
     #[reflect(default)]
     pub margin: StyleRect,
+    /// Controls how this node should be aligned on its parent's cross axis.
+    ///
+    /// If not set to [`JustifySelfCross::Auto`], then this overrides the parent's [`FlexContent::justify_cross`]
+    /// setting.
+    ///
+    /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
+    ///
+    /// Mirrors [`Node::align_self`].
+    ///
+    /// Defaults to [`JustifySelfCross::Auto`].
+    #[reflect(default)]
+    pub justify_self_cross: JustifySelfCross,
     /// Overrides [`Dims::width`] or [`Dims::height`] along the parent's main axis.
     ///
     /// Defaults to [`Val::Auto`], which means 'fall back to width/height'.
@@ -716,30 +1026,18 @@ pub struct SelfFlex
     /// Defaults to `1.`.
     #[reflect(default)]
     pub flex_shrink: f32,
-    /// Controls how this node should be aligned on its parent's cross axis.
-    ///
-    /// If not set to [`JustifySelfCross::Auto`], then this overrides the parent's [`ContentFlex::justify_cross`]
-    /// setting.
-    ///
-    /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
-    ///
-    /// Mirrors [`Node::align_self`].
-    ///
-    /// Defaults to [`JustifySelfCross::Auto`].
-    #[reflect(default)]
-    pub justify_self_cross: JustifySelfCross,
 }
 
 impl SelfFlex
 {
     /// Adds this struct's contents to [`Node`].
-    pub fn set_in_node(&self, node: &mut Node)
+    pub fn set_in_node(self, node: &mut Node)
     {
         node.margin = self.margin.into();
+        node.align_self = self.justify_self_cross.into();
         node.flex_basis = self.flex_basis;
         node.flex_grow = self.flex_grow;
         node.flex_shrink = self.flex_shrink;
-        node.align_self = self.justify_self_cross.into();
     }
 }
 
@@ -749,20 +1047,218 @@ impl Default for SelfFlex
     {
         Self {
             margin: Default::default(),
+            justify_self_cross: Default::default(),
             flex_basis: Default::default(),
             flex_grow: Default::default(),
             flex_shrink: 1.,
-            justify_self_cross: Default::default(),
         }
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction loadable for absolute-positioned nodes.
+/// Controls the grid layout of a node's children.
+///
+/// Mirrors fields in [`Node`].
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct GridContent
+{
+    /// Determines whether the node contents will be clipped at the node boundary.
+    ///
+    /// Can be used to make a node scrollable.
+    ///
+    /// Defaults to no clipping.
+    #[reflect(default)]
+    pub clipping: Clipping,
+    /// Controls the boundaries of [`Self::clipping`]. See [`OverflowClipMargin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
+    /// Inserts space between the node's [`Dims::border`] and its contents.
+    ///
+    /// All padding sizes with [`Val::Percent`] are computed with respect to the *width* of the node.
+    ///
+    /// Defaults to zero padding.
+    #[reflect(default)]
+    pub padding: StyleRect,
+    /// Controls how lines containing wrapped children should be aligned within the space of the parent.
+    ///
+    /// Line alignment is calculated after child nodes compute their target sizes, but before stretch factors are
+    /// applied.
+    ///
+    /// Has no effect if [`Self::flex_wrap`] is set to [`FlexWrap::NoWrap`].
+    ///
+    /// Mirrors [`Node::align_content`].
+    #[reflect(default)]
+    pub justify_lines: JustifyLines,
+    /// Controls how children should be aligned on the main axis.
+    ///
+    /// Does nothing in a wrapped line if:
+    /// - Any child in the line has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the main axis, or
+    ///   has [`SelfFlex::flex_grow`] greater than `0.`.
+    ///
+    /// Mirrors [`Node::justify_content`].
+    #[reflect(default)]
+    pub justify_main: JustifyMain,
+    /// Controls how children should be aligned on the cross axis.
+    ///
+    /// Child cross-alignment is calculated after line alignment ([`Self::justify_lines`]), since line alignment
+    /// affects how wide the cross-axis of each line will be.
+    ///
+    /// Has no effect on a child if it has a [`SelfFlex::margin`] with [`Val::Auto`] set for a side on the cross
+    /// axis.
+    ///
+    /// Mirrors [`Node::align_items`].
+    #[reflect(default)]
+    pub justify_cross: JustifyCross,
+    /// Gap applied between columns when organizing children.
+    ///
+    /// This is essentially a fixed gap inserted between children on the main axis, or lines on the cross axis.
+    #[reflect(default)]
+    pub column_gap: Val,
+    /// Gap applied between rows when organizing children.
+    ///
+    /// This is essentially a fixed gap inserted between children on the main axis, or lines on the cross axis.
+    #[reflect(default)]
+    pub row_gap: Val,
+    /// Controls the direction that automatically-placed children are inserted.
+    ///
+    /// See [`GridAutoFlow`].
+    #[reflect(default)]
+    pub grid_auto_flow: GridAutoFlow,
+    /// See [`Node::grid_auto_rows`].
+    #[reflect(default)]
+    pub grid_auto_rows: Vec<GridVal>,
+    /// See [`Node::grid_auto_columns`].
+    #[reflect(default)]
+    pub grid_auto_columns: Vec<GridVal>,
+    /// See [`Node::grid_template_rows`].
+    #[reflect(default)]
+    pub grid_template_rows: Vec<RepeatedGridVal>,
+    /// See [`Node::grid_template_columns`].
+    #[reflect(default)]
+    pub grid_template_columns: Vec<RepeatedGridVal>,
+}
+
+impl GridContent
+{
+    /// Adds this struct's contents to [`Node`].
+    pub fn set_in_node(mut self, node: &mut Node)
+    {
+        node.overflow = self.clipping.into();
+        node.overflow_clip_margin = self.clip_margin;
+        node.padding = self.padding.into();
+        node.align_content = self.justify_lines.into();
+        node.justify_content = self.justify_main.into();
+        node.align_items = self.justify_cross.into();
+        node.column_gap = self.column_gap;
+        node.row_gap = self.row_gap;
+        node.grid_auto_flow = self.grid_auto_flow;
+        node.grid_auto_rows = self.grid_auto_rows.drain(..).map(|v| v.into()).collect();
+        node.grid_auto_columns = self.grid_auto_columns.drain(..).map(|v| v.into()).collect();
+        node.grid_template_rows = self
+            .grid_template_rows
+            .drain(..)
+            .map(|v| v.into())
+            .collect();
+        node.grid_template_columns = self
+            .grid_template_columns
+            .drain(..)
+            .map(|v| v.into())
+            .collect();
+    }
+}
+
+impl Default for GridContent
+{
+    fn default() -> Self
+    {
+        Self {
+            clipping: Default::default(),
+            clip_margin: Default::default(),
+            padding: Default::default(),
+            justify_lines: Default::default(),
+            justify_main: Default::default(),
+            justify_cross: Default::default(),
+            column_gap: Default::default(),
+            row_gap: Default::default(),
+            grid_auto_flow: Default::default(),
+            grid_auto_rows: Default::default(),
+            grid_auto_columns: Default::default(),
+            grid_template_rows: Default::default(),
+            grid_template_columns: Default::default(),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Controls a node's grid behavior in its parent.
+///
+/// Mirrors fields in [`Node`].
+#[derive(Reflect, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SelfGrid
+{
+    /// Adds space outside the boundary of a node.
+    ///
+    /// If the main-axis values are set to [`Val::Auto`] then [`JustifyMain`] will do nothing, and similarly for
+    /// the cross-axis with [`JustifyCross`].
+    ///
+    /// Defaults to zero margin.
+    #[reflect(default)]
+    pub margin: StyleRect,
+    /// Controls how this node should be aligned on its parent's cross axis.
+    ///
+    /// If not set to [`JustifySelfCross::Auto`], then this overrides the parent's [`FlexContent::justify_cross`]
+    /// setting.
+    ///
+    /// Does nothing if the node's [`Self::margin`] has [`Val::Auto`] set on either of its cross-axis sides.
+    ///
+    /// Mirrors [`Node::align_self`].
+    ///
+    /// Defaults to [`JustifySelfCross::Auto`].
+    #[reflect(default)]
+    pub justify_self_cross: JustifySelfCross,
+    /// See [`Node::grid_row`].
+    #[reflect(default)]
+    pub grid_row: GridInsertion,
+    /// See [`Node::grid_column`].
+    #[reflect(default)]
+    pub grid_column: GridInsertion,
+}
+
+impl SelfGrid
+{
+    /// Adds this struct's contents to [`Node`].
+    pub fn set_in_node(self, node: &mut Node)
+    {
+        node.margin = self.margin.into();
+        node.align_self = self.justify_self_cross.into();
+        node.grid_row = self.grid_row.into();
+        node.grid_column = self.grid_column.into();
+    }
+}
+
+impl Default for SelfGrid
+{
+    fn default() -> Self
+    {
+        Self {
+            margin: Default::default(),
+            justify_self_cross: Default::default(),
+            grid_row: Default::default(),
+            grid_column: Default::default(),
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Instruction loadable for absolute-positioned flex nodes.
 ///
 /// Inserts a [`Node`] with [`Display::Flex`] and [`PositionType::Absolute`].
-/// Note that if you want an absolute node's position to be controlled by its parent's [`ContentFlex`], then set
+/// Note that if you want an absolute node's position to be controlled by its parent's [`FlexContent`], then set
 /// the node's [`Dims::top`]/[`Dims::bottom`]/[`Dims::left`]/[`Dims::right`] fields to [`Val::Auto`].
 ///
 /// See [`FlexNode`] for flexbox-controlled nodes. See [`DisplayControl`] for setting [`Display::None`].
@@ -774,7 +1270,7 @@ pub struct AbsoluteNode
     // #[reflect(default)]
     // pub dims: Dims,
     // #[reflect(default)]
-    // pub content: ContentFlex,
+    // pub content: FlexContent,
 
     // DIMS
     /// See [`Dims::width`].
@@ -814,35 +1310,35 @@ pub struct AbsoluteNode
     #[reflect(default)]
     pub right: Val,
 
-    // CONTENT
-    /// See [`ContentFlex::clipping`].
+    // CONTENT FLEX
+    /// See [`FlexContent::clipping`].
     #[reflect(default)]
     pub clipping: Clipping,
-    /// See [`ContentFlex::clip_margin`].
+    /// See [`FlexContent::clip_margin`].
     #[reflect(default)]
     pub clip_margin: OverflowClipMargin,
-    /// See [`ContentFlex::padding`].
+    /// See [`FlexContent::padding`].
     #[reflect(default)]
     pub padding: StyleRect,
-    /// See [`ContentFlex::flex_direction`].
+    /// See [`FlexContent::flex_direction`].
     #[reflect(default)]
     pub flex_direction: FlexDirection,
-    /// See [`ContentFlex::flex_wrap`].
-    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    /// See [`FlexContent::flex_wrap`].
+    #[reflect(default = "FlexContent::default_flex_wrap")]
     pub flex_wrap: FlexWrap,
-    /// See [`ContentFlex::justify_lines`].
+    /// See [`FlexContent::justify_lines`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,
-    /// See [`ContentFlex::justify_main`].
+    /// See [`FlexContent::justify_main`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
-    /// See [`ContentFlex::justify_cross`].
+    /// See [`FlexContent::justify_cross`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
-    /// See [`ContentFlex::column_gap`].
+    /// See [`FlexContent::column_gap`].
     #[reflect(default)]
     pub column_gap: Val,
-    /// See [`ContentFlex::row_gap`].
+    /// See [`FlexContent::row_gap`].
     #[reflect(default)]
     pub row_gap: Val,
 }
@@ -869,7 +1365,7 @@ impl Into<Node> for AbsoluteNode
             right: self.right,
         }
         .set_in_node(&mut node);
-        ContentFlex {
+        FlexContent {
             clipping: self.clipping,
             clip_margin: self.clip_margin,
             padding: self.padding,
@@ -894,7 +1390,12 @@ impl Instruction for AbsoluteNode
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
-        node.display = display.into();
+        node.display = display.to_display(Display::Flex);
+        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
+            *cache = DisplayType::Flex;
+        } else {
+            emut.insert(DisplayType::Flex);
+        }
 
         emut.insert(node);
     }
@@ -913,7 +1414,7 @@ impl Instruction for AbsoluteNode
 ///
 /// Inserts a [`Node`] with [`Display::Flex`] and [`PositionType::Relative`].
 ///
-/// See [`AbsoluteNode`] for absolute-positioned nodes. See [`DisplayControl`] for setting [`Display::None`].
+/// See [`AbsoluteNode`] for absolute-positioned flex nodes. See [`DisplayControl`] for setting [`Display::None`].
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FlexNode
@@ -922,7 +1423,7 @@ pub struct FlexNode
     // #[reflect(default)]
     // pub dims: Dims,
     // #[reflect(default)]
-    // pub content: ContentFlex,
+    // pub content: FlexContent,
     // #[reflect(default)]
     // pub flex: SelfFlex,
 
@@ -965,34 +1466,34 @@ pub struct FlexNode
     pub right: Val,
 
     // CONTENT
-    /// See [`ContentFlex::clipping`].
+    /// See [`FlexContent::clipping`].
     #[reflect(default)]
     pub clipping: Clipping,
-    /// See [`ContentFlex::clip_margin`].
+    /// See [`FlexContent::clip_margin`].
     #[reflect(default)]
     pub clip_margin: OverflowClipMargin,
-    /// See [`ContentFlex::padding`].
+    /// See [`FlexContent::padding`].
     #[reflect(default)]
     pub padding: StyleRect,
-    /// See [`ContentFlex::flex_direction`].
+    /// See [`FlexContent::flex_direction`].
     #[reflect(default)]
     pub flex_direction: FlexDirection,
-    /// See [`ContentFlex::flex_wrap`].
-    #[reflect(default = "ContentFlex::default_flex_wrap")]
+    /// See [`FlexContent::flex_wrap`].
+    #[reflect(default = "FlexContent::default_flex_wrap")]
     pub flex_wrap: FlexWrap,
-    /// See [`ContentFlex::justify_lines`].
+    /// See [`FlexContent::justify_lines`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,
-    /// See [`ContentFlex::justify_main`].
+    /// See [`FlexContent::justify_main`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
-    /// See [`ContentFlex::justify_cross`].
+    /// See [`FlexContent::justify_cross`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
-    /// See [`ContentFlex::column_gap`].
+    /// See [`FlexContent::column_gap`].
     #[reflect(default)]
     pub column_gap: Val,
-    /// See [`ContentFlex::row_gap`].
+    /// See [`FlexContent::row_gap`].
     #[reflect(default)]
     pub row_gap: Val,
 
@@ -1000,6 +1501,9 @@ pub struct FlexNode
     /// See [`SelfFlex::margin`].
     #[reflect(default)]
     pub margin: StyleRect,
+    /// See [`SelfFlex::justify_self_cross`].
+    #[reflect(default)]
+    pub justify_self_cross: JustifySelfCross,
     /// See [`SelfFlex::flex_basis`].
     #[reflect(default)]
     pub flex_basis: Val,
@@ -1009,9 +1513,6 @@ pub struct FlexNode
     /// See [`SelfFlex::flex_shrink`].
     #[reflect(default)]
     pub flex_shrink: f32,
-    /// See [`SelfFlex::justify_self_cross`].
-    #[reflect(default)]
-    pub justify_self_cross: JustifySelfCross,
 }
 
 impl Into<Node> for FlexNode
@@ -1036,7 +1537,7 @@ impl Into<Node> for FlexNode
             right: self.right,
         }
         .set_in_node(&mut node);
-        ContentFlex {
+        FlexContent {
             clipping: self.clipping,
             clip_margin: self.clip_margin,
             padding: self.padding,
@@ -1051,10 +1552,10 @@ impl Into<Node> for FlexNode
         .set_in_node(&mut node);
         SelfFlex {
             margin: self.margin,
+            justify_self_cross: self.justify_self_cross,
             flex_basis: self.flex_basis,
             flex_grow: self.flex_grow,
             flex_shrink: self.flex_shrink,
-            justify_self_cross: self.justify_self_cross,
         }
         .set_in_node(&mut node);
         node
@@ -1069,7 +1570,172 @@ impl Instruction for FlexNode
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
-        node.display = display.into();
+        node.display = display.to_display(Display::Flex);
+        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
+            *cache = DisplayType::Flex;
+        } else {
+            emut.insert(DisplayType::Flex);
+        }
+
+        emut.insert(node);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<Node>();
+        });
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Instruction loadable for absolute-positioned Grid-controlled nodes.
+///
+/// Inserts a [`Node`] with [`Display::Grid`] and [`PositionType::Absolute`].
+///
+/// See [`GridNode`] for grid-positioned grid nodes.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct AbsoluteGridNode
+{
+    // DIMS
+    /// See [`Dims::width`].
+    #[reflect(default)]
+    pub width: Val,
+    /// See [`Dims::height`].
+    #[reflect(default)]
+    pub height: Val,
+    /// See [`Dims::max_width`].
+    #[reflect(default)]
+    pub max_width: Val,
+    /// See [`Dims::max_height`].
+    #[reflect(default)]
+    pub max_height: Val,
+    /// See [`Dims::min_width`].
+    #[reflect(default)]
+    pub min_width: Val,
+    /// See [`Dims::min_height`].
+    #[reflect(default)]
+    pub min_height: Val,
+    /// See [`Dims::aspect_ratio`].
+    #[reflect(default)]
+    pub aspect_ratio: Option<f32>,
+    /// See [`Dims::border`].
+    #[reflect(default)]
+    pub border: StyleRect,
+    /// See [`Dims::top`].
+    #[reflect(default = "Dims::default_top")]
+    pub top: Val,
+    /// See [`Dims::bottom`].
+    #[reflect(default)]
+    pub bottom: Val,
+    /// See [`Dims::left`].
+    #[reflect(default = "Dims::default_left")]
+    pub left: Val,
+    /// See [`Dims::right`].
+    #[reflect(default)]
+    pub right: Val,
+
+    // CONTENT
+    /// See [`GridContent::clipping`].
+    #[reflect(default)]
+    pub clipping: Clipping,
+    /// See [`GridContent::clip_margin`].
+    #[reflect(default)]
+    pub clip_margin: OverflowClipMargin,
+    /// See [`GridContent::padding`].
+    #[reflect(default)]
+    pub padding: StyleRect,
+    /// See [`GridContent::justify_lines`].
+    #[reflect(default)]
+    pub justify_lines: JustifyLines,
+    /// See [`GridContent::justify_main`].
+    #[reflect(default)]
+    pub justify_main: JustifyMain,
+    /// See [`GridContent::justify_cross`].
+    #[reflect(default)]
+    pub justify_cross: JustifyCross,
+    /// See [`GridContent::column_gap`].
+    #[reflect(default)]
+    pub column_gap: Val,
+    /// See [`GridContent::row_gap`].
+    #[reflect(default)]
+    pub row_gap: Val,
+    /// See [`GridContent::grid_auto_flow`].
+    #[reflect(default)]
+    pub grid_auto_flow: GridAutoFlow,
+    /// See [`GridContent::grid_auto_rows`].
+    #[reflect(default)]
+    pub grid_auto_rows: Vec<GridVal>,
+    /// See [`GridContent::grid_auto_columns`].
+    #[reflect(default)]
+    pub grid_auto_columns: Vec<GridVal>,
+    /// See [`GridContent::grid_template_rows`].
+    #[reflect(default)]
+    pub grid_template_rows: Vec<RepeatedGridVal>,
+    /// See [`GridContent::grid_template_rows`].
+    #[reflect(default)]
+    pub grid_template_columns: Vec<RepeatedGridVal>,
+}
+
+impl Into<Node> for AbsoluteGridNode
+{
+    fn into(self) -> Node
+    {
+        let mut node = Node::default();
+        node.display = Display::Grid;
+        node.position_type = PositionType::Absolute;
+        Dims {
+            width: self.width,
+            height: self.height,
+            max_width: self.max_width,
+            max_height: self.max_height,
+            min_width: self.min_width,
+            min_height: self.min_height,
+            aspect_ratio: self.aspect_ratio,
+            border: self.border,
+            top: self.top,
+            bottom: self.bottom,
+            left: self.left,
+            right: self.right,
+        }
+        .set_in_node(&mut node);
+        GridContent {
+            clipping: self.clipping,
+            clip_margin: self.clip_margin,
+            padding: self.padding,
+            justify_lines: self.justify_lines,
+            justify_main: self.justify_main,
+            justify_cross: self.justify_cross,
+            column_gap: self.column_gap,
+            row_gap: self.row_gap,
+            grid_auto_flow: self.grid_auto_flow,
+            grid_auto_rows: self.grid_auto_rows,
+            grid_auto_columns: self.grid_auto_columns,
+            grid_template_rows: self.grid_template_rows,
+            grid_template_columns: self.grid_template_columns,
+        }
+        .set_in_node(&mut node);
+
+        node
+    }
+}
+
+impl Instruction for AbsoluteGridNode
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+
+        let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
+        let mut node: Node = self.into();
+        node.display = display.to_display(Display::Grid);
+        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
+            *cache = DisplayType::Grid;
+        } else {
+            emut.insert(DisplayType::Grid);
+        }
 
         emut.insert(node);
     }
@@ -1088,7 +1754,7 @@ impl Instruction for FlexNode
 ///
 /// Inserts a [`Node`] with [`Display::Grid`] and [`PositionType::Relative`].
 ///
-/// **NOTE**: This does not yet support all features of bevy's Grid layout.
+/// See [`AbsoluteGridNode`] for absolute-positioned grid nodes.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GridNode
@@ -1131,74 +1797,60 @@ pub struct GridNode
     #[reflect(default)]
     pub right: Val,
 
-    /// Grid layout
-    ///
-    /// Put values inside `[]` brackets.
-    ///
-    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
-    #[reflect(default)]
-    pub grid_template_rows: Vec<GridVal>,
-
-    /// Grid layout
-    ///
-    /// Put values inside `[]` brackets.
-    ///
-    /// **Note**: Only [`GridVal`] variants are supported, which only has a subset of the `GridTrack` API.
-    #[reflect(default)]
-    pub grid_template_columns: Vec<GridVal>,
-
     // CONTENT
-    /// See [`ContentFlex::clipping`].
+    /// See [`GridContent::clipping`].
     #[reflect(default)]
     pub clipping: Clipping,
-    /// See [`ContentFlex::clip_margin`].
+    /// See [`GridContent::clip_margin`].
     #[reflect(default)]
     pub clip_margin: OverflowClipMargin,
-    /// See [`ContentFlex::padding`].
+    /// See [`GridContent::padding`].
     #[reflect(default)]
     pub padding: StyleRect,
-    /// See [`ContentFlex::flex_direction`].
-    #[reflect(default)]
-    pub flex_direction: FlexDirection,
-    /// See [`ContentFlex::flex_wrap`].
-    #[reflect(default = "ContentFlex::default_flex_wrap")]
-    pub flex_wrap: FlexWrap,
-    /// See [`ContentFlex::justify_lines`].
+    /// See [`GridContent::justify_lines`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,
-    /// See [`ContentFlex::justify_main`].
+    /// See [`GridContent::justify_main`].
     #[reflect(default)]
     pub justify_main: JustifyMain,
-    /// See [`ContentFlex::justify_cross`].
+    /// See [`GridContent::justify_cross`].
     #[reflect(default)]
     pub justify_cross: JustifyCross,
-    /// See [`ContentFlex::column_gap`].
+    /// See [`GridContent::column_gap`].
     #[reflect(default)]
     pub column_gap: Val,
-    /// See [`ContentFlex::row_gap`].
+    /// See [`GridContent::row_gap`].
     #[reflect(default)]
     pub row_gap: Val,
-}
+    /// See [`GridContent::grid_auto_flow`].
+    #[reflect(default)]
+    pub grid_auto_flow: GridAutoFlow,
+    /// See [`GridContent::grid_auto_rows`].
+    #[reflect(default)]
+    pub grid_auto_rows: Vec<GridVal>,
+    /// See [`GridContent::grid_auto_columns`].
+    #[reflect(default)]
+    pub grid_auto_columns: Vec<GridVal>,
+    /// See [`GridContent::grid_template_rows`].
+    #[reflect(default)]
+    pub grid_template_rows: Vec<RepeatedGridVal>,
+    /// See [`GridContent::grid_template_rows`].
+    #[reflect(default)]
+    pub grid_template_columns: Vec<RepeatedGridVal>,
 
-impl Instruction for GridNode
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-
-        // let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
-        let mut node: Node = self.into();
-        node.display = Display::Grid;
-
-        emut.insert(node);
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Node>();
-        });
-    }
+    // SELF GRID
+    /// See [`SelfGrid::margin`].
+    #[reflect(default)]
+    pub margin: StyleRect,
+    /// See [`SelfGrid::justify_self_cross`].
+    #[reflect(default)]
+    pub justify_self_cross: JustifySelfCross,
+    /// See [`SelfGrid::grid_row`].
+    #[reflect(default)]
+    pub grid_row: GridInsertion,
+    /// See [`SelfGrid::grid_column`].
+    #[reflect(default)]
+    pub grid_column: GridInsertion,
 }
 
 impl Into<Node> for GridNode
@@ -1208,7 +1860,6 @@ impl Into<Node> for GridNode
         let mut node = Node::default();
         node.display = Display::Grid;
         node.position_type = PositionType::Relative;
-
         Dims {
             width: self.width,
             height: self.height,
@@ -1224,40 +1875,66 @@ impl Into<Node> for GridNode
             right: self.right,
         }
         .set_in_node(&mut node);
-
-        ContentFlex {
+        GridContent {
             clipping: self.clipping,
             clip_margin: self.clip_margin,
             padding: self.padding,
-            flex_direction: self.flex_direction,
-            flex_wrap: self.flex_wrap,
             justify_lines: self.justify_lines,
             justify_main: self.justify_main,
             justify_cross: self.justify_cross,
             column_gap: self.column_gap,
             row_gap: self.row_gap,
+            grid_auto_flow: self.grid_auto_flow,
+            grid_auto_rows: self.grid_auto_rows,
+            grid_auto_columns: self.grid_auto_columns,
+            grid_template_rows: self.grid_template_rows,
+            grid_template_columns: self.grid_template_columns,
+        }
+        .set_in_node(&mut node);
+        SelfGrid {
+            margin: self.margin,
+            justify_self_cross: self.justify_self_cross,
+            grid_row: self.grid_row,
+            grid_column: self.grid_column,
         }
         .set_in_node(&mut node);
 
-        node.grid_template_rows = self
-            .grid_template_rows
-            .iter()
-            .map(|x| GridTrack::from(*x).into())
-            .collect();
-
-        node.grid_template_columns = self
-            .grid_template_columns
-            .iter()
-            .map(|x| GridTrack::from(*x).into())
-            .collect();
         node
     }
-} //-------------------------------------------------------------------------------------------------------------------
+}
+
+impl Instruction for GridNode
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+
+        let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
+        let mut node: Node = self.into();
+        node.display = display.to_display(Display::Grid);
+        if let Some(mut cache) = emut.get_mut::<DisplayType>() {
+            *cache = DisplayType::Grid;
+        } else {
+            emut.insert(DisplayType::Grid);
+        }
+
+        emut.insert(node);
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<(Node, DisplayType)>();
+        });
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction loadable that toggles the [`Node::display`] field.
 ///
-/// Inserts self as a component so the `AbsoluteNode` and `FlexNode` loadables can read the correct display value
-/// when they are applied.
+/// Inserts self as a component so the `AbsoluteNode`, `FlexNode`, `AbsoluteGridNode`, and `GridNode` loadables can
+/// read the correct display value when they are applied.
 #[derive(Component, Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -1266,7 +1943,10 @@ impl Into<Node> for GridNode
 )]
 pub enum DisplayControl
 {
-    /// Corresponds to [`Display::Flex`].
+    /// Corresponds to [`Display::Flex`] and [`Display::Grid`].
+    ///
+    /// The correct layout algorithm will be internally tracked so it can be recovered when toggling from `Hide`
+    /// to `Show`.
     #[default]
     Show,
     /// Corresponds to [`Display::None`].
@@ -1275,22 +1955,30 @@ pub enum DisplayControl
 
 impl DisplayControl
 {
-    fn refresh(mut nodes: Query<(&mut Node, &DisplayControl), Or<(Changed<Node>, Changed<DisplayControl>)>>)
+    fn refresh(
+        mut nodes: Query<
+            (&mut Node, &DisplayControl, Option<&DisplayType>),
+            Or<(Changed<Node>, Changed<DisplayControl>)>,
+        >,
+    )
     {
-        for (mut node, control) in nodes.iter_mut() {
-            if node.display != (*control).into() {
-                node.display = (*control).into();
+        for (mut node, control, maybe_cache) in nodes.iter_mut() {
+            let cache = maybe_cache.copied().unwrap_or_default();
+            let display = control.to_display(cache.into());
+            if node.display != display {
+                node.display = display;
             }
         }
     }
-}
 
-impl Into<Display> for DisplayControl
-{
-    fn into(self) -> Display
+    /// Converts self to [`Display`].
+    ///
+    /// If self is `Self::Show`, then the `request` value will be returned. Otherwise `Display::None` will be
+    /// returned.
+    pub fn to_display(&self, request: Display) -> Display
     {
         match self {
-            Self::Show => Display::Flex,
+            Self::Show => request,
             Self::Hide => Display::None,
         }
     }
@@ -1302,14 +1990,21 @@ impl Instruction for DisplayControl
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         emut.insert(self);
+        if !emut.contains::<DisplayType>() {
+            let display = emut.get::<Node>().map(|n| n.display).unwrap_or_default();
+            // NOTE: this will fall back to DisplayType::Flex if it's currently Display::None. We assume the
+            // user only controls `Display` using `DisplayControl` and `*Node` instructions.
+            emut.insert(DisplayType::from(display));
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
+            let cache = e.get::<DisplayType>().copied().unwrap_or_default();
             if let Some(mut node) = e.get_mut::<Node>() {
-                node.display = Self::Show.into();
+                node.display = cache.into();
             }
         });
     }
@@ -1326,44 +2021,6 @@ impl StaticAttribute for DisplayControl
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Like [`Val`] but also accepts additional values for grid layouts.
-///
-/// Can be converted to a [`GridTrack`] for use in [`Node`].
-#[derive(Clone, Copy, Default, Debug, Reflect, PartialEq, Serialize, Deserialize)]
-#[reflect(Default, PartialEq, Debug)]
-#[cfg_attr(feature = "serde", reflect(Serialize, Deserialize))]
-pub enum GridVal
-{
-    #[default]
-    Auto,
-    Percent(f32),
-    Px(f32),
-    Vw(f32),
-    Vh(f32),
-    VMin(f32),
-    VMax(f32),
-    Fr(f32),
-}
-
-impl From<GridVal> for GridTrack
-{
-    fn from(value: GridVal) -> Self
-    {
-        match value {
-            GridVal::Auto => GridTrack::auto(),
-            GridVal::Percent(f) => GridTrack::percent(f),
-            GridVal::Px(f) => GridTrack::px(f),
-            GridVal::Vw(f) => GridTrack::vw(f),
-            GridVal::Vh(f) => GridTrack::vh(f),
-            GridVal::VMin(f) => GridTrack::vmin(f),
-            GridVal::VMax(f) => GridTrack::vmax(f),
-            GridVal::Fr(f) => GridTrack::fr(f),
-        }
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 pub(crate) struct StyleWrappersPlugin;
 
 impl Plugin for StyleWrappersPlugin
@@ -1372,6 +2029,7 @@ impl Plugin for StyleWrappersPlugin
     {
         app.register_instruction_type::<AbsoluteNode>()
             .register_instruction_type::<FlexNode>()
+            .register_instruction_type::<AbsoluteGridNode>()
             .register_instruction_type::<GridNode>()
             .register_static::<DisplayControl>()
             .add_systems(PostUpdate, DisplayControl::refresh.before(UiSystem::Prepare));
