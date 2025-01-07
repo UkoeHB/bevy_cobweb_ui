@@ -2,8 +2,17 @@
 
 ## WIP
 
+### Highlights
+- Rename `load` semantics to `build`.
+    - `load_scene` -> `build_scene`
+    - `load_scene_and_edit` -> `build_scene_and_edit`
+    - `SceneLoader` -> `SceneBuilder`
+    - `LoadedScene` -> `SceneRef`
+- Add `fonts` example.
+
 ### Updates
-- Add `LoadedSceneUi` and `LoadedSceneEcs` type aliases to simplify passing `LoadedScene<UiBuilder<Entity>>` and `LoadedScene<EntityCommands>` as function parameters.
+- Add `UiSceneRef` and `EcsSceneRef` type aliases to simplify passing `SceneRef<UiBuilder<Entity>>` and `SceneRef<EntityCommands>` as function parameters.
+
 
 ## 0.8.0
 
