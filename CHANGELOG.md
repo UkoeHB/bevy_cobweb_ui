@@ -2,6 +2,9 @@
 
 ## WIP
 
+
+## 0.8.0
+
 ### Hightlights
 - Add full support for grid layouts.
     - Added `GridNode` and `AbsoluteGridNode` loadables.
