@@ -18,8 +18,8 @@ struct EditorFileSelection(Option<CobFile>);
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_widgets<'a>(
-    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
+fn build_widgets(
+    l: &mut LoadedSceneUi,
     widgets: &CobWidgetRegistry,
     file_hash: CobFileHash,
     scene_ref: SceneRef,
@@ -65,8 +65,8 @@ fn build_widgets<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_loadable<'a>(
-    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
+fn build_loadable(
+    l: &mut LoadedSceneUi,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
@@ -112,8 +112,8 @@ fn build_loadable<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_scene_layer<'a>(
-    l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>,
+fn build_scene_layer(
+    l: &mut LoadedSceneUi,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,

@@ -389,3 +389,8 @@ impl scene_traits::SceneNodeLoader for EntityCommands<'_>
 impl<'a> scene_traits::LoadedSceneBuilder<'a> for EntityCommands<'a> {}
 
 //-------------------------------------------------------------------------------------------------------------------
+
+/// Shortcut for using [`LoadedScene`] as a function parameter.
+pub type LoadedSceneEcs<'a> = LoadedScene<'a, EntityCommands<'a>>;
+
+//-------------------------------------------------------------------------------------------------------------------

@@ -158,15 +158,15 @@ fn adjust_sickle_slider_theme(ui: &mut EntityCommands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_home_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {}
+fn build_home_page_content(_l: &mut LoadedSceneUi) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_play_page_content<'a>(_l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>) {}
+fn build_play_page_content(_l: &mut LoadedSceneUi) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>)
+fn build_settings_page_content(l: &mut LoadedSceneUi)
 {
     l.edit("audio::slider", |l| {
         // Slider: sickle_ui built-in widget.
@@ -282,13 +282,13 @@ fn build_settings_page_content<'a>(l: &mut LoadedScene<'a, '_, UiBuilder<'a, Ent
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_menu_option<'a>(
-    l: &mut LoadedScene<'a, '_, UiBuilder<'a, Entity>>,
+fn add_menu_option(
+    l: &mut LoadedSceneUi,
     file: &SceneFile,
     content_path: &str,
     button_text: &str,
     page_scene: &str,
-    page_content_fn: impl for<'b> FnOnce(&mut LoadedScene<'b, '_, UiBuilder<'b, Entity>>),
+    page_content_fn: impl FnOnce(&mut LoadedSceneUi),
     start_selected: bool,
 )
 {

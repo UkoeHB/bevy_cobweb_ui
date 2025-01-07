@@ -180,3 +180,8 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
 impl<'a> scene_traits::LoadedSceneBuilder<'a> for UiBuilder<'a, Entity> {}
 
 //-------------------------------------------------------------------------------------------------------------------
+
+/// Shortcut for using [`LoadedScene`] as a function parameter.
+pub type LoadedSceneUi<'a> = LoadedScene<'a, UiBuilder<'a, Entity>>;
+
+//-------------------------------------------------------------------------------------------------------------------

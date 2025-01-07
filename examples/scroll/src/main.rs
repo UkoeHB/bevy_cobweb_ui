@@ -58,7 +58,7 @@ fn check_firefox_timer(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_blob<'a>(l: &mut LoadedScene<'a, UiBuilder<'a, Entity>>, scene: &str)
+fn add_blob(l: &mut LoadedSceneUi, scene: &str)
 {
     l.load_scene_and_edit(("main.cob", scene), |l| {
         let id = l.id();

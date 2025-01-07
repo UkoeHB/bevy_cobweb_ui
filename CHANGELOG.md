@@ -2,6 +2,8 @@
 
 ## WIP
 
+### Updates
+- Add `LoadedSceneUi` and `LoadedSceneEcs` type aliases to simplify passing `LoadedScene<UiBuilder<Entity>>` and `LoadedScene<EntityCommands>` as function parameters.
 
 ## 0.8.0
 
