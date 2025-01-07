@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.9.0
 
 ### Highlights
 - Rename `load` semantics to `spawn` and `build`.
