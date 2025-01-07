@@ -347,7 +347,7 @@ impl CobBuiltin
                     "FitContentPx" | "FitContentPercent" | "Flex" => return Ok(None),
                     // These are not newtype variants of a single number so they shouldn't show up here.
                     "MinContent" | "MaxContent" | "MinMax" | "Many" => return Err(CobError::MalformedBuiltin),
-                    // The remaining variants are captured by `Val`.
+                    // The remaining variants are handled by `Val`.
                     _ => (),
                 }
             }

@@ -660,6 +660,35 @@ impl ResponsiveAttribute for ZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
+impl Instruction for GlobalZIndex
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(self);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<GlobalZIndex>();
+        });
+    }
+}
+
+impl StaticAttribute for GlobalZIndex
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+impl ResponsiveAttribute for GlobalZIndex {}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 impl Instruction for Visibility
 {
     fn apply(self, entity: Entity, world: &mut World)
@@ -707,6 +736,7 @@ impl Plugin for UiComponentWrappersPlugin
             .register_animatable::<NodeShadow>()
             .register_responsive::<FocusPolicy>()
             .register_responsive::<ZIndex>()
+            .register_responsive::<GlobalZIndex>()
             .register_responsive::<Visibility>();
     }
 }

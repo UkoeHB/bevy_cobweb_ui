@@ -10,6 +10,8 @@
 
 ### Updates
 - Rework calculator example to use a COB file with the new grid layout support.
+- Implement `Instruction` for `GlobalZIndex`.
+
 
 ## 0.7.0
 

@@ -606,7 +606,8 @@ Strings are handled similar to how rust string literals are handled.
 
 Since COB is part of `bevy_cobweb_ui`, we include special support for two common UI types.
 
-- [`Val`](bevy::prelude::Val): `Val` variants can be written with special units (`px`, `%`, `vw`, `vh`, `vmin`, `vmax`) and the keyword `auto`. For example, `10px` is equivalent to `Px(10)`.
+- [`Val`](bevy::prelude::Val): `Val` variants can be written with special units (`px`, `%`, `vw`, `vh`, `vmin`, `vmax`, `fr`) and the keyword `auto`. For example, `10px` is equivalent to `Px(10)`.
+    - The `fr` variant corresponds to [`GridVal::Fraction`](bevy_cobweb_ui::prelude::GridVal::Fraction).
 - [`Color`](bevy::prelude::Color): The `Color::Srgba` variant can be written with color-hex in the format `#FFFFFF` (for `alpha = 1.0`) or `#AAFFFFFF` (for custom `alpha`).
 
 
