@@ -158,19 +158,19 @@ fn adjust_sickle_slider_theme(ui: &mut EntityCommands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_home_page_content(_l: &mut LoadedSceneUi) {}
+fn build_home_page_content(_l: &mut UiSceneHandle) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_play_page_content(_l: &mut LoadedSceneUi) {}
+fn build_play_page_content(_l: &mut UiSceneHandle) {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_settings_page_content(l: &mut LoadedSceneUi)
+fn build_settings_page_content(l: &mut UiSceneHandle)
 {
-    l.edit("audio::slider", |l| {
+    h.edit("audio::slider", |h| {
         // Slider: sickle_ui built-in widget.
-        let mut ui = l.slider(SliderConfig::horizontal(None, 0.0, 100.0, 100.0, true));
+        let mut ui = h.slider(SliderConfig::horizontal(None, 0.0, 100.0, 100.0, true));
         let mut n =
             ui.on_event::<SliderChanged>()
                 .r(|event: EntityEvent<SliderChanged>, sliders: Query<&Slider>| {
@@ -181,17 +181,17 @@ fn build_settings_page_content(l: &mut LoadedSceneUi)
         adjust_sickle_slider_theme(&mut n);
     });
 
-    l.edit("vsync", |l| {
+    h.edit("vsync", |h| {
         // Radio buttons: bevy_cobweb_ui built-in widget.
         let manager_entity = RadioButtonManager::insert(l.deref_mut());
-        l.edit("options", |l| {
-            let button_loc = l.path().file.e("settings_radio_button");
+        h.edit("options", |h| {
+            let button_loc = h.path().file.e("settings_radio_button");
 
             // Option: enable vsync
             let enabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-on")
                 .localized()
                 .with_indicator()
-                .build(manager_entity, l.deref_mut())
+                .build(manager_entity, h.deref_mut())
                 .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
                     window.single_mut().present_mode = PresentMode::AutoVsync;
                     tracing::info!("vsync set to on");
@@ -202,7 +202,7 @@ fn build_settings_page_content(l: &mut LoadedSceneUi)
             let disabled = RadioButtonBuilder::custom_with_text(button_loc.clone(), "vsync-off")
                 .localized()
                 .with_indicator()
-                .build(manager_entity, l.deref_mut())
+                .build(manager_entity, h.deref_mut())
                 .on_select(|mut window: Query<&mut Window, With<PrimaryWindow>>| {
                     window.single_mut().present_mode = PresentMode::AutoNoVsync;
                     tracing::info!("vsync set to off");
@@ -210,7 +210,7 @@ fn build_settings_page_content(l: &mut LoadedSceneUi)
                 .id();
 
             // Select correct button based on initial value.
-            l.commands().syscall_once(
+            h.commands().syscall_once(
                 (),
                 move |mut c: Commands, window: Query<&Window, With<PrimaryWindow>>| match window
                     .single()
@@ -223,11 +223,11 @@ fn build_settings_page_content(l: &mut LoadedSceneUi)
         });
     });
 
-    l.edit("localization::dropdown", |l| {
+    h.edit("localization::dropdown", |h| {
         // Drop-down: sickle_ui built-in widget.
         // TODO: Overwrite default styling. The dropdown styling is about 3x larger than the slider styling, so
         // for succinctness we did not override it here.
-        l.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
+        h.update_on(broadcast::<LocalizationManifestUpdated>(), |id| {
             move |mut c: Commands, manifest: Res<LocalizationManifest>| {
                 // Delete current dropdown node in case we are rebuilding due to a new language list.
                 let mut n = c.ui_builder(id);
@@ -283,23 +283,23 @@ fn build_settings_page_content(l: &mut LoadedSceneUi)
 //-------------------------------------------------------------------------------------------------------------------
 
 fn add_menu_option(
-    l: &mut LoadedSceneUi,
+    h: &mut UiSceneHandle,
     file: &SceneFile,
     content_path: &str,
     button_text: &str,
     page_scene: &str,
-    page_content_fn: impl FnOnce(&mut LoadedSceneUi),
+    page_content_fn: impl FnOnce(&mut UiSceneHandle),
     start_selected: bool,
 )
 {
-    let manager_entity = l.id();
+    let manager_entity = h.id();
 
     // Load content page for this section.
     let mut page_entity = Entity::PLACEHOLDER;
-    l.edit_from_root(content_path, |l| {
-        l.load_scene_and_edit(file + page_scene, |l| {
-            page_entity = l.id();
-            l.apply(DisplayControl::Hide);
+    h.edit_from_root(content_path, |h| {
+        h.spawn_scene_and_edit(file + page_scene, |h| {
+            page_entity = h.id();
+            h.apply(DisplayControl::Hide);
 
             // Add custom logic to the page.
             (page_content_fn)(l);
@@ -310,7 +310,7 @@ fn add_menu_option(
     // - We toggle content visibility on select/deselect.
     let button_entity = RadioButtonBuilder::custom_with_text(file + "menu_option_button", button_text)
         .localized()
-        .build(manager_entity, l.deref_mut())
+        .build(manager_entity, h.deref_mut())
         .on_select(move |mut c: Commands| {
             c.entity(page_entity).apply(DisplayControl::Show);
         })
@@ -321,19 +321,19 @@ fn add_menu_option(
 
     // Select if requested.
     if start_selected {
-        l.react().entity_event(button_entity, Select);
+        h.react().entity_event(button_entity, Select);
     }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let file = &SceneFile::new("main.cob.json");
     let scene = file + "menu_scene";
 
-    c.ui_root().load_scene_and_edit(&mut s, scene, |l| {
-        l.edit("menu::options", |l| {
+    c.ui_root().spawn_scene_and_edit(&mut s, scene, |h| {
+        h.edit("menu::options", |h| {
             RadioButtonManager::insert(l.deref_mut());
             add_menu_option(
                 l,

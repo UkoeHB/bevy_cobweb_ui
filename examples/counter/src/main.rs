@@ -20,13 +20,13 @@ impl Counter
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let scene = ("main.cob", "root");
-    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
-        l.edit("button", |l| {
-            let button_id = l.id();
-            l.insert_reactive(Counter(0)).on_pressed(
+    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+        h.edit("button", |h| {
+            let button_id = h.id();
+            h.insert_reactive(Counter(0)).on_pressed(
                 move |mut c: Commands, mut counters: ReactiveMut<Counter>| {
                     counters
                         .get_mut(&mut c, button_id)
@@ -35,7 +35,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 },
             );
 
-            l.get("text").update_on(
+            h.get("text").update_on(
                 entity_mutation::<Counter>(button_id),
                 move |text_id: UpdateId, mut e: TextEditor, counters: Reactive<Counter>| {
                     let counter = counters.get(button_id)?;

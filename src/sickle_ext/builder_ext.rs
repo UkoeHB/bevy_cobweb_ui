@@ -6,10 +6,10 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper trait for building node entities with style loading.
-pub trait NodeLoadingExt
+/// Helper trait for building scene node entities.
+pub trait NodeSpawningExt
 {
-    /// Spawns a new node registered to load from `scene_ref`.
+    /// Spawns a new entity and builds it with the scene node at `scene_ref`.
     ///
     /// Inserts a [`Node::default()`] to the entity.
     ///
@@ -19,31 +19,31 @@ pub trait NodeLoadingExt
     /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
     ///
     /// Will do nothing if the current entity does not exist.
-    fn load(
+    fn spawn_scene_node(
         &mut self,
         scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>;
 }
 
-impl NodeLoadingExt for UiBuilder<'_, UiRoot>
+impl NodeSpawningExt for UiBuilder<'_, UiRoot>
 {
-    fn load(
+    fn spawn_scene_node(
         &mut self,
         scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
     ) -> UiBuilder<Entity>
     {
         let mut node = self.spawn(Node::default());
-        node.entity_commands().load(scene_ref.clone());
+        node.entity_commands().build(scene_ref.clone());
         (callback)(&mut node, scene_ref);
         node
     }
 }
 
-impl NodeLoadingExt for UiBuilder<'_, Entity>
+impl NodeSpawningExt for UiBuilder<'_, Entity>
 {
-    fn load(
+    fn spawn_scene_node(
         &mut self,
         scene_ref: SceneRef,
         callback: impl FnOnce(&mut UiBuilder<Entity>, SceneRef),
@@ -54,7 +54,7 @@ impl NodeLoadingExt for UiBuilder<'_, Entity>
             return self.reborrow();
         }
         let mut child = self.spawn(Node::default());
-        child.entity_commands().load(scene_ref.clone());
+        child.entity_commands().build(scene_ref.clone());
         (callback)(&mut child, scene_ref);
         let id = self.id();
         self.commands().ui_builder(id)
@@ -72,7 +72,7 @@ pub trait ControlBuilderExt
     /// child entity with a [`ControlMember`] ID equal to the requested `child`.
     ///
     /// The callback paramaters are: commands, current entity, child entity.
-    fn edit_child(
+    fn edit_control_child(
         &mut self,
         child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
@@ -81,7 +81,7 @@ pub trait ControlBuilderExt
 
 impl ControlBuilderExt for UiBuilder<'_, Entity>
 {
-    fn edit_child(
+    fn edit_control_child(
         &mut self,
         child: &'static str,
         callback: impl FnOnce(&mut Commands, Entity, Entity) + Send + Sync + 'static,
@@ -115,9 +115,9 @@ impl ControlBuilderExt for UiBuilder<'_, Entity>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
+impl scene_traits::SceneNodeBuilder for UiBuilder<'_, UiRoot>
 {
-    type Loaded<'a> = UiBuilder<'a, Entity>;
+    type Builder<'a> = UiBuilder<'a, Entity>;
 
     fn commands(&mut self) -> Commands
     {
@@ -134,12 +134,12 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
         ec.insert(Node::default());
     }
 
-    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>
     {
         commands.ui_builder(entity)
     }
 
-    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    fn new_with(&mut self, entity: Entity) -> Self::Builder<'_>
     {
         self.commands().ui_builder(entity)
     }
@@ -147,9 +147,9 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, UiRoot>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
+impl scene_traits::SceneNodeBuilder for UiBuilder<'_, Entity>
 {
-    type Loaded<'a> = UiBuilder<'a, Entity>;
+    type Builder<'a> = UiBuilder<'a, Entity>;
 
     fn commands(&mut self) -> Commands
     {
@@ -166,22 +166,22 @@ impl scene_traits::SceneNodeLoader for UiBuilder<'_, Entity>
         ec.insert(Node::default());
     }
 
-    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>
     {
         commands.ui_builder(entity)
     }
 
-    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    fn new_with(&mut self, entity: Entity) -> Self::Builder<'_>
     {
         self.commands().ui_builder(entity)
     }
 }
 
-impl<'a> scene_traits::LoadedSceneBuilder<'a> for UiBuilder<'a, Entity> {}
+impl<'a> scene_traits::SceneNodeBuilderOuter<'a> for UiBuilder<'a, Entity> {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Shortcut for using [`LoadedScene`] as a function parameter.
-pub type LoadedSceneUi<'a> = LoadedScene<'a, UiBuilder<'a, Entity>>;
+/// Shortcut for using [`SceneRef`] as a function parameter.
+pub type UiSceneHandle<'a> = SceneHandle<'a, UiBuilder<'a, Entity>>;
 
 //-------------------------------------------------------------------------------------------------------------------

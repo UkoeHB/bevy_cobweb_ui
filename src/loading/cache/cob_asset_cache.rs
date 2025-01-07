@@ -46,8 +46,8 @@ struct ProcessedSceneFile
 
 /// Resource that manages content extracted from cobweb asset files (`.cob` files).
 ///
-/// Can be used to load scenes with [`LoadSceneExt::load_scene`], or load individual scene nodes with
-/// [`CobLoadingEntityCommandsExt::load`].
+/// Can be used to load scenes with [`SpawnSceneExt::spawn_scene`], or load individual scene nodes with
+/// [`NodeBuilderExt::load`].
 ///
 /// Note that command loadables in cob files are automatically applied to the world. Commands are globally
 /// ordered by:
@@ -305,7 +305,7 @@ impl CobAssetCache
         _c: &mut Commands,
         commands_buffer: &mut CommandsBuffer,
         _scene_buffer: &mut SceneBuffer,
-        _scene_loader: &mut SceneLoader,
+        _scene_loader: &mut SceneBuilder,
     )
     {
         // Initialize resolver from dependencies.
@@ -430,7 +430,7 @@ impl CobAssetCache
         c: &mut Commands,
         commands_buffer: &mut CommandsBuffer,
         scene_buffer: &mut SceneBuffer,
-        scene_loader: &mut SceneLoader,
+        scene_loader: &mut SceneBuilder,
     ) -> bool
     {
         // Loop preprocessed until nothing can be processed.
@@ -514,7 +514,7 @@ impl CobAssetCache
         loadables: &LoadableRegistry,
         c: &mut Commands,
         scene_buffer: &mut SceneBuffer,
-        scene_loader: &mut SceneLoader,
+        scene_loader: &mut SceneBuilder,
         #[cfg(feature = "editor")] editor: &mut crate::editor::CobEditor,
     )
     {

@@ -83,35 +83,35 @@ fn setup_drag(ec: &mut EntityCommands, widget_id: Entity)
 
 // TODO: how to make this generic? might need a trait
 fn make_draggable_field_widget(
-    l: &mut LoadedSceneUi,
+    h: &mut UiSceneHandle,
     name: &'static str,
     initial_value: f32,
     bounds: RangeInclusive<f32>,
 ) -> Entity
 {
     let mut widget_id = Entity::PLACEHOLDER;
-    l.load_scene_and_edit(("editor_ext", "field_widget"), |l| {
-        widget_id = l.id();
+    h.spawn_scene_and_edit(("editor_ext", "field_widget"), |h| {
+        widget_id = h.id();
 
-        l.insert_reactive(FieldValue::new(initial_value));
+        h.insert_reactive(FieldValue::new(initial_value));
 
-        l.get("name")
+        h.get("name")
             .update(move |id: UpdateId, mut e: TextEditor| {
                 write_text!(e, *id, "{name}:");
             });
 
         let bounds_start = *bounds.start();
-        l.get("lower_bound")
+        h.get("lower_bound")
             .update(move |id: UpdateId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_start);
             });
 
         // Set up the drag zone to modify the DragValue.
-        let mut zone = l.get("value");
+        let mut zone = h.get("value");
         let mut ec = zone.entity_commands();
         setup_drag(&mut ec, widget_id);
 
-        l.get("value::text").update_on(
+        h.get("value::text").update_on(
             entity_mutation::<FieldValue<f32>>(widget_id),
             move |id: UpdateId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
                 let val = vals.get(widget_id)?;
@@ -121,13 +121,13 @@ fn make_draggable_field_widget(
         );
 
         let bounds_end = *bounds.end();
-        l.get("upper_bound")
+        h.get("upper_bound")
             .update(move |id: UpdateId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_end);
             });
 
         // Convert drag values to field value changes.
-        l.on_event::<DragValue>().r(
+        h.on_event::<DragValue>().r(
             move |event: EntityEvent<DragValue>, mut c: Commands, mut fields: ReactiveMut<FieldValue<f32>>| {
                 let (_, delta) = event.try_read()?;
                 let val = fields.get(widget_id)?;
@@ -158,7 +158,7 @@ impl CobEditorWidget for DemoOrbiterWidget
 
     fn try_spawn(
         c: &mut Commands,
-        s: &mut SceneLoader,
+        s: &mut SceneBuilder,
         parent: Entity,
         editor_ref: &CobEditorRef,
         value: &(dyn PartialReflect + 'static),
@@ -180,21 +180,21 @@ impl CobEditorWidget for DemoOrbiterWidget
 
         // Build the widget.
         c.ui_builder(parent)
-            .load_scene_and_edit(("editor_ext", "orbiter_widget"), s, |l| {
+            .spawn_scene_and_edit(("editor_ext", "orbiter_widget"), s, |h| {
                 // Field widget for radius.
                 let radius_id =
-                    make_draggable_field_widget(l, "radius", initial_orbiter.radius, radius_bounds.clone());
+                    make_draggable_field_widget(h, "radius", initial_orbiter.radius, radius_bounds.clone());
 
                 // Field widget for velocity.
                 let velocity_id =
-                    make_draggable_field_widget(l, "velocity", initial_orbiter.velocity, velocity_bounds.clone());
+                    make_draggable_field_widget(h, "velocity", initial_orbiter.velocity, velocity_bounds.clone());
 
                 // Send updated values back to the editor.
                 //TODO: update_on is overkill here, but we need to make sure the reactor's lifetime is tied
                 //to this widget
                 let mut orbiter_tracked = initial_orbiter;
                 let editor_ref = editor_ref.clone();
-                l.update_on(
+                h.update_on(
                     (
                         entity_mutation::<FieldValue<f32>>(radius_id),
                         entity_mutation::<FieldValue<f32>>(velocity_id),

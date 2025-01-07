@@ -316,9 +316,9 @@ impl SceneInstance
 
 /// Manages loaded scene definitions and used to spawn scene instances.
 ///
-/// See [`LoadSceneExt`].
+/// See [`SpawnSceneExt`].
 #[derive(Resource, Default)]
-pub struct SceneLoader
+pub struct SceneBuilder
 {
     /// Tracks manifest data.
     /// - Inside an arc/mutex so the CobAssetCache can also use it.
@@ -340,7 +340,7 @@ pub struct SceneLoader
     scene_instances: HashMap<SceneRef, SmallVec<[SceneInstance; 1]>>,
 }
 
-impl SceneLoader
+impl SceneBuilder
 {
     /// Makes a new scene loader from a shared manifest map.
     pub(crate) fn new(manifest_map: Arc<Mutex<ManifestMap>>) -> Self
@@ -563,13 +563,13 @@ impl SceneLoader
         self.scene_instance_cache.push(dead);
     }
 
-    /// Loads a scene into a target entity.
+    /// Builds a scene into a target entity, which will be the root of the scene.
     ///
     /// The scene hierarchy is saved temporarily in a `SceneInstance`. It will be discarded when
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
-    pub(crate) fn load_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
+    pub(crate) fn build_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
     where
-        T: crate::loading::scene::load_scene_ext::scene_traits::SceneNodeLoader,
+        T: crate::loading::scene::spawn_scene_ext::scene_traits::SceneNodeBuilder,
     {
         // Reject non-root nodes.
         if scene_ref.path.len() != 1 {
@@ -627,12 +627,12 @@ impl SceneLoader
 
         // Load the root entity.
         let mut root_ec = c.entity(root_entity);
-        root_ec.load_with_initializer(scene_ref.clone(), T::initialize_scene_node);
+        root_ec.build_with_initializer(scene_ref.clone(), T::initialize_scene_node);
 
         // Spawn hierarchy, loading all child paths.
         // - Hierarchy spawn order matches the order in cob files.
         // - NOTE: We do not use ChildBuilder here, even though it would be more efficient, because node parents
-        //   must be set before we call `.load()` on them. ChildBuilder defers parent assignment.
+        //   must be set before we call `.build()` on them. ChildBuilder defers parent assignment.
         let parent_stack = &mut self.scene_parent_stack_cached;
         parent_stack.clear();
         let mut prev_entity = root_entity;
@@ -663,7 +663,7 @@ impl SceneLoader
 
             // Load the scene node to the entity.
             let node_ref = SceneRef { file: scene_ref.file.clone(), path: scene_node_path.clone() };
-            ec.load_with_initializer(node_ref.clone(), T::initialize_scene_node);
+            ec.build_with_initializer(node_ref.clone(), T::initialize_scene_node);
 
             // Save the entity.
             let node_entity = ec.id();
@@ -716,14 +716,14 @@ impl SceneLoader
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Plugin that enables scene loading.
-pub(crate) struct SceneLoaderPlugin;
+pub(crate) struct SceneBuilderPlugin;
 
-impl Plugin for SceneLoaderPlugin
+impl Plugin for SceneBuilderPlugin
 {
     fn build(&self, app: &mut App)
     {
         let manifest_map = app.world().resource::<CobAssetCache>().manifest_map_clone();
-        app.insert_resource(SceneLoader::new(manifest_map));
+        app.insert_resource(SceneBuilder::new(manifest_map));
     }
 }
 

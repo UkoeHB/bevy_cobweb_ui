@@ -16,9 +16,9 @@ const SCREEN_HALF_HEIGHT: f32 = 300.0;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_scenes(
+fn spawn_scenes(
     mut c: Commands,
-    mut s: ResMut<SceneLoader>,
+    mut s: ResMut<SceneBuilder>,
     mut rng: ResMut<rng::DemoRng>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -31,13 +31,13 @@ fn build_scenes(
     let color = materials.add(Color::from(bevy::color::palettes::tailwind::ORANGE_600));
 
     for _ in 0..20 {
-        c.load_scene_and_edit(("main.cob", "orbit"), &mut s, |l| {
+        c.spawn_scene_and_edit(("main.cob", "orbit"), &mut s, |h| {
             // Random starting location and angle.
             let start_x = rng.gen_range(-SCREEN_HALF_WIDTH..=SCREEN_HALF_WIDTH);
             let start_y = rng.gen_range(-SCREEN_HALF_HEIGHT..=SCREEN_HALF_HEIGHT);
             let start_radial = rng.gen_range((0.)..TAU);
 
-            l.insert((
+            h.insert((
                 Mesh2d(shape.clone()),
                 MeshMaterial2d(color.clone()),
                 orbiter::Orbit::new(Vec2::new(start_x, start_y), start_radial),
@@ -63,7 +63,7 @@ fn main()
     .add_plugins(orbiter::DemoOrbiterPlugin)
     .insert_resource(rng::DemoRng::new(0))
     .load("main.cob")
-    .add_systems(OnEnter(LoadState::Done), build_scenes);
+    .add_systems(OnEnter(LoadState::Done), spawn_scenes);
 
     #[cfg(feature = "editor")]
     app.add_plugins(editor_ext::DemoEditorExtPlugin);

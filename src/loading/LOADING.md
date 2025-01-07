@@ -311,20 +311,20 @@ For details about COB value serialization, see [below](Value-serialization).
 
 **Spawning a scene**
 
-Scenes can be spawned all-at-once, or you can load individual scene nodes into pre-spawned entities. The latter is useful when designing widgets with configurable structures (e.g. the `radio_button` widget lets you configure where indicator dots appear).
+Scenes can be spawned all-at-once, or you can build individual scene nodes into pre-spawned entities. The latter is useful when designing widgets with configurable structures.
 
 For example:
 ```rust
 let file = &SceneFile::new("example.cob");
 
-// Spawns and loads an entire scene (entities: b, b::bb).
-commands.ui_root().load_scene(file + "b");
+// Spawns and builds an entire scene (entities: b, b::bb).
+commands.ui_root().spawn_scene(file + "b");
 
-// Loads an individual root node into the spawned entity.
-commands.spawn_empty().load(file + "a");
+// Builds an individual root node into the spawned entity.
+commands.spawn_empty().build(file + "a");
 
-// Loads an individual inner node into the spawned entity.
-commands.spawn_empty().load(file + "b::bb");
+// Builds an individual inner node into the spawned entity.
+commands.spawn_empty().build(file + "b::bb");
 ```
 
 Each node in a scene may have any number of [`Loadable`](bevy_cobweb_ui::prelude::Loadable) values, which are applied to entities.
@@ -384,16 +384,16 @@ The `revert` method on `Instruction` is used when hot-reloading an instruction. 
 
 **Warning**: If a loadable contains `NaN`, then it will *always* appear changed when a file reloads, since we use `reflect_partial_eq` to detect changes.
 
-To load a full scene and edit it, you can use [`LoadSceneExt::load_scene_and_edit`](bevy_cobweb_ui::prelude::LoadSceneExt::load_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`LoadedScene`](bevy_cobweb_ui::prelude::LoadedScene) struct accessible in the `load_scene_and_edit` callback.
+To load a full scene and edit it, you can use [`SpawnSceneExt::spawn_scene_and_edit`](bevy_cobweb_ui::prelude::SpawnSceneExt::spawn_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`SceneRef`](bevy_cobweb_ui::prelude::SceneRef) struct accessible in the `spawn_scene_and_edit` callback.
 
 ```rust
-fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn setup(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let file = &SceneFile::new("main"); // Using a manifest key
 
-    c.load_scene_and_edit(file + "game_menu_scene", &mut s, |loaded_scene: &mut LoadedScene<EntityCommands>| {
+    c.spawn_scene_and_edit(file + "game_menu_scene", &mut s, |loaded_scene: &mut SceneHandle<EntityCommands>| {
         // Do something with loaded_scene, which points to the root node...
-        // - LoadedScene derefs to the internal scene node builder (EntityCommands in this case).
+        // - SceneRef derefs to the internal scene node builder (EntityCommands in this case).
         loaded_scene.insert(MyComponent);
 
         // Edit a child of the root node directly.
@@ -406,7 +406,7 @@ fn setup(mut c: Commands, mut s: ResMut<SceneLoader>)
             // ...
 
             // Insert another scene as a child of this node.
-            loaded_scene.load_scene_and_edit(file + "footer_scene", |loaded_scene| {
+            loaded_scene.spawn_scene_and_edit(file + "footer_scene", |loaded_scene| {
                 // ...
             });
         });

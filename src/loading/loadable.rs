@@ -151,7 +151,7 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component added to nodes that load scene nodes from cobweb asset files (see [`SceneLoader`]).
+/// Component added to nodes that load scene nodes from cobweb asset files (see [`SceneBuilder`]).
 #[derive(Component)]
 pub(crate) struct HasLoadables;
 
@@ -160,6 +160,6 @@ pub(crate) struct HasLoadables;
 /// Entity event emitted when loadables have been updated on an entity.
 #[cfg(feature = "hot_reload")]
 #[derive(Debug, Default, Copy, Clone, Hash)]
-pub struct Loaded;
+pub struct SceneNodeBuilt;
 
 //-------------------------------------------------------------------------------------------------------------------

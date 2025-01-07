@@ -7,17 +7,17 @@ use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let scene = ("main.cob", "scene");
-    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
-        l.edit("basic", |l| {
-            let text_id = l.get_entity("text").unwrap();
+    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+        h.edit("basic", |h| {
+            let text_id = h.get_entity("text").unwrap();
 
-            l.edit("checkbox", |l| {
-                let id = l.id();
+            h.edit("checkbox", |h| {
+                let id = h.id();
                 // Use update_on so it also initializes the text.
-                l.update_on(entity_event::<Uncheck>(id), move |_: UpdateId, mut e: TextEditor| {
+                h.update_on(entity_event::<Uncheck>(id), move |_: UpdateId, mut e: TextEditor| {
                     write_text!(e, text_id, "Unchecked");
                 })
                 .on_check(move |mut e: TextEditor| {

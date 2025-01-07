@@ -130,7 +130,7 @@ impl Command for RevertCommand
 
 //-------------------------------------------------------------------------------------------------------------------
 
-struct NodeLoadCommand
+struct NodeBuildCommand
 {
     callback: fn(&mut World, Entity, ReflectedLoadable, SceneRef),
     entity: Entity,
@@ -138,7 +138,7 @@ struct NodeLoadCommand
     loadable: ReflectedLoadable,
 }
 
-impl Command for NodeLoadCommand
+impl Command for NodeBuildCommand
 {
     fn apply(self, world: &mut World)
     {
@@ -321,7 +321,7 @@ impl SceneBuffer
         }
     }
 
-    fn load_entity(
+    fn build_entity(
         &self,
         subscription: SubscriptionRef,
         scene_ref: SceneRef,
@@ -347,7 +347,7 @@ impl SceneBuffer
                 continue;
             };
 
-            c.queue(NodeLoadCommand {
+            c.queue(NodeBuildCommand {
                 callback,
                 entity: subscription.entity,
                 scene_ref: scene_ref.clone(),
@@ -355,11 +355,11 @@ impl SceneBuffer
             });
         }
 
-        // Notify the entity that it loaded.
+        // Notify the entity that it build.
         #[cfg(feature = "hot_reload")]
         {
             if !loadables.is_empty() {
-                c.react().entity_event(subscription.entity, Loaded);
+                c.react().entity_event(subscription.entity, SceneNodeBuilt);
             }
         }
     }
@@ -407,14 +407,14 @@ impl SceneBuffer
         }
 
         // Load the entity immediately.
-        self.load_entity(subscription, scene_ref, callbacks, c);
+        self.build_entity(subscription, scene_ref, callbacks, c);
     }
 
     /// Adds an entity to the tracking context.
     ///
     /// Queues the entity to be loaded. This allows synchronizing a new entity (e.g. a new scene entity) with
     /// other refresh-edits to ancestors in the scene hierarchy (those edits are also queeud - if we did
-    /// .load_entity() immediately then it would happen *before* ancestors are updated).
+    /// .build_entity() immediately then it would happen *before* ancestors are updated).
     #[cfg(feature = "hot_reload")]
     pub(crate) fn track_entity_queued(
         &mut self,
@@ -471,7 +471,7 @@ impl SceneBuffer
         // Reload entities.
         let needs_updates = self.refresh_ctx.updates().collect::<Vec<_>>();
         for (entity, initializer, scene_ref) in needs_updates {
-            self.load_entity(SubscriptionRef { entity, initializer }, scene_ref, callbacks, c);
+            self.build_entity(SubscriptionRef { entity, initializer }, scene_ref, callbacks, c);
         }
     }
 
@@ -494,7 +494,7 @@ impl SceneBuffer
 
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
-    pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneLoader, dead_entity: Entity)
+    pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneBuilder, dead_entity: Entity)
     {
         let Some((scene_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
 

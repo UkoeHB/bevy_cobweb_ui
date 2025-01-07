@@ -2,8 +2,36 @@ pub use std::ops::{Deref, DerefMut}; // Re-export for ease of use.
 
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
+use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn build_from_ref(
+    In((id, scene_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
+    mut c: Commands,
+    loadables: Res<LoadableRegistry>,
+    mut scene_buffer: ResMut<SceneBuffer>,
+    load_state: Res<State<LoadState>>,
+    #[cfg(feature = "hot_reload")] commands_buffer: Res<CommandsBuffer>,
+)
+{
+    if *load_state.get() != LoadState::Done {
+        tracing::error!("failed building scene node {scene_ref:?} into {id:?}, app state is not LoadState::Done");
+        return;
+    }
+
+    scene_buffer.track_entity(
+        id,
+        scene_ref,
+        initializer,
+        &loadables,
+        &mut c,
+        #[cfg(feature = "hot_reload")]
+        &commands_buffer,
+    );
+}
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -16,60 +44,60 @@ pub mod scene_traits
     #[allow(unused_imports)]
     use crate::prelude::*;
 
-    /// Helper trait for loading a scene. See [`LoadedScene`] and [`LoadSceneExt::load_scene`].
-    pub trait SceneNodeLoader
+    /// Helper trait for loading a scene. See [`SceneRef`] and [`SpawnSceneExt::spawn_scene`].
+    pub trait SceneNodeBuilder
     {
-        /// The type returned by [`Self::loaded_scene_builder`].
-        type Loaded<'a>: LoadedSceneBuilder<'a>;
+        /// The type returned by [`Self::scene_node_builder`].
+        type Builder<'a>: SceneNodeBuilderOuter<'a>;
 
         /// Gets a [`Commands`] instance.
         fn commands(&mut self) -> Commands;
-        /// Gets the parent entity for scenes loaded with this `SceneLoader`.
+        /// Gets the parent entity for scenes loaded with this `SceneBuilder`.
         fn scene_parent_entity(&self) -> Option<Entity>;
         /// Prepares a scene node to receive scene data.
         ///
         /// For example, UI nodes need `NodeBundles`, which this method can auto-insert.
         fn initialize_scene_node(ec: &mut EntityCommands);
-        /// Gets a [`LoadedSceneBuilder`] instance in order to edit a node in the loaded scene.
-        fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>;
-        /// Gets a [`LoadedSceneBuilder`] instance in order to edit a node in the loaded scene.
-        fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>;
+        /// Gets a [`SceneNodeBuilderOuter`] instance in order to edit a node in the loaded scene.
+        fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>;
+        /// Gets a [`SceneNodeBuilderOuter`] instance in order to edit a node in the loaded scene.
+        fn new_with(&mut self, entity: Entity) -> Self::Builder<'_>;
     }
 
-    /// Helper trait for editing nodes in a loaded scene. See [`LoadedScene`] and
-    /// [`LoadSceneExt::load_scene_and_edit`].
-    pub trait LoadedSceneBuilder<'a>: SceneNodeLoader {}
+    /// Helper trait for editing nodes in a loaded scene. See [`SceneRef`] and
+    /// [`SpawnSceneExt::spawn_scene_and_edit`].
+    pub trait SceneNodeBuilderOuter<'a>: SceneNodeBuilder {}
 }
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper struct for editing loaded scenes.
+/// Helper struct for editing spawned scenes.
 ///
 /// The struct will dereference to the inner `T`, which should be a [`Commands`]-based entity builder (e.g.
 /// [`EntityCommands`] or [`UiBuilder<Entity>`](crate::prelude::UiBuilder)) that can be used to arbitrarily
-/// modify the scene node entity.
-pub struct LoadedScene<'a, T>
+/// modify the referenced scene node entity.
+pub struct SceneHandle<'a, T>
 where
-    T: scene_traits::LoadedSceneBuilder<'a>,
+    T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
-    scene_loader: &'a mut SceneLoader,
+    scene_builder: &'a mut SceneBuilder,
     builder: T,
     scene: SceneRef,
 }
 
-impl<'a, T> LoadedScene<'a, T>
+impl<'a, T> SceneHandle<'a, T>
 where
-    T: scene_traits::LoadedSceneBuilder<'a>,
+    T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
-    fn get_impl(&mut self, scene: SceneRef) -> LoadedScene<T::Loaded<'_>>
+    fn get_impl(&mut self, scene: SceneRef) -> SceneHandle<T::Builder<'_>>
     {
         let Some(entity) = self
-            .scene_loader
+            .scene_builder
             .active_scene()
             .map(|s| s.get(&scene.path))
             .flatten()
         else {
-            match self.scene_loader.active_scene() {
+            match self.scene_builder.active_scene() {
                 Some(s) => {
                     tracing::warn!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
                         scene, s.scene_ref(), s.root_entity());
@@ -78,15 +106,15 @@ where
                     tracing::error!("edit failed for scene node {:?}, no scene is active (this is a bug)", scene);
                 }
             }
-            return LoadedScene {
-                scene_loader: self.scene_loader,
+            return SceneHandle {
+                scene_builder: self.scene_builder,
                 builder: self.builder.new_with(Entity::PLACEHOLDER),
                 scene: self.scene.clone(),
             };
         };
 
-        LoadedScene {
-            scene_loader: self.scene_loader,
+        SceneHandle {
+            scene_builder: self.scene_builder,
             builder: self.builder.new_with(entity),
             scene,
         }
@@ -94,15 +122,15 @@ where
 
     fn edit_impl<C>(&mut self, scene: SceneRef, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
     {
         let Some(entity) = self
-            .scene_loader
+            .scene_builder
             .active_scene()
             .map(|s| s.get(&scene.path))
             .flatten()
         else {
-            match self.scene_loader.active_scene() {
+            match self.scene_builder.active_scene() {
                 Some(s) => {
                     tracing::warn!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
                         scene, s.scene_ref(), s.root_entity());
@@ -116,9 +144,9 @@ where
 
         {
             let mut commands = self.builder.commands();
-            let mut child_scene = LoadedScene {
-                scene_loader: self.scene_loader,
-                builder: T::loaded_scene_builder(&mut commands, entity),
+            let mut child_scene = SceneHandle {
+                scene_builder: self.scene_builder,
+                builder: T::scene_node_builder(&mut commands, entity),
                 scene,
             };
 
@@ -129,14 +157,14 @@ where
     }
 
     /// Gets a specific child in order to edit it directly.
-    pub fn get(&mut self, child: impl AsRef<str>) -> LoadedScene<T::Loaded<'_>>
+    pub fn get(&mut self, child: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
     {
         let scene = self.scene.e(child);
         self.get_impl(scene)
     }
 
     /// Gets a specific child positioned relative to the root node in order to edit it directly.
-    pub fn get_from_root(&mut self, path: impl AsRef<str>) -> LoadedScene<T::Loaded<'_>>
+    pub fn get_from_root(&mut self, path: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
     {
         let scene = self.scene.extend_from_index(0, path);
         self.get_impl(scene)
@@ -150,7 +178,7 @@ where
     /// Note that looking up the scene node allocates.
     pub fn edit<C>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
     {
         let scene = self.scene.e(child);
         self.edit_impl(scene, callback)
@@ -164,7 +192,7 @@ where
     /// Note that looking up the scene node allocates.
     pub fn edit_from_root<C>(&mut self, path: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, T::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
     {
         let scene = self.scene.extend_from_index(0, path);
         self.edit_impl(scene, callback)
@@ -176,7 +204,7 @@ where
     pub fn get_entity(&self, child: impl AsRef<str>) -> Option<Entity>
     {
         let child_path = self.scene.path.extend(child);
-        self.scene_loader
+        self.scene_builder
             .active_scene()
             .map(|s| s.get(&child_path))
             .flatten()
@@ -188,26 +216,26 @@ where
     pub fn get_entity_from_root(&self, path: impl AsRef<str>) -> Option<Entity>
     {
         let scene = self.scene.path.extend_from_index(0, path);
-        self.scene_loader
+        self.scene_builder
             .active_scene()
             .map(|s| s.get(&scene))
             .flatten()
     }
 
-    /// See [`LoadSceneExt::load_scene`].
-    pub fn load_scene(&mut self, path: impl Into<SceneRef>) -> &mut Self
+    /// See [`SpawnSceneExt::spawn_scene`].
+    pub fn spawn_scene(&mut self, path: impl Into<SceneRef>) -> &mut Self
     {
-        self.builder.load_scene(path, self.scene_loader);
+        self.builder.spawn_scene(path, self.scene_builder);
         self
     }
 
-    /// See [`LoadSceneExt::load_scene_and_edit`].
-    pub fn load_scene_and_edit<C>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
+    /// See [`SpawnSceneExt::spawn_scene_and_edit`].
+    pub fn spawn_scene_and_edit<C>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut LoadedScene<'c, <T as scene_traits::SceneNodeLoader>::Loaded<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>),
     {
         self.builder
-            .load_scene_and_edit(path, self.scene_loader, callback);
+            .spawn_scene_and_edit(path, self.scene_builder, callback);
         self
     }
 
@@ -217,16 +245,16 @@ where
         &self.scene
     }
 
-    /// Accesses the inner loader and builder.
-    pub fn inner(&mut self) -> (&mut SceneLoader, &mut T)
+    /// Accesses the inner spawner and builder.
+    pub fn inner(&mut self) -> (&mut SceneBuilder, &mut T)
     {
-        (self.scene_loader, &mut self.builder)
+        (self.scene_builder, &mut self.builder)
     }
 }
 
-impl<'a, T> Deref for LoadedScene<'a, T>
+impl<'a, T> Deref for SceneHandle<'a, T>
 where
-    T: scene_traits::LoadedSceneBuilder<'a>,
+    T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
     type Target = T;
 
@@ -236,9 +264,9 @@ where
     }
 }
 
-impl<'a, T> DerefMut for LoadedScene<'a, T>
+impl<'a, T> DerefMut for SceneHandle<'a, T>
 where
-    T: scene_traits::LoadedSceneBuilder<'a>,
+    T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target
     {
@@ -248,47 +276,50 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Extention trait for loading scenes into entities.
-pub trait LoadSceneExt: scene_traits::SceneNodeLoader
+/// Extention trait for building scenes into entities.
+pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
 {
-    /// Equivalent to [`LoadSceneExt::load_scene_and_edit`] with no callback.
-    fn load_scene(&mut self, path: impl Into<SceneRef>, scene_loader: &mut SceneLoader) -> &mut Self;
+    /// Equivalent to [`SpawnSceneExt::spawn_scene_and_edit`] with no callback.
+    fn spawn_scene(&mut self, path: impl Into<SceneRef>, scene_builder: &mut SceneBuilder) -> &mut Self;
 
     /// Spawns an entity (and optionally makes it a child of
-    /// [`Self::scene_parent_entity`](scene_traits::SceneNodeLoader::scene_parent_entity)), then loads the scene at
-    /// `path` into it.
+    /// [`Self::scene_parent_entity`](scene_traits::SceneNodeBuilder::scene_parent_entity)), then builds the scene
+    /// at `path` into it.
+    ///
+    /// Building a scene involves applying loadables (components and instructions) to nodes and spawning new
+    /// child nodes.
     ///
     /// The `callback` can be used to edit the scene's root node, which in turn can be used to edit inner nodes
-    /// of the scene via [`LoadedScene::edit`].
+    /// of the scene via [`SceneRef::edit`].
     ///
     /// Will log a warning and do nothing if the parent entity does not exist.
-    fn load_scene_and_edit<C>(
+    fn spawn_scene_and_edit<C>(
         &mut self,
         path: impl Into<SceneRef>,
-        scene_loader: &mut SceneLoader,
+        scene_builder: &mut SceneBuilder,
         callback: C,
     ) -> &mut Self
     where
-        C: for<'a> FnOnce(&mut LoadedScene<'a, <Self as scene_traits::SceneNodeLoader>::Loaded<'a>>);
+        C: for<'a> FnOnce(&mut SceneHandle<'a, <Self as scene_traits::SceneNodeBuilder>::Builder<'a>>);
 }
 
-impl<T> LoadSceneExt for T
+impl<T> SpawnSceneExt for T
 where
-    T: scene_traits::SceneNodeLoader,
+    T: scene_traits::SceneNodeBuilder,
 {
-    fn load_scene(&mut self, path: impl Into<SceneRef>, scene_loader: &mut SceneLoader) -> &mut Self
+    fn spawn_scene(&mut self, path: impl Into<SceneRef>, scene_builder: &mut SceneBuilder) -> &mut Self
     {
-        self.load_scene_and_edit(path, scene_loader, |_| {})
+        self.spawn_scene_and_edit(path, scene_builder, |_| {})
     }
 
-    fn load_scene_and_edit<C>(
+    fn spawn_scene_and_edit<C>(
         &mut self,
         path: impl Into<SceneRef>,
-        scene_loader: &mut SceneLoader,
+        scene_builder: &mut SceneBuilder,
         callback: C,
     ) -> &mut Self
     where
-        C: for<'a> FnOnce(&mut LoadedScene<'a, <T as scene_traits::SceneNodeLoader>::Loaded<'a>>),
+        C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
     {
         let path = path.into();
 
@@ -306,15 +337,15 @@ where
 
         // Load the scene into the root entity.
         let mut commands = self.commands();
-        if !scene_loader.load_scene::<T>(&mut commands, root_entity, path.clone()) {
+        if !scene_builder.build_scene::<T>(&mut commands, root_entity, path.clone()) {
             return self;
         }
 
         // Allow editing the scene via callback.
         {
-            let mut root_node = LoadedScene {
-                scene_loader,
-                builder: T::loaded_scene_builder(&mut commands, root_entity),
+            let mut root_node = SceneHandle {
+                scene_builder,
+                builder: T::scene_node_builder(&mut commands, root_entity),
                 scene: path,
             };
 
@@ -322,7 +353,7 @@ where
         }
 
         // Cleanup
-        scene_loader.release_active_scene();
+        scene_builder.release_active_scene();
 
         self
     }
@@ -330,9 +361,9 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl<'w, 's> scene_traits::SceneNodeLoader for Commands<'w, 's>
+impl<'w, 's> scene_traits::SceneNodeBuilder for Commands<'w, 's>
 {
-    type Loaded<'a> = EntityCommands<'a>;
+    type Builder<'a> = EntityCommands<'a>;
 
     fn commands(&mut self) -> Commands
     {
@@ -346,12 +377,12 @@ impl<'w, 's> scene_traits::SceneNodeLoader for Commands<'w, 's>
 
     fn initialize_scene_node(_ec: &mut EntityCommands) {}
 
-    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>
     {
         commands.entity(entity)
     }
 
-    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    fn new_with(&mut self, entity: Entity) -> Self::Builder<'_>
     {
         self.entity(entity)
     }
@@ -359,9 +390,9 @@ impl<'w, 's> scene_traits::SceneNodeLoader for Commands<'w, 's>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl scene_traits::SceneNodeLoader for EntityCommands<'_>
+impl scene_traits::SceneNodeBuilder for EntityCommands<'_>
 {
-    type Loaded<'a> = EntityCommands<'a>;
+    type Builder<'a> = EntityCommands<'a>;
 
     fn commands(&mut self) -> Commands
     {
@@ -375,22 +406,60 @@ impl scene_traits::SceneNodeLoader for EntityCommands<'_>
 
     fn initialize_scene_node(_ec: &mut EntityCommands) {}
 
-    fn loaded_scene_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Loaded<'a>
+    fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>
     {
         commands.entity(entity)
     }
 
-    fn new_with(&mut self, entity: Entity) -> Self::Loaded<'_>
+    fn new_with(&mut self, entity: Entity) -> Self::Builder<'_>
     {
         self.commands_mut().entity(entity)
     }
 }
 
-impl<'a> scene_traits::LoadedSceneBuilder<'a> for EntityCommands<'a> {}
+impl<'a> scene_traits::SceneNodeBuilderOuter<'a> for EntityCommands<'a> {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Shortcut for using [`LoadedScene`] as a function parameter.
-pub type LoadedSceneEcs<'a> = LoadedScene<'a, EntityCommands<'a>>;
+/// Shortcut for using [`SceneRef`] as a function parameter.
+pub type EcsSceneHandle<'a> = SceneHandle<'a, EntityCommands<'a>>;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Helper trait for registering entities to acquire loadables from scene nodes.
+pub trait NodeBuilderExt
+{
+    /// Registers the current entity to acquire loadables from `scene_ref`.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
+    fn build(&mut self, scene_ref: SceneRef) -> &mut Self;
+
+    /// Registers the current entity to acquire loadables from `scene_ref`.
+    ///
+    /// The `initializer` callback will be called before refreshing the `scene_ref` loadable set on the entity.
+    ///
+    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
+    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
+    fn build_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self;
+}
+
+impl NodeBuilderExt for EntityCommands<'_>
+{
+    fn build(&mut self, scene_ref: SceneRef) -> &mut Self
+    {
+        self.build_with_initializer(scene_ref, |_| {})
+    }
+
+    fn build_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self
+    {
+        self.insert(HasLoadables);
+
+        let id = self.id();
+        self.commands()
+            .syscall((id, scene_ref, NodeInitializer { initializer }), build_from_ref);
+        self
+    }
+}
 
 //-------------------------------------------------------------------------------------------------------------------

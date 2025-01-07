@@ -6,9 +6,9 @@ use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
-    c.ui_root().load_scene(("main.cob", "scene"), &mut s);
+    c.ui_root().spawn_scene(("main.cob", "scene"), &mut s);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

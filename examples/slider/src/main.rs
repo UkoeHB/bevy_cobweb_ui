@@ -8,15 +8,15 @@ use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let scene = ("main.cob", "scene");
-    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
+    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
         // Basic vertical slider.
-        l.edit("basic::slider", |l| {
-            let basic_text = l.get_entity_from_root("basic::text").unwrap();
+        h.edit("basic::slider", |h| {
+            let basic_text = h.get_entity_from_root("basic::text").unwrap();
 
-            l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, basic_text, "{}", val as usize);
@@ -25,10 +25,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         });
 
         // Vertical slider with reversed axis.
-        l.edit("reverse::slider", |l| {
-            let reverse_text = l.get_entity_from_root("reverse::text").unwrap();
+        h.edit("reverse::slider", |h| {
+            let reverse_text = h.get_entity_from_root("reverse::text").unwrap();
 
-            l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, reverse_text, "{}", val as usize);
@@ -38,10 +38,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
 
         // Fancy slider with slider visuals 'lifted' off the core slider/slider handle entities so the handle can
         // overlap with the end of the slider.
-        l.edit("fancy::slider", |l| {
-            let fancy_text = l.get_entity_from_root("fancy::text").unwrap();
+        h.edit("fancy::slider", |h| {
+            let fancy_text = h.get_entity_from_root("fancy::text").unwrap();
 
-            l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, fancy_text, "{}", val as usize);
@@ -50,10 +50,10 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
         });
 
         // Planar slider.
-        l.edit("planar::slider", |l| {
-            let planar_text = l.get_entity_from_root("planar::text").unwrap();
+        h.edit("planar::slider", |h| {
+            let planar_text = h.get_entity_from_root("planar::text").unwrap();
 
-            l.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.planar().result()?;
                 let val = val * 100.;
                 write_text!(e, planar_text, "({}, {})", val.x as usize, val.y as usize);

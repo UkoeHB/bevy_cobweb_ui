@@ -58,11 +58,11 @@ fn check_firefox_timer(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn add_blob(l: &mut LoadedSceneUi, scene: &str)
+fn add_blob(h: &mut UiSceneHandle, scene: &str)
 {
-    l.load_scene_and_edit(("main.cob", scene), |l| {
-        let id = l.id();
-        l.on_pressed(move |mut c: Commands, ps: PseudoStateParam| {
+    h.spawn_scene_and_edit(("main.cob", scene), |h| {
+        let id = h.id();
+        h.on_pressed(move |mut c: Commands, ps: PseudoStateParam| {
             // The blob alternates between 'tall', 'tall + wide' and 'none'.
             if !ps.entity_has(id, TALL_PARAM.clone()) {
                 ps.try_insert(&mut c, id, TALL_PARAM.clone());
@@ -80,42 +80,42 @@ fn add_blob(l: &mut LoadedSceneUi, scene: &str)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     c.spawn(Camera2d);
     let file = SceneFile::new("main.cob");
     c.ui_root()
-        .load_scene_and_edit(&file + "scene", &mut s, |l| {
-            l.edit("view::shim::row1", |l| {
-                l.load_scene_and_edit(&file + "basic", |l| {
-                    let mut content = l.get("scroll::view::shim");
+        .spawn_scene_and_edit(&file + "scene", &mut s, |h| {
+            h.edit("view::shim::row1", |h| {
+                h.spawn_scene_and_edit(&file + "basic", |h| {
+                    let mut content = h.get("scroll::view::shim");
                     add_blob(&mut content, "blob");
                 });
 
-                l.load_scene_and_edit(&file + "overlay", |l| {
-                    let mut content = l.get("scroll::view_shim::view::shim");
+                h.spawn_scene_and_edit(&file + "overlay", |h| {
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob");
                 });
             });
 
-            l.edit("view::shim::row2", |l| {
-                l.load_scene_and_edit(&file + "inset", |l| {
-                    let mut content = l.get("scroll::view_shim::view::shim");
+            h.edit("view::shim::row2", |h| {
+                h.spawn_scene_and_edit(&file + "inset", |h| {
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob");
                 });
 
-                l.load_scene_and_edit(&file + "sublime", |l| {
-                    let mut content = l.get("scroll::view_shim::view::shim");
+                h.spawn_scene_and_edit(&file + "sublime", |h| {
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob_sublime");
 
                     // Shadow visibility is affected by scroll value via PropagateOpacity.
-                    let view_entity = l.get_entity("scroll::view_shim::view").unwrap();
-                    let content_entity = l.get_entity("scroll::view_shim::view::shim").unwrap();
-                    let bar_entity = l.get_entity("scroll::horizontal::bar").unwrap();
-                    l.edit("scroll::view_shim::vertical::shadow_shim", |l| {
-                        l.insert(SublimeShadow);
-                        let shadow_id = l.id();
-                        l.update_on(
+                    let view_entity = h.get_entity("scroll::view_shim::view").unwrap();
+                    let content_entity = h.get_entity("scroll::view_shim::view::shim").unwrap();
+                    let bar_entity = h.get_entity("scroll::horizontal::bar").unwrap();
+                    h.edit("scroll::view_shim::vertical::shadow_shim", |h| {
+                        h.insert(SublimeShadow);
+                        let shadow_id = h.id();
+                        h.update_on(
                             entity_event::<()>(shadow_id),
                             move |//
                                     id: UpdateId,
@@ -141,9 +141,9 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 });
             });
 
-            l.edit("bar_shim::gutter::vertical", |l| {
-                let id = l.id();
-                l.on_event::<MouseScroll>().r(
+            h.edit("bar_shim::gutter::vertical", |h| {
+                let id = h.id();
+                h.on_event::<MouseScroll>().r(
                     move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
@@ -174,7 +174,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 );
                 // These don't activate unless in 'IS_SCROLLING' because we only enable the entity in that
                 // state.
-                l.on_pointer_enter(
+                h.on_pointer_enter(
                     move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
@@ -189,7 +189,7 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                     },
                 );
                 // Add this to handle very fast press that bypasses hover.
-                l.on_pressed(
+                h.on_pressed(
                     move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
@@ -203,13 +203,13 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                         OK
                     },
                 );
-                l.on_pointer_leave(move |mut q: Query<&mut FirefoxTimer>| {
+                h.on_pointer_leave(move |mut q: Query<&mut FirefoxTimer>| {
                     let mut timer = q.get_mut(id)?;
                     timer.0.unpause();
                     timer.0.reset();
                     DONE
                 });
-                l.on_press_canceled(move |mut q: Query<&mut FirefoxTimer>| {
+                h.on_press_canceled(move |mut q: Query<&mut FirefoxTimer>| {
                     let mut timer = q.get_mut(id)?;
                     timer.0.unpause();
                     timer.0.reset();

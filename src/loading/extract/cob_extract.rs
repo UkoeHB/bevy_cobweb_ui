@@ -119,7 +119,7 @@ pub(crate) fn extract_cob_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     scene_buffer: &mut SceneBuffer,
-    scene_loader: &mut SceneLoader,
+    scene_loader: &mut SceneBuilder,
     file: CobFile,
     mut data: Cob,
     loadables: &LoadableRegistry,

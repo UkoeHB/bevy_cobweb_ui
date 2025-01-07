@@ -15,7 +15,7 @@ impl Plugin for LoadingPlugin
             .add_plugins(CobAssetLoaderPlugin)
             .add_plugins(AppLoadExtPlugin)
             .add_plugins(CobAssetCachePlugin)
-            .add_plugins(SceneLoaderPlugin) // Must be after the COB cache plugin.
+            .add_plugins(SceneBuilderPlugin) // Must be after the COB cache plugin.
             ;
     }
 }

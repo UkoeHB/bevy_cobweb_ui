@@ -19,7 +19,7 @@ struct EditorFileSelection(Option<CobFile>);
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_widgets(
-    l: &mut LoadedSceneUi,
+    h: &mut UiSceneHandle,
     widgets: &CobWidgetRegistry,
     file_hash: CobFileHash,
     scene_ref: SceneRef,
@@ -31,7 +31,7 @@ fn build_widgets(
 {
     // Check for loadable widget
     if let Some(spawn_fn) = widgets.get(longname) {
-        let content_entity = l.id();
+        let content_entity = h.id();
         let editor_ref = CobEditorRef {
             file_hash,
             scene_ref,
@@ -39,7 +39,7 @@ fn build_widgets(
             structure_path: ReflectStructurePath { path: Arc::from([]) },
             death_signal,
         };
-        let (loader, builder) = l.inner();
+        let (loader, builder) = h.inner();
         if !(spawn_fn)(
             builder.commands(),
             loader,
@@ -47,14 +47,14 @@ fn build_widgets(
             &editor_ref,
             loadable.as_ref(),
         ) {
-            l.load_scene(("editor.frame", "destructure_unsupported"));
+            h.spawn_scene(("editor.frame", "destructure_unsupported"));
         }
 
         return;
     }
 
     // Fallback
-    l.load_scene(("editor.frame", "destructure_unsupported"));
+    h.spawn_scene(("editor.frame", "destructure_unsupported"));
 
     // TODO: Destructure and look for widgets for internal values
     // - TODO: If no widget found for an enum, provide a drop-down.
@@ -66,7 +66,7 @@ fn build_widgets(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn build_loadable(
-    l: &mut LoadedSceneUi,
+    h: &mut UiSceneHandle,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
@@ -78,14 +78,14 @@ fn build_loadable(
     // Look up loadable type
     let name = loadable.id.to_canonical(None);
     let Some((deserializer, _, longname, shortname)) = get_deserializer(registry, name.as_str(), loadables) else {
-        l.load_scene(("editor.frame", "unsupported"));
+        h.spawn_scene(("editor.frame", "unsupported"));
         return;
     };
 
     // Build view
-    l.load_scene_and_edit(("editor.frame", "loadable"), |l| {
+    h.spawn_scene_and_edit(("editor.frame", "loadable"), |h| {
         // Set the loadable's name.
-        l.get("name")
+        h.get("name")
             .update(move |id: UpdateId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", shortname);
             });
@@ -95,16 +95,16 @@ fn build_loadable(
         // but it requires destructuring the CobLoadable representation
         match deserializer.deserialize(loadable) {
             Ok(reflected) => {
-                l.edit("content", |l| {
+                h.edit("content", |h| {
                     let (signaler, signal) = DeathSignaler::new();
-                    l.insert(signaler);
+                    h.insert(signaler);
 
-                    build_widgets(l, widgets, file_hash, scene_ref, longname, shortname, reflected, signal);
+                    build_widgets(h, widgets, file_hash, scene_ref, longname, shortname, reflected, signal);
                 });
             }
             Err(_) => {
-                l.get("content")
-                    .load_scene(("editor.frame", "reflect_fail"));
+                h.get("content")
+                    .spawn_scene(("editor.frame", "reflect_fail"));
             }
         }
     });
@@ -112,8 +112,8 @@ fn build_loadable(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_scene_layer(
-    l: &mut LoadedSceneUi,
+fn spawn_scene_layer(
+    h: &mut UiSceneHandle,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
     widgets: &CobWidgetRegistry,
@@ -126,24 +126,24 @@ fn build_scene_layer(
     let scene_ref = scene_ref + layer.name.as_str();
 
     // Build view
-    l.load_scene_and_edit(("editor.frame", "scene_node"), |l| {
+    h.spawn_scene_and_edit(("editor.frame", "scene_node"), |h| {
         // Set node name.
         let ref_path = scene_ref.path.clone();
-        l.get("name")
+        h.get("name")
             .update(move |id: UpdateId, mut e: TextEditor| {
                 write_text!(e, *id, "\"{}\"", ref_path.iter().rev().next().unwrap());
             });
 
         // Add entries.
-        l.edit("content", |l| {
+        h.edit("content", |h| {
             for entry in layer.entries.iter() {
                 match entry {
                     CobSceneLayerEntry::Loadable(loadable) => {
-                        build_loadable(l, registry, loadables, widgets, file_hash, scene_ref.clone(), loadable);
+                        build_loadable(h, registry, loadables, widgets, file_hash, scene_ref.clone(), loadable);
                     }
                     CobSceneLayerEntry::Layer(scene_layer) => {
-                        build_scene_layer(
-                            l,
+                        spawn_scene_layer(
+                            h,
                             registry,
                             loadables,
                             widgets,
@@ -153,7 +153,7 @@ fn build_scene_layer(
                         );
                     }
                     _ => {
-                        l.load_scene(("editor.frame", "unsupported"));
+                        h.spawn_scene(("editor.frame", "unsupported"));
                     }
                 }
             }
@@ -176,7 +176,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             external_change: BroadcastEvent<EditorFileExternalChange>,
             file_saved: BroadcastEvent<EditorFileSaved>,
             mut c: Commands,
-            mut s: ResMut<SceneLoader>,
+            mut s: ResMut<SceneBuilder>,
             registry: Res<AppTypeRegistry>,
             loadables: Res<LoadableRegistry>,
             widgets: Res<CobWidgetRegistry>,
@@ -205,7 +205,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             // Handle non-editable files.
             // Note: these are filtered out by the dropdown but we handle it just in case.
             if !file_data.is_editable() {
-                c.ui_builder(base_entity).load_scene(("editor.frame", "file_not_editable"), &mut s);
+                c.ui_builder(base_entity).spawn_scene(("editor.frame", "file_not_editable"), &mut s);
                 return;
             }
 
@@ -215,9 +215,9 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             // Construct scene.
             let registry = registry.read();
 
-            c.ui_builder(base_entity).load_scene_and_edit(("editor.frame", "file_frame"), &mut s, |l| {
+            c.ui_builder(base_entity).spawn_scene_and_edit(("editor.frame", "file_frame"), &mut s, |h| {
                 // Commands section
-                l.edit("commands", |l| {
+                h.edit("commands", |h| {
                     let commands_ref = SceneRef{ file: file.clone().into(), path: ScenePath::new("#commands") };
 
                     for commands_section in file_data.data.sections.iter().filter_map(|s| {
@@ -226,7 +226,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                     }) {
                         for command in commands_section.entries.iter() {
                             build_loadable(
-                                l,
+                                h,
                                 &registry,
                                 &loadables,
                                 &widgets,
@@ -239,7 +239,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                 });
 
                 // Scenes section
-                l.edit("scenes", |l| {
+                h.edit("scenes", |h| {
                     let scene_ref = SceneRef{ file: file.clone().into(), path: ScenePath::empty() };
 
                     for scenes_section in file_data.data.sections.iter().filter_map(|s| {
@@ -247,8 +247,8 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                         Some(scenes)
                     }) {
                         for scene_layer in scenes_section.scenes.iter() {
-                            build_scene_layer(
-                                l,
+                            spawn_scene_layer(
+                                h,
                                 &registry,
                                 &loadables,
                                 &widgets,
@@ -266,26 +266,26 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<Entity, With<EditorCamera>>)
+fn build_editor_view(mut c: Commands, mut s: ResMut<SceneBuilder>, camera: Query<Entity, With<EditorCamera>>)
 {
     let camera_entity = camera.single();
     let scene = ("editor.frame", "base");
 
-    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
+    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
         // Editor is in a separate window.
-        l.insert(TargetCamera(camera_entity));
+        h.insert(TargetCamera(camera_entity));
 
         // Get content entity.
-        let content_entity = l.get("content").id();
+        let content_entity = h.get("content").id();
 
         // Build dropdown
         // TODO: use a proper dropdown widget that tracks selected automatically? (might be harder to get proper
         // CobFile value when selection is an opaque index)
-        l.edit("dropdown", |l| {
-            let dropdown_entity = l.id();
+        h.edit("dropdown", |h| {
+            let dropdown_entity = h.id();
 
             // Core reactor for setting up content.
-            l.on_event::<Option<CobFile>>().r(
+            h.on_event::<Option<CobFile>>().r(
                 move |//
                     event: EntityEvent<Option<CobFile>>,
                     mut c: Commands,
@@ -307,10 +307,10 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
             );
 
             // Handle dropdown opening.
-            l.on_open(
+            h.on_open(
                 move |//
                     mut c: Commands,
-                    mut s: ResMut<SceneLoader>,
+                    mut s: ResMut<SceneBuilder>,
                     editor: Res<CobEditor>,
                     selection: Res<EditorFileSelection>//
                 | {
@@ -319,8 +319,8 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
                     // Add empty entry at the top. Pressing closes the dropdown.
                     let mut builder = c.ui_builder(dropdown_entity);
-                    builder.load_scene_and_edit(("editor.frame", "empty_dropdown_entry"), &mut s, |l| {
-                        l.on_pressed(move |mut c: Commands| {
+                    builder.spawn_scene_and_edit(("editor.frame", "empty_dropdown_entry"), &mut s, |h| {
+                        h.on_pressed(move |mut c: Commands| {
                             c.react().entity_event(dropdown_entity, Close);
                         });
                     });
@@ -336,10 +336,10 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
                     });
 
                     for entry in entries {
-                        builder.load_scene_and_edit(("editor.frame", "dropdown_entry"), &mut s, |l| {
+                        builder.spawn_scene_and_edit(("editor.frame", "dropdown_entry"), &mut s, |h| {
                             // Handle pressed.
                             let entry_clone = entry.clone();
-                            l.on_pressed(move |mut c: Commands| {
+                            h.on_pressed(move |mut c: Commands| {
                                 // Close after updating selection so the on-close handler can use the right
                                 // selection value.
                                 c.react().entity_event(dropdown_entity, entry_clone.clone());
@@ -348,7 +348,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
                             // Set the option's text.
                             let entry_clone = entry.clone();
-                            l.get("text").update(
+                            h.get("text").update(
                                 move |id: UpdateId, mut e: TextEditor| {
                                     let text = entry_clone.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
@@ -357,8 +357,8 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
                             // Select current selection for proper styling.
                             if entry == **selection {
-                                let entry_entity = l.id();
-                                l.react().entity_event(entry_entity, Select);
+                                let entry_entity = h.id();
+                                h.react().entity_event(entry_entity, Select);
                             }
                         });
                     }
@@ -366,23 +366,23 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
             );
 
             // Handle dropdown closing.
-            l.on_close(
-                move |mut c: Commands, mut s: ResMut<SceneLoader>, selection: Res<EditorFileSelection>| {
+            h.on_close(
+                move |mut c: Commands, mut s: ResMut<SceneBuilder>, selection: Res<EditorFileSelection>| {
                     // Despawn current options.
                     c.entity(dropdown_entity).despawn_descendants();
 
                     // Spawn single option for the selected file.
-                    c.ui_builder(dropdown_entity).load_scene_and_edit(
+                    c.ui_builder(dropdown_entity).spawn_scene_and_edit(
                         ("editor.frame", "dropdown_entry"),
                         &mut s,
-                        |l| {
+                        |h| {
                             // Set option as 'folded' for proper styling.
-                            let entry_entity = l.id();
-                            l.react().entity_event(entry_entity, Fold);
+                            let entry_entity = h.id();
+                            h.react().entity_event(entry_entity, Fold);
 
                             // Set the selection text.
                             let text: EditorFileSelection = selection.deref().clone();
-                            l.get("text").update(
+                            h.get("text").update(
                                 move |id: UpdateId, mut e: TextEditor| {
                                     let text = text.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
@@ -390,7 +390,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
                             );
 
                             // On pressed, open the dropdown.
-                            l.on_pressed(move |mut c: Commands| {
+                            h.on_pressed(move |mut c: Commands| {
                                 c.react().entity_event(dropdown_entity, Open);
                             });
                         },
@@ -399,7 +399,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
             );
 
             // Refresh dropdown when the list changes.
-            l.on_event::<EditorNewFile>()
+            h.on_event::<EditorNewFile>()
                 .r(move |mut c: Commands, p: PseudoStateParam| {
                     if p.entity_has(dropdown_entity, PseudoState::Open) {
                         c.react().entity_event(dropdown_entity, Close);
@@ -413,7 +413,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
 
             // Initialize. Point to the "main.cob" file if there is one.
             // TODO: starting point should be obtained from EditorStack
-            l.commands()
+            h.commands()
                 .syscall_once((), move |mut c: Commands, editor: Res<CobEditor>| {
                     let file = CobFile::try_new("main.cob").unwrap();
                     let init = if editor.get_file(&file).is_some() {
@@ -425,13 +425,13 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
                 });
 
             // Initialize as Closed.
-            l.react().entity_event(dropdown_entity, Close);
+            h.react().entity_event(dropdown_entity, Close);
         });
 
         // Build unsaved indicator.
         // TODO: put an indicator on individual file names in the dropdown instead?
-        let unsaved = l.get("footer::unsaved").id();
-        l.react().on(
+        let unsaved = h.get("footer::unsaved").id();
+        h.react().on(
             (broadcast::<EditorFileUnsaved>(), broadcast::<EditorFileSaved>()),
             move |mut c: Commands, p: PseudoStateParam, editor: Res<CobEditor>| {
                 if editor.any_unsaved() {
@@ -441,11 +441,11 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneLoader>, camera: Query<
                 }
             },
         );
-        l.react().entity_event(unsaved, Disable);
+        h.react().entity_event(unsaved, Disable);
 
         // Build save button.
         // TODO: use CMD-S instead?
-        l.get("footer::save")
+        h.get("footer::save")
             .on_pressed(|w: &mut World| SaveEditor.apply(w));
     });
 }

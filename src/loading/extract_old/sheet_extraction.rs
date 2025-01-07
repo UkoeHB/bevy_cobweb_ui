@@ -86,7 +86,7 @@ pub(crate) fn parse_cob_file(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     cob_cache: &mut CobAssetCache,
-    scene_loader: &mut SceneLoader,
+    scene_loader: &mut SceneBuilder,
     file: SceneFile,
     mut data: Map<String, Value>,
     // [ shortname : longname ]

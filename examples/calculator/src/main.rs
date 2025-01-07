@@ -54,7 +54,7 @@ impl Calculator
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
+fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let buttons = vec![
         "C", "", "7", "8", "9", "/", "4", "5", "6", "*",
@@ -62,15 +62,15 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
     ];
 
     let scene = ("main.cob", "scene");
-    c.ui_root().load_scene_and_edit(scene, &mut s, |l| {
-        l.insert_reactive(Calculator::default());
-        let calc_entity = l.id();
+    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+        h.insert_reactive(Calculator::default());
+        let calc_entity = h.id();
 
         for button in buttons {
             // Insert display at the correct position in the grid
             if button == "" {
-                l.load_scene_and_edit(("main.cob", "display"), |l| {
-                    l.get("text").update_on(
+                h.spawn_scene_and_edit(("main.cob", "display"), |h| {
+                    h.get("text").update_on(
                         entity_mutation::<Calculator>(calc_entity),
                         move |id: UpdateId, calc: Reactive<Calculator>, mut e: TextEditor| {
                             let text = calc.get(calc_entity)?.buffer_display();
@@ -83,12 +83,12 @@ fn build_ui(mut c: Commands, mut s: ResMut<SceneLoader>)
                 continue;
             }
 
-            l.load_scene_and_edit(("main.cob", "button"), |l| {
-                l.on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
+            h.spawn_scene_and_edit(("main.cob", "button"), |h| {
+                h.on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
                     calc.get_mut(&mut c, calc_entity)?.add_instruction(button);
                     OK
                 });
-                l.get("text").update_text(button);
+                h.get("text").update_text(button);
             });
         }
     });

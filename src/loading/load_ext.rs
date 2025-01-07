@@ -170,33 +170,6 @@ fn instruction_loader<T: Instruction + Loadable>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn load_from_ref(
-    In((id, scene_ref, initializer)): In<(Entity, SceneRef, NodeInitializer)>,
-    mut c: Commands,
-    loadables: Res<LoadableRegistry>,
-    mut scene_buffer: ResMut<SceneBuffer>,
-    load_state: Res<State<LoadState>>,
-    #[cfg(feature = "hot_reload")] commands_buffer: Res<CommandsBuffer>,
-)
-{
-    if *load_state.get() != LoadState::Done {
-        tracing::error!("failed loading scene node {scene_ref:?} into {id:?}, app state is not LoadState::Done");
-        return;
-    }
-
-    scene_buffer.track_entity(
-        id,
-        scene_ref,
-        initializer,
-        &loadables,
-        &mut c,
-        #[cfg(feature = "hot_reload")]
-        &commands_buffer,
-    );
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 fn revert_bundle<T: Bundle>(entity: Entity, world: &mut World)
 {
     let Ok(mut emut) = world.get_entity_mut(entity) else { return };
@@ -379,44 +352,6 @@ impl CobLoadableRegistrationAppExt for App
     ) -> &mut Self
     {
         self.register_type::<T>().register_instruction::<T>()
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-/// Helper trait for registering entities for loadable loading.
-pub trait CobLoadingEntityCommandsExt
-{
-    /// Registers the current entity to load loadables from `scene_ref`.
-    ///
-    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
-    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load(&mut self, scene_ref: SceneRef) -> &mut Self;
-
-    /// Registers the current entity to load loadables from `scene_ref`.
-    ///
-    /// The `initializer` callback will be called before refreshing the `scene_ref` loadable set on the entity.
-    ///
-    /// This should only be called after entering state [`LoadState::Done`], because reacting to loads is disabled
-    /// when the `hot_reload` feature is not present (which will typically be the case in production builds).
-    fn load_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self;
-}
-
-impl CobLoadingEntityCommandsExt for EntityCommands<'_>
-{
-    fn load(&mut self, scene_ref: SceneRef) -> &mut Self
-    {
-        self.load_with_initializer(scene_ref, |_| {})
-    }
-
-    fn load_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self
-    {
-        self.insert(HasLoadables);
-
-        let id = self.id();
-        self.commands()
-            .syscall((id, scene_ref, NodeInitializer { initializer }), load_from_ref);
-        self
     }
 }
 

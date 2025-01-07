@@ -3,15 +3,16 @@
 ## WIP
 
 ### Highlights
-- Rename `load` semantics to `build`.
-    - `load_scene` -> `build_scene`
-    - `load_scene_and_edit` -> `build_scene_and_edit`
+- Rename `load` semantics to `spawn` and `build`.
+    - `load_scene` -> `spawn_scene`
+    - `load_scene_and_edit` -> `spawn_scene_and_edit`
     - `SceneLoader` -> `SceneBuilder`
-    - `LoadedScene` -> `SceneRef`
+    - `LoadedScene` -> `SceneHandle`
 - Add `fonts` example.
 
 ### Updates
-- Add `UiSceneRef` and `EcsSceneRef` type aliases to simplify passing `SceneRef<UiBuilder<Entity>>` and `SceneRef<EntityCommands>` as function parameters.
+- Add `UiSceneHandle` and `EcsSceneHandle` type aliases to simplify passing `SceneHandle<UiBuilder<Entity>>` and `SceneHandle<EntityCommands>` as function parameters.
+- Rename `ControlBuilderExt::edit_child` -> `ControlBuilderExt::edit_control_child`
 
 
 ## 0.8.0

@@ -69,7 +69,7 @@ fn process_cobweb_asset_files(
     mut c: Commands,
     mut commands_buffer: ResMut<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
-    mut scene_loader: ResMut<SceneLoader>,
+    mut scene_loader: ResMut<SceneBuilder>,
 )
 {
     let type_registry = types.read();
@@ -126,7 +126,7 @@ fn apply_pending_node_updates_extract(
     mut c: Commands,
     commands_buffer: Res<CommandsBuffer>,
     mut scene_buffer: ResMut<SceneBuffer>,
-    mut scene_loader: ResMut<SceneLoader>,
+    mut scene_loader: ResMut<SceneBuilder>,
     #[cfg(feature = "editor")] mut editor: ResMut<crate::editor::CobEditor>,
 )
 {
@@ -178,7 +178,7 @@ fn cleanup_despawned_loaded_entities(world: &mut World)
     // the RemovedComponents state will stay the same.
     fn cleanup_fn(
         mut scene_buffer: ResMut<SceneBuffer>,
-        mut scene_loader: ResMut<SceneLoader>,
+        mut scene_loader: ResMut<SceneBuilder>,
         mut removed: RemovedComponents<HasLoadables>,
     )
     {

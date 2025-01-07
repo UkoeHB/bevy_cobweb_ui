@@ -1,5 +1,5 @@
-mod load_scene_ext;
-mod scene_loader;
+mod scene_spawner;
+mod spawn_scene_ext;
 
-pub use load_scene_ext::*;
-pub use scene_loader::*;
+pub use scene_spawner::*;
+pub use spawn_scene_ext::*;

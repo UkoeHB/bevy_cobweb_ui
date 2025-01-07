@@ -28,7 +28,7 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
 
     // Otherwise, prepare the reactor.
     let revoke_token = if is_loaded {
-        let triggers = (triggers, entity_event::<Loaded>(entity));
+        let triggers = (triggers, entity_event::<SceneNodeBuilt>(entity));
 
         c.react()
             .with(triggers, syscommand, ReactorMode::Revokable)
