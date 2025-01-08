@@ -23,6 +23,7 @@ Check out the `bevy_cobweb_ui` [book](https://ukoehb.github.io/cobweb_book/), wh
 - [VSCode](https://github.com/UkoeHB/vscode-cob/)
 - [vim](https://github.com/UkoeHB/vim-cob/)
 - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
+- RustRover support: Clone the VSCode repository, and add as a TextMate bundle via Settings -> Editor -> TextMate Bundles -> Click on the plus sign and navigate to the cloned directory
 
 Check the loading module [docs](bevy_cobweb_ui::loading) for how to write COB files. COB files can be hot reloaded with the `hot_reload` feature. Hot-reloaded changes will cause affected scene nodes to be refreshed (or cause commands to be re-applied). Hot-reloading is minimally destructive. Entities are only despawned when you delete scene nodes from a COB file.
 
