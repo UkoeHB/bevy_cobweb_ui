@@ -330,7 +330,7 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     fn spawn_scene<'b>(
         &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+        scene_builder: &'b mut SceneBuilderInner,
     ) -> &'b mut Self;
 
     /// Spawns an entity (and optionally makes it a child of
@@ -347,7 +347,7 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     fn spawn_scene_and_edit<'b, C>(
         &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+        scene_builder: &'b mut SceneBuilderInner,
         callback: C,
     ) -> &'b mut Self
     where
@@ -361,7 +361,7 @@ where
     fn spawn_scene<'b>(
         &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+        scene_builder: &'b mut SceneBuilderInner,
     ) -> &'b mut Self
     {
         self.spawn_scene_and_edit(path, scene_builder, |_| {})
@@ -370,13 +370,13 @@ where
     fn spawn_scene_and_edit<'b, C>(
         &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+        scene_builder: &'b mut SceneBuilderInner,
         callback: C,
     ) -> &'b mut Self
     where
         C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
     {
-        spawn_scene_impl(self, path, scene_builder.into(), callback)
+        spawn_scene_impl(self, path, scene_builder, callback)
     }
 }
 

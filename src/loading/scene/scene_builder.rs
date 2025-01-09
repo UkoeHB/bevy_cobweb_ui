@@ -316,8 +316,7 @@ impl SceneInstance
 
 /// Manages loaded scene definitions and used to spawn scene instances.
 ///
-/// See [`SpawnSceneExt`].
-#[doc(hidden)]
+/// Use the [`SceneBuilder`] system parameter instead of this resource.
 #[derive(Resource, Default)]
 pub struct SceneBuilderInner
 {
@@ -719,6 +718,8 @@ impl SceneBuilderInner
 /// System parameter that is used to spawn scene instances.
 ///
 /// See [`SpawnSceneExt`].
+///
+/// Derefs to [`SceneBuilderInner`].
 #[derive(SystemParam)]
 pub struct SceneBuilder<'w>
 {
@@ -738,14 +739,6 @@ impl Deref for SceneBuilder<'_>
 impl DerefMut for SceneBuilder<'_>
 {
     fn deref_mut(&mut self) -> &mut Self::Target
-    {
-        &mut self.inner
-    }
-}
-
-impl<'a> Into<&'a mut SceneBuilderInner> for &'a mut SceneBuilder<'_>
-{
-    fn into(self) -> &'a mut SceneBuilderInner
     {
         &mut self.inner
     }
