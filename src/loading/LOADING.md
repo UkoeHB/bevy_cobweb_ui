@@ -384,29 +384,29 @@ The `revert` method on `Instruction` is used when hot-reloading an instruction. 
 
 **Warning**: If a loadable contains `NaN`, then it will *always* appear changed when a file reloads, since we use `reflect_partial_eq` to detect changes.
 
-To load a full scene and edit it, you can use [`SpawnSceneExt::spawn_scene_and_edit`](bevy_cobweb_ui::prelude::SpawnSceneExt::spawn_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`SceneRef`](bevy_cobweb_ui::prelude::SceneRef) struct accessible in the `spawn_scene_and_edit` callback.
+To load a full scene and edit it, you can use [`SpawnSceneExt::spawn_scene_and_edit`](bevy_cobweb_ui::prelude::SpawnSceneExt::spawn_scene_and_edit). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`SceneHandle`](bevy_cobweb_ui::prelude::SceneHandle) struct accessible in the `spawn_scene_and_edit` callback.
 
 ```rust
 fn setup(mut c: Commands, mut s: ResMut<SceneBuilder>)
 {
     let file = &SceneFile::new("main"); // Using a manifest key
 
-    c.spawn_scene_and_edit(file + "game_menu_scene", &mut s, |loaded_scene: &mut SceneHandle<EntityCommands>| {
-        // Do something with loaded_scene, which points to the root node...
-        // - SceneRef derefs to the internal scene node builder (EntityCommands in this case).
-        loaded_scene.insert(MyComponent);
+    c.spawn_scene_and_edit(file + "game_menu_scene", &mut s, |handle: &mut SceneHandle<EntityCommands>| {
+        // Do something with `handle`, which points to the root node...
+        // - SceneHandle derefs to the internal scene node builder (EntityCommands in this case).
+        handle.insert(MyComponent);
 
         // Edit a child of the root node directly.
-        loaded_scene.get("header")
+        handle.get("header")
             .do_something()
             .do_something_else();
 
         // Edit a more deeply nested child.
-        loaded_scene.edit("footer::content", |loaded_scene| {
+        handle.edit("footer::content", |handle| {
             // ...
 
             // Insert another scene as a child of this node.
-            loaded_scene.spawn_scene_and_edit(file + "footer_scene", |loaded_scene| {
+            handle.spawn_scene_and_edit(file + "footer_scene", |handle| {
                 // ...
             });
         });

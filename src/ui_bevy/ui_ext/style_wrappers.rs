@@ -272,10 +272,7 @@ impl From<RepeatedGridVal> for RepeatedGridTrack
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Helper component for caching a `Node::display` value when display is hidden. This way when display is
-/// shown again, the correct layout algorithm can be set.
-///
-/// The `From<Display>` impl converts `Display::None` to `Display::Flex`.
+/// Mirrors [`GridPlacement`].
 #[derive(Reflect, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",

@@ -168,8 +168,8 @@ pub trait UiReactEntityCommandsExt
     ///
     /// The system runs:
     /// - Immediately after being registered.
-    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
-    ///   only).
+    /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
+    ///   feature only).
     fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
         &mut self,
         reactor: C,
@@ -180,8 +180,8 @@ pub trait UiReactEntityCommandsExt
     /// The system runs:
     /// - Immediately after being registered.
     /// - Whenever the triggers fire.
-    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
-    ///   only).
+    /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
+    ///   feature only).
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
@@ -199,8 +199,8 @@ pub trait UiReactEntityCommandsExt
     ///
     /// The callback runs:
     /// - Immediately after being registered.
-    /// - When an entity with the internal `HasLoadables` component receives `Loaded` events (`hot_reload` feature
-    ///   only).
+    /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
+    ///   feature only).
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self;
 }
 
