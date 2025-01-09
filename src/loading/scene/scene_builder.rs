@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use bevy::ecs::system::EntityCommands;
+use bevy::ecs::system::{EntityCommands, SystemParam};
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
@@ -317,8 +317,9 @@ impl SceneInstance
 /// Manages loaded scene definitions and used to spawn scene instances.
 ///
 /// See [`SpawnSceneExt`].
+#[doc(hidden)]
 #[derive(Resource, Default)]
-pub struct SceneBuilder
+pub struct SceneBuilderInner
 {
     /// Tracks manifest data.
     /// - Inside an arc/mutex so the CobAssetCache can also use it.
@@ -340,7 +341,7 @@ pub struct SceneBuilder
     scene_instances: HashMap<SceneRef, SmallVec<[SceneInstance; 1]>>,
 }
 
-impl SceneBuilder
+impl SceneBuilderInner
 {
     /// Makes a new scene loader from a shared manifest map.
     pub(crate) fn new(manifest_map: Arc<Mutex<ManifestMap>>) -> Self
@@ -715,6 +716,43 @@ impl SceneBuilder
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// System parameter that is used to spawn scene instances.
+///
+/// See [`SpawnSceneExt`].
+#[derive(SystemParam)]
+pub struct SceneBuilder<'w>
+{
+    inner: ResMut<'w, SceneBuilderInner>,
+}
+
+impl Deref for SceneBuilder<'_>
+{
+    type Target = SceneBuilderInner;
+
+    fn deref(&self) -> &Self::Target
+    {
+        &self.inner
+    }
+}
+
+impl DerefMut for SceneBuilder<'_>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target
+    {
+        &mut self.inner
+    }
+}
+
+impl<'a> Into<&'a mut SceneBuilderInner> for &'a mut SceneBuilder<'_>
+{
+    fn into(self) -> &'a mut SceneBuilderInner
+    {
+        &mut self.inner
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Plugin that enables scene loading.
 pub(crate) struct SceneBuilderPlugin;
 
@@ -723,7 +761,7 @@ impl Plugin for SceneBuilderPlugin
     fn build(&self, app: &mut App)
     {
         let manifest_map = app.world().resource::<CobAssetCache>().manifest_map_clone();
-        app.insert_resource(SceneBuilder::new(manifest_map));
+        app.insert_resource(SceneBuilderInner::new(manifest_map));
     }
 }
 

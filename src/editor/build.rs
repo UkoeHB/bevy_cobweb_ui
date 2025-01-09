@@ -176,7 +176,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             external_change: BroadcastEvent<EditorFileExternalChange>,
             file_saved: BroadcastEvent<EditorFileSaved>,
             mut c: Commands,
-            mut s: ResMut<SceneBuilder>,
+            mut s: SceneBuilder,
             registry: Res<AppTypeRegistry>,
             loadables: Res<LoadableRegistry>,
             widgets: Res<CobWidgetRegistry>,
@@ -266,7 +266,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_editor_view(mut c: Commands, mut s: ResMut<SceneBuilder>, camera: Query<Entity, With<EditorCamera>>)
+fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity, With<EditorCamera>>)
 {
     let camera_entity = camera.single();
     let scene = ("editor.frame", "base");
@@ -310,7 +310,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneBuilder>, camera: Query
             h.on_open(
                 move |//
                     mut c: Commands,
-                    mut s: ResMut<SceneBuilder>,
+                    mut s: SceneBuilder,
                     editor: Res<CobEditor>,
                     selection: Res<EditorFileSelection>//
                 | {
@@ -367,7 +367,7 @@ fn build_editor_view(mut c: Commands, mut s: ResMut<SceneBuilder>, camera: Query
 
             // Handle dropdown closing.
             h.on_close(
-                move |mut c: Commands, mut s: ResMut<SceneBuilder>, selection: Res<EditorFileSelection>| {
+                move |mut c: Commands, mut s: SceneBuilder, selection: Res<EditorFileSelection>| {
                     // Despawn current options.
                     c.entity(dropdown_entity).despawn_descendants();
 

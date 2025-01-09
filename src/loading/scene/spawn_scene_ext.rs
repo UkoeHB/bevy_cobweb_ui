@@ -35,6 +35,55 @@ fn build_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn spawn_scene_impl<'b, T, C>(
+    builder: &'b mut T,
+    path: impl Into<SceneRef>,
+    scene_builder: &'b mut SceneBuilderInner,
+    callback: C,
+) -> &'b mut T
+where
+    T: scene_traits::SceneNodeBuilder,
+    C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
+{
+    let path = path.into();
+
+    // Spawn either a child or a raw entity to be the scene's root node.
+    let root_entity = builder
+        .scene_parent_entity()
+        .map(|parent| builder.commands().spawn_empty().set_parent(parent).id())
+        .unwrap_or_else(|| builder.commands().spawn_empty().id());
+
+    // Avoid panicking if the parent is invalid.
+    if builder.commands().get_entity(root_entity).is_none() {
+        tracing::warn!("failed loading scene at {:?}; parent {root_entity:?} does not exist", path);
+        return builder;
+    }
+
+    // Load the scene into the root entity.
+    let mut commands = builder.commands();
+    if !scene_builder.build_scene::<T>(&mut commands, root_entity, path.clone()) {
+        return builder;
+    }
+
+    // Allow editing the scene via callback.
+    {
+        let mut root_node = SceneHandle {
+            scene_builder,
+            builder: T::scene_node_builder(&mut commands, root_entity),
+            scene: path,
+        };
+
+        (callback)(&mut root_node);
+    }
+
+    // Cleanup
+    scene_builder.release_active_scene();
+
+    builder
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 /// Put this trait in a separate module so it doesn't pollute the `prelude`.
 pub mod scene_traits
 {
@@ -80,7 +129,7 @@ pub struct SceneHandle<'a, T>
 where
     T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
-    scene_builder: &'a mut SceneBuilder,
+    scene_builder: &'a mut SceneBuilderInner,
     builder: T,
     scene: SceneRef,
 }
@@ -225,8 +274,7 @@ where
     /// See [`SpawnSceneExt::spawn_scene`].
     pub fn spawn_scene(&mut self, path: impl Into<SceneRef>) -> &mut Self
     {
-        self.builder.spawn_scene(path, self.scene_builder);
-        self
+        self.spawn_scene_and_edit(path, |_| {})
     }
 
     /// See [`SpawnSceneExt::spawn_scene_and_edit`].
@@ -234,8 +282,7 @@ where
     where
         C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>),
     {
-        self.builder
-            .spawn_scene_and_edit(path, self.scene_builder, callback);
+        spawn_scene_impl(&mut self.builder, path, self.scene_builder, callback);
         self
     }
 
@@ -246,7 +293,7 @@ where
     }
 
     /// Accesses the inner spawner and builder.
-    pub fn inner(&mut self) -> (&mut SceneBuilder, &mut T)
+    pub fn inner(&mut self) -> (&mut SceneBuilderInner, &mut T)
     {
         (self.scene_builder, &mut self.builder)
     }
@@ -280,7 +327,11 @@ where
 pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
 {
     /// Equivalent to [`SpawnSceneExt::spawn_scene_and_edit`] with no callback.
-    fn spawn_scene(&mut self, path: impl Into<SceneRef>, scene_builder: &mut SceneBuilder) -> &mut Self;
+    fn spawn_scene<'b>(
+        &'b mut self,
+        path: impl Into<SceneRef>,
+        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+    ) -> &'b mut Self;
 
     /// Spawns an entity (and optionally makes it a child of
     /// [`Self::scene_parent_entity`](scene_traits::SceneNodeBuilder::scene_parent_entity)), then builds the scene
@@ -293,12 +344,12 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     /// of the scene via [`SceneRef::edit`].
     ///
     /// Will log a warning and do nothing if the parent entity does not exist.
-    fn spawn_scene_and_edit<C>(
-        &mut self,
+    fn spawn_scene_and_edit<'b, C>(
+        &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: &mut SceneBuilder,
+        scene_builder: impl Into<&'b mut SceneBuilderInner>,
         callback: C,
-    ) -> &mut Self
+    ) -> &'b mut Self
     where
         C: for<'a> FnOnce(&mut SceneHandle<'a, <Self as scene_traits::SceneNodeBuilder>::Builder<'a>>);
 }
@@ -307,55 +358,25 @@ impl<T> SpawnSceneExt for T
 where
     T: scene_traits::SceneNodeBuilder,
 {
-    fn spawn_scene(&mut self, path: impl Into<SceneRef>, scene_builder: &mut SceneBuilder) -> &mut Self
+    fn spawn_scene<'b>(
+        &'b mut self,
+        path: impl Into<SceneRef>,
+        scene_builder: impl Into<&'b mut SceneBuilderInner>,
+    ) -> &'b mut Self
     {
         self.spawn_scene_and_edit(path, scene_builder, |_| {})
     }
 
-    fn spawn_scene_and_edit<C>(
-        &mut self,
+    fn spawn_scene_and_edit<'b, C>(
+        &'b mut self,
         path: impl Into<SceneRef>,
-        scene_builder: &mut SceneBuilder,
+        scene_builder: impl Into<&'b mut SceneBuilderInner>,
         callback: C,
-    ) -> &mut Self
+    ) -> &'b mut Self
     where
         C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
     {
-        let path = path.into();
-
-        // Spawn either a child or a raw entity to be the scene's root node.
-        let root_entity = self
-            .scene_parent_entity()
-            .map(|parent| self.commands().spawn_empty().set_parent(parent).id())
-            .unwrap_or_else(|| self.commands().spawn_empty().id());
-
-        // Avoid panicking if the parent is invalid.
-        if self.commands().get_entity(root_entity).is_none() {
-            tracing::warn!("failed loading scene at {:?}; parent {root_entity:?} does not exist", path);
-            return self;
-        }
-
-        // Load the scene into the root entity.
-        let mut commands = self.commands();
-        if !scene_builder.build_scene::<T>(&mut commands, root_entity, path.clone()) {
-            return self;
-        }
-
-        // Allow editing the scene via callback.
-        {
-            let mut root_node = SceneHandle {
-                scene_builder,
-                builder: T::scene_node_builder(&mut commands, root_entity),
-                scene: path,
-            };
-
-            (callback)(&mut root_node);
-        }
-
-        // Cleanup
-        scene_builder.release_active_scene();
-
-        self
+        spawn_scene_impl(self, path, scene_builder.into(), callback)
     }
 }
 

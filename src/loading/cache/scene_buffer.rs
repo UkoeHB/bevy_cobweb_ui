@@ -494,12 +494,12 @@ impl SceneBuffer
 
     /// Cleans up despawned entities.
     #[cfg(feature = "hot_reload")]
-    pub(super) fn remove_entity(&mut self, scene_loader: &mut SceneBuilder, dead_entity: Entity)
+    pub(super) fn remove_entity(&mut self, scene_builder: &mut SceneBuilderInner, dead_entity: Entity)
     {
         let Some((scene_ref, _)) = self.subscriptions_rev.remove(&dead_entity) else { return };
 
         // Clean up scenes.
-        scene_loader.cleanup_dead_entity(&scene_ref, dead_entity);
+        scene_builder.cleanup_dead_entity(&scene_ref, dead_entity);
 
         // Clean up subscription.
         let Some(subscribed) = self.subscriptions.get_mut(&scene_ref) else { return };

@@ -9,7 +9,7 @@ use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
+fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 

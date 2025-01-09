@@ -80,7 +80,7 @@ fn add_blob(h: &mut UiSceneHandle, scene: &str)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
+fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     c.spawn(Camera2d);
     let file = SceneFile::new("main.cob");

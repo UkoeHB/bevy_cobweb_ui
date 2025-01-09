@@ -69,7 +69,7 @@ fn handle_scene_node(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     scene_buffer: &mut SceneBuffer,
-    scene_loader: &mut SceneBuilder,
+    scene_builder: &mut SceneBuilderInner,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     parent_path: &ScenePath,
@@ -101,13 +101,13 @@ fn handle_scene_node(
         SceneLayerInsertionResult::NoChange(child_layer) => child_layer,
         #[cfg(feature = "hot_reload")]
         SceneLayerInsertionResult::Updated(index, child_layer) => {
-            scene_loader.handle_rearranged_scene_node(c, scene, parent_path, &node_path, index);
+            scene_builder.handle_rearranged_scene_node(c, scene, parent_path, &node_path, index);
             child_layer
         }
         SceneLayerInsertionResult::Added(_index, child_layer) => {
             #[cfg(feature = "hot_reload")]
             {
-                scene_loader.handle_inserted_scene_node(c, scene, parent_path, &node_path, _index);
+                scene_builder.handle_inserted_scene_node(c, scene, parent_path, &node_path, _index);
             }
             child_layer
         }
@@ -120,7 +120,7 @@ fn handle_scene_node(
         type_registry,
         c,
         scene_buffer,
-        scene_loader,
+        scene_builder,
         child_layer,
         scene,
         &node_path,
@@ -138,7 +138,7 @@ fn extract_scene_layer(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     scene_buffer: &mut SceneBuffer,
-    scene_loader: &mut SceneBuilder,
+    scene_builder: &mut SceneBuilderInner,
     scene_layer: &mut SceneLayer,
     scene: &SceneRef,
     current_path: &ScenePath,
@@ -209,7 +209,7 @@ fn extract_scene_layer(
                     type_registry,
                     c,
                     scene_buffer,
-                    scene_loader,
+                    scene_builder,
                     scene_layer,
                     scene,
                     current_path,
@@ -227,7 +227,7 @@ fn extract_scene_layer(
     for SceneLayerData { id, .. } in scene_layer.end_update() {
         #[cfg(feature = "hot_reload")]
         {
-            scene_loader.cleanup_deleted_scene_node(c, scene_buffer, loadables, scene, &id);
+            scene_builder.cleanup_deleted_scene_node(c, scene_buffer, loadables, scene, &id);
         }
         #[cfg(not(feature = "hot_reload"))]
         {
@@ -246,14 +246,14 @@ pub(super) fn extract_scenes(
     type_registry: &TypeRegistry,
     c: &mut Commands,
     scene_buffer: &mut SceneBuffer,
-    scene_loader: &mut SceneBuilder,
+    scene_builder: &mut SceneBuilderInner,
     file: &CobFile,
     section: &mut CobScenes,
     loadables: &LoadableRegistry,
     resolver: &mut CobResolver,
 )
 {
-    let mut scene_registry = scene_loader.take_scene_registry();
+    let mut scene_registry = scene_builder.take_scene_registry();
     let mut id_scratch = String::default();
     let mut seen_shortnames = vec![];
 
@@ -274,7 +274,7 @@ pub(super) fn extract_scenes(
             type_registry,
             c,
             scene_buffer,
-            scene_loader,
+            scene_builder,
             scene_layer,
             &scene_ref,
             &scene_ref.path,
@@ -284,7 +284,7 @@ pub(super) fn extract_scenes(
         );
     }
 
-    scene_loader.return_scene_registry(scene_registry);
+    scene_builder.return_scene_registry(scene_registry);
 }
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -327,7 +327,7 @@ fn add_menu_option(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
+fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let file = &SceneFile::new("main.cob.json");
     let scene = file + "menu_scene";

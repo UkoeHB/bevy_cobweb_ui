@@ -158,7 +158,7 @@ impl CobEditorWidget for DemoOrbiterWidget
 
     fn try_spawn(
         c: &mut Commands,
-        s: &mut SceneBuilder,
+        s: &mut SceneBuilderInner,
         parent: Entity,
         editor_ref: &CobEditorRef,
         value: &(dyn PartialReflect + 'static),

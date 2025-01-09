@@ -8,7 +8,7 @@ use bevy_cobweb_ui::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
+fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let scene = ("main.cob", "scene");
     c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {

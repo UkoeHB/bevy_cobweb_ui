@@ -54,7 +54,7 @@ impl Calculator
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn build_ui(mut c: Commands, mut s: ResMut<SceneBuilder>)
+fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let buttons = vec![
         "C", "", "7", "8", "9", "/", "4", "5", "6", "*",

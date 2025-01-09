@@ -212,7 +212,7 @@ pub trait CobEditorWidget
     /// Return `false` to reject the value.
     fn try_spawn(
         c: &mut Commands,
-        s: &mut SceneBuilder,
+        s: &mut SceneBuilderInner,
         parent: Entity,
         editor_ref: &CobEditorRef,
         value: &(dyn PartialReflect + 'static),
@@ -223,6 +223,6 @@ pub trait CobEditorWidget
 //-------------------------------------------------------------------------------------------------------------------
 
 pub(super) type EditorWidgetSpawnFn =
-    fn(&mut Commands, &mut SceneBuilder, Entity, &CobEditorRef, &(dyn PartialReflect + 'static)) -> bool;
+    fn(&mut Commands, &mut SceneBuilderInner, Entity, &CobEditorRef, &(dyn PartialReflect + 'static)) -> bool;
 
 //-------------------------------------------------------------------------------------------------------------------

@@ -18,7 +18,7 @@ const SCREEN_HALF_HEIGHT: f32 = 300.0;
 
 fn spawn_scenes(
     mut c: Commands,
-    mut s: ResMut<SceneBuilder>,
+    mut s: SceneBuilder,
     mut rng: ResMut<rng::DemoRng>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,

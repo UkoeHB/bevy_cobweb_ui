@@ -1,5 +1,14 @@
 # Changelog
 
+## WIP
+
+### Highlights
+
+
+### Updates
+- `SceneBuilder` is now a system param instead of resource. `ResMut<SceneBuilder>` -> `SceneBuilder`
+
+
 ## 0.9.0
 
 ### Highlights
