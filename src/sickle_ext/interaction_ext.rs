@@ -75,6 +75,8 @@ pub struct PressCanceled;
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for registering interaction reactors for node entities.
+///
+/// These extension methods will auto-apply the [`Interactive`] instruction.
 pub trait UiInteractionExt
 {
     /// Adds a reactor to a [`PointerEnter`] entity event.
@@ -125,6 +127,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
+        self.apply(Interactive);
         self.on_event::<PointerEnter>().r(callback);
         self
     }
@@ -134,6 +137,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
+        self.apply(Interactive);
         self.on_event::<PointerLeave>().r(callback);
         self
     }
@@ -143,6 +147,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
+        self.apply(Interactive);
         self.on_event::<Pressed>().r(callback);
         self
     }
@@ -152,6 +157,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
+        self.apply(Interactive);
         self.on_event::<Released>().r(callback);
         self
     }
@@ -161,6 +167,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self
     {
+        self.apply(Interactive);
         self.on_event::<PressCanceled>().r(callback);
         self
     }
@@ -169,6 +176,9 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Causes [`Interaction`] and [`TrackedInteraction`] to be inserted on a node.
+///
+/// It is typically not necessary to add this to your scenes, since we try to add it automatically wherever
+/// needed.
 #[derive(Reflect, Default, Debug, Clone, PartialEq)]
 pub struct Interactive;
 

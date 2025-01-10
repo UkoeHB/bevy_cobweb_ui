@@ -50,7 +50,6 @@ PrimaryCursor(System(Default))
 
 "empty_dropdown_entry"
     FlexNode{height:35px width:100%}
-    Interactive
 
 "dropdown_entry"
     // Shim lets us interact with the whole entry, not just the text.

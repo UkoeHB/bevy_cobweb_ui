@@ -326,7 +326,6 @@ $blob_big = 600px
                 Multi<Static<Picking>>[{value:Ignore} {state:[Custom("IsScrolling")] value:Sink}]
                 FocusPolicy::Pass
                 Visibility::Visible // Required to receive interactions while the gutter is Visibility::Hidden
-                Interactive
 
                 "handle"
                     ScrollHandle
@@ -356,7 +355,6 @@ $blob_big = 600px
     Multi<Static<Width>>[{value:$blob_small} {state:[Custom("Wide")] value:$blob_big}]
     Multi<Static<Height>>[{value:$blob_small} {state:[Custom("Tall")] value:$blob_big}]
     Splat<Margin>(20px)
-    Interactive
 
     "text"
         ControlMember
@@ -378,7 +376,6 @@ $blob_big = 600px
     Multi<Static<Width>>[{value:$blob_small} {state:[Custom("Wide")] value:$blob_big}]
     Multi<Static<Height>>[{value:$blob_small} {state:[Custom("Tall")] value:$blob_big}]
     Splat<Margin>(20px)
-    Interactive
 
     "text"
         ControlMember

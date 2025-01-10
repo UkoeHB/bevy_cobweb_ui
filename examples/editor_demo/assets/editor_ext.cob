@@ -26,7 +26,6 @@ builtin.colors.tailwind as tw
         Splat<Border>(1px)
         BorderColor(#99FFFFFF)
         Responsive<BackgroundColor>{idle:#00000000 hover:#66888888}
-        Interactive
         ResponsiveCursor{hover:System(ColResize)}
 
         "text"

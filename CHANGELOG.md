@@ -3,13 +3,12 @@
 ## WIP
 
 ### Highlights
-
+- Auto-apply `Interactive` when adding interactive callbacks like `.on_pressed`. Users no longer need to add `Interactive` unless they have a custom use for it.
 
 ### Updates
 - `SceneBuilder` is now a system param instead of resource. `ResMut<SceneBuilder>` -> `SceneBuilder`
 - Add `.reactor()` extension method for when `.update_on` is overkill.
 - Rename `UpdateId` to `TargetId`.
-
 
 ## 0.9.0
 
