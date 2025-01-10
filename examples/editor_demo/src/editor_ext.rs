@@ -96,13 +96,13 @@ fn make_draggable_field_widget(
         h.insert_reactive(FieldValue::new(initial_value));
 
         h.get("name")
-            .update(move |id: UpdateId, mut e: TextEditor| {
+            .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{name}:");
             });
 
         let bounds_start = *bounds.start();
         h.get("lower_bound")
-            .update(move |id: UpdateId, mut e: TextEditor| {
+            .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_start);
             });
 
@@ -113,7 +113,7 @@ fn make_draggable_field_widget(
 
         h.get("value::text").update_on(
             entity_mutation::<FieldValue<f32>>(widget_id),
-            move |id: UpdateId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
+            move |id: TargetId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
                 let val = vals.get(widget_id)?;
                 write_text!(e, *id, "{:.1}", val.get());
                 OK
@@ -122,7 +122,7 @@ fn make_draggable_field_widget(
 
         let bounds_end = *bounds.end();
         h.get("upper_bound")
-            .update(move |id: UpdateId, mut e: TextEditor| {
+            .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_end);
             });
 
@@ -190,17 +190,15 @@ impl CobEditorWidget for DemoOrbiterWidget
                     make_draggable_field_widget(h, "velocity", initial_orbiter.velocity, velocity_bounds.clone());
 
                 // Send updated values back to the editor.
-                //TODO: update_on is overkill here, but we need to make sure the reactor's lifetime is tied
-                //to this widget
                 let mut orbiter_tracked = initial_orbiter;
                 let editor_ref = editor_ref.clone();
-                h.update_on(
+                h.reactor(
                     (
                         entity_mutation::<FieldValue<f32>>(radius_id),
                         entity_mutation::<FieldValue<f32>>(velocity_id),
                     ),
                     move |//
-                    _: UpdateId,
+                    _: TargetId,
                     mutation: MutationEvent<FieldValue<f32>>,
                     mut c: Commands,
                     vals: Reactive<FieldValue<f32>>//

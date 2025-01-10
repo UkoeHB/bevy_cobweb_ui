@@ -60,6 +60,23 @@ pub trait UiBuilderReactExt
     /// Does nothing if the entity doesn't exist.
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
+    /// Mirrors [`UiReactEntityCommandsExt::reactor`].
+    ///
+    /// Does nothing if the entity doesn't exist.
+    fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        R: ReactorResult,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
+
+    /// Mirrors [`UiReactEntityCommandsExt::update`].
+    ///
+    /// Does nothing if the entity doesn't exist.
+    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
+        &mut self,
+        reactor: C,
+    ) -> &mut Self;
+
     /// Mirrors [`UiReactEntityCommandsExt::update_on`].
     ///
     /// Does nothing if the entity doesn't exist.
@@ -67,15 +84,7 @@ pub trait UiBuilderReactExt
     where
         T: ReactionTriggerBundle,
         R: ReactorResult,
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
-
-    /// Mirrors [`UiReactEntityCommandsExt::update`].
-    ///
-    /// Does nothing if the entity doesn't exist.
-    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
-        &mut self,
-        reactor: C,
-    ) -> &mut Self;
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Updates text with a static string using [`Self::update`].
     ///
@@ -136,20 +145,20 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         self
     }
 
-    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
+    fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
         R: ReactorResult,
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
         if let Some(mut emut) = self.commands().get_entity(id) {
-            emut.update_on(triggers, reactor);
+            emut.reactor(triggers, reactor);
         }
         self
     }
 
-    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
         reactor: C,
     ) -> &mut Self
@@ -161,10 +170,23 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         self
     }
 
+    fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        R: ReactorResult,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
+    {
+        let id = self.id();
+        if let Some(mut emut) = self.commands().get_entity(id) {
+            emut.update_on(triggers, reactor);
+        }
+        self
+    }
+
     fn update_text(&mut self, text: impl Into<String>) -> &mut Self
     {
         let text = text.into();
-        self.update(move |id: UpdateId, mut e: TextEditor| {
+        self.update(move |id: TargetId, mut e: TextEditor| {
             write_text!(e, *id, "{}", text.as_str());
         })
     }

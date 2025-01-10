@@ -12,6 +12,7 @@ mod interaction_ext;
 mod node_attributes;
 mod plugin;
 mod pseudo_states_ext;
+mod react_ext;
 
 pub use builder_ext::*;
 pub use control::*;
@@ -23,3 +24,4 @@ pub use interaction_ext::*;
 pub use node_attributes::*;
 pub(crate) use plugin::*;
 pub use pseudo_states_ext::*;
+pub use react_ext::*;

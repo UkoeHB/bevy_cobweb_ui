@@ -22,7 +22,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 .update_on(
                     broadcast::<LocalizationManifestUpdated>(),
                     move |//
-                        id: UpdateId,
+                        id: TargetId,
                         mut c: Commands,
                         mut s: SceneBuilder,
                         manifest: Res<LocalizationManifest>//
@@ -86,7 +86,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 // Localized dynamic text.
                 h.get("dynamic").insert(LocalizedText::default()).update_on(
                     broadcast::<RelocalizeApp>(),
-                    move |id: UpdateId, mut count: Local<usize>, mut e: TextEditor| {
+                    move |id: TargetId, mut count: Local<usize>, mut e: TextEditor| {
                         // Displays count for the number of times the app was localized.
                         write_text!(e, *id, "locale-counter?count={:?}", *count);
                         *count += 1;

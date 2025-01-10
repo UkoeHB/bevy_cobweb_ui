@@ -9,6 +9,24 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
+fn register_reactor<Triggers: ReactionTriggerBundle>(
+    c: &mut Commands,
+    entity: Entity,
+    syscommand: SystemCommand,
+    triggers: Triggers,
+)
+{
+    let revoke_token = c
+        .react()
+        .with(triggers, syscommand, ReactorMode::Revokable)
+        .unwrap();
+
+    //todo: more efficient cleanup mechanism
+    cleanup_reactor_on_despawn(c, entity, revoke_token);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 #[cfg(feature = "hot_reload")]
 fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
     In((entity, syscommand, triggers)): In<(Entity, SystemCommand, Triggers)>,
@@ -109,22 +127,24 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// [`SystemInput`] implementation for use in [`UiReactEntityCommandsExt::update_on`].
+/// [`SystemInput`] implementation for use in [`UiReactEntityCommandsExt`] methods.
+///
+/// Contains the entity targeted by a system callback.
 #[derive(Debug)]
-pub struct UpdateId(pub Entity);
+pub struct TargetId(pub Entity);
 
-impl SystemInput for UpdateId
+impl SystemInput for TargetId
 {
-    type Param<'i> = UpdateId;
+    type Param<'i> = TargetId;
     type Inner<'i> = Entity;
 
     fn wrap(this: Self::Inner<'_>) -> Self::Param<'_>
     {
-        UpdateId(this)
+        TargetId(this)
     }
 }
 
-impl Deref for UpdateId
+impl Deref for TargetId
 {
     type Target = Entity;
 
@@ -134,7 +154,7 @@ impl Deref for UpdateId
     }
 }
 
-impl DerefMut for UpdateId
+impl DerefMut for TargetId
 {
     fn deref_mut(&mut self) -> &mut Self::Target
     {
@@ -164,15 +184,29 @@ pub trait UiReactEntityCommandsExt
     /// Recursively despawns the current entity on broadcast event `T`.
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self;
 
+    /// Attaches a reactor to an entity.
+    ///
+    /// The reactor will be cleaned up when the entity is despawned.
+    ///
+    /// Useful if, for example, you want the entity to react on event broadcast (so [`Self::on_event`] won't work).
+    ///
+    /// Use [`Self::update_on`] if you want the callback to always run on spawn (and then every time the
+    /// entity is hot-reloaded).
+    fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        R: ReactorResult,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
+
     /// Updates an entity with a oneshot system.
     ///
     /// The system runs:
     /// - Immediately after being registered.
     /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
     ///   feature only).
-    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
-        reactor: C,
+        callback: C,
     ) -> &mut Self;
 
     /// Updates an entity with a reactor system.
@@ -182,11 +216,13 @@ pub trait UiReactEntityCommandsExt
     /// - Whenever the triggers fire.
     /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
     ///   feature only).
+    ///
+    /// Use [`Self::reactor`] if you only want the callback to run in reaction to triggers.
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
         R: ReactorResult,
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Provides access to entity commands for the entity.
     ///
@@ -237,19 +273,41 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn update<M, R: ReactorResult, C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static>(
+    fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        R: ReactorResult,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
+    {
+        // Do nothing if there are no triggers.
+        if TypeId::of::<T>() == TypeId::of::<()>() {
+            return self;
+        }
+        let id = self.id();
+        let mut reactor = RawCallbackSystem::new(reactor);
+        let callback = move |world: &mut World| {
+            let result = reactor.run_with_cleanup(world, id, |_| {});
+            result.handle(world);
+        };
+        let syscommand = self.commands().spawn_system_command(callback);
+        register_reactor(&mut self.commands(), id, syscommand, triggers);
+
+        self
+    }
+
+    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
-        reactor: C,
+        callback: C,
     ) -> &mut Self
     {
-        self.update_on((), reactor)
+        self.update_on((), callback)
     }
 
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
         R: ReactorResult,
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
         let mut reactor = RawCallbackSystem::new(reactor);
@@ -273,7 +331,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
 
     fn modify(&mut self, mut callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
     {
-        self.update_on((), move |id: UpdateId, mut c: Commands| {
+        self.update_on((), move |id: TargetId, mut c: Commands| {
             let Some(ec) = c.get_entity(*id) else { return };
             (callback)(ec)
         })

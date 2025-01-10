@@ -118,7 +118,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         h.update_on(
                             entity_event::<()>(shadow_id),
                             move |//
-                                    id: UpdateId,
+                                    id: TargetId,
                                     mut c: Commands,
                                     vals: Reactive<SliderValue>,
                                     nodes: Query<&ComputedNode>//

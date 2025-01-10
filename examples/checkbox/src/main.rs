@@ -17,7 +17,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
             h.edit("checkbox", |h| {
                 let id = h.id();
                 // Use update_on so it also initializes the text.
-                h.update_on(entity_event::<Uncheck>(id), move |_: UpdateId, mut e: TextEditor| {
+                h.update_on(entity_event::<Uncheck>(id), move |_: TargetId, mut e: TextEditor| {
                     write_text!(e, text_id, "Unchecked");
                 })
                 .on_check(move |mut e: TextEditor| {

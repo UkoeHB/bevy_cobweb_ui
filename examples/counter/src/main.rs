@@ -37,7 +37,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
 
             h.get("text").update_on(
                 entity_mutation::<Counter>(button_id),
-                move |text_id: UpdateId, mut e: TextEditor, counters: Reactive<Counter>| {
+                move |text_id: TargetId, mut e: TextEditor, counters: Reactive<Counter>| {
                     let counter = counters.get(button_id)?;
                     write_text!(e, *text_id, "Counter: {}", **counter);
                     OK

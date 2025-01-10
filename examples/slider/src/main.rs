@@ -16,7 +16,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
         h.edit("basic::slider", |h| {
             let basic_text = h.get_entity_from_root("basic::text").unwrap();
 
-            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: TargetId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, basic_text, "{}", val as usize);
@@ -28,7 +28,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
         h.edit("reverse::slider", |h| {
             let reverse_text = h.get_entity_from_root("reverse::text").unwrap();
 
-            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: TargetId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, reverse_text, "{}", val as usize);
@@ -41,7 +41,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
         h.edit("fancy::slider", |h| {
             let fancy_text = h.get_entity_from_root("fancy::text").unwrap();
 
-            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: TargetId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.single().result()?;
                 let val = val * 100.;
                 write_text!(e, fancy_text, "{}", val as usize);
@@ -53,7 +53,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
         h.edit("planar::slider", |h| {
             let planar_text = h.get_entity_from_root("planar::text").unwrap();
 
-            h.on_slider(move |id: UpdateId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
+            h.on_slider(move |id: TargetId, mut e: TextEditor, sliders: Reactive<SliderValue>| {
                 let val = sliders.get(*id)?.planar().result()?;
                 let val = val * 100.;
                 write_text!(e, planar_text, "({}, {})", val.x as usize, val.y as usize);

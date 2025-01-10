@@ -7,6 +7,8 @@
 
 ### Updates
 - `SceneBuilder` is now a system param instead of resource. `ResMut<SceneBuilder>` -> `SceneBuilder`
+- Add `.reactor()` extension method for when `.update_on` is overkill.
+- Rename `UpdateId` to `TargetId`.
 
 
 ## 0.9.0

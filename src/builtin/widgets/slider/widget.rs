@@ -770,7 +770,7 @@ pub trait SliderWidgetExt
     ```rust
     ui_builder.initialize_slider(
         |
-            id: UpdateId,
+            id: TargetId,
             mut c: Commands,
             settings: Res<Settings>,
             mut value: ReactiveMut<SliderValue>,
@@ -790,7 +790,7 @@ pub trait SliderWidgetExt
     /// ```
     fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Adds a callback for reacting to changes in the `React<SliderValue>` component on the current entity.
     ///
@@ -800,7 +800,7 @@ pub trait SliderWidgetExt
     ```rust
     ui_builder.on_slider(
         |
-            id: UpdateId,
+            id: TargetId,
             mut settings: ResMut<Settings>,
             value: Reactive<SliderValue>,
         | {
@@ -818,21 +818,21 @@ pub trait SliderWidgetExt
     /// ```
     fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static;
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 }
 
 impl SliderWidgetExt for UiBuilder<'_, Entity>
 {
     fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         self.update_on(entity_insertion::<SliderValue>(self.id()), callback)
     }
 
     fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
     where
-        C: IntoSystem<UpdateId, R, M> + Send + Sync + 'static,
+        C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         self.update_on(entity_mutation::<SliderValue>(self.id()), callback)
     }

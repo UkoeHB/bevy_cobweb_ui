@@ -86,7 +86,7 @@ fn build_loadable(
     h.spawn_scene_and_edit(("editor.frame", "loadable"), |h| {
         // Set the loadable's name.
         h.get("name")
-            .update(move |id: UpdateId, mut e: TextEditor| {
+            .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", shortname);
             });
 
@@ -130,7 +130,7 @@ fn spawn_scene_layer(
         // Set node name.
         let ref_path = scene_ref.path.clone();
         h.get("name")
-            .update(move |id: UpdateId, mut e: TextEditor| {
+            .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "\"{}\"", ref_path.iter().rev().next().unwrap());
             });
 
@@ -171,7 +171,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
     ec.update_on(
         (broadcast::<EditorFileExternalChange>(), broadcast::<EditorFileSaved>()),
         move |//
-            _: UpdateId,
+            _: TargetId,
             mut tracked_hash: Local<Option<CobFileHash>>,
             external_change: BroadcastEvent<EditorFileExternalChange>,
             file_saved: BroadcastEvent<EditorFileSaved>,
@@ -349,7 +349,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                             // Set the option's text.
                             let entry_clone = entry.clone();
                             h.get("text").update(
-                                move |id: UpdateId, mut e: TextEditor| {
+                                move |id: TargetId, mut e: TextEditor| {
                                     let text = entry_clone.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
                                 }
@@ -383,7 +383,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                             // Set the selection text.
                             let text: EditorFileSelection = selection.deref().clone();
                             h.get("text").update(
-                                move |id: UpdateId, mut e: TextEditor| {
+                                move |id: TargetId, mut e: TextEditor| {
                                     let text = text.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
                                 }

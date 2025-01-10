@@ -72,7 +72,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 h.spawn_scene_and_edit(("main.cob", "display"), |h| {
                     h.get("text").update_on(
                         entity_mutation::<Calculator>(calc_entity),
-                        move |id: UpdateId, calc: Reactive<Calculator>, mut e: TextEditor| {
+                        move |id: TargetId, calc: Reactive<Calculator>, mut e: TextEditor| {
                             let text = calc.get(calc_entity)?.buffer_display();
                             write_text!(e, *id, "{}", text);
                             OK
