@@ -338,6 +338,7 @@ fn refresh_scroll_position(
     for (view_entity, mut scroll_pos, view_node) in views.iter_mut() {
         // Get view size.
         let view_size = view_node.size();
+        let inverse_scale_factor = view_node.inverse_scale_factor();
 
         // Get view content size.
         //let Some(content_size) = get_content_size(view_entity, &ui_surface) else { continue };
@@ -366,7 +367,7 @@ fn refresh_scroll_position(
             let computed_x_offset = val * scroll_size.x;
 
             if scroll_pos.offset_x != computed_x_offset {
-                scroll_pos.offset_x = computed_x_offset;
+                scroll_pos.offset_x = computed_x_offset * inverse_scale_factor;
             }
         }
         if let Some(vertical) = computed_base.vertical {
@@ -376,7 +377,7 @@ fn refresh_scroll_position(
             let computed_y_offset = val * scroll_size.y;
 
             if scroll_pos.offset_y != computed_y_offset {
-                scroll_pos.offset_y = computed_y_offset;
+                scroll_pos.offset_y = computed_y_offset * inverse_scale_factor;
             }
         }
     }

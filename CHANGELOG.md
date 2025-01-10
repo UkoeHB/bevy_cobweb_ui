@@ -9,6 +9,7 @@
 - `SceneBuilder` is now a system param instead of resource. `ResMut<SceneBuilder>` -> `SceneBuilder`
 - Add `.reactor()` extension method for when `.update_on` is overkill.
 - Rename `UpdateId` to `TargetId`.
+- Fix scroll widget bug [caused](https://github.com/bevyengine/bevy/pull/16617) by `bevy` 0.15.1.
 
 ## 0.9.0
 
