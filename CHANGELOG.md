@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.10.0
 
 ### Highlights
 - Auto-apply `Interactive` when adding interactive callbacks like `.on_pressed`. Users no longer need to add `Interactive` unless they have a custom use for it.
@@ -10,6 +10,7 @@
 - Add `.reactor()` extension method for when `.update_on` is overkill.
 - Rename `UpdateId` to `TargetId`.
 - Fix scroll widget bug [caused](https://github.com/bevyengine/bevy/pull/16617) by `bevy` 0.15.1.
+
 
 ## 0.9.0
 

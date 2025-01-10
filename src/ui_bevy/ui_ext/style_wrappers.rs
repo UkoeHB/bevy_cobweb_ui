@@ -1129,8 +1129,6 @@ pub struct GridContent
     /// Line alignment is calculated after child nodes compute their target sizes, but before stretch factors are
     /// applied.
     ///
-    /// Has no effect if [`Self::flex_wrap`] is set to [`FlexWrap::NoWrap`].
-    ///
     /// Mirrors [`Node::align_content`].
     #[reflect(default)]
     pub justify_lines: JustifyLines,

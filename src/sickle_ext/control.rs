@@ -11,7 +11,7 @@ use crate::sickle::*;
 /// Applies a [`ControlMember`] instruction and inserts an internal `ControlMap` component to the entity.
 ///
 /// Children of the root node can be accessed through their [`ControlMembers`](ControlMember) using
-/// [`ControlBuilderExt::edit_child`].
+/// [`ControlBuilderExt::edit_control_child`].
 ///
 /// It is recommended to apply this instruction before `Static`/`Responsive`/`Animated` instructions for optimal
 /// performance.

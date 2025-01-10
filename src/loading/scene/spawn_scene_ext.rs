@@ -341,7 +341,7 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     /// child nodes.
     ///
     /// The `callback` can be used to edit the scene's root node, which in turn can be used to edit inner nodes
-    /// of the scene via [`SceneRef::edit`].
+    /// of the scene via [`SceneHandle::edit`].
     ///
     /// Will log a warning and do nothing if the parent entity does not exist.
     fn spawn_scene_and_edit<'b, C>(
