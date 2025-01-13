@@ -27,7 +27,7 @@ pub mod sickle
 
 pub mod prelude
 {
-    pub use bevy_cobweb::prelude::{DropErr, OptionToNoneErr, ReactorResult, WarnErr, DONE, OK};
+    pub use bevy_cobweb::prelude::{CobwebResult, DropErr, OptionToNoneErr, WarnErr, DONE, OK};
     pub use bevy_cobweb_ui_derive::*;
     pub use cob_sickle_ui_scaffold::{UiBuilder, UiBuilderExt};
 

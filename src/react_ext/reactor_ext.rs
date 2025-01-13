@@ -119,7 +119,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
     /// Adds a reactor to an [`on_event`](UiReactEntityCommandsExt::on_event) request.
     ///
     /// Does nothing if the target entity doesn't exist.
-    pub fn r<R: ReactorResult, M>(mut self, callback: impl IntoSystem<(), R, M> + Send + Sync + 'static)
+    pub fn r<R: CobwebResult, M>(mut self, callback: impl IntoSystem<(), R, M> + Send + Sync + 'static)
     {
         self.c.react().on(entity_event::<T>(self.entity), callback);
     }
@@ -186,6 +186,9 @@ pub trait UiReactEntityCommandsExt
 
     /// Attaches a reactor to an entity.
     ///
+    /// The system runs:
+    /// - Whenever the triggers fire.
+    ///
     /// The reactor will be cleaned up when the entity is despawned.
     ///
     /// Useful if, for example, you want the entity to react on event broadcast (so [`Self::on_event`] won't work).
@@ -195,7 +198,7 @@ pub trait UiReactEntityCommandsExt
     fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Updates an entity with a oneshot system.
@@ -204,7 +207,7 @@ pub trait UiReactEntityCommandsExt
     /// - Immediately after being registered.
     /// - When an entity with the internal `HasLoadables` component receives `SceneNodeBuilt` events (`hot_reload`
     ///   feature only).
-    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: CobwebResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
         callback: C,
     ) -> &mut Self;
@@ -221,7 +224,7 @@ pub trait UiReactEntityCommandsExt
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Provides access to entity commands for the entity.
@@ -276,7 +279,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         // Do nothing if there are no triggers.
@@ -295,7 +298,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
         self
     }
 
-    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: CobwebResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
         callback: C,
     ) -> &mut Self
@@ -306,7 +309,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();

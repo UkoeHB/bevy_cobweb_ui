@@ -35,7 +35,7 @@ fn build_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn spawn_scene_impl<'b, T, C>(
+fn spawn_scene_impl<'b, T, C, R>(
     builder: &'b mut T,
     path: impl Into<SceneRef>,
     scene_builder: &'b mut SceneBuilderInner,
@@ -43,7 +43,8 @@ fn spawn_scene_impl<'b, T, C>(
 ) -> &'b mut T
 where
     T: scene_traits::SceneNodeBuilder,
-    C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
+    C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>) -> R,
+    R: CobwebResult,
 {
     let path = path.into();
 
@@ -66,14 +67,19 @@ where
     }
 
     // Allow editing the scene via callback.
-    {
+    let result = {
         let mut root_node = SceneHandle {
             scene_builder,
             builder: T::scene_node_builder(&mut commands, root_entity),
             scene: path,
         };
 
-        (callback)(&mut root_node);
+        (callback)(&mut root_node)
+    };
+    if result.need_to_handle() {
+        commands.queue(move |w: &mut World| {
+            result.handle(w);
+        });
     }
 
     // Cleanup
@@ -138,7 +144,7 @@ impl<'a, T> SceneHandle<'a, T>
 where
     T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
-    fn get_impl(&mut self, scene: SceneRef) -> SceneHandle<T::Builder<'_>>
+    fn get_impl(&mut self, scene: SceneRef) -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
     {
         let Some(entity) = self
             .scene_builder
@@ -146,32 +152,28 @@ where
             .map(|s| s.get(&scene.path))
             .flatten()
         else {
-            match self.scene_builder.active_scene() {
+            return match self.scene_builder.active_scene() {
                 Some(s) => {
-                    tracing::warn!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
-                        scene, s.scene_ref(), s.root_entity());
+                    Err(SceneHandleError::Get(format!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
+                        scene, s.scene_ref(), s.root_entity())))
                 }
                 None => {
-                    tracing::error!("edit failed for scene node {:?}, no scene is active (this is a bug)", scene);
+                    Err(SceneHandleError::Get(format!("edit failed for scene node {:?}, no scene is active (this is a bug)", scene)))
                 }
-            }
-            return SceneHandle {
-                scene_builder: self.scene_builder,
-                builder: self.builder.new_with(Entity::PLACEHOLDER),
-                scene: self.scene.clone(),
             };
         };
 
-        SceneHandle {
+        Ok(SceneHandle {
             scene_builder: self.scene_builder,
             builder: self.builder.new_with(entity),
             scene,
-        }
+        })
     }
 
-    fn edit_impl<C>(&mut self, scene: SceneRef, callback: C) -> &mut Self
+    fn edit_impl<C, R>(&mut self, scene: SceneRef, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>) -> R,
+        R: CobwebResult,
     {
         let Some(entity) = self
             .scene_builder
@@ -191,7 +193,7 @@ where
             return self;
         };
 
-        {
+        let result = {
             let mut commands = self.builder.commands();
             let mut child_scene = SceneHandle {
                 scene_builder: self.scene_builder,
@@ -199,21 +201,27 @@ where
                 scene,
             };
 
-            (callback)(&mut child_scene);
+            (callback)(&mut child_scene)
+        };
+        if result.need_to_handle() {
+            self.builder.commands().queue(move |w: &mut World| {
+                result.handle(w);
+            });
         }
 
         self
     }
 
     /// Gets a specific child in order to edit it directly.
-    pub fn get(&mut self, child: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
+    pub fn get(&mut self, child: impl AsRef<str>) -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
     {
         let scene = self.scene.e(child);
         self.get_impl(scene)
     }
 
     /// Gets a specific child positioned relative to the root node in order to edit it directly.
-    pub fn get_from_root(&mut self, path: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
+    pub fn get_from_root(&mut self, path: impl AsRef<str>)
+        -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
     {
         let scene = self.scene.extend_from_index(0, path);
         self.get_impl(scene)
@@ -225,9 +233,10 @@ where
     /// that is currently being edited.
     ///
     /// Note that looking up the scene node allocates.
-    pub fn edit<C>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
+    pub fn edit<C, R>(&mut self, child: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>) -> R,
+        R: CobwebResult,
     {
         let scene = self.scene.e(child);
         self.edit_impl(scene, callback)
@@ -239,9 +248,10 @@ where
     /// that is currently being edited.
     ///
     /// Note that looking up the scene node allocates.
-    pub fn edit_from_root<C>(&mut self, path: impl AsRef<str>, callback: C) -> &mut Self
+    pub fn edit_from_root<C, R>(&mut self, path: impl AsRef<str>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, T::Builder<'c>>) -> R,
+        R: CobwebResult,
     {
         let scene = self.scene.extend_from_index(0, path);
         self.edit_impl(scene, callback)
@@ -250,25 +260,27 @@ where
     /// Gets an entity relative to the current node.
     ///
     /// Note that this lookup allocates.
-    pub fn get_entity(&self, child: impl AsRef<str>) -> Option<Entity>
+    pub fn get_entity(&self, child: impl AsRef<str>) -> Result<Entity, SceneHandleError>
     {
         let child_path = self.scene.path.extend(child);
         self.scene_builder
             .active_scene()
             .map(|s| s.get(&child_path))
             .flatten()
+            .ok_or_else(move || SceneHandleError::GetEntity(child_path))
     }
 
     /// Gets an entity relative to the root node.
     ///
     /// Note that this lookup allocates.
-    pub fn get_entity_from_root(&self, path: impl AsRef<str>) -> Option<Entity>
+    pub fn get_entity_from_root(&self, path: impl AsRef<str>) -> Result<Entity, SceneHandleError>
     {
         let scene = self.scene.path.extend_from_index(0, path);
         self.scene_builder
             .active_scene()
             .map(|s| s.get(&scene))
             .flatten()
+            .ok_or_else(move || SceneHandleError::GetEntityFromRoot(scene))
     }
 
     /// See [`SpawnSceneExt::spawn_scene`].
@@ -278,9 +290,10 @@ where
     }
 
     /// See [`SpawnSceneExt::spawn_scene_and_edit`].
-    pub fn spawn_scene_and_edit<C>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
+    pub fn spawn_scene_and_edit<C, R>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
     where
-        C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>),
+        C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>) -> R,
+        R: CobwebResult,
     {
         spawn_scene_impl(&mut self.builder, path, self.scene_builder, callback);
         self
@@ -344,14 +357,15 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     /// of the scene via [`SceneHandle::edit`].
     ///
     /// Will log a warning and do nothing if the parent entity does not exist.
-    fn spawn_scene_and_edit<'b, C>(
+    fn spawn_scene_and_edit<'b, C, R>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
         callback: C,
     ) -> &'b mut Self
     where
-        C: for<'a> FnOnce(&mut SceneHandle<'a, <Self as scene_traits::SceneNodeBuilder>::Builder<'a>>);
+        C: for<'a> FnOnce(&mut SceneHandle<'a, <Self as scene_traits::SceneNodeBuilder>::Builder<'a>>) -> R,
+        R: CobwebResult;
 }
 
 impl<T> SpawnSceneExt for T
@@ -367,14 +381,15 @@ where
         self.spawn_scene_and_edit(path, scene_builder, |_| {})
     }
 
-    fn spawn_scene_and_edit<'b, C>(
+    fn spawn_scene_and_edit<'b, C, R>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
         callback: C,
     ) -> &'b mut Self
     where
-        C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>),
+        C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>) -> R,
+        R: CobwebResult,
     {
         spawn_scene_impl(self, path, scene_builder, callback)
     }

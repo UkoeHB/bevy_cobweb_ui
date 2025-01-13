@@ -788,7 +788,7 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_insertion::<SliderValue>(entity), callback)
     /// ```
-    fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
+    fn initialize_slider<M, C, R: CobwebResult>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
@@ -816,21 +816,21 @@ pub trait SliderWidgetExt
     /// ```rust
     /// ui_builder.update_on(entity_mutation::<SliderValue>(entity), callback)
     /// ```
-    fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
+    fn on_slider<M, C, R: CobwebResult>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 }
 
 impl SliderWidgetExt for UiBuilder<'_, Entity>
 {
-    fn initialize_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
+    fn initialize_slider<M, C, R: CobwebResult>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         self.update_on(entity_insertion::<SliderValue>(self.id()), callback)
     }
 
-    fn on_slider<M, C, R: ReactorResult>(&mut self, callback: C) -> &mut Self
+    fn on_slider<M, C, R: CobwebResult>(&mut self, callback: C) -> &mut Self
     where
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {

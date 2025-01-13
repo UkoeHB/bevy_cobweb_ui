@@ -66,13 +66,13 @@ pub trait UiBuilderReactExt
     fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Mirrors [`UiReactEntityCommandsExt::update`].
     ///
     /// Does nothing if the entity doesn't exist.
-    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: CobwebResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
         reactor: C,
     ) -> &mut Self;
@@ -83,7 +83,7 @@ pub trait UiBuilderReactExt
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static;
 
     /// Updates text with a static string using [`Self::update`].
@@ -148,7 +148,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn reactor<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
@@ -158,7 +158,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         self
     }
 
-    fn update<M, R: ReactorResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
+    fn update<M, R: CobwebResult, C: IntoSystem<TargetId, R, M> + Send + Sync + 'static>(
         &mut self,
         reactor: C,
     ) -> &mut Self
@@ -173,7 +173,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn update_on<M, C, T, R>(&mut self, triggers: T, reactor: C) -> &mut Self
     where
         T: ReactionTriggerBundle,
-        R: ReactorResult,
+        R: CobwebResult,
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();

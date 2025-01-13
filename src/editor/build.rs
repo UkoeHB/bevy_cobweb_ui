@@ -85,7 +85,7 @@ fn build_loadable(
     // Build view
     h.spawn_scene_and_edit(("editor.frame", "loadable"), |h| {
         // Set the loadable's name.
-        h.get("name")
+        h.get("name")?
             .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", shortname);
             });
@@ -103,10 +103,11 @@ fn build_loadable(
                 });
             }
             Err(_) => {
-                h.get("content")
+                h.get("content")?
                     .spawn_scene(("editor.frame", "reflect_fail"));
             }
         }
+        OK
     });
 }
 
@@ -129,7 +130,7 @@ fn spawn_scene_layer(
     h.spawn_scene_and_edit(("editor.frame", "scene_node"), |h| {
         // Set node name.
         let ref_path = scene_ref.path.clone();
-        h.get("name")
+        h.get("name")?
             .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "\"{}\"", ref_path.iter().rev().next().unwrap());
             });
@@ -158,6 +159,7 @@ fn spawn_scene_layer(
                 }
             }
         });
+        OK
     });
 }
 
@@ -276,7 +278,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
         h.insert(TargetCamera(camera_entity));
 
         // Get content entity.
-        let content_entity = h.get("content").id();
+        let content_entity = h.get("content")?.id();
 
         // Build dropdown
         // TODO: use a proper dropdown widget that tracks selected automatically? (might be harder to get proper
@@ -348,7 +350,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
 
                             // Set the option's text.
                             let entry_clone = entry.clone();
-                            h.get("text").update(
+                            h.get("text")?.update(
                                 move |id: TargetId, mut e: TextEditor| {
                                     let text = entry_clone.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
@@ -360,6 +362,8 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                                 let entry_entity = h.id();
                                 h.react().entity_event(entry_entity, Select);
                             }
+
+                            OK
                         });
                     }
                 },
@@ -382,7 +386,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
 
                             // Set the selection text.
                             let text: EditorFileSelection = selection.deref().clone();
-                            h.get("text").update(
+                            h.get("text")?.update(
                                 move |id: TargetId, mut e: TextEditor| {
                                     let text = text.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
                                     write_text!(e, *id, "{}", text);
@@ -393,6 +397,8 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                             h.on_pressed(move |mut c: Commands| {
                                 c.react().entity_event(dropdown_entity, Open);
                             });
+
+                            OK
                         },
                     );
                 },
@@ -430,7 +436,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
 
         // Build unsaved indicator.
         // TODO: put an indicator on individual file names in the dropdown instead?
-        let unsaved = h.get("footer::unsaved").id();
+        let unsaved = h.get("footer::unsaved")?.id();
         h.react().on(
             (broadcast::<EditorFileUnsaved>(), broadcast::<EditorFileSaved>()),
             move |mut c: Commands, p: PseudoStateParam, editor: Res<CobEditor>| {
@@ -445,8 +451,10 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
 
         // Build save button.
         // TODO: use CMD-S instead?
-        h.get("footer::save")
+        h.get("footer::save")?
             .on_pressed(|w: &mut World| SaveEditor.apply(w));
+
+        OK
     });
 }
 

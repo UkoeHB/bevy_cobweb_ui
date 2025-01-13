@@ -35,7 +35,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 },
             );
 
-            h.get("text").update_on(
+            h.get("text")?.update_on(
                 entity_mutation::<Counter>(button_id),
                 move |text_id: TargetId, mut e: TextEditor, counters: Reactive<Counter>| {
                     let counter = counters.get(button_id)?;
@@ -43,6 +43,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                     OK
                 },
             );
+            OK
         });
     });
 }
