@@ -229,7 +229,6 @@ pub enum CardinalDirection
     NorthWest,
 }
 
-// TODO: why not SmolStr for custom? or Cow<str> maybe?
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Reflect, Serialize, Deserialize)]
 pub enum PseudoState
 {
@@ -257,6 +256,15 @@ pub enum PseudoState
     Dying,
     Resizable(CardinalDirection),
     Custom(SmolStr),
+}
+
+impl PseudoState
+{
+    /// Equivalent to `PseudoState::Custom(SmolStr::new_static(string))`.
+    pub const fn custom_static(string: &'static str) -> Self
+    {
+        Self::Custom(SmolStr::new_static(string))
+    }
 }
 
 #[derive(Component, Clone, Debug, Default, Reflect)]

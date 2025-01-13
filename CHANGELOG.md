@@ -1,5 +1,11 @@
 # Changelog
 
+## WIP
+
+### Updates
+- Added `PseudoState::custom_static` helper method.
+
+
 ## 0.11.1
 
 ### Reverted
