@@ -8,7 +8,6 @@ use crate::prelude::ScenePath;
 #[derive(Debug)]
 pub enum SceneHandleError
 {
-    Get(String),
     GetEntity(ScenePath),
     GetEntityFromRoot(ScenePath),
 }
@@ -26,7 +25,6 @@ impl std::fmt::Display for SceneHandleError
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result
     {
         match self {
-            Self::Get(err) => f.write_fmt(format_args!("Get({})", err.as_str())),
             Self::GetEntity(err) => f.write_fmt(format_args!("GetEntity({:?})", err)),
             Self::GetEntityFromRoot(err) => f.write_fmt(format_args!("GetEntityFromRoot({:?})", err)),
         }

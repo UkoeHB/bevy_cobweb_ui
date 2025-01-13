@@ -16,7 +16,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
     let scene = ("main.cob", "scene");
     c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
         // Get the display text's entity.
-        let display_text = h.get("display::text")?.id();
+        let display_text = h.get("display::text").id();
 
         // Insert radio buttons.
         h.edit("radio_frame", |h| {
@@ -27,19 +27,15 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         write_text!(e, display_text, "Selected: {}", option);
                     });
 
-                    h.get("text")?.update_text(format!("{}", option));
+                    h.get("text").update_text(format!("{}", option));
                     // Select the first option.
                     if i == 0 {
                         let entity = h.id();
                         h.react().entity_event(entity, Select);
                     }
-
-                    OK
                 });
             }
         });
-
-        OK
     });
 }
 

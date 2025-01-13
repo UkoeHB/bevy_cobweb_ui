@@ -70,7 +70,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
             // Insert display at the correct position in the grid
             if button == "" {
                 h.spawn_scene_and_edit(("main.cob", "display"), |h| {
-                    h.get("text")?.update_on(
+                    h.get("text").update_on(
                         entity_mutation::<Calculator>(calc_entity),
                         move |id: TargetId, calc: Reactive<Calculator>, mut e: TextEditor| {
                             let text = calc.get(calc_entity)?.buffer_display();
@@ -78,7 +78,6 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                             OK
                         },
                     );
-                    OK
                 });
 
                 continue;
@@ -89,11 +88,9 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                     calc.get_mut(&mut c, calc_entity)?.add_instruction(button);
                     OK
                 });
-                h.get("text")?.update_text(button);
-                OK
+                h.get("text").update_text(button);
             });
         }
-        OK
     });
 }
 

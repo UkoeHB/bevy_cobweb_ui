@@ -88,27 +88,24 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
         .spawn_scene_and_edit(&file + "scene", &mut s, |h| {
             h.edit("view::shim::row1", |h| {
                 h.spawn_scene_and_edit(&file + "basic", |h| {
-                    let mut content = h.get("scroll::view::shim")?;
+                    let mut content = h.get("scroll::view::shim");
                     add_blob(&mut content, "blob");
-                    OK
                 });
 
                 h.spawn_scene_and_edit(&file + "overlay", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim")?;
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob");
-                    OK
                 });
             });
 
             h.edit("view::shim::row2", |h| {
                 h.spawn_scene_and_edit(&file + "inset", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim")?;
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob");
-                    OK
                 });
 
                 h.spawn_scene_and_edit(&file + "sublime", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim")?;
+                    let mut content = h.get("scroll::view_shim::view::shim");
                     add_blob(&mut content, "blob_sublime");
 
                     // Shadow visibility is affected by scroll value via PropagateOpacity.
@@ -141,7 +138,6 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                             },
                         );
                     });
-                    OK
                 });
             });
 

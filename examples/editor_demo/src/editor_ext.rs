@@ -95,23 +95,23 @@ fn make_draggable_field_widget(
 
         h.insert_reactive(FieldValue::new(initial_value));
 
-        h.get("name")?
+        h.get("name")
             .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{name}:");
             });
 
         let bounds_start = *bounds.start();
-        h.get("lower_bound")?
+        h.get("lower_bound")
             .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_start);
             });
 
         // Set up the drag zone to modify the DragValue.
-        let mut zone = h.get("value")?;
+        let mut zone = h.get("value");
         let mut ec = zone.entity_commands();
         setup_drag(&mut ec, widget_id);
 
-        h.get("value::text")?.update_on(
+        h.get("value::text").update_on(
             entity_mutation::<FieldValue<f32>>(widget_id),
             move |id: TargetId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
                 let val = vals.get(widget_id)?;
@@ -121,7 +121,7 @@ fn make_draggable_field_widget(
         );
 
         let bounds_end = *bounds.end();
-        h.get("upper_bound")?
+        h.get("upper_bound")
             .update(move |id: TargetId, mut e: TextEditor| {
                 write_text!(e, *id, "{}", bounds_end);
             });
@@ -143,7 +143,6 @@ fn make_draggable_field_widget(
                 OK
             },
         );
-        OK
     });
 
     widget_id

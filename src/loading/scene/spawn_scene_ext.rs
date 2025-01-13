@@ -144,7 +144,7 @@ impl<'a, T> SceneHandle<'a, T>
 where
     T: scene_traits::SceneNodeBuilderOuter<'a>,
 {
-    fn get_impl(&mut self, scene: SceneRef) -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
+    fn get_impl(&mut self, scene: SceneRef) -> SceneHandle<T::Builder<'_>>
     {
         let Some(entity) = self
             .scene_builder
@@ -152,22 +152,27 @@ where
             .map(|s| s.get(&scene.path))
             .flatten()
         else {
-            return match self.scene_builder.active_scene() {
+            match self.scene_builder.active_scene() {
                 Some(s) => {
-                    Err(SceneHandleError::Get(format!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
-                        scene, s.scene_ref(), s.root_entity())))
+                    tracing::warn!("edit failed for scene node {:?}, path is not present in the active scene {:?} on {:?}",
+                        scene, s.scene_ref(), s.root_entity());
                 }
                 None => {
-                    Err(SceneHandleError::Get(format!("edit failed for scene node {:?}, no scene is active (this is a bug)", scene)))
+                    tracing::error!("edit failed for scene node {:?}, no scene is active (this is a bug)", scene);
                 }
+            }
+            return SceneHandle {
+                scene_builder: self.scene_builder,
+                builder: self.builder.new_with(Entity::PLACEHOLDER),
+                scene: self.scene.clone(),
             };
         };
 
-        Ok(SceneHandle {
+        SceneHandle {
             scene_builder: self.scene_builder,
             builder: self.builder.new_with(entity),
             scene,
-        })
+        }
     }
 
     fn edit_impl<C, R>(&mut self, scene: SceneRef, callback: C) -> &mut Self
@@ -213,15 +218,14 @@ where
     }
 
     /// Gets a specific child in order to edit it directly.
-    pub fn get(&mut self, child: impl AsRef<str>) -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
+    pub fn get(&mut self, child: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
     {
         let scene = self.scene.e(child);
         self.get_impl(scene)
     }
 
     /// Gets a specific child positioned relative to the root node in order to edit it directly.
-    pub fn get_from_root(&mut self, path: impl AsRef<str>)
-        -> Result<SceneHandle<T::Builder<'_>>, SceneHandleError>
+    pub fn get_from_root(&mut self, path: impl AsRef<str>) -> SceneHandle<T::Builder<'_>>
     {
         let scene = self.scene.extend_from_index(0, path);
         self.get_impl(scene)

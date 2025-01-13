@@ -1,6 +1,13 @@
 # Changelog
 
-## 0.11.0
+## 0.11.1
+
+### Reverted
+
+- `SceneHandle::get` and `::get_from_root` no longer return a result. They log a warning and return a placeholder entity on failure.
+
+
+## 0.11.0 (YANKED)
 
 ### Highlights
 - `SceneHandle` callbacks return `impl CobwebResult`.
