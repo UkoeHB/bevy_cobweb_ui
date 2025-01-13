@@ -1,11 +1,14 @@
 # Changelog
 
+## 0.11.0
+
 ### Highlights
 - `SceneHandle` callbacks return `impl CobwebResult`.
 - Update `SceneHandle` methods to return `Result<x, SceneHandleError`. This makes the API panic-free.
 
 ### Updates
 - Update to `bevy_cobweb` 0.16. This comes with better error messages.
+
 
 ## 0.10.0
 
