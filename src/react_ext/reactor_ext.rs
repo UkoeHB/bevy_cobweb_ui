@@ -130,7 +130,7 @@ impl<'a, T: Send + Sync + 'static> OnEventExt<'a, T>
 /// [`SystemInput`] implementation for use in [`UiReactEntityCommandsExt`] methods.
 ///
 /// Contains the entity targeted by a system callback.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct TargetId(pub Entity);
 
 impl SystemInput for TargetId

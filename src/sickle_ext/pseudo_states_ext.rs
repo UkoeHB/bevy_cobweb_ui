@@ -260,6 +260,54 @@ pub trait PseudoStateExt
         &mut self,
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self;
+
+    /// Creates a reactor that inserts/removes a pseudostate on a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn insert_pseudostate_if<T, C, M>(&mut self, state: PseudoState, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
+
+    /// Creates a reactor that enables/disables a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn enable_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
+
+    /// Creates a reactor that selects/deselects a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn select_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
+
+    /// Creates a reactor that checks/unchecks a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn check_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
+
+    /// Creates a reactor that opens/closes a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn open_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
+
+    /// Creates a reactor that folds/unfolds a UI node based on the given callback system.
+    ///
+    /// Uses [`update_on`](UiBuilderReactExt::update_on) internally.
+    fn fold_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static;
 }
 
 impl PseudoStateExt for UiBuilder<'_, Entity>
@@ -361,6 +409,140 @@ impl PseudoStateExt for UiBuilder<'_, Entity>
     {
         self.on_event::<Unfold>().r(callback);
         self
+    }
+
+    fn insert_pseudostate_if<T, C, M>(&mut self, state: PseudoState, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r, state.clone()),
+                |In((id, r, state)): In<(Entity, bool, PseudoState)>, mut c: Commands, ps: PseudoStateParam| {
+                    match r {
+                        true => {
+                            ps.try_insert(&mut c, id, state);
+                        }
+                        false => {
+                            ps.try_remove(&mut c, id, state);
+                        }
+                    }
+                },
+            );
+        })
+    }
+
+    fn enable_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r),
+                |In((id, r)): In<(Entity, bool)>, mut c: Commands, ps: PseudoStateParam| match r {
+                    true => {
+                        ps.try_enable(&mut c, id);
+                    }
+                    false => {
+                        ps.try_disable(&mut c, id);
+                    }
+                },
+            );
+        })
+    }
+
+    fn select_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r),
+                |In((id, r)): In<(Entity, bool)>, mut c: Commands, ps: PseudoStateParam| match r {
+                    true => {
+                        ps.try_select(&mut c, id);
+                    }
+                    false => {
+                        ps.try_deselect(&mut c, id);
+                    }
+                },
+            );
+        })
+    }
+
+    fn check_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r),
+                |In((id, r)): In<(Entity, bool)>, mut c: Commands, ps: PseudoStateParam| match r {
+                    true => {
+                        ps.try_check(&mut c, id);
+                    }
+                    false => {
+                        ps.try_uncheck(&mut c, id);
+                    }
+                },
+            );
+        })
+    }
+
+    fn open_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r),
+                |In((id, r)): In<(Entity, bool)>, mut c: Commands, ps: PseudoStateParam| match r {
+                    true => {
+                        ps.try_open(&mut c, id);
+                    }
+                    false => {
+                        ps.try_close(&mut c, id);
+                    }
+                },
+            );
+        })
+    }
+
+    fn fold_if<T, C, M>(&mut self, triggers: T, callback: C) -> &mut Self
+    where
+        T: ReactionTriggerBundle,
+        C: IntoSystem<TargetId, bool, M> + Send + Sync + 'static,
+    {
+        let mut system = RawCallbackSystem::new(callback);
+        self.update_on(triggers, move |id: TargetId, w: &mut World| {
+            let r = system.run(w, *id);
+            w.syscall(
+                (*id, r),
+                |In((id, r)): In<(Entity, bool)>, mut c: Commands, ps: PseudoStateParam| match r {
+                    true => {
+                        ps.try_fold(&mut c, id);
+                    }
+                    false => {
+                        ps.try_unfold(&mut c, id);
+                    }
+                },
+            );
+        })
     }
 }
 
