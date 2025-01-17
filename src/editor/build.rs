@@ -47,14 +47,14 @@ fn build_widgets(
             &editor_ref,
             loadable.as_ref(),
         ) {
-            h.spawn_scene(("editor.frame", "destructure_unsupported"));
+            h.spawn_scene_simple(("editor.frame", "destructure_unsupported"));
         }
 
         return;
     }
 
     // Fallback
-    h.spawn_scene(("editor.frame", "destructure_unsupported"));
+    h.spawn_scene_simple(("editor.frame", "destructure_unsupported"));
 
     // TODO: Destructure and look for widgets for internal values
     // - TODO: If no widget found for an enum, provide a drop-down.
@@ -78,12 +78,12 @@ fn build_loadable(
     // Look up loadable type
     let name = loadable.id.to_canonical(None);
     let Some((deserializer, _, longname, shortname)) = get_deserializer(registry, name.as_str(), loadables) else {
-        h.spawn_scene(("editor.frame", "unsupported"));
+        h.spawn_scene_simple(("editor.frame", "unsupported"));
         return;
     };
 
     // Build view
-    h.spawn_scene_and_edit(("editor.frame", "loadable"), |h| {
+    h.spawn_scene(("editor.frame", "loadable"), |h| {
         // Set the loadable's name.
         h.get("name")
             .update(move |id: TargetId, mut e: TextEditor| {
@@ -104,7 +104,7 @@ fn build_loadable(
             }
             Err(_) => {
                 h.get("content")
-                    .spawn_scene(("editor.frame", "reflect_fail"));
+                    .spawn_scene_simple(("editor.frame", "reflect_fail"));
             }
         }
     });
@@ -112,7 +112,7 @@ fn build_loadable(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn spawn_scene_layer(
+fn spawn_scene_simple_layer(
     h: &mut UiSceneHandle,
     registry: &TypeRegistry,
     loadables: &LoadableRegistry,
@@ -126,7 +126,7 @@ fn spawn_scene_layer(
     let scene_ref = scene_ref + layer.name.as_str();
 
     // Build view
-    h.spawn_scene_and_edit(("editor.frame", "scene_node"), |h| {
+    h.spawn_scene(("editor.frame", "scene_node"), |h| {
         // Set node name.
         let ref_path = scene_ref.path.clone();
         h.get("name")
@@ -142,7 +142,7 @@ fn spawn_scene_layer(
                         build_loadable(h, registry, loadables, widgets, file_hash, scene_ref.clone(), loadable);
                     }
                     CobSceneLayerEntry::Layer(scene_layer) => {
-                        spawn_scene_layer(
+                        spawn_scene_simple_layer(
                             h,
                             registry,
                             loadables,
@@ -153,7 +153,7 @@ fn spawn_scene_layer(
                         );
                     }
                     _ => {
-                        h.spawn_scene(("editor.frame", "unsupported"));
+                        h.spawn_scene_simple(("editor.frame", "unsupported"));
                     }
                 }
             }
@@ -205,7 +205,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             // Handle non-editable files.
             // Note: these are filtered out by the dropdown but we handle it just in case.
             if !file_data.is_editable() {
-                c.ui_builder(base_entity).spawn_scene(("editor.frame", "file_not_editable"), &mut s);
+                c.ui_builder(base_entity).spawn_scene_simple(("editor.frame", "file_not_editable"), &mut s);
                 return;
             }
 
@@ -215,7 +215,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             // Construct scene.
             let registry = registry.read();
 
-            c.ui_builder(base_entity).spawn_scene_and_edit(("editor.frame", "file_frame"), &mut s, |h| {
+            c.ui_builder(base_entity).spawn_scene(("editor.frame", "file_frame"), &mut s, |h| {
                 // Commands section
                 h.edit("commands", |h| {
                     let commands_ref = SceneRef{ file: file.clone().into(), path: ScenePath::new("#commands") };
@@ -247,7 +247,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
                         Some(scenes)
                     }) {
                         for scene_layer in scenes_section.scenes.iter() {
-                            spawn_scene_layer(
+                            spawn_scene_simple_layer(
                                 h,
                                 &registry,
                                 &loadables,
@@ -271,7 +271,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
     let camera_entity = camera.single();
     let scene = ("editor.frame", "base");
 
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         // Editor is in a separate window.
         h.insert(TargetCamera(camera_entity));
 
@@ -319,7 +319,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
 
                     // Add empty entry at the top. Pressing closes the dropdown.
                     let mut builder = c.ui_builder(dropdown_entity);
-                    builder.spawn_scene_and_edit(("editor.frame", "empty_dropdown_entry"), &mut s, |h| {
+                    builder.spawn_scene(("editor.frame", "empty_dropdown_entry"), &mut s, |h| {
                         h.on_pressed(move |mut c: Commands| {
                             c.react().entity_event(dropdown_entity, Close);
                         });
@@ -336,7 +336,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                     });
 
                     for entry in entries {
-                        builder.spawn_scene_and_edit(("editor.frame", "dropdown_entry"), &mut s, |h| {
+                        builder.spawn_scene(("editor.frame", "dropdown_entry"), &mut s, |h| {
                             // Handle pressed.
                             let entry_clone = entry.clone();
                             h.on_pressed(move |mut c: Commands| {
@@ -372,7 +372,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                     c.entity(dropdown_entity).despawn_descendants();
 
                     // Spawn single option for the selected file.
-                    c.ui_builder(dropdown_entity).spawn_scene_and_edit(
+                    c.ui_builder(dropdown_entity).spawn_scene(
                         ("editor.frame", "dropdown_entry"),
                         &mut s,
                         |h| {

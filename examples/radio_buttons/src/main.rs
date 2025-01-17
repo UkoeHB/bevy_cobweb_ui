@@ -14,14 +14,14 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
     static OPTIONS: [&'static str; 3] = ["A", "B", "C"];
 
     let scene = ("main.cob", "scene");
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         // Get the display text's entity.
         let display_text = h.get("display::text").id();
 
         // Insert radio buttons.
         h.edit("radio_frame", |h| {
             for (i, option) in OPTIONS.iter().enumerate() {
-                h.spawn_scene_and_edit(("main.cob", "button"), |h| {
+                h.spawn_scene(("main.cob", "button"), |h| {
                     // Set display text when a button is selected.
                     h.on_select(move |mut e: TextEditor| {
                         write_text!(e, display_text, "Selected: {}", option);

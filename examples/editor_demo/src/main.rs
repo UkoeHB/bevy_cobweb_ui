@@ -16,7 +16,7 @@ const SCREEN_HALF_HEIGHT: f32 = 300.0;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn spawn_scenes(
+fn spawn_scene_simples(
     mut c: Commands,
     mut s: SceneBuilder,
     mut rng: ResMut<rng::DemoRng>,
@@ -31,7 +31,7 @@ fn spawn_scenes(
     let color = materials.add(Color::from(bevy::color::palettes::tailwind::ORANGE_600));
 
     for _ in 0..20 {
-        c.spawn_scene_and_edit(("main.cob", "orbit"), &mut s, |h| {
+        c.spawn_scene(("main.cob", "orbit"), &mut s, |h| {
             // Random starting location and angle.
             let start_x = rng.gen_range(-SCREEN_HALF_WIDTH..=SCREEN_HALF_WIDTH);
             let start_y = rng.gen_range(-SCREEN_HALF_HEIGHT..=SCREEN_HALF_HEIGHT);
@@ -63,7 +63,7 @@ fn main()
     .add_plugins(orbiter::DemoOrbiterPlugin)
     .insert_resource(rng::DemoRng::new(0))
     .load("main.cob")
-    .add_systems(OnEnter(LoadState::Done), spawn_scenes);
+    .add_systems(OnEnter(LoadState::Done), spawn_scene_simples);
 
     #[cfg(feature = "editor")]
     app.add_plugins(editor_ext::DemoEditorExtPlugin);

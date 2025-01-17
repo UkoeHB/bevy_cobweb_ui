@@ -11,7 +11,7 @@ use bevy_cobweb_ui::prelude::*;
 fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let scene = ("main.cob", "scene");
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         // Basic vertical slider.
         h.edit("basic::slider", |h| {
             let basic_text = h.get_entity_from_root("basic::text").unwrap();

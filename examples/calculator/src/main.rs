@@ -62,14 +62,14 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
     ];
 
     let scene = ("main.cob", "scene");
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         h.insert_reactive(Calculator::default());
         let calc_entity = h.id();
 
         for button in buttons {
             // Insert display at the correct position in the grid
             if button == "" {
-                h.spawn_scene_and_edit(("main.cob", "display"), |h| {
+                h.spawn_scene(("main.cob", "display"), |h| {
                     h.get("text").update_on(
                         entity_mutation::<Calculator>(calc_entity),
                         move |id: TargetId, calc: Reactive<Calculator>, mut e: TextEditor| {
@@ -83,7 +83,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 continue;
             }
 
-            h.spawn_scene_and_edit(("main.cob", "button"), |h| {
+            h.spawn_scene(("main.cob", "button"), |h| {
                 h.on_pressed(move |mut c: Commands, mut calc: ReactiveMut<Calculator>| {
                     calc.get_mut(&mut c, calc_entity)?.add_instruction(button);
                     OK

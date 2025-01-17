@@ -23,7 +23,7 @@ impl Counter
 fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let scene = ("main.cob", "root");
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         h.edit("button", |h| {
             let button_id = h.id();
             h.insert_reactive(Counter(0)).on_pressed(

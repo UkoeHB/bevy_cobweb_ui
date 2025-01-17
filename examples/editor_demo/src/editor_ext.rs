@@ -90,7 +90,7 @@ fn make_draggable_field_widget(
 ) -> Entity
 {
     let mut widget_id = Entity::PLACEHOLDER;
-    h.spawn_scene_and_edit(("editor_ext", "field_widget"), |h| {
+    h.spawn_scene(("editor_ext", "field_widget"), |h| {
         widget_id = h.id();
 
         h.insert_reactive(FieldValue::new(initial_value));
@@ -180,7 +180,7 @@ impl CobEditorWidget for DemoOrbiterWidget
 
         // Build the widget.
         c.ui_builder(parent)
-            .spawn_scene_and_edit(("editor_ext", "orbiter_widget"), s, |h| {
+            .spawn_scene(("editor_ext", "orbiter_widget"), s, |h| {
                 // Field widget for radius.
                 let radius_id =
                     make_draggable_field_widget(h, "radius", initial_orbiter.radius, radius_bounds.clone());

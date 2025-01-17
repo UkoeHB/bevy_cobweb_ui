@@ -35,7 +35,7 @@ fn build_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn spawn_scene_impl<'b, T, C, R>(
+fn spawn_scene_simple_impl<'b, T, C, R>(
     builder: &'b mut T,
     path: impl Into<SceneRef>,
     scene_builder: &'b mut SceneBuilderInner,
@@ -99,7 +99,7 @@ pub mod scene_traits
     #[allow(unused_imports)]
     use crate::prelude::*;
 
-    /// Helper trait for loading a scene. See [`SceneRef`] and [`SpawnSceneExt::spawn_scene`].
+    /// Helper trait for loading a scene. See [`SceneRef`] and [`SpawnSceneExt::spawn_scene_simple`].
     pub trait SceneNodeBuilder
     {
         /// The type returned by [`Self::scene_node_builder`].
@@ -120,7 +120,7 @@ pub mod scene_traits
     }
 
     /// Helper trait for editing nodes in a loaded scene. See [`SceneRef`] and
-    /// [`SpawnSceneExt::spawn_scene_and_edit`].
+    /// [`SpawnSceneExt::spawn_scene`].
     pub trait SceneNodeBuilderOuter<'a>: SceneNodeBuilder {}
 }
 
@@ -287,19 +287,19 @@ where
             .ok_or_else(move || SceneHandleError::GetEntityFromRoot(scene))
     }
 
-    /// See [`SpawnSceneExt::spawn_scene`].
-    pub fn spawn_scene(&mut self, path: impl Into<SceneRef>) -> &mut Self
+    /// See [`SpawnSceneExt::spawn_scene_simple`].
+    pub fn spawn_scene_simple(&mut self, path: impl Into<SceneRef>) -> &mut Self
     {
-        self.spawn_scene_and_edit(path, |_| {})
+        self.spawn_scene(path, |_| {})
     }
 
-    /// See [`SpawnSceneExt::spawn_scene_and_edit`].
-    pub fn spawn_scene_and_edit<C, R>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
+    /// See [`SpawnSceneExt::spawn_scene`].
+    pub fn spawn_scene<C, R>(&mut self, path: impl Into<SceneRef>, callback: C) -> &mut Self
     where
         C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>) -> R,
         R: CobwebResult,
     {
-        spawn_scene_impl(&mut self.builder, path, self.scene_builder, callback);
+        spawn_scene_simple_impl(&mut self.builder, path, self.scene_builder, callback);
         self
     }
 
@@ -343,8 +343,8 @@ where
 /// Extention trait for building scenes into entities.
 pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
 {
-    /// Equivalent to [`SpawnSceneExt::spawn_scene_and_edit`] with no callback.
-    fn spawn_scene<'b>(
+    /// Equivalent to [`SpawnSceneExt::spawn_scene`] with no callback.
+    fn spawn_scene_simple<'b>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
@@ -361,7 +361,7 @@ pub trait SpawnSceneExt: scene_traits::SceneNodeBuilder
     /// of the scene via [`SceneHandle::edit`].
     ///
     /// Will log a warning and do nothing if the parent entity does not exist.
-    fn spawn_scene_and_edit<'b, C, R>(
+    fn spawn_scene<'b, C, R>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
@@ -376,16 +376,16 @@ impl<T> SpawnSceneExt for T
 where
     T: scene_traits::SceneNodeBuilder,
 {
-    fn spawn_scene<'b>(
+    fn spawn_scene_simple<'b>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
     ) -> &'b mut Self
     {
-        self.spawn_scene_and_edit(path, scene_builder, |_| {})
+        self.spawn_scene(path, scene_builder, |_| {})
     }
 
-    fn spawn_scene_and_edit<'b, C, R>(
+    fn spawn_scene<'b, C, R>(
         &'b mut self,
         path: impl Into<SceneRef>,
         scene_builder: &'b mut SceneBuilderInner,
@@ -395,7 +395,7 @@ where
         C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>) -> R,
         R: CobwebResult,
     {
-        spawn_scene_impl(self, path, scene_builder, callback)
+        spawn_scene_simple_impl(self, path, scene_builder, callback)
     }
 }
 

@@ -10,7 +10,7 @@ use bevy_cobweb_ui::prelude::*;
 fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     let scene = ("localization", "root");
-    c.ui_root().spawn_scene_and_edit(scene, &mut s, |h| {
+    c.ui_root().spawn_scene(scene, &mut s, |h| {
         // Header
         // - Localized image from file (see `assets/main.cob`).
 
@@ -40,7 +40,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                             let name = language.display_name();
                             let lang = language.id.clone();
 
-                            n.spawn_scene_and_edit(button_scene.clone(), &mut s, |h| {
+                            n.spawn_scene(button_scene.clone(), &mut s, |h| {
                                 h.on_select(move |mut locale: ResMut<Locale>| {
                                     *locale = Locale::new_from_id(lang.clone());
                                 });

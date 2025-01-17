@@ -1,5 +1,13 @@
 # Changelog
 
+## WIP
+
+### Updates
+- Rename:
+    - `spawn_scene_and_edit` -> `spawn_scene`
+    - `spawn_scene` -> `spawn_scene_simple`
+
+
 ## 0.11.2
 
 ### Updates

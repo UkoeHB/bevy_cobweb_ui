@@ -60,7 +60,7 @@ fn check_firefox_timer(
 
 fn add_blob(h: &mut UiSceneHandle, scene: &str)
 {
-    h.spawn_scene_and_edit(("main.cob", scene), |h| {
+    h.spawn_scene(("main.cob", scene), |h| {
         let id = h.id();
         h.on_pressed(move |mut c: Commands, ps: PseudoStateParam| {
             // The blob alternates between 'tall', 'tall + wide' and 'none'.
@@ -84,40 +84,39 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     c.spawn(Camera2d);
     let file = SceneFile::new("main.cob");
-    c.ui_root()
-        .spawn_scene_and_edit(&file + "scene", &mut s, |h| {
-            h.edit("view::shim::row1", |h| {
-                h.spawn_scene_and_edit(&file + "basic", |h| {
-                    let mut content = h.get("scroll::view::shim");
-                    add_blob(&mut content, "blob");
-                });
-
-                h.spawn_scene_and_edit(&file + "overlay", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim");
-                    add_blob(&mut content, "blob");
-                });
+    c.ui_root().spawn_scene(&file + "scene", &mut s, |h| {
+        h.edit("view::shim::row1", |h| {
+            h.spawn_scene(&file + "basic", |h| {
+                let mut content = h.get("scroll::view::shim");
+                add_blob(&mut content, "blob");
             });
 
-            h.edit("view::shim::row2", |h| {
-                h.spawn_scene_and_edit(&file + "inset", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim");
-                    add_blob(&mut content, "blob");
-                });
+            h.spawn_scene(&file + "overlay", |h| {
+                let mut content = h.get("scroll::view_shim::view::shim");
+                add_blob(&mut content, "blob");
+            });
+        });
 
-                h.spawn_scene_and_edit(&file + "sublime", |h| {
-                    let mut content = h.get("scroll::view_shim::view::shim");
-                    add_blob(&mut content, "blob_sublime");
+        h.edit("view::shim::row2", |h| {
+            h.spawn_scene(&file + "inset", |h| {
+                let mut content = h.get("scroll::view_shim::view::shim");
+                add_blob(&mut content, "blob");
+            });
 
-                    // Shadow visibility is affected by scroll value via PropagateOpacity.
-                    let view_entity = h.get_entity("scroll::view_shim::view").unwrap();
-                    let content_entity = h.get_entity("scroll::view_shim::view::shim").unwrap();
-                    let bar_entity = h.get_entity("scroll::horizontal::bar").unwrap();
-                    h.edit("scroll::view_shim::vertical::shadow_shim", |h| {
-                        h.insert(SublimeShadow);
-                        let shadow_id = h.id();
-                        h.update_on(
-                            entity_event::<()>(shadow_id),
-                            move |//
+            h.spawn_scene(&file + "sublime", |h| {
+                let mut content = h.get("scroll::view_shim::view::shim");
+                add_blob(&mut content, "blob_sublime");
+
+                // Shadow visibility is affected by scroll value via PropagateOpacity.
+                let view_entity = h.get_entity("scroll::view_shim::view").unwrap();
+                let content_entity = h.get_entity("scroll::view_shim::view::shim").unwrap();
+                let bar_entity = h.get_entity("scroll::horizontal::bar").unwrap();
+                h.edit("scroll::view_shim::vertical::shadow_shim", |h| {
+                    h.insert(SublimeShadow);
+                    let shadow_id = h.id();
+                    h.update_on(
+                        entity_event::<()>(shadow_id),
+                        move |//
                                     id: TargetId,
                                     mut c: Commands,
                                     vals: Reactive<SliderValue>,
@@ -136,15 +135,15 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
 
                                 OK
                             },
-                        );
-                    });
+                    );
                 });
             });
+        });
 
-            h.edit("bar_shim::gutter::vertical", |h| {
-                let id = h.id();
-                h.on_event::<MouseScroll>().r(
-                    move |//
+        h.edit("bar_shim::gutter::vertical", |h| {
+            let id = h.id();
+            h.on_event::<MouseScroll>().r(
+                move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
                         mut q: Query<(&Parent, Option<&mut FirefoxTimer>, &Interaction)>,//
@@ -170,12 +169,12 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                             }
                         }
                         OK
-                    }
-                );
-                // These don't activate unless in 'IS_SCROLLING' because we only enable the entity in that
-                // state.
-                h.on_pointer_enter(
-                    move |//
+                    },
+            );
+            // These don't activate unless in 'IS_SCROLLING' because we only enable the entity in that
+            // state.
+            h.on_pointer_enter(
+                move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
                         mut q: Query<(&Parent, Option<&mut FirefoxTimer>)>,//
@@ -187,10 +186,10 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         ps.try_insert(&mut c, **gutter_entity, HOVER_ACTIVATED_PARAM.clone());
                         OK
                     },
-                );
-                // Add this to handle very fast press that bypasses hover.
-                h.on_pressed(
-                    move |//
+            );
+            // Add this to handle very fast press that bypasses hover.
+            h.on_pressed(
+                move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
                         mut q: Query<(&Parent, Option<&mut FirefoxTimer>)>,//
@@ -202,21 +201,21 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         ps.try_insert(&mut c, **gutter_entity, HOVER_ACTIVATED_PARAM.clone());
                         OK
                     },
-                );
-                h.on_pointer_leave(move |mut q: Query<&mut FirefoxTimer>| {
-                    let mut timer = q.get_mut(id)?;
-                    timer.0.unpause();
-                    timer.0.reset();
-                    DONE
-                });
-                h.on_press_canceled(move |mut q: Query<&mut FirefoxTimer>| {
-                    let mut timer = q.get_mut(id)?;
-                    timer.0.unpause();
-                    timer.0.reset();
-                    DONE
-                });
+            );
+            h.on_pointer_leave(move |mut q: Query<&mut FirefoxTimer>| {
+                let mut timer = q.get_mut(id)?;
+                timer.0.unpause();
+                timer.0.reset();
+                DONE
+            });
+            h.on_press_canceled(move |mut q: Query<&mut FirefoxTimer>| {
+                let mut timer = q.get_mut(id)?;
+                timer.0.unpause();
+                timer.0.reset();
+                DONE
             });
         });
+    });
 }
 
 //-------------------------------------------------------------------------------------------------------------------

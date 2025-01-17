@@ -297,7 +297,7 @@ fn add_menu_option(
     // Load content page for this section.
     let mut page_entity = Entity::PLACEHOLDER;
     h.edit_from_root(content_path, |h| {
-        h.spawn_scene_and_edit(file + page_scene, |h| {
+        h.spawn_scene(file + page_scene, |h| {
             page_entity = h.id();
             h.apply(DisplayControl::Hide);
 
@@ -332,7 +332,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
     let file = &SceneFile::new("main.cob.json");
     let scene = file + "menu_scene";
 
-    c.ui_root().spawn_scene_and_edit(&mut s, scene, |h| {
+    c.ui_root().spawn_scene(&mut s, scene, |h| {
         h.edit("menu::options", |h| {
             RadioButtonManager::insert(l.deref_mut());
             add_menu_option(
