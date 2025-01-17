@@ -4,7 +4,7 @@ use crate::prelude::ScenePath;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Error returned by [`SceneHandle`] methods.
+/// Error returned by [`SceneHandle`](crate::prelude::SceneHandle) methods.
 #[derive(Debug)]
 pub enum SceneHandleError
 {
