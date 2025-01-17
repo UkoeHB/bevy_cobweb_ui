@@ -4,6 +4,7 @@
 
 ### Updates
 - Added `PseudoState::custom_static` helper method.
+- Add missing `CobwebResult` return type to pseudo-state extension methods.
 
 
 ## 0.11.1

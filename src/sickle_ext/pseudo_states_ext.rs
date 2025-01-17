@@ -173,32 +173,50 @@ pub trait PseudoStateExt
     /// Adds a reactor to an [`Enable`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Enable>().r(callback)`.
-    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_enable<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Disable`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Disable>().r(callback)`.
-    fn on_disable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_disable<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Select`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Select>().r(callback)`.
-    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_select<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Deselect`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Deselect>().r(callback)`.
-    fn on_deselect<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_deselect<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Check`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Check>().r(callback)`.
-    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_check<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to an [`Uncheck`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Uncheck>().r(callback)`.
-    fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_uncheck<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to an [`ToggleCheck`] entity event.
     ///
@@ -206,92 +224,140 @@ pub trait PseudoStateExt
     /// be sent.
     ///
     /// Equivalent to `entity_builder.on_event::<ToggleCheck>().r(callback)`.
-    fn on_toggle_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_toggle_check<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to an [`Open`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Open>().r(callback)`.
-    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_open<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Close`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Close>().r(callback)`.
-    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_close<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to a [`Fold`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Fold>().r(callback)`.
-    fn on_fold<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_fold<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 
     /// Adds a reactor to an [`Unfold`] entity event.
     ///
     /// Equivalent to `entity_builder.on_event::<Unfold>().r(callback)`.
-    fn on_unfold<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self;
+    fn on_unfold<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self;
 }
 
 impl PseudoStateExt for UiBuilder<'_, Entity>
 {
-    fn on_enable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_enable<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Enable>().r(callback);
         self
     }
 
-    fn on_disable<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_disable<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Disable>().r(callback);
         self
     }
 
-    fn on_select<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_select<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Select>().r(callback);
         self
     }
 
-    fn on_deselect<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_deselect<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Deselect>().r(callback);
         self
     }
 
-    fn on_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_check<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Check>().r(callback);
         self
     }
 
-    fn on_uncheck<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_uncheck<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Uncheck>().r(callback);
         self
     }
 
-    fn on_toggle_check<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_toggle_check<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<ToggleCheck>().r(callback);
         self
     }
 
-    fn on_open<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_open<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Open>().r(callback);
         self
     }
 
-    fn on_close<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_close<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Close>().r(callback);
         self
     }
 
-    fn on_fold<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_fold<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Fold>().r(callback);
         self
     }
 
-    fn on_unfold<M>(&mut self, callback: impl IntoSystem<(), (), M> + Send + Sync + 'static) -> &mut Self
+    fn on_unfold<R: CobwebResult, M>(
+        &mut self,
+        callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
+    ) -> &mut Self
     {
         self.on_event::<Unfold>().r(callback);
         self
