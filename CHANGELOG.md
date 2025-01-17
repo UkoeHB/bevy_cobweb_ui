@@ -1,10 +1,11 @@
 # Changelog
 
-## WIP
+## 0.11.2
 
 ### Updates
 - Added `PseudoState::custom_static` helper method.
 - Add missing `CobwebResult` return type to pseudo-state extension methods.
+- Add `enable_if/select_if/check_if/open_if/fold_if` extension methods.
 
 
 ## 0.11.1
