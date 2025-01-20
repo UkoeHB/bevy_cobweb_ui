@@ -6,6 +6,7 @@
 - Rename:
     - `spawn_scene_and_edit` -> `spawn_scene`
     - `spawn_scene` -> `spawn_scene_simple`
+- Automatically add `Interactive` in `RadioButton`.
 
 
 ## 0.11.2

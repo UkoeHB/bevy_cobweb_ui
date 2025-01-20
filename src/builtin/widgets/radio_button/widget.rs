@@ -151,6 +151,7 @@ impl Instruction for RadioButton
         world
             .entity_mut(entity)
             .insert(RadioButtonHandlers { press_token, select_token });
+        Interactive.apply(entity, world);
     }
 
     fn revert(entity: Entity, world: &mut World)
@@ -172,6 +173,7 @@ impl Instruction for RadioButton
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
         let Some(handlers) = emut.take::<RadioButtonHandlers>() else { return };
         world.react(|rc| handlers.revoke(rc));
+        Interactive::revert(entity, world);
     }
 }
 
