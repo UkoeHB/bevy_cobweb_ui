@@ -16,16 +16,9 @@ fn insert_text_line(
     mut commands: Commands,
     localizer: Res<TextLocalizer>,
     font_map: Res<FontMap>,
-    color: Query<&TextLineColor>,
     mut localized: Query<&mut LocalizedText>,
 )
 {
-    // Prep color.
-    let color = color
-        .get(entity)
-        .map(|c| c.0)
-        .unwrap_or_else(|_| TextLine::default_color());
-
     // Get font.
     let mut font = line.font.map(|f| font_map.get(&f)).unwrap_or_default();
 
@@ -48,7 +41,6 @@ fn insert_text_line(
         Text(line.text),
         TextLayout { justify: line.justify, linebreak: line.linebreak },
         TextFont { font, font_size: line.size, ..default() },
-        TextColor(color),
     ));
 }
 
@@ -114,11 +106,6 @@ impl TextLine
         25.
     }
 
-    fn default_color() -> Color
-    {
-        Color::WHITE
-    }
-
     fn default_line_break() -> LineBreak
     {
         LineBreak::NoWrap
@@ -171,8 +158,11 @@ impl StaticAttribute for TextLine
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Instruction for setting the font size of a [`TextLine`] on an entity.
+///
+/// If ordered before a [`TextLine`] instruction, then this instruction will be overridden by the
+/// [`TextLine::size`] field.
 //todo: hook this up to TextLine or find a better abstraction
-#[derive(Reflect, Component, Default, Debug, Copy, Clone, PartialEq)]
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -186,18 +176,26 @@ impl Instruction for TextLineSize
     {
         world.syscall(
             (entity, self.0),
-            |In((id, size)): In<(Entity, f32)>, mut editor: TextEditor| {
-                editor.set_font_size(id, size);
+            |In((id, size)): In<(Entity, f32)>, mut c: Commands, mut editor: TextEditor| {
+                let Some((_, text_font, _)) = editor.root(id) else {
+                    if let Some(mut ec) = c.get_entity(id) {
+                        ec.try_insert((
+                            Text(TextLine::default_text()),
+                            TextFont { font_size: size, ..default() },
+                        ));
+                    }
+                    return;
+                };
+                text_font.font_size = size;
             },
         );
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
-        Instruction::apply(Self(TextLine::default_font_size()), entity, world);
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<Text>();
+        });
     }
 }
 
@@ -227,10 +225,11 @@ impl Instruction for TextLineColor
     {
         world.syscall(
             (entity, self.0),
-            |In((id, color)): In<(Entity, Color)>, mut editor: TextEditor| {
+            |In((id, color)): In<(Entity, Color)>, mut c: Commands, mut editor: TextEditor| {
                 let Some((_, _, text_color)) = editor.root(id) else {
-                    tracing::warn!("failed setting TextLineColor({color:?}) on {id:?}; entity does not \
-                        have Text");
+                    if let Some(mut ec) = c.get_entity(id) {
+                        ec.try_insert((Text(TextLine::default_text()), TextColor(color)));
+                    }
                     return;
                 };
                 *text_color = color;
@@ -243,12 +242,8 @@ impl Instruction for TextLineColor
 
     fn revert(entity: Entity, world: &mut World)
     {
-        world.syscall(entity, |In(id): In<Entity>, mut editor: TextEditor| {
-            let Some((_, _, text_color)) = editor.root(id) else { return };
-            *text_color = TextLine::default_color();
-        });
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Self>();
+            e.remove_with_requires::<(Self, Text)>();
         });
     }
 }

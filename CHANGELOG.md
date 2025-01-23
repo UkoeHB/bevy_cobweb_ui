@@ -8,6 +8,8 @@
     - `spawn_scene` -> `spawn_scene_simple`
 - Automatically add `Interactive` in `RadioButton`.
 - Remove `bevy/embedded_watcher` feature from this crate's `hot_reload` feature.
+- `TextLineColor` and `TextLineSize` now insert `Text` if it's missing instead of failing.
+    - Also `TextLineSize` is no longer a component.
 
 
 ## 0.11.2
