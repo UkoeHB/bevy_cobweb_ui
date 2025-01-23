@@ -1,12 +1,13 @@
 # Changelog
 
-## WIP
+## 0.12
 
 ### Updates
 - Rename:
     - `spawn_scene_and_edit` -> `spawn_scene`
     - `spawn_scene` -> `spawn_scene_simple`
 - Automatically add `Interactive` in `RadioButton`.
+- Remove `bevy/embedded_watcher` feature from this crate's `hot_reload` feature.
 
 
 ## 0.11.2

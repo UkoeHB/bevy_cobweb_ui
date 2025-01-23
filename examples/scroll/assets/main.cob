@@ -206,19 +206,13 @@ $blob_big = 600px
                         clipping:ClipXY flex_direction:Column justify_cross:FlexEnd justify_main:Center
                     }
 
-                    // Add an extra node to increase the shadow height since clipping Y makes it not cover the entire edge.
-                    "height_shim"
-                        AbsoluteNode{height:200% width:100% flex_direction:Column justify_cross:FlexEnd}
-
-                        "shadow"
-                            ControlMember // Control group with scroll base
-                            // Huge height to make the shadow stretch properly along the edge (it doesn't behave well w/
-                            // y clipping).
-                            FlexNode{height:4000% width:50%}
-                            // Note: this will be applied 1 frame late because 'start scroll' is detected after layout (and after
-                            // attributes are applied).)
-                            Multi<Static<DisplayControl>>[{value:Hide} {state:[Custom("HorizontalScroll")] value:Show}]
-                            NodeShadow{spread_radius:1px blur_radius:10px}
+                    "shadow"
+                        ControlMember // Control group with scroll base
+                        FlexNode{height:100% width:50%}
+                        // Note: this will be applied 1 frame late because 'start scroll' is detected after layout (and after
+                        // attributes are applied).)
+                        Multi<Static<DisplayControl>>[{value:Hide} {state:[Custom("HorizontalScroll")] value:Show}]
+                        NodeShadow{spread_radius:2px blur_radius:5px}
 
                 "gutter"
                     FlexNode{height:100% width:100% flex_direction:Column justify_cross:Center padding:{top:6px bottom:6px}}

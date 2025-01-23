@@ -46,8 +46,10 @@ editor = ["hot_reload", "colors", "widgets", "dep:foldhash"]
 # Enables Serialize/Deserialize on some built-in types.
 serde = ["bevy/serialize"]
 
-# Enables hot-reloading. Note that `bevy/embedded_watcher` does not watch assets embedded in dependencies.
-hot_reload = ["bevy/file_watcher", "bevy/embedded_watcher"]
+# Enables hot-reloading. Note that embedded files are not hot-reloaded by default due to perf
+# issues (see https://github.com/bevyengine/bevy/issues/17430). You'll need bevy's
+# `embedded_watcher` feature.
+hot_reload = ["bevy/file_watcher"]
 
 # Dev features. Enables hot-reloading.
 dev = ["hot_reload", "bevy/dynamic_linking"]
