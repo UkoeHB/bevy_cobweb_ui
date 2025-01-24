@@ -140,7 +140,7 @@ impl Instruction for RadioButton
                         break;
                     }
                     let Ok(parent) = parents.get(search_entity) else {
-                        tracing::warn!("failed selecting radio button {entity:?}; no RadioButtonManager found in ancestors");
+                        tracing::warn!("failed selecting radio button {entity:?}; no RadioGroup found in ancestors");
                         break;
                     };
                     search_entity = **parent;
