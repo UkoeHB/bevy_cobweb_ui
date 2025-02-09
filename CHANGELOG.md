@@ -1,5 +1,10 @@
 # Changelog
 
+## WIP
+
+- Fix `RepeatedGridVal(Count(1), x)` not being inferred from `GridVals` in COB files for non-builtin variants like `GridVal::MinContent`.
+
+
 ## 0.12.0
 
 ### Updates

@@ -200,7 +200,7 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
 
         match self {
             CobValue::Tuple(v) => visit_tuple_ref(&v.entries, visitor),
-            CobValue::Builtin(_) => {
+            CobValue::Builtin(_) | CobValue::Enum(_) => {
                 if name == "RepeatedGridVal" && len == 2 {
                     visit_raw_repeated_grid_val(self, visitor)
                 } else {

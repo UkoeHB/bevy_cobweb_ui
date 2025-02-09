@@ -131,7 +131,7 @@ impl scene_traits::SceneNodeBuilder for UiBuilder<'_, UiRoot>
 
     fn initialize_scene_node(ec: &mut EntityCommands)
     {
-        ec.insert(Node::default());
+        ec.try_insert(Node::default());
     }
 
     fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>
@@ -163,7 +163,7 @@ impl scene_traits::SceneNodeBuilder for UiBuilder<'_, Entity>
 
     fn initialize_scene_node(ec: &mut EntityCommands)
     {
-        ec.insert(Node::default());
+        ec.try_insert(Node::default());
     }
 
     fn scene_node_builder<'a>(commands: &'a mut Commands, entity: Entity) -> Self::Builder<'a>

@@ -522,6 +522,12 @@ fn builtins()
     );
     test_equivalence_lossy(
         a.world(),
+        "BuiltinRepeatedGridVal(MinContent)",
+        "BuiltinRepeatedGridVal(Count(1) MinContent)",
+        BuiltinRepeatedGridVal(RepeatedGridVal(GridValRepetition::Count(1), GridVal::MinContent)),
+    );
+    test_equivalence_lossy(
+        a.world(),
         "BuiltinRepeatedGridVal(1px)",
         "BuiltinRepeatedGridVal(Count(1) 1px)",
         BuiltinRepeatedGridVal(RepeatedGridVal(GridValRepetition::Count(1), GridVal::Px(1.0))),

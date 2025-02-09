@@ -27,11 +27,11 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn visit_raw_repeated_grid_val<'de, V>(builtin_val: &'de CobValue, visitor: V) -> CobResult<V::Value>
+pub(super) fn visit_raw_repeated_grid_val<'de, V>(maybe_gridval: &'de CobValue, visitor: V) -> CobResult<V::Value>
 where
     V: Visitor<'de>,
 {
-    let mut deserializer = RawRepeatedGridValSeqDeserializer::new(builtin_val);
+    let mut deserializer = RawRepeatedGridValSeqDeserializer::new(maybe_gridval);
     let seq = visitor.visit_seq(&mut deserializer)?;
     if deserializer.remaining == 0 {
         Ok(seq)
@@ -383,15 +383,15 @@ impl<'de> VariantAccess<'de> for GridValFractionVariantAccess
 
 struct RawRepeatedGridValSeqDeserializer<'de>
 {
-    builtin_val: &'de CobValue,
+    maybe_gridval: &'de CobValue,
     remaining: usize,
 }
 
 impl<'de> RawRepeatedGridValSeqDeserializer<'de>
 {
-    fn new(builtin_val: &'de CobValue) -> Self
+    fn new(maybe_gridval: &'de CobValue) -> Self
     {
-        RawRepeatedGridValSeqDeserializer { builtin_val, remaining: 2 }
+        RawRepeatedGridValSeqDeserializer { maybe_gridval, remaining: 2 }
     }
 }
 
@@ -422,7 +422,7 @@ impl<'de> SeqAccess<'de> for RawRepeatedGridValSeqDeserializer<'de>
             seed.deserialize(count_1).map(Some)
         } else if self.remaining == 1 {
             self.remaining = 0;
-            seed.deserialize(self.builtin_val).map(Some)
+            seed.deserialize(self.maybe_gridval).map(Some)
         } else {
             Ok(None)
         }
