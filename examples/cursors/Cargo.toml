@@ -8,7 +8,7 @@ default = ["dev"]
 dev = ["bevy_cobweb_ui/dev"]
 
 [dependencies]
-bevy = { version = "0.15", default-features = true }
+bevy.workspace = true
 bevy_cobweb = { version = "0.16" }
 bevy_cobweb_ui = { path = "../../", default-features = false }
 tracing = { version = "0.1" }

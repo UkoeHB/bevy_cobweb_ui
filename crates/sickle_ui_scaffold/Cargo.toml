@@ -14,7 +14,7 @@ disable-ui-context-placeholder-warn = []
 cob_sickle_math = { path = "../sickle_math", version = "0.6.0" }
 cob_sickle_macros = { path = "../sickle_macros", version = "0.6.0" }
 
-bevy = { version = "0.15", default-features = true }
+bevy.workspace = true
 dyn-clone = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] }
 smallvec = { version = "1.13" }

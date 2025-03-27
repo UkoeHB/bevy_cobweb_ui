@@ -9,7 +9,7 @@ dev = ["bevy_cobweb_ui/dev"]
 editor = ["bevy_cobweb_ui/editor"]
 
 [dependencies]
-bevy = { version = "0.15", default-features = true }
+bevy.workspace = true
 bevy_cobweb = { version = "0.16" }
 bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
 rand = { version = "0.8" }
