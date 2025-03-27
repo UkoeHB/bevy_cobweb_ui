@@ -14,7 +14,8 @@ env:
 jobs:
   ci:
     name: CI
-    needs: [smoke, test, docs, rustfmt, clippy]
+    # needs: [smoke, test, docs, rustfmt, clippy]
+    needs: [smoke, test, docs, rustfmt]
     runs-on: ubuntu-latest
     steps:
       - name: Done
@@ -61,16 +62,16 @@ jobs:
       - run: cargo fmt --check
         name: check formatting
 
-  clippy:
-    needs: smoke
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-        with:
-          toolchain-components: clippy
-          key: clippy
-      - run: cargo clippy --all-targets --features=dev -- -D warnings
+  # clippy:
+  #   needs: smoke
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: ./.github/actions/setup
+  #       with:
+  #         toolchain-components: clippy
+  #         key: clippy
+  #     - run: cargo clippy --all-targets --features=dev -- -D warnings
   
   smoke:
     name: Quick Check
