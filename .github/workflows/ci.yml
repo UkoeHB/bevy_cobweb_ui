@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: CI
+    needs: [smoke, test, docs, rustfmt, clippy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: exit 0
+
+  test:
+    needs: smoke
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, beta, nightly]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.rust != 'stable' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          toolchain: ${{ matrix.rust }}
+          key: test
+      - run: cargo test --features=dev
+
+  docs:
+    name: Docs
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          key: doc
+      - run: cargo doc --no-deps --document-private-items --features=dev
+        name: check documentation
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          toolchain: nightly
+          toolchain-components: rustfmt
+          key: fmt
+      - run: cargo fmt --check
+        name: check formatting
+
+  clippy:
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          toolchain-components: clippy
+          key: clippy
+      - run: cargo clippy --all-targets --features=dev -- -D warnings
+  
+  smoke:
+    name: Quick Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          key: check
+      - run: cargo check --all-targets --features=dev
