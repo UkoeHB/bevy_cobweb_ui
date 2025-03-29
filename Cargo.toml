@@ -2,7 +2,7 @@
 name = "bevy_cobweb_ui"
 description = "UI framework for the bevy game engine"
 authors = ["koe <ukoe@protonmail.com>"]
-version = "0.12.1"
+version = "0.12.2"
 edition = "2021"
 keywords = ["gamedev", "reactive", "ui"]
 license = "MIT OR Apache-2.0"
@@ -62,7 +62,7 @@ dev = ["hot_reload", "bevy/dynamic_linking"]
 
 [dependencies]
 bevy.workspace = true
-bevy_cobweb = { version = "0.16.0" }
+bevy_cobweb = { version = "0.16.2" }
 derive_more = { version = "1.0" }
 dyn-clone = { version = "1.0" }
 memchr = { version = "2.7" }
@@ -100,12 +100,9 @@ bevy = { version = "0.15", default-features = false, features = [
 
   # AssetEvents for AudioSource are not registered if no audio types are included
   # this causes some systems to panic because of missing SystemParam
-  "bevy/wav",
+  "wav",
 ] }
 tracing-subscriber = { version = "0.3" }
-
-[profile.dev.package."*"]
-opt-level = 2
 
 [workspace.dependencies.bevy]
 version = "0.15"
@@ -118,3 +115,6 @@ features = [
   "custom_cursor",
   "x11",
 ]
+
+[profile.dev.package."*"]
+opt-level = 2

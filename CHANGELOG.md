@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.2
+
+- Only depend on required bevy features instead of default features.
+- Add `track_change_detection` feature.
+
+
 ## 0.12.1
 
 - Fix `RepeatedGridVal(Count(1), x)` not being inferred from `GridVals` in COB files for non-builtin variants like `GridVal::MinContent`.
