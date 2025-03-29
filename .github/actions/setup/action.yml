@@ -1,0 +1,36 @@
+inputs:
+  toolchain:
+    description: rust toolchain to use
+    required: false
+    default: stable
+  toolchain-components:
+    description: additional rust toolchain components to install
+    required: false
+  key:
+    description: extra info to use as cache key
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index
+          ~/.cargo/registry/cache
+          ~/.cargo/git/db
+          target/
+        key: ${{ runner.os }}-cargo-${{ inputs.toolchain }}-${{ inputs.key }}-${{ hashFiles('Cargo.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-${{ inputs.toolchain }}-${{ inputs.key }}-
+          ${{ runner.os }}-cargo-${{ inputs.toolchain }}-
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: ${{ inputs.toolchain-components }}
+    - name: Install Dependencies (Linux)
+      if: ${{ runner.os == 'linux' }}
+      shell: bash
+      run: >
+        sudo apt-get update &&
+        sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
