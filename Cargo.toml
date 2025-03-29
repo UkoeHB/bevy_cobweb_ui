@@ -31,6 +31,12 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 # Default features.
 default = ["colors", "widgets"]
 
+# Corresponds to `bevy/track_change_detection`
+track_change_detection = [
+  "bevy/track_change_detection",
+  "bevy_cobweb/track_change_detection",
+]
+
 # Enables built-in colors.
 colors = []
 
