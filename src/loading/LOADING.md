@@ -25,15 +25,15 @@ For example, here's a file with one **`#scenes`** section:
 #scenes
 "ex"
     FlexNode{width:10px height:10px}
-    BackgroundColor{#229944}
+    BackgroundColor(#229944)
 ```
 
-There are six section types, all of which are optional and can be written in any order in a file:
+There are five section types, all of which are optional and can be written in any order in a file:
 
 - **`#manifest`**: Requests other COB files to be loaded, assigns *manifest keys*, and controls the global order that commands are applied.
 - **`#import`**: Pulls **`#defs`** sections from other files into the current file using their manifest keys, with an optional import alias.
-- **`#defs`**: Definitions of re-usable constants and scene macros.
-- **`#commands`**: Bevy commands that are applied when a COB file is initially loaded. COB commands are globally ordered based on the file load order specified in **`#manifest`** sections.
+- **`#defs`**: Defines re-usable constants and scene macros.
+- **`#commands`**: Lists Bevy commands that are applied when a COB file is initially loaded. COB commands are globally ordered based on the file load order specified in **`#manifest`** sections.
 - **`#scenes`**: Specifies scene hierarchies that can be spawned in-code as entity hierarchies. Scene nodes are composed of loadables (components and instructions).
 
 File extraction uses the following overall algorithm.
@@ -41,13 +41,13 @@ File extraction uses the following overall algorithm.
 1. First, **`#manifest`** and **`#import`** sections are extracted. Manifest files are loaded, and import entries are cached until the files they point to are loaded.
 1. Once all imports are available, **`#defs`** sections are extracted in the order the appear in-file. When extracting **`#defs`**, each definition that internally requests other defs is 'resolved' using definitions available up to that point (including imports and previous definitions from the file).
     - After defs are extracted, the extracted values (stacked on top of the file's own imports) can be imported to other files.
-1. Then all **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#defs`** values (including both imports and defs from the file). Commands are buffered in order to apply them in the correct order (see [below](#Commands-section)).
+1. All **`#commands`** sections are extracted in the order they appear in-file. Command values are immediately resolved using available **`#defs`** values (including both imports and defs from the file). Commands are buffered in order to apply them in the correct order (see [below](#Commands-section)).
 1. Finally, all **`#scenes`** sections are extracted in the order they appear in-file. Similar to commands, all scene node values are immediately resolved using available **`#defs`** values.
 
 
 ### Manifest section
 
-A manifest section is a sequence of 'file path : manifest key' pairs.
+A manifest section is a sequence of `file path : manifest key` pairs.
 
 For example:
 
@@ -70,7 +70,7 @@ The manifest key is used by import sections, and is also a shortcut that can be 
 
 ### Import section
 
-An import section is a sequence of 'manifest key : import alias' pairs.
+An import section is a sequence of `manifest key : import alias` pairs.
 
 For example:
 
@@ -83,12 +83,12 @@ widgets.slider as slider
 
 In this example, `home_menu` is given `_`, which means no import alias. Import aliases are prepended to all imported definitions, allowing you to 'namespace' definitions.
 
-For example, this crate has built-in constants, including the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`.
+For example, this crate includes built-in constants, such as the `builtin.colors.tailwind` file. Tailwind has a constant `$AMBER_500` that is imported to `builtin.colors` with the `tailwind` import alias. If you import `builtin.colors as colors` to your project, then the constant will be available with `$colors::tailwind::AMBER_500`.
 
 
 ### Defs section
 
-A definition allows data and pattern re-use within COB files. There are four kinds of definitions: constants, data macros, loadable macros, and scene macros.
+A definition allows data and pattern re-use within COB files. There are two kinds of definitions: constants and scene macros.
 
 **Constants**
 
@@ -108,14 +108,13 @@ A definition takes the form `${constant id} = {constant value}`.
 
 You 'request' a constant with `${alias path}{constand id}`. The alias path comes from importing constants from other files.
 
-Example (COB constants file):
+Example:
 ```rust
 // my_project/assets/constants.cob
 #defs
 $text = "Hello, World!"
 ```
 
-Example (COB main file):
 ```rust
 // my_project/assets/main.cob
 
@@ -151,7 +150,7 @@ MyStruct{$entries}
 
 **Scene macros**
 
-Scene macros allow 'scene fragements' to be copy-pasted into scenes. Scene fragments can be modified when inserting them to a scene.
+Scene macros allow 'scene fragments' to be copy-pasted into scenes. Scene fragments can be modified when inserting them to a scene.
 
 Example (COB):
 ```rust
@@ -380,9 +379,7 @@ impl Instruction for MyLoadable
 }
 ```
 
-The `revert` method on `Instruction` is used when hot-reloading an instruction. When a loadable is changed or removed from a node, then it will be reverted. After that, all of the nodes' loadables are re-applied in order. This two-step process allows best-effort state repair when complex mutations are hot reloaded.
-
-**Warning**: If a loadable contains `NaN`, then it will *always* appear changed when a file reloads, since we use `reflect_partial_eq` to detect changes.
+The `revert` method on `Instruction` is used when hot-reloading an instruction. When a loadable is changed or removed from a node, it will be reverted. After that, all of the nodes' loadables are re-applied in order. This two-step process allows best-effort state repair when complex mutations are hot reloaded.
 
 To load a full scene and edit it, you can use [`SpawnSceneExt::spawn_scene`](bevy_cobweb_ui::prelude::SpawnSceneExt::spawn_scene). This will spawn a hierarchy of nodes to match the hierarchy found in the specified scene tree. You can then edit those nodes with the [`SceneHandle`](bevy_cobweb_ui::prelude::SceneHandle) struct accessible in the `spawn_scene` callback.
 

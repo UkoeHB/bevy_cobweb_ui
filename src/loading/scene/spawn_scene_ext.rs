@@ -90,7 +90,7 @@ where
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Put this trait in a separate module so it doesn't pollute the `prelude`.
+// Put this trait in a separate module so it doesn't pollute the `prelude`.
 pub mod scene_traits
 {
     use bevy::ecs::system::EntityCommands;
@@ -99,7 +99,7 @@ pub mod scene_traits
     #[allow(unused_imports)]
     use crate::prelude::*;
 
-    /// Helper trait for loading a scene. See [`SceneRef`] and [`SpawnSceneExt::spawn_scene_simple`].
+    /// Helper trait for spawning a scene. See [`SceneRef`] and [`SpawnSceneExt::spawn_scene`].
     pub trait SceneNodeBuilder
     {
         /// The type returned by [`Self::scene_node_builder`].
