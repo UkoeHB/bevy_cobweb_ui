@@ -182,6 +182,8 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
             ec.with_children(|parent| {
                 new_entity = parent.spawn(bundle).id();
             });
+        } else {
+            tracing::debug!("ignoring spawn with UiBuilder<Entity>; parent entity {entity:?} does not exist");
         }
 
         self.commands().ui_builder(new_entity)

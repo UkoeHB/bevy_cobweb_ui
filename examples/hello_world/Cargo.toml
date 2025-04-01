@@ -10,7 +10,7 @@ dev = ["bevy_cobweb_ui/dev"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb = { version = "0.16" }
-bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
+bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors", "widgets"] }
 tracing = { version = "0.1" }
 
 serde = { version = "1.0" }

@@ -35,7 +35,7 @@ fn build_from_ref(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn spawn_scene_simple_impl<'b, T, C, R>(
+fn spawn_scene_impl<'b, T, C, R>(
     builder: &'b mut T,
     path: impl Into<SceneRef>,
     scene_builder: &'b mut SceneBuilderInner,
@@ -299,7 +299,7 @@ where
         C: for<'c> FnOnce(&mut SceneHandle<'c, <T as scene_traits::SceneNodeBuilder>::Builder<'c>>) -> R,
         R: CobwebResult,
     {
-        spawn_scene_simple_impl(&mut self.builder, path, self.scene_builder, callback);
+        spawn_scene_impl(&mut self.builder, path, self.scene_builder, callback);
         self
     }
 
@@ -395,7 +395,7 @@ where
         C: for<'a> FnOnce(&mut SceneHandle<'a, <T as scene_traits::SceneNodeBuilder>::Builder<'a>>) -> R,
         R: CobwebResult,
     {
-        spawn_scene_simple_impl(self, path, scene_builder, callback)
+        spawn_scene_impl(self, path, scene_builder, callback)
     }
 }
 

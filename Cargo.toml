@@ -110,10 +110,14 @@ default-features = false
 features = [
   "bevy_asset",
   "bevy_audio",
+  "bevy_text",
   "bevy_state",
+  "bevy_ui",
   "bevy_winit",
   "custom_cursor",
+  "default_font",
   "x11",
+  "wav"
 ]
 
 [profile.dev.package."*"]
