@@ -22,6 +22,7 @@ Check out the `bevy_cobweb_ui` [book](https://ukoehb.github.io/cobweb_book/), wh
 *(Optional)* Install syntax highlighting for the COB asset format.
 - [VSCode](https://github.com/UkoeHB/vscode-cob/)
 - [vim](https://github.com/UkoeHB/vim-cob/)
+- [neovim](https://github.com/FabricSoul/tree-sitter-cobweb)
 - [SublimeText](https://github.com/UkoeHB/sublime-cob/)
 - RustRover support: Clone the VSCode repository, and add as a TextMate bundle via Settings -> Editor -> TextMate Bundles -> Click on the plus sign and navigate to the cloned directory
 
