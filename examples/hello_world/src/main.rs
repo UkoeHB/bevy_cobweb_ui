@@ -7,7 +7,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
 {
     c.spawn(Camera2d);
     c.ui_root()
-        .spawn_scene_simple(("main.cob", "scene"), &mut s);
+        .spawn_scene_simple(("main.cobweb", "scene"), &mut s);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ fn main()
             ..default()
         }))
         .add_plugins(CobwebUiPlugin)
-        .load("main.cob")
+        .load("main.cobweb")
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }

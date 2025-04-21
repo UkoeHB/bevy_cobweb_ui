@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.3
+
+- Allow `.cobweb` file extensions in addition to `.cob`.
+
+
 ## 0.12.2
 
 - Only depend on required bevy features instead of default features.

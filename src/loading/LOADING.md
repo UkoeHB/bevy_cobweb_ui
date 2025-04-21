@@ -1,6 +1,6 @@
 ## Cobweb asset format (COB)
 
-COB is a minimalist custom asset format with the `.cob` file extension. This crate automatically loads, extracts, and manages hot-reloading for COB files.
+COB is a minimalist custom asset format with the `.cob`/`.cobweb` file extensions. This crate automatically loads, extracts, and manages hot-reloading for COB files.
 
 
 ### Loading files

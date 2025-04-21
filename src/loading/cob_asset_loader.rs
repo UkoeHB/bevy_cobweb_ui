@@ -79,7 +79,7 @@ impl AssetLoader for CobAssetLoader
 
     fn extensions(&self) -> &[&str]
     {
-        &[".cob"]
+        &[".cob", ".cobweb"]
     }
 }
 

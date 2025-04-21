@@ -28,7 +28,7 @@ impl CobFile
     pub fn try_new(file: impl AsRef<str>) -> Option<Self>
     {
         let file = file.as_ref();
-        if !file.ends_with(".cob") {
+        if !file.ends_with(".cob") && !file.ends_with(".cobweb") {
             return None;
         }
         Some(Self(Arc::from(file)))

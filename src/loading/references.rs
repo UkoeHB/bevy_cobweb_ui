@@ -27,7 +27,7 @@ impl SceneFile
 {
     /// Creates a new COB file reference from a file name.
     ///
-    /// If the file name does not include the `.cob` file extension, then it will be treated as a
+    /// If the file name does not include the `.cob` or `.cobweb` file extensions, then it will be treated as a
     /// manifest key.
     pub fn new(file: impl AsRef<str>) -> Self
     {
@@ -87,10 +87,11 @@ impl SceneFile
         }
     }
 
-    /// Returns `true` if the string ends in `.cob`.
+    /// Returns `true` if the string ends in `.cob` or `.cobweb`.
     pub fn str_is_file_path(string: impl AsRef<str>) -> bool
     {
-        string.as_ref().ends_with(".cob")
+        let str = string.as_ref();
+        str.ends_with(".cob") || str.ends_with(".cobweb")
     }
 
     /// Extends an existing scene file with a path extension.
