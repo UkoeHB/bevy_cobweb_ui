@@ -11,7 +11,7 @@ impl InstructionExt for UiBuilder<'_, Entity>
     fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut ec) = self.commands().get_entity(id) {
+        if let Ok(mut ec) = self.commands().get_entity(id) {
             ec.apply(instruction);
         }
         self
@@ -20,7 +20,7 @@ impl InstructionExt for UiBuilder<'_, Entity>
     fn revert<T: Instruction>(&mut self) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut ec) = self.commands().get_entity(id) {
+        if let Ok(mut ec) = self.commands().get_entity(id) {
             ec.revert::<T>();
         }
         self
@@ -102,7 +102,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn add_reactor<T: EntityWorldReactor>(&mut self, data: T::Local)
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.add_world_reactor::<T>(data);
         }
     }
@@ -110,7 +110,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn insert_reactive<T: ReactComponent>(&mut self, component: T) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.insert_reactive(component);
         }
         self
@@ -130,7 +130,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn despawn_on_event<T: Send + Sync + 'static>(&mut self) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.despawn_on_event::<T>();
         }
         self
@@ -139,7 +139,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn despawn_on_broadcast<T: Send + Sync + 'static>(&mut self) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.despawn_on_broadcast::<T>();
         }
         self
@@ -152,7 +152,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.reactor(triggers, reactor);
         }
         self
@@ -164,7 +164,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     ) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.update_on((), reactor);
         }
         self
@@ -177,7 +177,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
         C: IntoSystem<TargetId, R, M> + Send + Sync + 'static,
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.update_on(triggers, reactor);
         }
         self
@@ -194,7 +194,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     fn modify(&mut self, callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
     {
         let id = self.id();
-        if let Some(mut emut) = self.commands().get_entity(id) {
+        if let Ok(mut emut) = self.commands().get_entity(id) {
             emut.modify(callback);
         }
         self

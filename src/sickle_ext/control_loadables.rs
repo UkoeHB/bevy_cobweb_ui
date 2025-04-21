@@ -14,7 +14,7 @@ use crate::sickle::*;
 fn revert_attributes(
     In(entity): In<Entity>,
     mut c: Commands,
-    parents: Query<&Parent>,
+    parents: Query<&ChildOf>,
     entities: &Entities,
     mut control_maps: Query<&mut ControlMap>,
 )

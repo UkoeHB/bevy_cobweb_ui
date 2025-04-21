@@ -70,15 +70,8 @@ fn get_content_size(
     let view_children = children.get(view_entity).ok()?;
     view_children
         .iter()
-        .find_map(|child| shims.get(*child).ok())
+        .find_map(|child| shims.get(child).ok())
         .map(|shim_node| shim_node.size())
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
-fn update_interactions_hack(world: &mut World)
-{
-    world.syscall((), bevy::picking::focus::update_interactions);
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -186,7 +179,7 @@ impl MouseScrollEventTracker
             return false;
         }
 
-        let is_new = self.seen_entities.insert(event.entity());
+        let is_new = self.seen_entities.insert(event.target());
         is_new
     }
 
@@ -223,7 +216,7 @@ fn handle_mouse_scroll_event(
     }
 
     let mouse_scroll_unit = event.event().mouse_unit;
-    let hit_entity = event.entity();
+    let hit_entity = event.target();
 
     let Ok((base_entity, scroll_base, computed_base)) = bases.get(hit_entity) else { return };
 
@@ -313,7 +306,7 @@ fn apply_mouse_scroll(
     // TODO: propagation like this allows scrolls on scroll area children that 'hang outside' the scroll area to
     // send events erroneously
     for (entity, _) in ptr_interaction.iter() {
-        if let Some(mut ec) = c.get_entity(*entity) {
+        if let Ok(mut ec) = c.get_entity(*entity) {
             ec.trigger(MouseScrollEvent {
                 unconsumed_delta: mouse_scroll.delta,
                 mouse_unit: mouse_scroll.unit,
@@ -330,7 +323,7 @@ fn refresh_scroll_position(
     bases: Query<&ComputedScrollBase>,
     mut views: Query<(Entity, &mut ScrollPosition, &ComputedNode), With<ScrollView>>,
     shims: Query<&ComputedNode, With<ScrollShim>>,
-    parents: Query<&Parent>,
+    parents: Query<&ChildOf>,
     children: Query<&Children>,
     slider_vals: Reactive<SliderValue>,
 )
@@ -354,8 +347,8 @@ fn refresh_scroll_position(
                 break Some(res);
             }
 
-            let Ok(parent) = parents.get(current) else { break None };
-            current = **parent;
+            let Ok(child_of) = parents.get(current) else { break None };
+            current = child_of.parent();
         };
         let Some(computed_base) = res else { continue };
 
@@ -477,7 +470,7 @@ fn refresh_scroll_handles(
     mut c: Commands,
     ps: PseudoStateParam,
     mut iter_children: ResMut<IterChildren>,
-    parents: Query<&Parent>,
+    parents: Query<&ChildOf>,
     children: Query<&Children>,
     // ui_surface: Res<UiSurface>,
     bases: Query<(Entity, &ComputedScrollBase, &Node)>,
@@ -507,8 +500,8 @@ fn refresh_scroll_handles(
                 break Some(res);
             }
 
-            let Ok(parent) = parents.get(current) else { break None };
-            current = **parent;
+            let Ok(child_of) = parents.get(current) else { break None };
+            current = child_of.parent();
         };
         let Some((base_entity, computed_base, base_node)) = res else { continue };
 
@@ -582,16 +575,12 @@ struct RemoveDeadScrollBase;
 
 impl EntityCommand for RemoveDeadScrollBase
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, mut emut: EntityWorldMut)
     {
-        let Some(old_scroll_base) = world
-            .get_entity_mut(entity)
-            .ok()
-            .and_then(|mut emut| emut.take::<ComputedScrollBase>())
-        else {
-            return;
-        };
+        let Some(old_scroll_base) = emut.take::<ComputedScrollBase>() else { return };
 
+        // SAFETY: emut not used again.
+        let world = emut.into_world_mut();
         old_scroll_base.reapply_bars(world);
     }
 }
@@ -947,7 +936,7 @@ pub struct MouseScrollEvent
 
 impl Event for MouseScrollEvent
 {
-    type Traversal = &'static Parent;
+    type Traversal = &'static ChildOf;
     const AUTO_PROPAGATE: bool = true;
 }
 
@@ -987,8 +976,8 @@ impl Plugin for CobwebScrollPlugin
                 PreUpdate,
                 ScrollUpdateSet
                     .after(InputSystem)
-                    .in_set(PickSet::Focus)
-                    .after(update_interactions_hack)
+                    .in_set(PickSet::Hover)
+                    .after(bevy::picking::hover::update_interactions)
                     .before(bevy::picking::events::pointer_events),
             )
             .configure_sets(
@@ -1012,15 +1001,6 @@ impl Plugin for CobwebScrollPlugin
                 // We want the effects of picking events to override mouse scroll, so this is ordered before
                 // pointer events.
                 apply_mouse_scroll.in_set(ScrollUpdateSet),
-            )
-            // TODO: this is just a hack because bevy's update_interactions system runs after pointer_events. This
-            // system is fairly cheap to run. Revisit in bevy 0.15.1
-            .add_systems(
-                PreUpdate,
-                update_interactions_hack
-                    .in_set(PickSet::Focus)
-                    .after(bevy::picking::focus::update_focus)
-                    .before(bevy::picking::events::pointer_events),
             )
             .add_systems(
                 PostUpdate,

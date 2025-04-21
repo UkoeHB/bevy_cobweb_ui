@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use bevy::ecs::system::EntityCommands;
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy::reflect::{GetTypeRegistration, Reflectable, Typed};
 
@@ -55,13 +54,21 @@ impl InstructionExt for EntityCommands<'_>
 {
     fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
     {
-        self.queue(move |e: Entity, w: &mut World| instruction.apply(e, w));
+        self.queue(move |emut: EntityWorldMut| {
+            let e = emut.id();
+            let w = emut.into_world_mut();
+            instruction.apply(e, w)
+        });
         self
     }
 
     fn revert<T: Instruction>(&mut self) -> &mut Self
     {
-        self.queue(|e: Entity, w: &mut World| T::revert(e, w));
+        self.queue(move |emut: EntityWorldMut| {
+            let e = emut.id();
+            let w = emut.into_world_mut();
+            T::revert(e, w)
+        });
         self
     }
 }

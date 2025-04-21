@@ -46,7 +46,7 @@ impl Instruction for Checkbox
             let mut on_press = None;
             emut.world_scope(|world| {
                 let token = world.react(|rc| {
-                    rc.on_revokable(entity_event::<Pressed>(entity), move |mut c: Commands| {
+                    rc.on_revokable(entity_event::<PointerPressed>(entity), move |mut c: Commands| {
                         c.react().entity_event(entity, ToggleCheck);
                     })
                 });

@@ -113,7 +113,7 @@ impl<C: Component> HierarchyToPseudoState<C>
 
     fn should_update_hierary_pseudo_states(
         q_added_tags: Query<Entity, Added<C>>,
-        q_parent_changed_tags: Query<Entity, (With<C>, Changed<Parent>)>,
+        q_parent_changed_tags: Query<Entity, (With<C>, Changed<ChildOf>)>,
         q_removed_tags: RemovedComponents<C>,
     ) -> bool
     {
@@ -121,7 +121,7 @@ impl<C: Component> HierarchyToPseudoState<C>
     }
 
     fn post_update(
-        q_nodes: Query<(Entity, &Parent), With<C>>,
+        q_nodes: Query<(Entity, &ChildOf), With<C>>,
         q_children: Query<&Children>,
         mut q_pseudo_states: Query<&mut PseudoStates>,
         mut commands: Commands,
@@ -131,8 +131,8 @@ impl<C: Component> HierarchyToPseudoState<C>
         let parents: Vec<Entity> = q_nodes
             .iter()
             .fold(Vec::with_capacity(node_count), |mut acc, (_, p)| {
-                if !acc.contains(&p.get()) {
-                    acc.push(p.get());
+                if !acc.contains(&p.parent()) {
+                    acc.push(p.parent());
                 }
                 acc
             });
@@ -143,8 +143,8 @@ impl<C: Component> HierarchyToPseudoState<C>
                 children
                     .iter()
                     .fold(Vec::with_capacity(children.len()), |mut acc, child| {
-                        if q_nodes.get(*child).is_ok() {
-                            acc.push(*child);
+                        if q_nodes.get(child).is_ok() {
+                            acc.push(child);
                         }
 
                         acc

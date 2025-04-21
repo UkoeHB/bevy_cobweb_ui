@@ -65,7 +65,7 @@ struct RestorableOpacity
     text: SmallVec<[f32; 1]>,
     border_color: f32,
     background_color: f32,
-    box_shadow: f32,
+    box_shadows: SmallVec<[f32; 4]>,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -184,12 +184,19 @@ fn recursively_propagate_opacity_value(
             }
             if let Some(mut box_shadow) = maybe_box_shadow {
                 if first_traversal {
-                    restorable.box_shadow = color_alpha(&box_shadow.color);
+                    restorable.box_shadows =
+                        SmallVec::from_iter(box_shadow.iter().map(|bs| color_alpha(&bs.color)));
                 }
-                let computed = restorable.box_shadow * accumulated_opacity;
-                if (color_alpha(&box_shadow.color) - computed).abs() > ALPHA_ROUNDING_ERROR {
-                    set_color_alpha(&mut box_shadow.color, computed);
-                }
+                box_shadow
+                    .iter_mut()
+                    .zip(restorable.box_shadows.iter())
+                    .map(|(bs, opacity)| {
+                        let computed = opacity * accumulated_opacity;
+                        if (color_alpha(&bs.color) - computed).abs() > ALPHA_ROUNDING_ERROR {
+                            set_color_alpha(&mut bs.color, computed);
+                        }
+                    })
+                    .count();
             }
         };
 
@@ -221,7 +228,7 @@ fn recursively_propagate_opacity_value(
             writer,
             children_query,
             nodes,
-            *child,
+            child,
         );
     }
 }
@@ -329,9 +336,15 @@ fn restore_opacity(
             }
         }
         if let Some(mut box_shadow) = maybe_box_shadow {
-            if color_alpha(&box_shadow.color) != restorable.box_shadow {
-                set_color_alpha(&mut box_shadow.color, restorable.box_shadow);
-            }
+            box_shadow
+                .iter_mut()
+                .zip(restorable.box_shadows.iter())
+                .map(|(bs, opacity)| {
+                    if color_alpha(&bs.color) != *opacity {
+                        set_color_alpha(&mut bs.color, *opacity);
+                    }
+                })
+                .count();
         }
     }
 }

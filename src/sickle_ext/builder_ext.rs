@@ -50,7 +50,7 @@ impl NodeSpawningExt for UiBuilder<'_, Entity>
     ) -> UiBuilder<Entity>
     {
         let id = self.id();
-        if self.commands().get_entity(id).is_none() {
+        if self.commands().get_entity(id).is_err() {
             return self.reborrow();
         }
         let mut child = self.spawn(Node::default());

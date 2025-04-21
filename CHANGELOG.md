@@ -1,5 +1,12 @@
 # Changelog
 
+## WIP
+
+- Update to bevy v0.16.
+    - Remove `track_change_detection` feature.
+    - Rename `Pressed`/`Released` entity events to `PointerPressed`/`PointerReleased`. Note that now `Pressed`/`Released` are types published by bevy.
+    - Add `NodeShadows` loadable.
+
 ## 0.12.3
 
 - Allow `.cobweb` file extensions in addition to `.cob`.

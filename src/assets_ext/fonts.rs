@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::str::FromStr;
 
 use bevy::asset::AssetLoadFailedEvent;
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::LanguageIdentifier;

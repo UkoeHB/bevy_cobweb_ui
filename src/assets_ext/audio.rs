@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use bevy::asset::{AssetLoadFailedEvent, AssetPath};
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::{negotiate_languages, LanguageIdentifier, NegotiationStrategy};
@@ -201,7 +200,7 @@ impl AudioMap
                         .unwrap_or(main_asset_path);
 
                 // Look up or load the handle currently associated with the main audio.
-                // - If we found a the handle but it doesn't match the language we want, then load the audio fresh.
+                // - If we found a handle but it doesn't match the language we want, then load the audio fresh.
                 let handle = prev_localized_audios
                     .get(main_path)
                     .or_else(|| self.cached_audios.get(main_path))

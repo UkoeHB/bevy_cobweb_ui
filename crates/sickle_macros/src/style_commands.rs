@@ -494,7 +494,10 @@ fn to_ui_style_command_impl(style_attribute: &StyleAttribute) -> proc_macro2::To
 
     quote! {
         impl EntityCommand for #cmd_struct_ident {
-            fn apply(self, entity: Entity, world: &mut World) {
+            fn apply(self, mut e: EntityWorldMut)
+            {
+                let entity = e.id();
+                let world = e.into_world_mut();
                 #check_lock
                 #setter
             }

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use bevy::prelude::*;
 use bevy::window::SystemCursorIcon;
-use bevy::winit::cursor::{CursorIcon, CustomCursor};
+use bevy::winit::cursor::{CursorIcon, CustomCursor, CustomCursorImage};
 use smallvec::SmallVec;
 
 use crate::prelude::*;
@@ -22,11 +22,16 @@ impl CursorSource
     /// Returns a cursor if either the primary or temporary is set.
     ///
     /// Clears the temporary.
-    fn get_next_cursor(&mut self, img_map: &mut ImageMap, asset_server: &AssetServer) -> Option<CursorIcon>
+    fn get_next_cursor(
+        &mut self,
+        img_map: &mut ImageMap,
+        layout_map: &mut TextureAtlasLayoutMap,
+        asset_server: &AssetServer,
+    ) -> Option<CursorIcon>
     {
         let cursor = self.temporary.take().or_else(|| self.primary.clone())?;
 
-        Some(cursor.into_cursor_icon(img_map, asset_server)?)
+        Some(cursor.into_cursor_icon(img_map, layout_map, asset_server)?)
     }
 }
 
@@ -86,9 +91,10 @@ fn refresh_cursor_icon(
     mut source: ResMut<CursorSource>,
     windows: Query<(Entity, Option<&CursorIcon>), With<Window>>,
     mut img_map: ResMut<ImageMap>,
+    mut layout_map: ResMut<TextureAtlasLayoutMap>,
 )
 {
-    let next_cursor = source.get_next_cursor(&mut img_map, &asset_server);
+    let next_cursor = source.get_next_cursor(&mut img_map, &mut layout_map, &asset_server);
     for (window_entity, current_cursor) in windows.iter() {
         if current_cursor == next_cursor.as_ref() {
             continue;
@@ -122,7 +128,35 @@ pub enum LoadableCursor
         ///
         /// The image must be in 8 bit int or 32 bit float rgba. PNG images work well for this.
         image: Cow<'static, str>,
-        /// X and Y coordinates of the hotspot in pixels. The hotspot must be within the image bounds.
+        /// An optional texture atlas used to render the image.
+        #[reflect(default)]
+        texture_atlas: Option<TextureAtlasReference>,
+        /// Whether the image should be flipped along its x-axis.
+        ///
+        /// If true, the cursor's `hotspot` automatically flips along with the
+        /// image.
+        #[reflect(default)]
+        flip_x: bool,
+        /// Whether the image should be flipped along its y-axis.
+        ///
+        /// If true, the cursor's `hotspot` automatically flips along with the
+        /// image.
+        #[reflect(default)]
+        flip_y: bool,
+        /// An optional rectangle representing the region of the image to render,
+        /// instead of rendering the full image. This is an easy one-off alternative
+        /// to using a [`TextureAtlas`].
+        ///
+        /// When used with a [`TextureAtlas`], the rect is offset by the atlas's
+        /// minimal (top-left) corner position.
+        #[reflect(default)]
+        rect: Option<URect>,
+        /// X and Y coordinates of the hotspot in pixels. The hotspot must be within
+        /// the image bounds.
+        ///
+        /// If you are flipping the image using `flip_x` or `flip_y`, you don't need
+        /// to adjust this field to account for the flip because it is adjusted
+        /// automatically.
         hotspot: (u16, u16),
     },
     /// A URL to an image to use as the cursor.
@@ -141,27 +175,45 @@ pub enum LoadableCursor
 
 impl LoadableCursor
 {
-    pub fn into_cursor_icon(self, img_map: &mut ImageMap, asset_server: &AssetServer) -> Option<CursorIcon>
+    pub fn into_cursor_icon(
+        self,
+        img_map: &mut ImageMap,
+        layout_map: &mut TextureAtlasLayoutMap,
+        asset_server: &AssetServer,
+    ) -> Option<CursorIcon>
     {
         match self {
             Self::None => None,
-            Self::Custom { image, hotspot } => {
-                let handle = img_map.get_or_load(image, asset_server);
-                Some(CursorIcon::Custom(CustomCursor::Image { handle, hotspot }))
+            Self::Custom { image, texture_atlas, flip_x, flip_y, rect, hotspot } => {
+                let handle = img_map.get_or_load(image.as_ref(), asset_server);
+                let texture_atlas = texture_atlas.and_then(|a| {
+                    Some(TextureAtlas {
+                        layout: layout_map.get(image.as_ref(), &a.alias),
+                        index: a.index,
+                    })
+                });
+                Some(CursorIcon::Custom(CustomCursor::Image(CustomCursorImage {
+                    handle,
+                    texture_atlas,
+                    flip_x,
+                    flip_y,
+                    rect,
+                    hotspot,
+                })))
             }
             Self::Url { url, hotspot: _hotspot } => {
                 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
                 {
-                    Some(CursorIcon::Custom(CustomCursor::Url {
+                    Some(CursorIcon::Custom(CustomCursor::Url(CustomCursorUrl {
                         url: url.to_string(),
                         hotspot: _hotspot,
-                    }))
+                    })))
                 }
 
                 #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
                 {
-                    warn_once!("failed making cursor icon from URL {:?}; only WASM targets are supported, but the target \
-                        is not WASM; this warning only prints once", url);
+                    warn_once!("failed making cursor icon from URL {url:?}; only WASM targets are supported, but the target \
+                        is not WASM; this warning only prints once");
                     None
                 }
             }
@@ -193,8 +245,8 @@ impl Command for PrimaryCursor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Component that tries to set [`CursorIcon`] on all windows of the app every tick. Set the value to
-/// [`LoadableCursor::None`]` to disable it.
+/// Component that tries to set [`CursorIcon`] on all windows of the app every tick. Set the `cursor` field to
+/// [`LoadableCursor::None`] to disable it.
 ///
 /// To set a long-term 'primary cursor', use the [`PrimaryCursor`] command.
 ///

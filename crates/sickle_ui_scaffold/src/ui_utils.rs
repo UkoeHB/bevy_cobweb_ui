@@ -59,8 +59,8 @@ impl UiUtils
             .truncate();
 
         let mut current_ancestor = entity;
-        while let Some(parent) = world.get::<Parent>(current_ancestor) {
-            current_ancestor = parent.get();
+        while let Some(child_of) = world.get::<ChildOf>(current_ancestor) {
+            current_ancestor = child_of.parent();
 
             // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
             let style = world.get::<Node>(current_ancestor).unwrap();
@@ -151,8 +151,8 @@ impl UiUtils
             UiUtils::resolution_to_vec2(&UiUtils::get_primary_window(world).resolution)
         };
 
-        let parent_size = if let Some(parent) = world.get::<Parent>(entity) {
-            let parent_id = parent.get();
+        let parent_size = if let Some(child_of) = world.get::<ChildOf>(entity) {
+            let parent_id = child_of.parent();
             // Unsafe unwrap: If a UI element doesn't have a Node, we should panic!
             world
                 .get::<ComputedNode>(parent_id)
@@ -193,9 +193,9 @@ impl UiUtils
     pub fn find_render_target(entity: Entity, world: &World) -> Option<RenderTarget>
     {
         let mut current_ancestor = entity;
-        while let Some(parent) = world.get::<Parent>(current_ancestor) {
-            current_ancestor = parent.get();
-            if let Some(target_camera) = world.get::<TargetCamera>(current_ancestor) {
+        while let Some(child_of) = world.get::<ChildOf>(current_ancestor) {
+            current_ancestor = child_of.parent();
+            if let Some(target_camera) = world.get::<UiTargetCamera>(current_ancestor) {
                 let camera_entity = target_camera.0;
                 if let Some(camera) = world.get::<Camera>(camera_entity) {
                     return camera.target.clone().into();
@@ -221,8 +221,8 @@ impl UiUtils
                     UiUtils::resolution_to_vec2(&window.resolution)
                 }
             },
-            RenderTarget::Image(handle) => {
-                let Some(image) = world.resource::<Assets<Image>>().get(&handle) else {
+            RenderTarget::Image(target) => {
+                let Some(image) = world.resource::<Assets<Image>>().get(&target.handle) else {
                     return UiUtils::resolution_to_vec2(&UiUtils::get_primary_window(world).resolution);
                 };
 

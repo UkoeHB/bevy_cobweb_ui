@@ -169,8 +169,10 @@ pub struct ApplyCustomStaticStyleAttribute
 
 impl EntityCommand for ApplyCustomStaticStyleAttribute
 {
-    fn apply(self, id: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let id = e.id();
+        let world = e.into_world_mut();
         self.attr.apply(id, world);
     }
 }
@@ -185,8 +187,10 @@ pub struct ApplyResponsiveStyleAttribute
 
 impl EntityCommand for ApplyResponsiveStyleAttribute
 {
-    fn apply(self, id: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let id = e.id();
+        let world = e.into_world_mut();
         self.attr.apply(id, world, self.flux_interaction);
     }
 }
@@ -201,8 +205,10 @@ pub struct ApplyAnimatedStyleAttribute
 
 impl EntityCommand for ApplyAnimatedStyleAttribute
 {
-    fn apply(self, id: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let id = e.id();
+        let world = e.into_world_mut();
         self.attr.apply(id, world, self.current_state);
     }
 }

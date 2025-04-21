@@ -131,7 +131,7 @@ impl ControlMap
     pub(crate) fn reapply_labels(&mut self, c: &mut Commands)
     {
         for (label, entity) in self.entities.drain(..) {
-            let Some(mut ec) = c.get_entity(entity) else { continue };
+            let Ok(mut ec) = c.get_entity(entity) else { continue };
             ec.apply(ControlMember::from(label));
         }
     }
@@ -230,7 +230,7 @@ fn cleanup_control_maps(mut c: Commands, dying: Query<Entity, With<ControlMapDyi
 fn handle_node_attr_changes(
     mut c: Commands,
     mut maps: Query<(&mut ControlMap, Has<NodeAttributes>)>,
-    parents: Query<&Parent>,
+    parents: Query<&ChildOf>,
     mut removed_attrs: RemovedComponents<NodeAttributes>,
     node_attributes: Query<(Entity, Option<&ControlMember>), Changed<NodeAttributes>>,
 )
@@ -264,12 +264,12 @@ fn handle_node_attr_changes(
                     }
                 }
 
-                let Ok(parent) = parents.get(current_entity) else {
+                let Ok(child_of) = parents.get(current_entity) else {
                     tracing::warn!("failed finding control root for entity {:?} with {:?}; use ControlRoot",
                         entity, label);
                     break;
                 };
-                current_entity = **parent;
+                current_entity = child_of.parent();
             }
         } else {
             // Case: no control group
@@ -321,15 +321,11 @@ struct RemoveDeadControlMap;
 
 impl EntityCommand for RemoveDeadControlMap
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, mut emut: EntityWorldMut)
     {
-        let Some(mut old_control_map) = world
-            .get_entity_mut(entity)
-            .ok()
-            .and_then(|mut emut| emut.take::<ControlMap>())
-        else {
-            return;
-        };
+        let Some(mut old_control_map) = emut.take::<ControlMap>() else { return };
+
+        let world = emut.into_world_mut();
 
         for (label, label_entity) in old_control_map.remove_all_labels() {
             // Clean up dynamic style on all label entities in case they were targets for placement.
@@ -349,8 +345,11 @@ struct RefreshControlledStyles;
 
 impl EntityCommand for RefreshControlledStyles
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, emut: EntityWorldMut)
     {
+        let entity = emut.id();
+        let world = emut.into_world_mut();
+
         // Need to check this first due to borrow checker limitations (>.<).
         if world.get::<ControlMap>(entity).is_none() {
             return;

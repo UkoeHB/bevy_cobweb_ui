@@ -10,7 +10,7 @@ use crate::sickle::*;
 fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
 {
     let entity = event.entity();
-    let Some(mut ec) = c.get_entity(entity) else { return };
+    let Ok(mut ec) = c.get_entity(entity) else { return };
     ec.add_pseudo_state(PseudoState::Enabled);
     ec.remove_pseudo_state(PseudoState::Disabled);
     if let Ok(prev_flux) = fluxes.get(entity) {
@@ -25,7 +25,7 @@ fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Qu
 fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
 {
     let entity = event.entity();
-    let Some(mut ec) = c.get_entity(entity) else { return };
+    let Ok(mut ec) = c.get_entity(entity) else { return };
     ec.add_pseudo_state(PseudoState::Disabled);
     ec.remove_pseudo_state(PseudoState::Enabled);
     if let Ok(_) = fluxes.get(entity) {
@@ -38,7 +38,7 @@ fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: 
 fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Selected);
     });
 }
@@ -48,7 +48,7 @@ fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
 fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.remove_pseudo_state(PseudoState::Selected);
     });
 }
@@ -58,7 +58,7 @@ fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Checked);
     });
 }
@@ -68,7 +68,7 @@ fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
 fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.remove_pseudo_state(PseudoState::Checked);
     });
 }
@@ -91,7 +91,7 @@ fn detect_toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands,
 fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Open);
         ec.remove_pseudo_state(PseudoState::Closed);
     });
@@ -102,7 +102,7 @@ fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Closed);
         ec.remove_pseudo_state(PseudoState::Open);
     });
@@ -113,7 +113,7 @@ fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
 fn detect_fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.add_pseudo_state(PseudoState::Folded);
     });
 }
@@ -123,7 +123,7 @@ fn detect_fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
 fn detect_unfold_reactor(event: EntityEvent<Unfold>, mut c: Commands)
 {
     let entity = event.entity();
-    c.get_entity(entity).map(|mut ec| {
+    let _ = c.get_entity(entity).map(|mut ec| {
         ec.remove_pseudo_state(PseudoState::Folded);
     });
 }

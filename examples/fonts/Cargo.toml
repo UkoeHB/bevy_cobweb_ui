@@ -9,7 +9,7 @@ dev = ["bevy_cobweb_ui/dev"]
 
 [dependencies]
 bevy.workspace = true
-bevy_cobweb = { version = "0.16" }
+bevy_cobweb.workspace = true
 bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
 tracing = { version = "0.1" }
 

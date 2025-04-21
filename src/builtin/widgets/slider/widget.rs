@@ -128,7 +128,7 @@ impl ComputedSlider
 fn get_camera_scale_factor(
     ui_camera: &DefaultUiCamera,
     cameras: &Query<&Camera>,
-    maybe_slider_camera: Option<&TargetCamera>,
+    maybe_slider_camera: Option<&UiTargetCamera>,
 ) -> Option<f32>
 {
     let camera_entity = maybe_slider_camera
@@ -178,7 +178,7 @@ fn compute_value_for_target_position(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn slider_bar_ptr_down(
-    mut event: Trigger<Pointer<Down>>,
+    mut event: Trigger<Pointer<Pressed>>,
     mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
@@ -191,7 +191,7 @@ fn slider_bar_ptr_down(
         &ComputedNode,
         &GlobalTransform,
         &Children,
-        Option<&TargetCamera>,
+        Option<&UiTargetCamera>,
     )>,
     children_query: Query<&Children>,
     handles: Query<(Entity, &ComputedNode, &GlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
@@ -201,7 +201,7 @@ fn slider_bar_ptr_down(
     event.propagate(false);
 
     // Look up the slider and its handle.
-    let slider_entity = event.entity();
+    let slider_entity = event.target();
     let Ok((
         mut slider,
         mut slider_value,
@@ -316,7 +316,7 @@ fn slider_bar_drag(
         &ComputedNode,
         &GlobalTransform,
         &Children,
-        Option<&TargetCamera>,
+        Option<&UiTargetCamera>,
     )>,
     children_query: Query<&Children>,
     handles: Query<&ComputedNode, (With<SliderHandle>, Without<ComputedSlider>)>,
@@ -332,7 +332,7 @@ fn slider_bar_drag(
     }
 
     // Look up the slider.
-    let slider_entity = event.entity();
+    let slider_entity = event.target();
     let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
         sliders.get_mut(slider_entity)
     else {

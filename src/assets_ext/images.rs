@@ -3,7 +3,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use bevy::asset::{AssetLoadFailedEvent, AssetPath};
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::{negotiate_languages, LanguageIdentifier, NegotiationStrategy};

@@ -2,8 +2,8 @@ use core::hash::Hasher;
 use std::hash::BuildHasher;
 use std::sync::{Arc, Mutex};
 
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy::utils::hashbrown::HashMap;
 use foldhash::fast::FixedState;
 
 //-------------------------------------------------------------------------------------------------------------------

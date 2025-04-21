@@ -1,7 +1,6 @@
 use bevy::ecs::bundle::Bundle;
 use bevy::ecs::entity::Entity;
 use bevy::ecs::system::{Commands, EntityCommands, IntoObserverSystem};
-use bevy::hierarchy::BuildChildren;
 use bevy::prelude::*;
 
 use crate::*;
@@ -178,7 +177,7 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
         let mut new_entity = Entity::PLACEHOLDER;
 
         let entity = self.id();
-        if let Some(mut ec) = self.commands().get_entity(entity) {
+        if let Ok(mut ec) = self.commands().get_entity(entity) {
             ec.with_children(|parent| {
                 new_entity = parent.spawn(bundle).id();
             });
@@ -195,7 +194,7 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
     pub fn insert(&mut self, bundle: impl Bundle) -> &mut Self
     {
         let entity = self.id();
-        if let Some(mut ec) = self.commands().get_entity(entity) {
+        if let Ok(mut ec) = self.commands().get_entity(entity) {
             ec.insert(bundle);
         }
         self
@@ -207,7 +206,7 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
     pub fn named(&mut self, name: impl Into<String>) -> &mut Self
     {
         let entity = self.id();
-        if let Some(mut ec) = self.commands().get_entity(entity) {
+        if let Ok(mut ec) = self.commands().get_entity(entity) {
             ec.named(name);
         }
         self
@@ -219,7 +218,7 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
     pub fn observe<E: Event, B: Bundle, M>(&mut self, system: impl IntoObserverSystem<E, B, M>) -> &mut Self
     {
         let entity = self.id();
-        if let Some(mut ec) = self.commands().get_entity(entity) {
+        if let Ok(mut ec) = self.commands().get_entity(entity) {
             ec.observe(system);
         }
         self

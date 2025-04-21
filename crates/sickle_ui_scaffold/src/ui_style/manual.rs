@@ -21,8 +21,11 @@ macro_rules! check_lock {
 
 impl EntityCommand for SetZIndex
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "z index", LockableStyleAttribute::ZIndex);
         }
@@ -81,8 +84,11 @@ pub struct SetImage
 
 impl EntityCommand for SetImage
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "image", LockableStyleAttribute::Image);
         }
@@ -168,8 +174,11 @@ impl SetImageUncheckedExt for UiStyleUnchecked<'_>
 
 impl EntityCommand for SetImageTint
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "image tint", LockableStyleAttribute::ImageTint);
         }
@@ -190,8 +199,11 @@ impl EntityCommand for SetImageTint
 
 impl EntityCommand for SetImageFlip
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "image flip", LockableStyleAttribute::ImageFlip);
         }
@@ -216,8 +228,11 @@ impl EntityCommand for SetImageFlip
 
 impl EntityCommand for SetNodeImageMode
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(
                 world,
@@ -245,8 +260,11 @@ pub struct SetFluxInteractionEnabled
 
 impl EntityCommand for SetFluxInteractionEnabled
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(
                 world,
@@ -429,15 +447,18 @@ pub struct SetAbsolutePosition
 
 impl EntityCommand for SetAbsolutePosition
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "position: top", LockableStyleAttribute::Top);
             check_lock!(world, entity, "position: left", LockableStyleAttribute::Left);
         }
 
-        let offset = if let Some(parent) = world.get::<Parent>(entity) {
-            let Some(parent_node) = world.get::<ComputedNode>(parent.get()) else {
+        let offset = if let Some(child_of) = world.get::<ChildOf>(entity) {
+            let Some(parent_node) = world.get::<ComputedNode>(child_of.parent()) else {
                 warn!(
                     "Failed to set position on entity {}: Parent has no Node component!",
                     entity
@@ -446,7 +467,7 @@ impl EntityCommand for SetAbsolutePosition
             };
 
             let size = parent_node.unrounded_size();
-            let Some(parent_transform) = world.get::<GlobalTransform>(parent.get()) else {
+            let Some(parent_transform) = world.get::<GlobalTransform>(child_of.parent()) else {
                 warn!(
                     "Failed to set position on entity {}: Parent has no GlobalTransform component!",
                     entity
@@ -533,8 +554,11 @@ impl From<String> for FontSource
 // TODO: Update these once font / text handling improves
 impl EntityCommand for SetFont
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         let font = match self.font {
             FontSource::Path(path) => world.resource::<AssetServer>().load(path),
             FontSource::Handle(handle) => handle,
@@ -551,8 +575,11 @@ impl EntityCommand for SetFont
 
 impl EntityCommand for SetFontSize
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         let Some(mut text_font) = world.get_mut::<TextFont>(entity) else {
             warn!("Failed to set font on entity {}: No Text component found!", entity);
             return;
@@ -570,8 +597,11 @@ struct SetLockedAttribute
 
 impl EntityCommand for SetLockedAttribute
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if let Some(mut locked_attributes) = world.get_mut::<LockedStyleAttributes>(entity) {
             if self.locked {
                 if !locked_attributes.contains(self.attribute) {
@@ -622,8 +652,11 @@ impl SetLockedAttributeUncheckedExt for UiStyleUnchecked<'_>
 
 impl EntityCommand for SetScale
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "scale", LockableStyleAttribute::Scale);
         }
@@ -645,8 +678,11 @@ impl EntityCommand for SetScale
 
 impl EntityCommand for SetSize
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         if self.check_lock {
             check_lock!(world, entity, "size: width", LockableStyleAttribute::Width);
             check_lock!(world, entity, "size: height", LockableStyleAttribute::Height);

@@ -23,7 +23,7 @@ fn find_scene_child_pos(world: &World, parent_entity: Entity, new_index: usize) 
         .and_then(|c| {
             c.iter().position(|entity| {
                 // Skip children without loadables.
-                if !world.get::<HasLoadables>(*entity).is_some() {
+                if !world.get::<HasLoadables>(entity).is_some() {
                     return false;
                 }
 
@@ -521,13 +521,13 @@ impl SceneBuilderInner
             };
 
             // Recursively despawn the node.
-            let Some(ec) = c.get_entity(node_entity) else {
+            let Ok(mut ec) = c.get_entity(node_entity) else {
                 tracing::warn!("failed updating scene instance of {:?} for {:?} with hot-removed node {:?}, node \
                     {:?} was already despawned", scene, scene_instance.root_entity(), deleted, node_entity);
                 continue;
             };
 
-            ec.despawn_recursive();
+            ec.despawn();
         }
     }
 
@@ -543,8 +543,8 @@ impl SceneBuilderInner
 
         // Remove and despawn all instances.
         for dead_instance in scene_instances.drain(..) {
-            let Some(ec) = c.get_entity(dead_instance.root_entity()) else { continue };
-            ec.despawn_recursive();
+            let Ok(mut ec) = c.get_entity(dead_instance.root_entity()) else { continue };
+            ec.despawn();
         }
     }
 
@@ -659,7 +659,7 @@ impl SceneBuilderInner
 
             // Spawn entity.
             let mut ec = c.spawn_empty();
-            ec.set_parent(*parent_stack.last().unwrap());
+            ec.insert(ChildOf(*parent_stack.last().unwrap()));
 
             // Load the scene node to the entity.
             let node_ref = SceneRef { file: scene_ref.file.clone(), path: scene_node_path.clone() };

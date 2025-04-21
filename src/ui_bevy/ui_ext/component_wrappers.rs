@@ -471,7 +471,9 @@ impl AnimatedAttribute for NodeOutline
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Mirrors [`BoxShadow`], can be loaded as an instruction.
+/// Mirrors [`BoxShadow`] for constructing a single box shadow, can be loaded as an instruction.
+///
+/// See [`NodeShadows`] for multiple shadows.
 #[derive(Reflect, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct NodeShadow
@@ -520,11 +522,11 @@ impl Default for NodeShadow
     }
 }
 
-impl Into<BoxShadow> for NodeShadow
+impl Into<ShadowStyle> for NodeShadow
 {
-    fn into(self) -> BoxShadow
+    fn into(self) -> ShadowStyle
     {
-        BoxShadow {
+        ShadowStyle {
             color: self.color,
             x_offset: self.x_offset,
             y_offset: self.y_offset,
@@ -534,9 +536,9 @@ impl Into<BoxShadow> for NodeShadow
     }
 }
 
-impl From<BoxShadow> for NodeShadow
+impl From<ShadowStyle> for NodeShadow
 {
-    fn from(shadow: BoxShadow) -> Self
+    fn from(shadow: ShadowStyle) -> Self
     {
         Self {
             color: shadow.color,
@@ -566,7 +568,7 @@ impl Instruction for NodeShadow
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let shadow: BoxShadow = self.into();
+        let shadow = BoxShadow(vec![self.into()]);
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.insert(shadow);
         });
@@ -594,7 +596,91 @@ impl AnimatedAttribute for NodeShadow
 {
     fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
     {
-        let shadow = world.get::<BoxShadow>(entity).copied()?;
+        let shadow = world.get::<BoxShadow>(entity)?;
+        Some(shadow.get(0)?.clone().into())
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Mirrors [`BoxShadow`] for constructing multiple box shadows, can be loaded as an instruction.
+///
+/// See [`NodeShadow`] for single shadows.
+#[derive(Reflect, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct NodeShadows(pub Vec<NodeShadow>);
+
+impl Into<BoxShadow> for NodeShadows
+{
+    fn into(mut self) -> BoxShadow
+    {
+        BoxShadow(self.0.drain(..).map(|ns| ns.into()).collect())
+    }
+}
+
+impl From<BoxShadow> for NodeShadows
+{
+    fn from(mut shadow: BoxShadow) -> Self
+    {
+        Self(shadow.drain(..).map(|ss| ss.into()).collect())
+    }
+}
+
+impl From<&BoxShadow> for NodeShadows
+{
+    fn from(shadow: &BoxShadow) -> Self
+    {
+        Self(shadow.iter().cloned().map(|ss| ss.into()).collect())
+    }
+}
+
+impl Lerp for NodeShadows
+{
+    fn lerp(&self, mut to: Self, t: f32) -> Self
+    {
+        Self(
+            self.0
+                .iter()
+                .zip(to.0.drain(..))
+                .map(|(a, to)| a.lerp(to, t))
+                .collect(),
+        )
+    }
+}
+
+impl Instruction for NodeShadows
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let shadow: BoxShadow = self.into();
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(shadow);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<BoxShadow>();
+        });
+    }
+}
+
+impl StaticAttribute for NodeShadows
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+
+impl ResponsiveAttribute for NodeShadows {}
+impl AnimatedAttribute for NodeShadows
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let shadow = world.get::<BoxShadow>(entity)?;
         Some(shadow.into())
     }
 }
@@ -734,6 +820,7 @@ impl Plugin for UiComponentWrappersPlugin
             .register_animatable::<BrRadiusBottomRight>()
             .register_animatable::<NodeOutline>()
             .register_animatable::<NodeShadow>()
+            .register_animatable::<NodeShadows>()
             .register_responsive::<FocusPolicy>()
             .register_responsive::<ZIndex>()
             .register_responsive::<GlobalZIndex>()

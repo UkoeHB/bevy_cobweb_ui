@@ -1,6 +1,6 @@
 use bevy::ecs::system::EntityCommands;
+use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 use cob_sickle_math::Lerp;
 
 use crate::*;
@@ -115,7 +115,7 @@ impl LockedStyleAttributes
     /// Creates a new empty set
     pub fn new() -> Self
     {
-        Self(HashSet::<LockableStyleAttribute>::new())
+        Self(HashSet::<LockableStyleAttribute>::default())
     }
 
     /// Creates a new set from the provided set of [`LockableStyleAttribute`]s

@@ -51,11 +51,17 @@ where
     // Spawn either a child or a raw entity to be the scene's root node.
     let root_entity = builder
         .scene_parent_entity()
-        .map(|parent| builder.commands().spawn_empty().set_parent(parent).id())
+        .map(|parent| {
+            builder
+                .commands()
+                .spawn_empty()
+                .insert(ChildOf(parent))
+                .id()
+        })
         .unwrap_or_else(|| builder.commands().spawn_empty().id());
 
     // Avoid panicking if the parent is invalid.
-    if builder.commands().get_entity(root_entity).is_none() {
+    if builder.commands().get_entity(root_entity).is_err() {
         tracing::warn!("failed loading scene at {:?}; parent {root_entity:?} does not exist", path);
         return builder;
     }

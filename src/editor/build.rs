@@ -197,7 +197,7 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
             }
 
             // Clean up existing children.
-            c.entity(base_entity).despawn_descendants();
+            c.entity(base_entity).despawn_related::<Children>();
 
             // Look up file in editor to get file data.
             let Some(file_data) = editor.get_file(&file) else { return };
@@ -268,12 +268,12 @@ fn build_file_view(In((base_entity, file)): In<(Entity, CobFile)>, mut c: Comman
 
 fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity, With<EditorCamera>>)
 {
-    let camera_entity = camera.single();
+    let camera_entity = camera.single().unwrap();
     let scene = ("editor.frame", "base");
 
     c.ui_root().spawn_scene(scene, &mut s, |h| {
         // Editor is in a separate window.
-        h.insert(TargetCamera(camera_entity));
+        h.insert(UiTargetCamera(camera_entity));
 
         // Get content entity.
         let content_entity = h.get("content").id();
@@ -298,7 +298,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                     **selection = maybe_file.clone();
 
                     // Clean up old content.
-                    c.entity(content_entity).despawn_descendants();
+                    c.entity(content_entity).despawn_related::<Children>();
 
                     // Spawn new content.
                     let Some(file) = maybe_file else { return };
@@ -315,7 +315,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                     selection: Res<EditorFileSelection>//
                 | {
                     // Despawn current options.
-                    c.entity(dropdown_entity).despawn_descendants();
+                    c.entity(dropdown_entity).despawn_related::<Children>();
 
                     // Add empty entry at the top. Pressing closes the dropdown.
                     let mut builder = c.ui_builder(dropdown_entity);
@@ -369,7 +369,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
             h.on_close(
                 move |mut c: Commands, mut s: SceneBuilder, selection: Res<EditorFileSelection>| {
                     // Despawn current options.
-                    c.entity(dropdown_entity).despawn_descendants();
+                    c.entity(dropdown_entity).despawn_related::<Children>();
 
                     // Spawn single option for the selected file.
                     c.ui_builder(dropdown_entity).spawn_scene(
@@ -465,8 +465,8 @@ fn refresh_editor_window(
     mut editor_win: Query<&mut Window, (With<EditorWindow>, Without<PrimaryWindow>)>,
 )
 {
-    let primary_window = primary_win.single();
-    let mut editor_window = editor_win.single_mut();
+    let primary_window = primary_win.single().unwrap();
+    let mut editor_window = editor_win.single_mut().unwrap();
 
     // Check if the editor's position needs to change.
     // TODO: incorporate MacOS 'content area' to avoid overlapping with the dock when on left side
@@ -520,7 +520,7 @@ impl Plugin for CobEditorBuildPlugin
         let mut query = app
             .world_mut()
             .query_filtered::<&Window, With<PrimaryWindow>>();
-        let primary_window = query.single(app.world());
+        let primary_window = query.single(app.world()).unwrap();
         let initial_height = primary_window.resolution.size().y;
 
         // Make editor window.

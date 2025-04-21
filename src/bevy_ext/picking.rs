@@ -4,9 +4,9 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction that inserts a [`PickingBehavior`] component to the entity.
+/// Instruction that inserts a [`Pickable`] component to the entity.
 ///
-/// Defaults to [`Self::Pass`], which matches the default behavior when there is no `PickingBehavior` component.
+/// Defaults to [`Self::Pass`], which matches the default behavior when there is no `Pickable` component.
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
@@ -26,22 +26,22 @@ pub enum Picking
     Sink,
 }
 
-impl Into<PickingBehavior> for Picking
+impl Into<Pickable> for Picking
 {
-    fn into(self) -> PickingBehavior
+    fn into(self) -> Pickable
     {
         match self {
-            Self::Ignore => PickingBehavior { should_block_lower: false, is_hoverable: false },
-            Self::Pass => PickingBehavior { should_block_lower: false, is_hoverable: true },
-            Self::Block => PickingBehavior { should_block_lower: true, is_hoverable: false },
-            Self::Sink => PickingBehavior { should_block_lower: true, is_hoverable: true },
+            Self::Ignore => Pickable { should_block_lower: false, is_hoverable: false },
+            Self::Pass => Pickable { should_block_lower: false, is_hoverable: true },
+            Self::Block => Pickable { should_block_lower: true, is_hoverable: false },
+            Self::Sink => Pickable { should_block_lower: true, is_hoverable: true },
         }
     }
 }
 
-impl From<PickingBehavior> for Picking
+impl From<Pickable> for Picking
 {
-    fn from(behavior: PickingBehavior) -> Self
+    fn from(behavior: Pickable) -> Self
     {
         match (behavior.should_block_lower, behavior.is_hoverable) {
             (false, false) => Self::Ignore,
@@ -57,14 +57,14 @@ impl Instruction for Picking
     fn apply(self, entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        let behavior: PickingBehavior = self.into();
+        let behavior: Pickable = self.into();
         emut.insert(behavior);
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-        emut.remove::<PickingBehavior>();
+        emut.remove::<Pickable>();
     }
 }
 

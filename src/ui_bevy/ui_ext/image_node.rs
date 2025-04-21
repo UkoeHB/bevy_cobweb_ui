@@ -14,7 +14,7 @@ fn insert_ui_image(
     layout_map: Res<TextureAtlasLayoutMap>,
 )
 {
-    let Some(mut ec) = commands.get_entity(entity) else { return };
+    let Ok(mut ec) = commands.get_entity(entity) else { return };
 
     // Extract
     let content_size = match img.size {

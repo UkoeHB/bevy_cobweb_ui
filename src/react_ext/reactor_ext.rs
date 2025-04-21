@@ -262,7 +262,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     {
         let entity = self.id();
         self.on_event::<T>().r(move |mut c: Commands| {
-            c.get_entity(entity).map(|e| e.despawn_recursive());
+            let _ = c.get_entity(entity).map(|mut e| e.despawn());
         });
         self
     }
@@ -271,7 +271,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     {
         let entity = self.id();
         self.react().once(broadcast::<T>(), move |mut c: Commands| {
-            c.get_entity(entity).map(|e| e.despawn_recursive());
+            let _ = c.get_entity(entity).map(|mut e| e.despawn());
         });
         self
     }
@@ -335,7 +335,7 @@ impl UiReactEntityCommandsExt for EntityCommands<'_>
     fn modify(&mut self, mut callback: impl FnMut(EntityCommands) + Send + Sync + 'static) -> &mut Self
     {
         self.update_on((), move |id: TargetId, mut c: Commands| {
-            let Some(ec) = c.get_entity(*id) else { return };
+            let Ok(ec) = c.get_entity(*id) else { return };
             (callback)(ec)
         })
     }

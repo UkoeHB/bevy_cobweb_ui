@@ -120,7 +120,7 @@ impl Instruction for RadioButton
         // Add handlers.
         let press_token = world.react(|rc| {
             rc.on_revokable(
-                entity_event::<Pressed>(entity),
+                entity_event::<PointerPressed>(entity),
                 move |mut c: Commands, states: PseudoStateParam| {
                     states.try_select(&mut c, entity);
                 },
@@ -129,7 +129,7 @@ impl Instruction for RadioButton
 
         let select_token = world.react(|rc| rc.on_revokable(
             entity_event::<Select>(entity),
-            move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>, parents: Query<&Parent>| {
+            move |mut c: Commands, mut managers: Query<&mut RadioButtonManager>, parents: Query<&ChildOf>| {
                 // Search for nearest manager parent to update the selected button.
                 // - We assume this is fairly cheap and low frequency, allowing us to avoid caching the RadioButtonManager
                 // entity, which would make things more complicated.
@@ -139,11 +139,11 @@ impl Instruction for RadioButton
                         manager.swap_selected(&mut c, entity);
                         break;
                     }
-                    let Ok(parent) = parents.get(search_entity) else {
+                    let Ok(child_of) = parents.get(search_entity) else {
                         tracing::warn!("failed selecting radio button {entity:?}; no RadioGroup found in ancestors");
                         break;
                     };
-                    search_entity = **parent;
+                    search_entity = child_of.parent();
                 }
             }
         ));
@@ -165,8 +165,8 @@ impl Instruction for RadioButton
                 }
                 break;
             }
-            let Some(parent) = world.get::<Parent>(search_entity) else { break };
-            search_entity = **parent;
+            let Some(child_of) = world.get::<ChildOf>(search_entity) else { break };
+            search_entity = child_of.parent();
         }
 
         // Cleanup.

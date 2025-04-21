@@ -34,10 +34,10 @@ fn flux_ui_events(
                 c.react().entity_event(entity, PointerLeave);
             }
             FluxInteraction::Pressed => {
-                c.react().entity_event(entity, Pressed);
+                c.react().entity_event(entity, PointerPressed);
             }
             FluxInteraction::Released => {
-                c.react().entity_event(entity, Released);
+                c.react().entity_event(entity, PointerReleased);
             }
             FluxInteraction::PressCanceled => {
                 c.react().entity_event(entity, PressCanceled);
@@ -62,11 +62,11 @@ pub struct PointerLeave;
 /// Entity event emitted when [`FluxInteraction::Pressed`] is set on an entity.
 ///
 /// Not emitted if the entity has [`PseudoState::Disabled`].
-pub struct Pressed;
+pub struct PointerPressed;
 /// Entity event emitted when [`FluxInteraction::Released`] is set on an entity.
 ///
 /// Not emitted if the entity has [`PseudoState::Disabled`].
-pub struct Released;
+pub struct PointerReleased;
 /// Entity event emitted when [`FluxInteraction::PressCanceled`] is set on an entity.
 ///
 /// Not emitted if the entity has [`PseudoState::Disabled`].
@@ -95,17 +95,17 @@ pub trait UiInteractionExt
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self;
 
-    /// Adds a reactor to a [`Pressed`] entity event.
+    /// Adds a reactor to a [`PointerPressed`] entity event.
     ///
-    /// Equivalent to `entity_builder.on_event::<Pressed>().r(callback)`.
+    /// Equivalent to `entity_builder.on_event::<PointerPressed>().r(callback)`.
     fn on_pressed<R: CobwebResult, M>(
         &mut self,
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
     ) -> &mut Self;
 
-    /// Adds a reactor to a [`Released`] entity event.
+    /// Adds a reactor to a [`PointerReleased`] entity event.
     ///
-    /// Equivalent to `entity_builder.on_event::<Released>().r(callback)`.
+    /// Equivalent to `entity_builder.on_event::<PointerReleased>().r(callback)`.
     fn on_released<R: CobwebResult, M>(
         &mut self,
         callback: impl IntoSystem<(), R, M> + Send + Sync + 'static,
@@ -148,7 +148,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
     ) -> &mut Self
     {
         self.apply(Interactive);
-        self.on_event::<Pressed>().r(callback);
+        self.on_event::<PointerPressed>().r(callback);
         self
     }
 
@@ -158,7 +158,7 @@ impl UiInteractionExt for UiBuilder<'_, Entity>
     ) -> &mut Self
     {
         self.apply(Interactive);
-        self.on_event::<Released>().r(callback);
+        self.on_event::<PointerReleased>().r(callback);
         self
     }
 

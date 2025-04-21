@@ -1,3 +1,4 @@
+use bevy::ecs::component::Mutable;
 use bevy::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -5,7 +6,10 @@ use bevy::prelude::*;
 /// Searches for a component in the ancestors of an entity.
 ///
 /// Does not look at the entity itself for the component.
-pub fn get_ancestor_mut<T: Component>(world: &mut World, entity: Entity) -> Option<(Entity, &mut T)>
+pub fn get_ancestor_mut<T: Component<Mutability = Mutable>>(
+    world: &mut World,
+    entity: Entity,
+) -> Option<(Entity, &mut T)>
 {
     get_ancestor_mut_filtered(world, entity, |_| true)
 }
@@ -17,7 +21,7 @@ pub fn get_ancestor_mut<T: Component>(world: &mut World, entity: Entity) -> Opti
 /// Filters encountered components with the given callback.
 ///
 /// Does not look at the entity itself for the component.
-pub fn get_ancestor_mut_filtered<T: Component>(
+pub fn get_ancestor_mut_filtered<T: Component<Mutability = Mutable>>(
     world: &mut World,
     entity: Entity,
     filter: impl Fn(&T) -> bool,
@@ -25,8 +29,8 @@ pub fn get_ancestor_mut_filtered<T: Component>(
 {
     let mut current = entity;
     let mut found = false;
-    while let Some(parent) = world.get::<Parent>(current) {
-        current = parent.get();
+    while let Some(child_of) = world.get::<ChildOf>(current) {
+        current = child_of.parent();
         let Some(component) = world.get::<T>(current) else { continue };
         if !(filter)(&component) {
             continue;
@@ -74,7 +78,7 @@ pub fn iter_descendants_filtered(
         // Iterate into children.
         if let Some(children) = world.get::<Children>(entity) {
             for child in children.iter() {
-                iter_impl(world, *child, filter, callback);
+                iter_impl(world, child, filter, callback);
             }
         }
     }

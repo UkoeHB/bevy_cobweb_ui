@@ -36,7 +36,7 @@ fn insert_text_line(
     }
 
     // Add text to entity.
-    let Some(mut ec) = commands.get_entity(entity) else { return };
+    let Ok(mut ec) = commands.get_entity(entity) else { return };
     ec.try_insert((
         Text(line.text),
         TextLayout { justify: line.justify, linebreak: line.linebreak },
@@ -178,7 +178,7 @@ impl Instruction for TextLineSize
             (entity, self.0),
             |In((id, size)): In<(Entity, f32)>, mut c: Commands, mut editor: TextEditor| {
                 let Some((_, text_font, _)) = editor.root(id) else {
-                    if let Some(mut ec) = c.get_entity(id) {
+                    if let Ok(mut ec) = c.get_entity(id) {
                         ec.try_insert((
                             Text(TextLine::default_text()),
                             TextFont { font_size: size, ..default() },
@@ -227,7 +227,7 @@ impl Instruction for TextLineColor
             (entity, self.0),
             |In((id, color)): In<(Entity, Color)>, mut c: Commands, mut editor: TextEditor| {
                 let Some((_, _, text_color)) = editor.root(id) else {
-                    if let Some(mut ec) = c.get_entity(id) {
+                    if let Ok(mut ec) = c.get_entity(id) {
                         ec.try_insert((Text(TextLine::default_text()), TextColor(color)));
                     }
                     return;

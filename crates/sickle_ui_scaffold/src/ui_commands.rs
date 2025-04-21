@@ -1,11 +1,10 @@
-use bevy::core::Name;
-use bevy::ecs::component::ComponentInfo;
+use bevy::ecs::component::{ComponentInfo, Mutable};
 use bevy::ecs::entity::Entity;
+use bevy::ecs::error::Result;
 use bevy::ecs::system::{Commands, EntityCommand, EntityCommands};
 use bevy::ecs::world::World;
-use bevy::hierarchy::Children;
 use bevy::log::{info, warn};
-use bevy::prelude::{Color, Component, EntityWorldMut, Mut, Text, TextColor, TextFont};
+use bevy::prelude::{Children, Color, Component, EntityWorldMut, Mut, Name, Text, TextColor, TextFont};
 use bevy::state::state::{FreelyMutableState, NextState, States};
 
 use crate::*;
@@ -17,7 +16,7 @@ struct SetText
     color: Color,
 }
 
-fn get_component_or_warn<T: Component>(entity: Entity, world: &mut World) -> Option<Mut<T>>
+fn get_component_or_warn<T: Component<Mutability = Mutable>>(entity: Entity, world: &mut World) -> Option<Mut<T>>
 {
     let Some(comp) = world.get_mut::<T>(entity) else {
         warn!("Expected component not found on entity {}!", entity);
@@ -29,8 +28,11 @@ fn get_component_or_warn<T: Component>(entity: Entity, world: &mut World) -> Opt
 
 impl EntityCommand for SetText
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         let Some(mut text) = get_component_or_warn::<Text>(entity, world) else {
             return;
         };
@@ -75,8 +77,11 @@ struct UpdateText
 
 impl EntityCommand for UpdateText
 {
-    fn apply(self, entity: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut)
     {
+        let entity = e.id();
+        let world = e.into_world_mut();
+
         let Some(mut text) = world.get_mut::<Text>(entity) else {
             warn!("Failed to set text on entity {}: No Text component found!", entity);
             return;
@@ -112,10 +117,13 @@ struct LogHierarchy
     component_filter: Option<fn(ComponentInfo) -> bool>,
 }
 
-impl EntityCommand for LogHierarchy
+impl EntityCommand<Result> for LogHierarchy
 {
-    fn apply(self, id: Entity, world: &mut World)
+    fn apply(self, e: EntityWorldMut) -> Result
     {
+        let id = e.id();
+        let world = e.into_world_mut();
+
         let mut children_ids: Vec<Entity> = Vec::new();
         if let Some(children) = world.get::<Children>(id) {
             children_ids = children.iter().map(|child| *child).collect();
@@ -123,7 +131,7 @@ impl EntityCommand for LogHierarchy
 
         let filter = self.component_filter;
         let debug_infos: Vec<_> = world
-            .inspect_entity(id)
+            .inspect_entity(id)?
             .into_iter()
             .filter(|component_info| {
                 if let Some(filter) = filter {
@@ -191,9 +199,10 @@ impl EntityCommand for LogHierarchy
                     trace_levels,
                     component_filter: self.component_filter,
                 }
-                .apply(child, world);
+                .apply(world.get_entity_mut(child)?)?;
             }
         }
+        Ok(())
     }
 }
 
@@ -274,13 +283,13 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
 {
     fn lock_stopwatch(&mut self, owner: &'static str, duration: StopwatchLock) -> &mut Self
     {
-        self.queue(move |entity, world: &mut World| {
-            if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
+        self.queue(move |mut emut: EntityWorldMut| {
+            if let Some(mut lock) = emut.get_mut::<FluxInteractionStopwatchLock>() {
                 lock.lock(owner, duration);
             } else {
                 let mut lock = FluxInteractionStopwatchLock::new();
                 lock.lock(owner, duration);
-                world.entity_mut(entity).insert(lock);
+                emut.insert(lock);
             }
         });
         self
@@ -288,8 +297,8 @@ impl ManageFluxInteractionStopwatchLockExt for EntityCommands<'_>
 
     fn try_release_stopwatch_lock(&mut self, lock_of: &'static str) -> &mut Self
     {
-        self.queue(move |entity, world: &mut World| {
-            if let Some(mut lock) = world.get_mut::<FluxInteractionStopwatchLock>(entity) {
+        self.queue(move |mut emut: EntityWorldMut| {
+            if let Some(mut lock) = emut.get_mut::<FluxInteractionStopwatchLock>() {
                 lock.release(lock_of);
             }
         });
@@ -315,9 +324,7 @@ impl ManagePseudoStateExt for EntityCommands<'_>
 {
     fn add_pseudo_state(&mut self, state: PseudoState) -> &mut Self
     {
-        self.queue(move |entity, world: &mut World| {
-            let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-            let emut: &mut EntityWorldMut<'_> = &mut emut;
+        self.queue(move |mut emut: EntityWorldMut| {
             emut.add_pseudo_state(state);
         });
         self
@@ -325,9 +332,7 @@ impl ManagePseudoStateExt for EntityCommands<'_>
 
     fn remove_pseudo_state(&mut self, state: PseudoState) -> &mut Self
     {
-        self.queue(move |entity, world: &mut World| {
-            let Ok(mut emut) = world.get_entity_mut(entity) else { return };
-            let emut: &mut EntityWorldMut<'_> = &mut emut;
+        self.queue(move |mut emut: EntityWorldMut| {
             emut.remove_pseudo_state(state);
         });
 

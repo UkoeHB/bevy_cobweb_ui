@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use bevy::ecs::world::Command;
 use bevy::prelude::*;
 #[cfg(feature = "hot_reload")]
 use bevy_cobweb::prelude::*;
@@ -330,7 +329,7 @@ impl SceneBuffer
     )
     {
         // Initialize
-        let Some(mut ec) = c.get_entity(subscription.entity) else { return };
+        let Ok(mut ec) = c.get_entity(subscription.entity) else { return };
         (subscription.initializer.initializer)(&mut ec);
 
         // Queue loadables

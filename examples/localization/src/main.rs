@@ -28,7 +28,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         manifest: Res<LocalizationManifest>//
                     | {
                         // Despawn existing buttons.
-                        c.entity(*id).despawn_descendants();
+                        c.entity(*id).despawn_related::<Children>();
 
                         // Spawn new buttons for everything in the manifest.
                         let mut n = c.ui_builder(*id);

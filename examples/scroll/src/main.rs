@@ -42,17 +42,17 @@ fn check_firefox_timer(
     time: Res<Time>,
     mut c: Commands,
     ps: PseudoStateParam,
-    mut timer: Query<(Entity, &Parent, &mut FirefoxTimer)>,
+    mut timer: Query<(Entity, &ChildOf, &mut FirefoxTimer)>,
 )
 {
-    let Ok((scrollbar_entity, gutter_entity, mut timer)) = timer.get_single_mut() else { return };
+    let Ok((scrollbar_entity, gutter_entity, mut timer)) = timer.single_mut() else { return };
     timer.0.tick(time.delta());
 
     if timer.0.finished() {
         c.entity(scrollbar_entity).remove::<FirefoxTimer>();
         c.react().entity_event(scrollbar_entity, Disable);
-        ps.try_remove(&mut c, **gutter_entity, IS_SCROLLING_PARAM.clone());
-        ps.try_remove(&mut c, **gutter_entity, HOVER_ACTIVATED_PARAM.clone());
+        ps.try_remove(&mut c, gutter_entity.parent(), IS_SCROLLING_PARAM.clone());
+        ps.try_remove(&mut c, gutter_entity.parent(), HOVER_ACTIVATED_PARAM.clone());
     }
 }
 
@@ -130,7 +130,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                                 let unscrolled_distance = (1. - val) * scrollable_distance.x;
                                 let opacity = (unscrolled_distance / SUBLIME_SHADOW_FADE_PX).clamp(0., 1.);
 
-                                let mut ec = c.get_entity(*id).result()?;
+                                let mut ec = c.get_entity(*id)?;
                                 ec.insert(PropagateOpacity(opacity));
 
                                 OK
@@ -146,13 +146,13 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
-                        mut q: Query<(&Parent, Option<&mut FirefoxTimer>, &Interaction)>,//
+                        mut q: Query<(&ChildOf, Option<&mut FirefoxTimer>, &Interaction)>,//
                     | {
                         let (gutter_entity, maybe_timer, interaction) = q.get_mut(id)?;
                         if let Some(mut timer) = maybe_timer {
                             timer.0.reset();
                         } else {
-                            let gutter = **gutter_entity;
+                            let gutter = gutter_entity.parent();
                             c.entity(id).insert(FirefoxTimer(Timer::new(FIREFOX_FADEOUT_TIMER, TimerMode::Once)));
                             c.react().entity_event(id, Enable);
                             ps.try_insert(&mut c, gutter, IS_SCROLLING_PARAM.clone());
@@ -164,7 +164,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                                     c.react().entity_event(id, PointerEnter);
                                 }
                                 Interaction::Pressed => {
-                                    c.react().entity_event(id, Pressed);
+                                    c.react().entity_event(id, PointerPressed);
                                 }
                             }
                         }
@@ -177,13 +177,13 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
-                        mut q: Query<(&Parent, Option<&mut FirefoxTimer>)>,//
+                        mut q: Query<(&ChildOf, Option<&mut FirefoxTimer>)>,//
                     | {
                         let (gutter_entity, maybe_timer) = q.get_mut(id)?;
                         if let Some(mut timer) = maybe_timer {
                             timer.0.pause();
                         }
-                        ps.try_insert(&mut c, **gutter_entity, HOVER_ACTIVATED_PARAM.clone());
+                        ps.try_insert(&mut c, gutter_entity.parent(), HOVER_ACTIVATED_PARAM.clone());
                         OK
                     },
             );
@@ -192,13 +192,13 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                 move |//
                         mut c: Commands,
                         ps: PseudoStateParam,
-                        mut q: Query<(&Parent, Option<&mut FirefoxTimer>)>,//
+                        mut q: Query<(&ChildOf, Option<&mut FirefoxTimer>)>,//
                     | {
                         let (gutter_entity, maybe_timer) = q.get_mut(id)?;
                         if let Some(mut timer) = maybe_timer {
                             timer.0.pause();
                         }
-                        ps.try_insert(&mut c, **gutter_entity, HOVER_ACTIVATED_PARAM.clone());
+                        ps.try_insert(&mut c, gutter_entity.parent(), HOVER_ACTIVATED_PARAM.clone());
                         OK
                     },
             );

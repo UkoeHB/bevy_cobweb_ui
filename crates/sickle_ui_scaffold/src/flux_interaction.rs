@@ -2,9 +2,9 @@ use std::cmp::Ordering;
 use std::ops::Add;
 use std::time::Duration;
 
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::time::Stopwatch;
-use bevy::utils::HashMap;
 
 pub struct FluxInteractionPlugin;
 
@@ -181,7 +181,7 @@ impl FluxInteractionStopwatchLock
 {
     pub fn new() -> Self
     {
-        Self(HashMap::new())
+        Self(HashMap::default())
     }
 
     pub fn min_duration(&self) -> StopwatchLock
