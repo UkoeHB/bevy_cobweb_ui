@@ -89,15 +89,15 @@ cob_sickle_macros = { path = "crates/sickle_macros", version = "0.6.0" }
 cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.6.0" }
 
 [workspace.dependencies]
-#bevy_cobweb = { version = "0.16.2" }
-bevy_cobweb = { git = "https://github.com/UkoeHB/bevy_cobweb", rev = "19c66ab" }
+bevy_cobweb = { version = "0.17.0" }
+#bevy_cobweb = { git = "https://github.com/UkoeHB/bevy_cobweb", rev = "19c66ab" }
 serde = { version = "1.0", features = ["derive"] }
 smol_str = { version = "0.2" }  # Locked to Bevy's smol_str version.
 smallvec = { version = "1.13" }
 tracing = { version = "0.1" }
 
 [workspace.dependencies.bevy]
-version = "0.16.0-rc.5"
+version = "0.16"
 default-features = false
 features = [
   "std",
@@ -120,7 +120,7 @@ features = [
 ]
 
 [dev-dependencies]
-bevy = { version = "0.16.0-rc.5", default-features = false, features = [
+bevy = { version = "0.16", default-features = false, features = [
   "serialize",
 
   # AssetEvents for AudioSource are not registered if no audio types are included
