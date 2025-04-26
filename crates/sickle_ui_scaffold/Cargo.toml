@@ -1,6 +1,6 @@
 [package]
 name = "cob_sickle_ui_scaffold"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 description = "Scaffolding framework for sickle_ui"
 license = "MIT OR Apache-2.0"
@@ -11,8 +11,8 @@ dev = ["bevy/dynamic_linking"]
 disable-ui-context-placeholder-warn = []
 
 [dependencies]
-cob_sickle_math = { path = "../sickle_math", version = "0.6.0" }
-cob_sickle_macros = { path = "../sickle_macros", version = "0.6.0" }
+cob_sickle_math = { path = "../sickle_math", version = "0.7.0" }
+cob_sickle_macros = { path = "../sickle_macros", version = "0.7.0" }
 
 bevy.workspace = true
 dyn-clone = { version = "1.0" }
