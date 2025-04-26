@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.13.0
 
 - Update to bevy v0.16.
     - Remove `track_change_detection` feature.
