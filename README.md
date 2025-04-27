@@ -59,5 +59,6 @@ There is an editor, enabled by the `editor` feature. It is currently a very basi
 
 | `bevy` | `bevy_cobweb_ui` |
 |-------|-------------------|
-| 0.15  | 0.5.0 - main      |
+| 0.16  | 0.13.0 - main     |
+| 0.15  | 0.5.0 - 0.12.3    |
 | 0.14  | 0.1.0 - 0.4.1     |
