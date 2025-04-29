@@ -52,8 +52,8 @@ impl CobFile
                 get_location(content).as_str(), err);
             return Err(span_verify_error(content));
         }
-        if !path.ends_with(".cob") {
-            tracing::warn!("failed parsing COB file path at {}; file does not end with '.cob' extension",
+        if !path.ends_with(".cob") && !path.ends_with(".cobweb") {
+            tracing::warn!("failed parsing COB file path at {}; file does not end with '.cob' or '.cobweb' extension",
                 get_location(content).as_str());
             return Err(span_verify_error(content));
         }
