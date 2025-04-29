@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.1
+
+- Bugfix manifest parsing of `.cobweb` extension.
+
+
 ## 0.13.0
 
 - Update to bevy v0.16.
