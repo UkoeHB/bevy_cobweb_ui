@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.1
+## 0.13.2
 
 - Bugfix manifest parsing of `.cobweb` extension.
 
@@ -12,6 +12,11 @@
     - Rename `Pressed`/`Released` entity events to `PointerPressed`/`PointerReleased`. Note that now `Pressed`/`Released` are types published by bevy.
     - Add `NodeShadows` loadable.
 - Add `treesitter` syntax highlighting (Neovim, etc.).
+
+
+## 0.12.4
+
+- Bugfix manifest parsing of `.cobweb` extension.
 
 
 ## 0.12.3
