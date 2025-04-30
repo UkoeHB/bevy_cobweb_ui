@@ -29,8 +29,9 @@ impl<'w, 's> TextEditor<'w, 's>
     /// Gets information for the first text span in a text block.
     ///
     /// Returns `Err` if the text block could not be found.
-    pub fn root(&mut self, root_entity: Entity) -> Option<(&mut String, &mut TextFont, &mut Color)>
+    pub fn root(&mut self, root_entity: impl Into<Entity>) -> Option<(&mut String, &mut TextFont, &mut Color)>
     {
+        let root_entity: Entity = root_entity.into();
         self.span(root_entity, 0).map(|(_, t, f, c)| (t, f, c))
     }
 
@@ -39,10 +40,11 @@ impl<'w, 's> TextEditor<'w, 's>
     /// Returns `Err` if the text span could not be found.
     pub fn span(
         &mut self,
-        root_entity: Entity,
+        root_entity: impl Into<Entity>,
         span: usize,
     ) -> Option<(Entity, &mut String, &mut TextFont, &mut Color)>
     {
+        let root_entity: Entity = root_entity.into();
         self.writer
             .get(root_entity, span)
             .map(|(e, _, t, f, c)| (e, t.into_inner(), f.into_inner(), c.into_inner().deref_mut()))
@@ -55,7 +57,7 @@ impl<'w, 's> TextEditor<'w, 's>
     /// This is used in the [`write_text`](crate::write_text) helper macro.
     pub fn write<E: Debug>(
         &mut self,
-        root_entity: Entity,
+        root_entity: impl Into<Entity>,
         writer: impl FnOnce(&mut String) -> Result<(), E>,
     ) -> bool
     {
@@ -71,11 +73,12 @@ impl<'w, 's> TextEditor<'w, 's>
     /// This is used in the [`write_text_span`](crate::write_text_span) helper macro.
     pub fn write_span<E: Debug>(
         &mut self,
-        root_entity: Entity,
+        root_entity: impl Into<Entity>,
         span: usize,
         writer: impl FnOnce(&mut String) -> Result<(), E>,
     ) -> bool
     {
+        let root_entity: Entity = root_entity.into();
         let Some((_, _, mut text, mut text_font, _)) = self.writer.get(root_entity, span) else {
             tracing::warn!("failed writing to text span {span} of text block {root_entity:?}, entity not found");
             return false;
@@ -113,7 +116,7 @@ impl<'w, 's> TextEditor<'w, 's>
     /// See [`Self::set_span_font`].
     ///
     /// Returns `false` if the text span could not be accessed or if the font was not registered in [`FontMap`].
-    pub fn set_font(&mut self, entity: Entity, font: impl Into<FontRequest>) -> bool
+    pub fn set_font(&mut self, entity: impl Into<Entity>, font: impl Into<FontRequest>) -> bool
     {
         self.set_span_font(entity, 0, font)
     }
@@ -123,8 +126,14 @@ impl<'w, 's> TextEditor<'w, 's>
     /// If the entity has [`LocalizedText`] then the font will be automatically localized.
     ///
     /// Returns `false` if the text span could not be accessed or if the font was not registered in [`FontMap`].
-    pub fn set_span_font(&mut self, root_entity: Entity, span: usize, font: impl Into<FontRequest>) -> bool
+    pub fn set_span_font(
+        &mut self,
+        root_entity: impl Into<Entity>,
+        span: usize,
+        font: impl Into<FontRequest>,
+    ) -> bool
     {
+        let root_entity: Entity = root_entity.into();
         let font = font.into();
         let Some((_, _, _, mut text_font, _)) = self.writer.get(root_entity, span) else {
             tracing::warn!("failed setting font {font:?} on text span {span} of text block {root_entity:?}, \
@@ -167,14 +176,15 @@ impl<'w, 's> TextEditor<'w, 's>
     }
 
     /// Sets the font size on the first text span of a text block.
-    pub fn set_font_size(&mut self, entity: Entity, size: f32)
+    pub fn set_font_size(&mut self, entity: impl Into<Entity>, size: f32)
     {
         self.set_span_font_size(entity, 0, size);
     }
 
     /// Sets the font size on a text span of a text block.
-    pub fn set_span_font_size(&mut self, root_entity: Entity, span: usize, size: f32)
+    pub fn set_span_font_size(&mut self, root_entity: impl Into<Entity>, span: usize, size: f32)
     {
+        let root_entity: Entity = root_entity.into();
         let Some((_, _, _, mut text_font, _)) = self.writer.get(root_entity, span) else {
             tracing::warn!("failed setting font size {size:?} on text span {span} of text block {root_entity:?}, \
                 root entity not found");
@@ -184,14 +194,15 @@ impl<'w, 's> TextEditor<'w, 's>
     }
 
     /// Sets the font color on the first text span of a text block.
-    pub fn set_font_color(&mut self, root_entity: Entity, color: Color)
+    pub fn set_font_color(&mut self, root_entity: impl Into<Entity>, color: Color)
     {
         self.set_span_font_color(root_entity, 0, color);
     }
 
     /// Sets the font color on a text span of a text block.
-    pub fn set_span_font_color(&mut self, root_entity: Entity, span: usize, color: Color)
+    pub fn set_span_font_color(&mut self, root_entity: impl Into<Entity>, span: usize, color: Color)
     {
+        let root_entity: Entity = root_entity.into();
         let Some((_, _, _, _, mut text_color)) = self.writer.get(root_entity, span) else {
             tracing::warn!("failed setting font color {color:?} on text span {span} of text block {root_entity:?}, \
                 root entity not found");
@@ -236,7 +247,7 @@ macro_rules! write_text {
 ```rust
 fn example(mut commands: Commands, mut text_editor: TextEditor)
 {
-    let entity = commands.spawn(TextBundle::default()).ie();
+    let entity = commands.spawn(TextBundle::default()).id();
 
     // Macro call:
     write_text_span!(text_editor, entity, 0, "Count: {}", 42);

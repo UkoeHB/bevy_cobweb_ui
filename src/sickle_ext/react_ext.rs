@@ -187,7 +187,7 @@ impl UiBuilderReactExt for UiBuilder<'_, Entity>
     {
         let text = text.into();
         self.update(move |id: TargetId, mut e: TextEditor| {
-            write_text!(e, *id, "{}", text.as_str());
+            write_text!(e, id, "{}", text.as_str());
         })
     }
 

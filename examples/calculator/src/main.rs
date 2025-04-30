@@ -74,7 +74,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                         entity_mutation::<Calculator>(calc_entity),
                         move |id: TargetId, calc: Reactive<Calculator>, mut e: TextEditor| {
                             let text = calc.get(calc_entity)?.buffer_display();
-                            write_text!(e, *id, "{}", text);
+                            write_text!(e, id, "{}", text);
                             OK
                         },
                     );

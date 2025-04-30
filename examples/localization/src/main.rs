@@ -88,7 +88,7 @@ fn build_ui(mut c: Commands, mut s: SceneBuilder)
                     broadcast::<RelocalizeApp>(),
                     move |id: TargetId, mut count: Local<usize>, mut e: TextEditor| {
                         // Displays count for the number of times the app was localized.
-                        write_text!(e, *id, "locale-counter?count={:?}", *count);
+                        write_text!(e, id, "locale-counter?count={:?}", *count);
                         *count += 1;
                     },
                 );

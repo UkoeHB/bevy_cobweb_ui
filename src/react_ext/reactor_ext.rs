@@ -162,6 +162,14 @@ impl DerefMut for TargetId
     }
 }
 
+impl Into<Entity> for TargetId
+{
+    fn into(self) -> Entity
+    {
+        self.0
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for managing COB scene node entities.

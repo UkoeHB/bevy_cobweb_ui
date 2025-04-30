@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.3
+
+- Update `TextEditor` to accept `impl Into<Entity>` instead of `Entity`.
+
+
 ## 0.13.2
 
 - Bugfix manifest parsing of `.cobweb` extension.

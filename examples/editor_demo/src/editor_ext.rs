@@ -97,13 +97,13 @@ fn make_draggable_field_widget(
 
         h.get("name")
             .update(move |id: TargetId, mut e: TextEditor| {
-                write_text!(e, *id, "{name}:");
+                write_text!(e, id, "{name}:");
             });
 
         let bounds_start = *bounds.start();
         h.get("lower_bound")
             .update(move |id: TargetId, mut e: TextEditor| {
-                write_text!(e, *id, "{}", bounds_start);
+                write_text!(e, id, "{}", bounds_start);
             });
 
         // Set up the drag zone to modify the DragValue.
@@ -115,7 +115,7 @@ fn make_draggable_field_widget(
             entity_mutation::<FieldValue<f32>>(widget_id),
             move |id: TargetId, mut e: TextEditor, vals: Reactive<FieldValue<f32>>| {
                 let val = vals.get(widget_id)?;
-                write_text!(e, *id, "{:.1}", val.get());
+                write_text!(e, id, "{:.1}", val.get());
                 OK
             },
         );
@@ -123,7 +123,7 @@ fn make_draggable_field_widget(
         let bounds_end = *bounds.end();
         h.get("upper_bound")
             .update(move |id: TargetId, mut e: TextEditor| {
-                write_text!(e, *id, "{}", bounds_end);
+                write_text!(e, id, "{}", bounds_end);
             });
 
         // Convert drag values to field value changes.

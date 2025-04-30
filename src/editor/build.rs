@@ -87,7 +87,7 @@ fn build_loadable(
         // Set the loadable's name.
         h.get("name")
             .update(move |id: TargetId, mut e: TextEditor| {
-                write_text!(e, *id, "{}", shortname);
+                write_text!(e, id, "{}", shortname);
             });
 
         // Set the content.
@@ -131,7 +131,7 @@ fn spawn_scene_simple_layer(
         let ref_path = scene_ref.path.clone();
         h.get("name")
             .update(move |id: TargetId, mut e: TextEditor| {
-                write_text!(e, *id, "\"{}\"", ref_path.iter().rev().next().unwrap());
+                write_text!(e, id, "\"{}\"", ref_path.iter().rev().next().unwrap());
             });
 
         // Add entries.
@@ -351,7 +351,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                             h.get("text").update(
                                 move |id: TargetId, mut e: TextEditor| {
                                     let text = entry_clone.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
-                                    write_text!(e, *id, "{}", text);
+                                    write_text!(e, id, "{}", text);
                                 }
                             );
 
@@ -385,7 +385,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
                             h.get("text").update(
                                 move |id: TargetId, mut e: TextEditor| {
                                     let text = text.as_ref().map(|f| f.as_str()).unwrap_or("<none>");
-                                    write_text!(e, *id, "{}", text);
+                                    write_text!(e, id, "{}", text);
                                 }
                             );
 
