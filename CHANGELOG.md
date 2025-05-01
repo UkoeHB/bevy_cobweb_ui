@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.4
+
+- Compilation fix for WASM targets. `CustomCursorUrl` is currently broken, see https://github.com/bevyengine/bevy/pull/19006.
+
+
 ## 0.13.3
 
 - Update `TextEditor` to accept `impl Into<Entity>` instead of `Entity`.
