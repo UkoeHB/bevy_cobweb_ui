@@ -10,7 +10,7 @@ dev = ["bevy_cobweb_ui/dev"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb.workspace = true
-bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
+bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors", "firasans_default"] }
 calc = { version = "0.4" }
 itertools = { version = "0.13" }
 rust_decimal = { version = "1.35" }

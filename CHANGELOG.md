@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0
+
+- Font improvements
+    - Add `firasans` and `firasans_default` features. Disable these if you want to use your own fonts or the default Bevy font. Note that enabling them will add ~4.7MB to binaries, which may not be ideal for web builds.
+    - Add `DefaultFont` resource. This is used as the default font for in-crate text instructions like `TextLine`.
+
+
 ## 0.13.4
 
 - Compilation fix for WASM targets. `CustomCursorUrl` is currently broken, see https://github.com/bevyengine/bevy/pull/19006.

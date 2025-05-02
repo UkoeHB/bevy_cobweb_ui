@@ -11,7 +11,7 @@ editor = ["bevy_cobweb_ui/editor"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb.workspace = true
-bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors"] }
+bevy_cobweb_ui = { path = "../../", default-features = false, features = ["colors", "firasans_default"] }
 rand = { version = "0.8" }
 rand_chacha = { version = "0.3" }
 tracing = { version = "0.1" }

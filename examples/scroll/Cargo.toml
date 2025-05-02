@@ -10,6 +10,6 @@ dev = ["bevy_cobweb_ui/dev"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb.workspace = true
-bevy_cobweb_ui = { path = "../../", default-features = false, features = ["widgets"] }
+bevy_cobweb_ui = { path = "../../", default-features = false, features = ["widgets", "firasans_default"] }
 smol_str.workspace = true
 tracing = { version = "0.1" }

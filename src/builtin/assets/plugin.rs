@@ -8,9 +8,10 @@ pub(crate) struct BuiltinAssetsPlugin;
 
 impl Plugin for BuiltinAssetsPlugin
 {
-    fn build(&self, app: &mut App)
+    fn build(&self, _app: &mut App)
     {
-        app.add_plugins(BuiltInFontsPlugin);
+        #[cfg(feature = "firasans")]
+        _app.add_plugins(BuiltInFontsPlugin);
     }
 }
 

@@ -29,13 +29,16 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 
 [features]
 # Default features.
-default = ["colors", "widgets"]
+default = ["colors", "widgets", "firasans_default"]
 
 # Enables built-in colors.
 colors = []
 
-# Enables built-in assets. TODO: re-evaluate how to use this feature flag
-#assets = []
+# Auto-registers FiraSans font variants. This adds ~4.7mb to binary sizes.
+firasans = []
+# Sets FiraSans Medium as the default font.
+# If not enabled, the default font will be Bevy's default font.
+firasans_default = ["firasans"]
 
 # Enables built-in widgets.
 widgets = ["colors"]

@@ -15,12 +15,14 @@ fn insert_text_line(
     In((entity, mut line)): In<(Entity, TextLine)>,
     mut commands: Commands,
     localizer: Res<TextLocalizer>,
+    default_font: Res<DefaultFont>,
     font_map: Res<FontMap>,
     mut localized: Query<&mut LocalizedText>,
 )
 {
     // Get font.
-    let mut font = line.font.map(|f| font_map.get(&f)).unwrap_or_default();
+    let request = line.font.as_ref().unwrap_or(&*default_font);
+    let mut font = font_map.get(request);
 
     // Prep localization.
     // - We need to manually localize inserted text in case the text line is hot reloaded into an entity that
@@ -58,8 +60,8 @@ pub struct TextLine
     pub text: String,
     /// The font handle.
     ///
-    /// Defaults to the built-in "Fira Sans Medium" font.
-    #[reflect(default = "TextLine::default_font")]
+    /// See [`DefaultFont`] for the font used if this is not set.
+    #[reflect(default)]
     pub font: Option<FontRequest>,
     /// The desired font size.
     ///
@@ -94,11 +96,6 @@ impl TextLine
     fn default_text() -> String
     {
         TEXT_LINE_DEFAULT_TEXT.into()
-    }
-
-    fn default_font() -> Option<FontRequest>
-    {
-        Some(FontRequest::new_static("Fira Sans").medium())
     }
 
     fn default_font_size() -> f32
@@ -138,7 +135,7 @@ impl Default for TextLine
     {
         Self {
             text: Self::default_text(),
-            font: Self::default_font(),
+            font: None,
             size: Self::default_font_size(),
             linebreak: Self::default_line_break(),
             justify: Self::default_justify_text(),

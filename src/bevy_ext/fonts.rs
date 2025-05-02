@@ -4,6 +4,15 @@ use std::ops::Add;
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
+use crate::prelude::FontMap;
+
+//-------------------------------------------------------------------------------------------------------------------
+
+fn register_bevy_default_font(mut fonts: ResMut<FontMap>)
+{
+    fonts.manual_insert(Handle::default(), FontRequest::new_static("Bevy"));
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 /// Helper trait for building font requests.
@@ -940,6 +949,29 @@ impl<U: UpdateFontRequest> Add<U> for FontFamily
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Resource that stores a [`FontRequest`] for the default font for text.
+///
+/// Note that changing this will *not* affect existing text entities.
+///
+/// Defaults to `FiraSans Medium` if the `firasans_default` feature is enabled. Otherwise defaults to Bevy's
+/// default font `FiraMon-subset`.
+#[derive(Resource, Debug, Deref, DerefMut)]
+pub struct DefaultFont(pub FontRequest);
+
+impl Default for DefaultFont
+{
+    fn default() -> Self
+    {
+        if cfg!(feature = "firasans_default") {
+            Self(FontRequest::new_static("Fira Sans").medium())
+        } else {
+            Self(FontRequest::new_static("Bevy"))
+        }
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct FontExtPlugin;
 
 impl Plugin for FontExtPlugin
@@ -950,7 +982,9 @@ impl Plugin for FontExtPlugin
             .register_type::<FontWidth>()
             .register_type::<FontStyle>()
             .register_type::<FontWeight>()
-            .register_type::<FontRequest>();
+            .register_type::<FontRequest>()
+            .init_resource::<DefaultFont>()
+            .add_systems(PreStartup, register_bevy_default_font);
     }
 }
 
