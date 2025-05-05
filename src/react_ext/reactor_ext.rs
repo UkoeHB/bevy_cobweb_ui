@@ -1,7 +1,9 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
 
+use bevy::ecs::component::HookContext;
 use bevy::ecs::system::EntityCommands;
+use bevy::ecs::world::DeferredWorld;
 use bevy::prelude::*;
 use bevy_cobweb::prelude::*;
 
@@ -21,8 +23,8 @@ fn register_reactor<Triggers: ReactionTriggerBundle>(
         .with(triggers, syscommand, ReactorMode::Revokable)
         .unwrap();
 
-    //todo: more efficient cleanup mechanism
-    cleanup_reactor_on_despawn(c, entity, revoke_token);
+    c.entity(*syscommand)
+        .insert((ReactorAttachedTo(entity), RevokeTokenCache(revoke_token)));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -57,9 +59,8 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
             .unwrap()
     };
 
-    //todo: more efficient cleanup mechanism
-    // - need to be careful here, if we make the system a child of the target then despawn_descendants will kill it
-    cleanup_reactor_on_despawn(&mut c, entity, revoke_token);
+    c.entity(*syscommand)
+        .insert((ReactorAttachedTo(entity), RevokeTokenCache(revoke_token)));
 
     // Run the system to apply it.
     c.queue(syscommand);
@@ -90,11 +91,46 @@ fn register_update_on_reactor<Triggers: ReactionTriggerBundle>(
         .with(triggers, syscommand, ReactorMode::Revokable)
         .unwrap();
 
-    //todo: more efficient cleanup mechanism
-    cleanup_reactor_on_despawn(c, entity, revoke_token);
+    c.entity(*syscommand)
+        .insert((ReactorAttachedTo(entity), RevokeTokenCache(revoke_token)));
 
     // Run the system to apply it.
     c.queue(syscommand);
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+#[derive(Component)]
+struct RevokeTokenCache(RevokeToken);
+
+/// Custom relationship to attach reactors to target entities.
+/// We don't use `ChildOf` because we don't want the reactors do be despawned when `.despawn_related::<Children>()`
+/// is called.
+#[derive(Component)]
+#[relationship(relationship_target = AttachedReactors)]
+struct ReactorAttachedTo(Entity);
+
+#[derive(Component)]
+#[relationship_target(relationship = ReactorAttachedTo)]
+#[component(on_despawn = revoke_tokens)]
+struct AttachedReactors(Vec<Entity>);
+
+/// Revoking the attached entities' tokens will cause the entities to be garbage collected (despawned). We
+/// don't need to despawn them here.
+fn revoke_tokens(mut w: DeferredWorld, context: HookContext)
+{
+    let (entities, mut c) = w.entities_and_commands();
+    let reactors = entities
+        .get(context.entity)
+        .unwrap()
+        .get::<AttachedReactors>()
+        .unwrap();
+
+    for reactor in reactors.iter() {
+        let Ok(entity) = entities.get(reactor) else { continue };
+        let Some(cache) = entity.get::<RevokeTokenCache>() else { continue };
+        c.react().revoke(cache.0.clone());
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
