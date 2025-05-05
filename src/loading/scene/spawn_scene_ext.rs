@@ -499,6 +499,7 @@ impl NodeBuilderExt for EntityCommands<'_>
 
     fn build_with_initializer(&mut self, scene_ref: SceneRef, initializer: fn(&mut EntityCommands)) -> &mut Self
     {
+        #[cfg(feature = "hot_reload")]
         self.insert(HasLoadables);
 
         let id = self.id();

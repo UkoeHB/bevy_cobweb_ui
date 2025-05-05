@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+- Internal optimizations.
+- Compile fix for default fonts.
+
+
 ## 0.14.0
 
 - Font improvements
