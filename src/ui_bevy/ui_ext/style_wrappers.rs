@@ -1427,20 +1427,40 @@ impl Instruction for AbsoluteNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        #[allow(unused_mut)]
+        let Ok(mut emut) = world.get_entity_mut(entity) else {
+            return;
+        };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Flex);
-        emut.insert(DisplayType::Flex);
 
-        emut.insert(node);
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            emut.insert((DisplayType::Flex, node));
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            let computed_target = match emut.get::<ChildOf>().cloned() {
+                Some(childof) => world
+                    .get::<ComputedNodeTarget>(childof.parent())
+                    .copied()
+                    .unwrap_or_default(),
+                None => ComputedNodeTarget::default(),
+            };
+            world
+                .get_entity_mut(entity)
+                .unwrap()
+                .insert((DisplayType::Flex, node, computed_target));
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Node>();
+            e.remove_with_requires::<(Node, DisplayType)>();
         });
     }
 }
@@ -1603,20 +1623,40 @@ impl Instruction for FlexNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        #[allow(unused_mut)]
+        let Ok(mut emut) = world.get_entity_mut(entity) else {
+            return;
+        };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Flex);
-        emut.insert(DisplayType::Flex);
 
-        emut.insert(node);
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            emut.insert((DisplayType::Flex, node));
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            let computed_target = match emut.get::<ChildOf>().cloned() {
+                Some(childof) => world
+                    .get::<ComputedNodeTarget>(childof.parent())
+                    .copied()
+                    .unwrap_or_default(),
+                None => ComputedNodeTarget::default(),
+            };
+            world
+                .get_entity_mut(entity)
+                .unwrap()
+                .insert((DisplayType::Flex, node, computed_target));
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Node>();
+            e.remove_with_requires::<(Node, DisplayType)>();
         });
     }
 }
@@ -1759,20 +1799,40 @@ impl Instruction for AbsoluteGridNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        #[allow(unused_mut)]
+        let Ok(mut emut) = world.get_entity_mut(entity) else {
+            return;
+        };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Grid);
-        emut.insert(DisplayType::Grid);
 
-        emut.insert(node);
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            emut.insert((DisplayType::Grid, node));
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            let computed_target = match emut.get::<ChildOf>().cloned() {
+                Some(childof) => world
+                    .get::<ComputedNodeTarget>(childof.parent())
+                    .copied()
+                    .unwrap_or_default(),
+                None => ComputedNodeTarget::default(),
+            };
+            world
+                .get_entity_mut(entity)
+                .unwrap()
+                .insert((DisplayType::Grid, node, computed_target));
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Node>();
+            e.remove_with_requires::<(Node, DisplayType)>();
         });
     }
 }
@@ -1936,14 +1996,34 @@ impl Instruction for GridNode
 {
     fn apply(self, entity: Entity, world: &mut World)
     {
-        let Ok(mut emut) = world.get_entity_mut(entity) else { return };
+        #[allow(unused_mut)]
+        let Ok(mut emut) = world.get_entity_mut(entity) else {
+            return;
+        };
 
         let display = emut.get::<DisplayControl>().copied().unwrap_or_default();
         let mut node: Node = self.into();
         node.display = display.to_display(Display::Grid);
-        emut.insert(DisplayType::Grid);
 
-        emut.insert(node);
+        #[cfg(not(feature = "hot_reload"))]
+        {
+            emut.insert((DisplayType::Grid, node));
+        }
+        #[cfg(feature = "hot_reload")]
+        {
+            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            let computed_target = match emut.get::<ChildOf>().cloned() {
+                Some(childof) => world
+                    .get::<ComputedNodeTarget>(childof.parent())
+                    .copied()
+                    .unwrap_or_default(),
+                None => ComputedNodeTarget::default(),
+            };
+            world
+                .get_entity_mut(entity)
+                .unwrap()
+                .insert((DisplayType::Grid, node, computed_target));
+        }
     }
 
     fn revert(entity: Entity, world: &mut World)

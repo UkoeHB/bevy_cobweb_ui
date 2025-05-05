@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.2
+
+- Bug fix for nodes disappearing temporarily when a change on their loadables is hot reloaded.
+
+
 ## 0.14.1
 
 - Internal optimizations.

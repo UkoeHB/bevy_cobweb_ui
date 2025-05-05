@@ -14,3 +14,5 @@ bevy_cobweb_ui = { path = "../../", default-features = false, features = ["color
 tracing = { version = "0.1" }
 
 serde = { version = "1.0" }
+# bevy-inspector-egui = { version = "0.31" }
+# bevy_egui = { version = "0.34", default-features = false }
