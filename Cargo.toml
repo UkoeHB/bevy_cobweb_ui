@@ -2,7 +2,7 @@
 name = "bevy_cobweb_ui"
 description = "UI framework for the bevy game engine"
 authors = ["koe <ukoe@protonmail.com>"]
-version = "0.14.2"
+version = "0.14.3"
 edition = "2021"
 keywords = ["gamedev", "reactive", "ui"]
 license = "MIT OR Apache-2.0"
