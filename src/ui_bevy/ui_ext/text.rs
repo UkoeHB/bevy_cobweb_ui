@@ -266,6 +266,82 @@ impl AnimatedAttribute for TextLineColor
 
 //-------------------------------------------------------------------------------------------------------------------
 
+/// Instruction for setting the [`TextColor`] component on an entity.
+#[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct SetTextShadow
+{
+    pub offset: Vec2,
+    pub color: Color
+}
+
+impl Into<TextShadow> for SetTextShadow
+{
+    fn into(self) -> TextShadow {
+        TextShadow{ offset: self.offset, color: self.color }
+    }
+}
+
+impl From<TextShadow> for SetTextShadow
+{
+    fn from(shadow: TextShadow) -> Self {
+        Self{ offset: shadow.offset, color: shadow.color }
+    }
+}
+
+impl Instruction for SetTextShadow
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(TextShadow::from(self.into()));
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove_with_requires::<TextShadow>();
+        });
+    }
+}
+
+impl cob_sickle_math::Lerp for SetTextShadow
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self{
+            offset: self.offset.lerp(to.offset, t),
+            color: self.color.lerp(to.color, t)
+        }
+    }
+}
+
+impl StaticAttribute for SetTextShadow
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+
+impl ResponsiveAttribute for SetTextShadow {}
+impl AnimatedAttribute for SetTextShadow
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let shadow = world.get::<TextShadow>(entity).copied()?;
+        Some(shadow.into())
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 pub(crate) struct UiTextExtPlugin;
 
 impl Plugin for UiTextExtPlugin
@@ -274,7 +350,8 @@ impl Plugin for UiTextExtPlugin
     {
         app.register_static::<TextLine>()
             .register_static::<TextLineSize>()
-            .register_animatable::<TextLineColor>();
+            .register_animatable::<TextLineColor>()
+            .register_animatable::<SetTextShadow>();
     }
 }
 

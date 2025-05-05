@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.3
+
+- Add `SetTextShadow` loadable for setting the `TextShadow` component.
+
+
 ## 0.14.2
 
 - Bug fix for nodes disappearing temporarily when a change on their loadables is hot reloaded.
