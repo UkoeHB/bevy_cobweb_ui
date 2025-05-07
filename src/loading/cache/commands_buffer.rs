@@ -652,7 +652,7 @@ impl CommandsBuffer
     pub(crate) fn prep_commands_refresh(&mut self, file: CobFile)
     {
         let Some(info) = self.hierarchy.get_mut(&file) else {
-            tracing::error!("failed setting file descendants for unknown file {:?}; all files should be pre-registered \
+            tracing::error!("failed prepping commands refresh for unknown file {:?}; all files should be pre-registered \
                 as descendants of other files (this is a bug)", file);
             return;
         };

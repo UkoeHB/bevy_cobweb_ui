@@ -24,14 +24,19 @@ impl CobFile
 {
     /// Tries to create a new COB file reference.
     ///
-    /// Fails if the file doesn't end with `.cob`.
+    /// Fails if the file doesn't end with `.cob` or `.cobweb`.
     pub fn try_new(file: impl AsRef<str>) -> Option<Self>
     {
         let file = file.as_ref();
         if !file.ends_with(".cob") && !file.ends_with(".cobweb") {
             return None;
         }
-        Some(Self(Arc::from(file)))
+        if file.find("\\").is_some() {
+            let file = file.replace("\\", "/");
+            Some(Self(Arc::from(file.as_str())))
+        } else {
+            Some(Self(Arc::from(file)))
+        }
     }
 
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
