@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.4
+
+- Fix file path parsing issue on Windows.
+
+
 ## 0.14.3
 
 - Add `SetTextShadow` loadable for setting the `TextShadow` component.
