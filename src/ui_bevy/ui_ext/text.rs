@@ -276,20 +276,22 @@ impl AnimatedAttribute for TextLineColor
 pub struct SetTextShadow
 {
     pub offset: Vec2,
-    pub color: Color
+    pub color: Color,
 }
 
 impl Into<TextShadow> for SetTextShadow
 {
-    fn into(self) -> TextShadow {
-        TextShadow{ offset: self.offset, color: self.color }
+    fn into(self) -> TextShadow
+    {
+        TextShadow { offset: self.offset, color: self.color }
     }
 }
 
 impl From<TextShadow> for SetTextShadow
 {
-    fn from(shadow: TextShadow) -> Self {
-        Self{ offset: shadow.offset, color: shadow.color }
+    fn from(shadow: TextShadow) -> Self
+    {
+        Self { offset: shadow.offset, color: shadow.color }
     }
 }
 
@@ -314,9 +316,9 @@ impl cob_sickle_math::Lerp for SetTextShadow
 {
     fn lerp(&self, to: Self, t: f32) -> Self
     {
-        Self{
+        Self {
             offset: self.offset.lerp(to.offset, t),
-            color: self.color.lerp(to.color, t)
+            color: self.color.lerp(to.color, t),
         }
     }
 }
