@@ -1,6 +1,6 @@
 Attempt at a semi-formal specification for COB - WIP
 
-
+Sub-crate of [`bevy_cobweb_ui`](https://github.com/UkoeHB/bevy_cobweb_ui).
 
 ## Global
 
