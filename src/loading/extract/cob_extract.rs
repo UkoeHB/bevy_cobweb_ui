@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
 
 use super::*;
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

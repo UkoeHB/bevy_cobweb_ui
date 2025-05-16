@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use bevy::prelude::*;
 use bevy::reflect::serde::TypedReflectDeserializer;
-use bevy_cobweb_ui::prelude::cob::*;
+use bevy_cobweb_ui::cob::*;
 use bevy_cobweb_ui::prelude::*;
 use serde::de::DeserializeSeed;
 use serde::{Deserialize, Serialize};

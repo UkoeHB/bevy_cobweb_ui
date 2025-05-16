@@ -15,7 +15,7 @@ cob_sickle_math = { path = "../sickle_math", version = "0.7.0" }
 cob_sickle_macros = { path = "../sickle_macros", version = "0.7.0" }
 
 bevy.workspace = true
-dyn-clone = { version = "1.0" }
+dyn-clone.workspace = true
 serde.workspace = true
 smallvec.workspace = true
 smol_str.workspace = true

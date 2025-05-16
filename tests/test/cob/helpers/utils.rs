@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_cobweb_ui::prelude::cob::*;
+use bevy_cobweb_ui::cob::*;
 
 use crate::cob::helpers::*;
 

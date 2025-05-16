@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use bevy::asset::AssetApp;
 use bevy::prelude::*;
 
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

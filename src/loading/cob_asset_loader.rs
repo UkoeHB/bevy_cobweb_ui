@@ -3,9 +3,9 @@ use bevy::asset::{Asset, AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy::prelude::*;
 use thiserror::Error;
 
+use crate::cob::*;
 #[cfg(feature = "editor")]
 use crate::editor::{CobFileHash, CobHashRegistry};
-use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 

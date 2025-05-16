@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.15.0
+
+- Move `Cob` asset definition to separate `cobweb_asset_format` sub-crate.
+
+
 ## 0.14.4
 
 - Fix file path parsing issue on Windows.

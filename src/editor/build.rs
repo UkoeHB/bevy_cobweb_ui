@@ -8,6 +8,7 @@ use bevy_cobweb::prelude::*;
 use serde::de::DeserializeSeed;
 
 use super::*;
+use crate::cob::*;
 use crate::prelude::*;
 use crate::sickle::*;
 

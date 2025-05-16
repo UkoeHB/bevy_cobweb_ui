@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use serde::de::DeserializeSeed;
 
 use super::*;
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

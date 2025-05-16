@@ -1,4 +1,4 @@
-use bevy_cobweb_ui::prelude::cob::*;
+use bevy_cobweb_ui::cob::*;
 
 use super::helpers::{test_cob, test_cob_fail};
 

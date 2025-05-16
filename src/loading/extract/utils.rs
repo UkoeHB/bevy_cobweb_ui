@@ -5,6 +5,7 @@ use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy::reflect::TypeRegistry;
 use serde::de::DeserializeSeed;
 
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

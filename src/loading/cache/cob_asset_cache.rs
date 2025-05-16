@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
 
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -323,7 +324,7 @@ impl CobAssetCache
                 continue;
             };
 
-            resolver.append(alias, &processed.resolver);
+            resolver.append(alias.as_str(), &processed.resolver);
         }
 
         // Prepare to process the file.

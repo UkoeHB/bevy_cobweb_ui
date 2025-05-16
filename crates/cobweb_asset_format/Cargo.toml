@@ -1,0 +1,27 @@
+[package]
+name = "cobweb_asset_format"
+version = "0.1.0"
+edition = "2021"
+description = "COB definition with parsing and ser/de."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/UkoeHB/bevy_cobweb_ui"
+
+[features]
+default = ["full_cob"]
+
+# Enables the standard Cob file format with sections. Disable this if you only want to parse raw CobValues.
+full_cob = ["builtin"]
+
+# Enables builtin values.
+builtin = ["dep:bevy"]
+
+[dependencies]
+bevy = { version = "0.16", default-features = false, features = ["bevy_ui", "bevy_color"], optional = true }
+nom = { workspace = true }
+nom_locate = { workspace = true }
+serde = { workspace = true }
+smol_str = { workspace = true }
+smallvec = { workspace = true }
+tracing = { workspace = true }
+
+derive_more = { version = "1.0" }

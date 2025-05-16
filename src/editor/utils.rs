@@ -4,6 +4,7 @@ use bevy::reflect::serde::TypedReflectDeserializer;
 use bevy::reflect::{TypeRegistration, TypeRegistry};
 
 use super::*;
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

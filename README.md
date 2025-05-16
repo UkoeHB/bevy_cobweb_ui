@@ -55,6 +55,19 @@ Check the repository examples for how to build different kinds of UI.
 There is an editor, enabled by the `editor` feature. It is currently a very basic proof of concept, and may or may not be developed further. See the `editor_demo` example.
 
 
+## Raw COB
+
+The COB value format can also be used for plain config files. To parse raw bytes extracted from a file do the following:
+```rust
+CobValue::try_parse(CobFill::default(), Span::new_extra(bytes, CobLocationMetadata { file: "your_file.rawcob" }))
+```
+The [`CobValue::extract`](bevy_cobweb_ui::prelude::CobValue::extract) method can be used to deserialize values into rust types.
+
+Syntax highlighting is provided for the `.rawcob` file extension:
+- [VSCode](https://github.com/UkoeHB/vscode-rawcob/)
+- [SublimeText](https://github.com/UkoeHB/sublime-rawcob/)
+
+
 ## `bevy` compatability
 
 | `bevy` | `bevy_cobweb_ui` |

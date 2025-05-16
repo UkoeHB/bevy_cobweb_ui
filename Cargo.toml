@@ -60,16 +60,13 @@ dev = ["hot_reload", "bevy/dynamic_linking"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb.workspace = true
+dyn-clone.workspace = true
+nom.workspace = true
 serde.workspace = true
 smol_str.workspace = true
 smallvec.workspace = true
+thiserror.workspace = true
 tracing.workspace = true
-derive_more = { version = "1.0" }
-dyn-clone = { version = "1.0" }
-memchr = { version = "2.7" }
-nom = { version = "7.1" }
-nom_locate = { version = "4.2" }
-thiserror = { version = "1.0" }
 wasm-timer = { version = "0.2" }
 
 # Localization deps
@@ -90,13 +87,18 @@ bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.3.
 cob_sickle_math = { path = "crates/sickle_math", version = "0.7.0" }
 cob_sickle_macros = { path = "crates/sickle_macros", version = "0.7.0" }
 cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.7.0" }
+cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.1.0", default-features = false, features = ["full_cob"] }
 
 [workspace.dependencies]
 bevy_cobweb = { version = "0.17.0" }
 #bevy_cobweb = { git = "https://github.com/UkoeHB/bevy_cobweb", rev = "19c66ab" }
+dyn-clone = { version = "1.0" }
+nom = { version = "7.1" }
+nom_locate = { version = "4.2" }
 serde = { version = "1.0", features = ["derive"] }
 smol_str = { version = "0.2" }  # Locked to Bevy's smol_str version.
 smallvec = { version = "1.13" }
+thiserror = { version = "1.0" }
 tracing = { version = "0.1" }
 
 [workspace.dependencies.bevy]

@@ -4,6 +4,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
 
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ impl ReflectedLoadable
                     let hint = Self::make_hint::<T>(registry);
                     tracing::error!("failed reflecting loadable {:?} at path {:?} in file {:?}\n\
                         serialization hint: {}",
-                        type_name::<T>(), scene_ref.path.path, scene_ref.file, hint.as_str());
+                        type_name::<T>(), scene_ref.path.get(), scene_ref.file, hint.as_str());
                     return None;
                 };
                 Some(new_value)
@@ -52,7 +53,7 @@ impl ReflectedLoadable
                 let hint = Self::make_hint::<T>(registry);
                 tracing::error!("failed deserializing loadable {:?} at path {:?} in file {:?}, {:?}\n\
                     serialization hint: {}",
-                    type_name::<T>(), scene_ref.path.path, scene_ref.file, **err, hint.as_str());
+                    type_name::<T>(), scene_ref.path.get(), scene_ref.file, **err, hint.as_str());
                 None
             }
         }

@@ -2,6 +2,7 @@ use bevy::prelude::Commands;
 use bevy::reflect::TypeRegistry;
 
 use super::*;
+use crate::cob::*;
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------

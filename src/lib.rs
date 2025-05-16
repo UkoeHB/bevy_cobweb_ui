@@ -18,6 +18,11 @@ pub mod ui_bevy;
 #[cfg(feature = "editor")]
 pub mod editor;
 
+pub mod cob
+{
+    pub use cobweb_asset_format::prelude::*;
+}
+
 pub mod sickle
 {
     pub use cob_sickle_macros::*;
@@ -30,6 +35,7 @@ pub mod prelude
     pub use bevy_cobweb::prelude::{CobwebResult, DropErr, OptionToNoneErr, WarnErr, DONE, OK};
     pub use bevy_cobweb_ui_derive::*;
     pub use cob_sickle_ui_scaffold::{UiBuilder, UiBuilderExt};
+    pub use cobweb_asset_format::prelude::{SceneFile, ScenePath, SceneRef};
 
     pub use crate::assets_ext::*;
     pub use crate::bevy_ext::*;
