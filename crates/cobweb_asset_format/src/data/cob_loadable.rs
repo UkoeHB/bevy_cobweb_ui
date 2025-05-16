@@ -1,4 +1,6 @@
+#[cfg(feature = "full")]
 use bevy::reflect::serde::TypedReflectSerializer;
+#[cfg(feature = "full")]
 use bevy::reflect::{PartialReflect, Reflect, TypeRegistry};
 use nom::bytes::complete::tag;
 use nom::Parser;
@@ -173,6 +175,7 @@ impl CobLoadableVariant
         }
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
@@ -221,20 +224,28 @@ impl CobLoadable
         self.variant.recover_fill(&other.variant);
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         self.variant.resolve(resolver)
     }
 
-    pub fn extract<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
+    pub fn extract<T: Serialize + 'static>(value: &T, name: &'static str) -> CobResult<Self>
+    {
+        value.serialize(CobLoadableSerializer { name })
+    }
+
+    #[cfg(feature = "full")]
+    pub fn extract_with_registry<T: Serialize + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
     {
         let type_info = registry
             .get_type_info(std::any::TypeId::of::<T>())
             .ok_or(CobError::LoadableNotRegistered)?;
         let name = type_info.type_path_table().short_path();
-        value.serialize(CobLoadableSerializer { name })
+        Self::extract(value, name)
     }
 
+    #[cfg(feature = "full")]
     pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
     {
         let type_info = registry
@@ -246,6 +257,7 @@ impl CobLoadable
     }
 
     /// This is slightly less efficient than [`Self::extract_reflect`], which should be preferred if possible.
+    #[cfg(feature = "full")]
     pub fn extract_partial_reflect(
         value: &(dyn PartialReflect + 'static),
         registry: &TypeRegistry,

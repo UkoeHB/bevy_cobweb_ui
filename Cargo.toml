@@ -87,7 +87,7 @@ bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.3.
 cob_sickle_math = { path = "crates/sickle_math", version = "0.7.0" }
 cob_sickle_macros = { path = "crates/sickle_macros", version = "0.7.0" }
 cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.7.0" }
-cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.1.0", default-features = false, features = ["full_cob"] }
+cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.2.0", default-features = false, features = ["full"] }
 
 [workspace.dependencies]
 bevy_cobweb = { version = "0.17.0" }

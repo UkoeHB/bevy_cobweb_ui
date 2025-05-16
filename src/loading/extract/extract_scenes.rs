@@ -260,9 +260,9 @@ pub(super) fn extract_scenes(
 
     for cob_layer in section.scenes.iter_mut() {
         // Get this scene for editing.
-        let Some(path) = ScenePath::parse_single(&*cob_layer.name) else {
+        let Some(path) = ScenePath::parse_single(cob_layer.name.as_str()) else {
             tracing::error!("failed parsing scene {:?} in {:?}, scene root ID is a multi-segment path, only \
-                single-segment node ids are allowed in scene definitions", *cob_layer.name, file);
+                single-segment node ids are allowed in scene definitions", cob_layer.name.as_str(), file);
             continue;
         };
         let scene_ref = SceneRef { file: SceneFile::File(file.clone()), path };

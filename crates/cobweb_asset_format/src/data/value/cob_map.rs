@@ -71,7 +71,7 @@ impl CobMapKey
         }
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
@@ -169,7 +169,7 @@ impl CobMapKeyValue
         self.value.recover_fill(&other.value);
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         self.key.resolve(resolver)?;
@@ -222,7 +222,7 @@ pub enum CobMapEntryResult
 pub enum CobMapEntry
 {
     KeyValue(CobMapKeyValue),
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     Constant(CobConstant),
 }
 
@@ -239,7 +239,7 @@ impl CobMapEntry
             Self::KeyValue(keyvalue) => {
                 keyvalue.write_to_with_space(writer, space)?;
             }
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             Self::Constant(constant) => {
                 constant.write_to_with_space(writer, space)?;
             }
@@ -255,7 +255,7 @@ impl CobMapEntry
             }
             (CobMapKVParseResult::KeyNoValue(key), next_fill, remaining) => {
                 return match key {
-                    #[cfg(feature = "full_cob")]
+                    #[cfg(feature = "full")]
                     CobMapKey::Value(CobValue::Constant(constant)) => Ok((
                         CobMapEntryResult::Success(Self::Constant(constant)),
                         next_fill,
@@ -281,15 +281,16 @@ impl CobMapEntry
             (Self::KeyValue(keyvalue), Self::KeyValue(other_keyvalue)) => {
                 keyvalue.recover_fill(other_keyvalue);
             }
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             (Self::Constant(constant), Self::Constant(other_constant)) => {
                 constant.recover_fill(other_constant);
             }
+            #[cfg(feature = "full")]
             _ => (),
         }
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve<'a>(
         &mut self,
         resolver: &'a CobLoadableResolver,
@@ -424,6 +425,7 @@ impl CobMap
         self.end_fill.recover(&other.end_fill);
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         let mut idx = 0;

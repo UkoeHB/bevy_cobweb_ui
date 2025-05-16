@@ -81,7 +81,7 @@ impl CobTuple
         self.end_fill.recover(&other.end_fill);
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         let mut idx = 0;

@@ -131,14 +131,14 @@ impl serde::Serializer for CobValueSerializer
     #[inline]
     fn serialize_unit_variant(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         variant: &'static str,
     ) -> CobResult<CobValue>
     {
         #[cfg(feature = "builtin")]
         {
-            if let Some(result) = CobBuiltin::try_from_unit_variant(name, variant)? {
+            if let Some(result) = CobBuiltin::try_from_unit_variant(_name, variant)? {
                 return Ok(CobValue::Builtin(result));
             }
         }
@@ -155,7 +155,7 @@ impl serde::Serializer for CobValueSerializer
 
     fn serialize_newtype_variant<T>(
         self,
-        name: &'static str,
+        _name: &'static str,
         _variant_index: u32,
         variant: &'static str,
         value: &T,
@@ -171,7 +171,7 @@ impl serde::Serializer for CobValueSerializer
         #[cfg(feature = "builtin")]
         {
             // Check for built-in type.
-            if let Some(result) = CobBuiltin::try_from_newtype_variant(name, variant, &value_ser)? {
+            if let Some(result) = CobBuiltin::try_from_newtype_variant(_name, variant, &value_ser)? {
                 return Ok(CobValue::Builtin(result));
             }
         }

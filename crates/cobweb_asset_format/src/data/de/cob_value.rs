@@ -43,7 +43,7 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
             CobValue::Bool(b) => visitor.visit_bool(b.value),
             CobValue::None(_) => visitor.visit_none(),
             CobValue::String(s) => visitor.visit_borrowed_str(s.as_str()),
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             CobValue::Constant(_) => Err(self.invalid_type(&visitor)),
         }
     }
@@ -191,7 +191,7 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
         }
     }
 
-    fn deserialize_tuple_struct<V>(self, name: &'static str, len: usize, visitor: V) -> CobResult<V::Value>
+    fn deserialize_tuple_struct<V>(self, _name: &'static str, len: usize, visitor: V) -> CobResult<V::Value>
     where
         V: Visitor<'de>,
     {
@@ -204,7 +204,7 @@ impl<'de> serde::Deserializer<'de> for &'de CobValue
             CobValue::Tuple(v) => visit_tuple_ref(&v.entries, visitor),
             #[cfg(feature = "builtin")]
             CobValue::Builtin(_) | CobValue::Enum(_) => {
-                if name == "RepeatedGridVal" && len == 2 {
+                if _name == "RepeatedGridVal" && len == 2 {
                     visit_raw_repeated_grid_val(self, visitor)
                 } else {
                     Err(self.invalid_type(&visitor))
@@ -299,7 +299,7 @@ impl CobValue
             CobValue::Bool(b) => format!("bool {}", b.value),
             CobValue::None(_) => format!("None"),
             CobValue::String(s) => format!("string \"{}\"", s.as_str()),
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             CobValue::Constant(constant) => format!("constant ${}", constant.path.as_str()),
         }
     }

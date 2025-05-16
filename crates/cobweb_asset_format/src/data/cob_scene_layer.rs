@@ -1,4 +1,3 @@
-use bevy::prelude::Deref;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::char;
@@ -11,7 +10,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CobSceneNodeName(pub SmolStr);
 
 impl CobSceneNodeName
@@ -19,7 +18,7 @@ impl CobSceneNodeName
     pub fn write_to(&self, writer: &mut impl RawSerializer) -> Result<(), std::io::Error>
     {
         writer.write_bytes("\"".as_bytes())?;
-        writer.write_bytes(self.as_bytes())?;
+        writer.write_bytes(self.0.as_bytes())?;
         writer.write_bytes("\"".as_bytes())?;
         Ok(())
     }
@@ -40,6 +39,11 @@ impl CobSceneNodeName
 
         Ok((Some(Self(SmolStr::from(name))), remaining))
     }
+
+    pub fn as_str(&self) -> &str
+    {
+        self.0.as_str()
+    }
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -49,7 +53,9 @@ impl CobSceneNodeName
 pub enum CobSceneLayerEntry
 {
     Loadable(CobLoadable),
+    #[cfg(feature = "full")]
     SceneMacroCall(CobSceneMacroCall),
+    #[cfg(feature = "full")]
     SceneMacroCommand(CobSceneMacroCommand),
     Layer(CobSceneLayer),
 }
@@ -62,9 +68,11 @@ impl CobSceneLayerEntry
             Self::Loadable(entry) => {
                 entry.write_to(writer)?;
             }
+            #[cfg(feature = "full")]
             Self::SceneMacroCall(entry) => {
                 entry.write_to(writer)?;
             }
+            #[cfg(feature = "full")]
             Self::SceneMacroCommand(entry) => {
                 entry.write_to(writer)?;
             }
@@ -109,10 +117,12 @@ impl CobSceneLayerEntry
             (Some(item), fill, remaining) => return Ok((Some(Self::Loadable(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
+        #[cfg(feature = "full")]
         let fill = match rc(content, move |c| CobSceneMacroCall::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCall(item)), fill, remaining)),
             (None, fill, _) => fill,
         };
+        #[cfg(feature = "full")]
         let fill = match rc(content, move |c| CobSceneMacroCommand::try_parse(fill, c))? {
             (Some(item), fill, remaining) => return Ok((Some(Self::SceneMacroCommand(item)), fill, remaining)),
             (None, fill, _) => fill,
@@ -131,9 +141,11 @@ impl CobSceneLayerEntry
             (Self::Loadable(entry), Self::Loadable(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
+            #[cfg(feature = "full")]
             (Self::SceneMacroCall(entry), Self::SceneMacroCall(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
+            #[cfg(feature = "full")]
             (Self::SceneMacroCommand(entry), Self::SceneMacroCommand(other_entry)) => {
                 entry.recover_fill(other_entry);
             }
@@ -144,6 +156,7 @@ impl CobSceneLayerEntry
         }
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve(
         &mut self,
         resolver: &mut CobResolver,
@@ -275,11 +288,13 @@ impl CobSceneLayer
         }
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &mut CobResolver, resolve_mode: SceneResolveMode) -> Result<(), String>
     {
         Self::resolve_entries_impl(self.name.as_str(), &mut self.entries, resolver, resolve_mode)
     }
 
+    #[cfg(feature = "full")]
     pub fn resolve_entries_impl(
         name: &str,
         entries: &mut Vec<CobSceneLayerEntry>,

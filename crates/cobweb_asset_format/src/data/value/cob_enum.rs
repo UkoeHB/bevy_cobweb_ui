@@ -1,11 +1,10 @@
-use bevy::prelude::Deref;
 use smol_str::SmolStr;
 
 use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Deref)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct CobEnumVariantIdentifier(pub SmolStr);
 
 impl CobEnumVariantIdentifier
@@ -21,6 +20,11 @@ impl CobEnumVariantIdentifier
         // NOTE: recursion not tested here (not vulnerable)
         let (remaining, id) = camel_identifier(content)?;
         Ok((Self::from(*id.fragment()), remaining))
+    }
+
+    pub fn as_str(&self) -> &str
+    {
+        self.0.as_str()
     }
 }
 
@@ -95,7 +99,7 @@ impl CobEnumVariant
         }
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         match self {
@@ -147,7 +151,7 @@ impl CobEnum
         self.variant.recover_fill(&other.variant);
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve(&mut self, resolver: &CobLoadableResolver) -> Result<(), String>
     {
         self.variant.resolve(resolver)

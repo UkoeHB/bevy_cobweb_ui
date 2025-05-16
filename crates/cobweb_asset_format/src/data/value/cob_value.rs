@@ -1,4 +1,6 @@
+#[cfg(feature = "full")]
 use bevy::reflect::serde::TypedReflectSerializer;
+#[cfg(feature = "full")]
 use bevy::reflect::{PartialReflect, Reflect, TypeRegistry};
 use serde::Serialize;
 
@@ -20,7 +22,7 @@ pub enum CobValue
     Bool(CobBool),
     None(CobNone),
     String(CobString),
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     Constant(CobConstant),
 }
 
@@ -62,7 +64,7 @@ impl CobValue
             Self::String(val) => {
                 val.write_to_with_space(writer, space)?;
             }
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             Self::Constant(val) => {
                 val.write_to_with_space(writer, space)?;
             }
@@ -109,7 +111,7 @@ impl CobValue
             (Some(value), fill, remaining) => return Ok((Some(Self::String(value)), fill, remaining)),
             (None, fill, _) => fill,
         };
-        #[cfg(feature = "full_cob")]
+        #[cfg(feature = "full")]
         let fill = match rc(content, move |c| CobConstant::try_parse(fill, c))? {
             (Some(value), fill, remaining) => return Ok((Some(Self::Constant(value)), fill, remaining)),
             (None, fill, _) => fill,
@@ -149,7 +151,7 @@ impl CobValue
             (Self::String(val), Self::String(other_val)) => {
                 val.recover_fill(other_val);
             }
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             (Self::Constant(val), Self::Constant(other_val)) => {
                 val.recover_fill(other_val);
             }
@@ -157,7 +159,7 @@ impl CobValue
         }
     }
 
-    #[cfg(feature = "full_cob")]
+    #[cfg(feature = "full")]
     pub fn resolve<'a>(
         &mut self,
         resolver: &'a CobLoadableResolver,
@@ -190,12 +192,14 @@ impl CobValue
         value.serialize(CobValueSerializer)
     }
 
+    #[cfg(feature = "full")]
     pub fn extract_reflect<T: Reflect + 'static>(value: &T, registry: &TypeRegistry) -> CobResult<Self>
     {
         let wrapper = TypedReflectSerializer::new(value, registry);
         wrapper.serialize(CobValueSerializer)
     }
 
+    #[cfg(feature = "full")]
     pub fn extract_partial_reflect(
         value: &(dyn PartialReflect + 'static),
         registry: &TypeRegistry,

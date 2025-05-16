@@ -68,7 +68,7 @@ fn test_equivalence_impl<T: Loadable + Debug + Serialize + for<'de> Deserialize<
     }
 
     // Rust value to cob loadable
-    let mut loadable_from_rust = CobLoadable::extract(&value, &type_registry).unwrap();
+    let mut loadable_from_rust = CobLoadable::extract_with_registry(&value, &type_registry).unwrap();
     let mut cobvalue_from_rust = CobValue::extract(&value).unwrap();
     let mut loadable_from_rust_reflect = CobLoadable::extract_reflect(&value, &type_registry).unwrap();
     let mut cobvalue_from_rust_reflect = CobValue::extract_reflect(&value, &type_registry).unwrap();
@@ -179,7 +179,7 @@ fn test_equivalence_lossy_impl<T: Loadable + Debug + Serialize + for<'de> Deseri
     assert_eq!(value, extracted_inst);
 
     // Rust value to cob loadable
-    let mut loadable_from_rust = CobLoadable::extract(&value, &type_registry).unwrap();
+    let mut loadable_from_rust = CobLoadable::extract_with_registry(&value, &type_registry).unwrap();
     let mut loadable_from_rust_reflect = CobLoadable::extract_reflect(&value, &type_registry).unwrap();
     loadable_from_rust.recover_fill(&loadable_parsed);
     loadable_from_rust_reflect.recover_fill(&loadable_parsed);

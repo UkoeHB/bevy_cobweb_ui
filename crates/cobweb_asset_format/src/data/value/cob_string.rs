@@ -8,7 +8,6 @@
 //! - an escape followed by a newline consumes all whitespace between the escape and the next non-whitespace
 //!   character, then creates a new string segment
 
-use bevy::prelude::default;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::bytes::streaming::{is_not, take_while_m_n};
@@ -130,7 +129,7 @@ fn parse_string(input: Span) -> IResult<Span, SmallVec<[CobStringSegment; 1]>>
                     let after_bytes = after_segment.fragment().as_bytes();
                     let len = input_bytes.len().saturating_sub(after_bytes.len());
                     segments.last_mut().unwrap().original = Vec::from(&input_bytes[..len]);
-                    segments.push(CobStringSegment { leading_spaces, ..default() });
+                    segments.push(CobStringSegment { leading_spaces, ..Default::default() });
                     input = next_segment;
                 }
             }

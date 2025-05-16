@@ -1,4 +1,4 @@
-use serde::de::{DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Unexpected, Visitor};
+use serde::de::{DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Visitor};
 use serde::forward_to_deserialize_any;
 
 use crate::prelude::*;
@@ -374,9 +374,9 @@ impl<'de> MapAccess<'de> for MapRefDeserializer<'de>
                 }
             }
             None => Ok(None),
-            #[cfg(feature = "full_cob")]
+            #[cfg(feature = "full")]
             _ => Err(serde::de::Error::invalid_value(
-                Unexpected::Other(&"unresolved map entry"),
+                serde::de::Unexpected::Other(&"unresolved map entry"),
                 &"map entry with key/value",
             )),
         }

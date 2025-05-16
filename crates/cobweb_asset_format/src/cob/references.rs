@@ -52,7 +52,7 @@ impl SceneFile
     pub fn inner(&self) -> &Arc<str>
     {
         match self {
-            Self::File(file) => &*file,
+            Self::File(file) => file.get(),
             Self::ManifestKey(key) => &*key,
         }
     }
