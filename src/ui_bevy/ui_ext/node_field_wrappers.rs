@@ -39,8 +39,9 @@ fn get_node_value<T>(entity: Entity, world: &World, callback: impl FnOnce(&Node)
 
 fn remove_node(entity: Entity, world: &mut World)
 {
+    // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
     let _ = world.get_entity_mut(entity).map(|mut e| {
-        e.remove_with_requires::<Node>();
+        e.remove::<Node>();
     });
 }
 
@@ -1634,9 +1635,9 @@ impl ResponsiveAttribute for GridColumn {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct UiStyleFieldWrappersPlugin;
+pub(crate) struct NodeFieldWrappersPlugin;
 
-impl Plugin for UiStyleFieldWrappersPlugin
+impl Plugin for NodeFieldWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {

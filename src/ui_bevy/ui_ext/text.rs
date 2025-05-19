@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::text::LineBreak;
+use bevy::ui::widget::TextNodeFlags;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
@@ -123,8 +124,9 @@ impl Instruction for TextLine
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<(Text, ContentSize)>();
+            e.remove::<(Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
         });
     }
 }
@@ -190,8 +192,9 @@ impl Instruction for TextLineSize
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<Text>();
+            e.remove::<(Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
         });
     }
 }
@@ -239,8 +242,9 @@ impl Instruction for TextLineColor
 
     fn revert(entity: Entity, world: &mut World)
     {
+        // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<(Self, Text)>();
+            e.remove::<(Self, Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
         });
     }
 }
@@ -307,7 +311,7 @@ impl Instruction for SetTextShadow
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<TextShadow>();
+            e.remove::<TextShadow>();
         });
     }
 }

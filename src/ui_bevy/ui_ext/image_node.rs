@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::ui::widget::ImageNodeSize;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
 
@@ -121,7 +122,7 @@ impl Instruction for LoadedImageNode
     fn revert(entity: Entity, world: &mut World)
     {
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove_with_requires::<(ImageNode, ContentSize)>();
+            e.remove::<(ImageNode, ImageNodeSize, ContentSize)>();
         });
     }
 }

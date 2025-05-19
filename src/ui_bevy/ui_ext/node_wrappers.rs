@@ -2126,9 +2126,9 @@ impl StaticAttribute for DisplayControl
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct StyleWrappersPlugin;
+pub(crate) struct NodeWrappersPlugin;
 
-impl Plugin for StyleWrappersPlugin
+impl Plugin for NodeWrappersPlugin
 {
     fn build(&self, app: &mut App)
     {

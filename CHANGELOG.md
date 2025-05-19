@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.1
+
+- Bug fix for implicit nodes disappearing temporarily when a change on their loadables is hot reloaded.
+
+
 ## 0.16.0
 
 - Fix compile errors in `cobweb_asset_format` sub-crate.
