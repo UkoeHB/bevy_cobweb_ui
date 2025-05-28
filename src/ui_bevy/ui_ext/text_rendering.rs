@@ -43,70 +43,62 @@ fn extract_text_outlines(
             continue;
         };
 
-        let mut offset_x = -(outline.width as i32 - 1);
-        while offset_x <= (outline.width as i32 - 1).max(0) {
-            let mut offset_y = -(outline.width as i32 - 1);
-            while offset_y <= (outline.width as i32 - 1).max(0) {
-                let offset_x_f32 = offset_x as f32;
-                let offset_y_f32 = offset_y as f32;
-                let mut count = 0;
-                for offset in [
-                    Vec2 { x: (0.0 + offset_x_f32), y: (1.0 + offset_y_f32) },
-                    Vec2 { x: (0.0 + offset_x_f32), y: -(1.0 + offset_y_f32) },
-                    Vec2 { x: (1.0 + offset_x_f32), y: (0.0 + offset_y_f32) },
-                    Vec2 { x: -(1.0 + offset_x_f32), y: (0.0 + offset_y_f32) },
-                    Vec2 { x: (1.0 + offset_x_f32), y: (1.0 + offset_y_f32) },
-                    Vec2 { x: (1.0 + offset_x_f32), y: -(1.0 + offset_y_f32) },
-                    Vec2 { x: -(1.0 + offset_x_f32), y: (1.0 + offset_y_f32) },
-                    Vec2 { x: -(1.0 + offset_x_f32), y: -(1.0 + offset_y_f32) },
-                ] {
-                    count += 1;
-                    // Don't apply extra corner glyphs if using soft corners.
-                    if outline.soft_corners && count >= 5 {
-                        break;
-                    }
-                    // Only apply extra corner glyphs when offset to the corners.
-                    if count >= 5 && offset_x.abs().min(offset_y.abs()) < outline.width as i32 - 1 {
-                        break;
-                    }
+        let mut offset_x = -outline.width as i32;
+        while offset_x <= (outline.width as i32).max(0) {
+            let mut offset_y = -outline.width as i32;
+            while offset_y <= (outline.width as i32).max(0) {
+                // Don't apply extra corner glyphs if using soft corners.
+                if outline.soft_corners
+                    && (offset_x.abs() == offset_y.abs())
+                    && (offset_x.abs() == outline.width as i32)
+                {
+                    offset_y += 1;
+                    continue;
+                }
 
-                    let transform = global_transform.affine()
-                        * Mat4::from_translation(
-                            (-0.5 * uinode.size() + offset / uinode.inverse_scale_factor()).extend(0.),
-                        );
+                if offset_x == 0 && offset_y == 0 {
+                    offset_y += 1;
+                    continue;
+                }
 
-                    for (i, PositionedGlyph { position, atlas_info, span_index, .. }) in
-                        text_layout_info.glyphs.iter().enumerate()
-                    {
-                        let rect = texture_atlases
-                            .get(&atlas_info.texture_atlas)
-                            .unwrap()
-                            .textures[atlas_info.location.glyph_index]
-                            .as_rect();
-                        extracted_uinodes.glyphs.push(ExtractedGlyph {
-                            transform: transform * Mat4::from_translation(position.extend(0.)),
+                let offset = Vec2 { x: offset_x as f32, y: offset_y as f32 };
+
+                let transform = global_transform.affine()
+                    * Mat4::from_translation(
+                        (-0.5 * uinode.size() + offset / uinode.inverse_scale_factor()).extend(0.),
+                    );
+
+                for (i, PositionedGlyph { position, atlas_info, span_index, .. }) in
+                    text_layout_info.glyphs.iter().enumerate()
+                {
+                    let rect = texture_atlases
+                        .get(&atlas_info.texture_atlas)
+                        .unwrap()
+                        .textures[atlas_info.location.glyph_index]
+                        .as_rect();
+                    extracted_uinodes.glyphs.push(ExtractedGlyph {
+                        transform: transform * Mat4::from_translation(position.extend(0.)),
+                        rect,
+                    });
+
+                    if text_layout_info.glyphs.get(i + 1).is_none_or(|info| {
+                        info.span_index != *span_index || info.atlas_info.texture != atlas_info.texture
+                    }) {
+                        extracted_uinodes.uinodes.push(ExtractedUiNode {
+                            render_entity: commands.spawn(TemporaryRenderEntity).id(),
+                            stack_index: uinode.stack_index,
+                            color: outline.color.into(),
+                            image: atlas_info.texture.id(),
+                            clip: clip.map(|clip| clip.clip),
+                            extracted_camera_entity,
                             rect,
+                            item: ExtractedUiItem::Glyphs { range: start..end },
+                            main_entity: entity.into(),
                         });
-
-                        if text_layout_info.glyphs.get(i + 1).is_none_or(|info| {
-                            info.span_index != *span_index || info.atlas_info.texture != atlas_info.texture
-                        }) {
-                            extracted_uinodes.uinodes.push(ExtractedUiNode {
-                                render_entity: commands.spawn(TemporaryRenderEntity).id(),
-                                stack_index: uinode.stack_index,
-                                color: outline.color.into(),
-                                image: atlas_info.texture.id(),
-                                clip: clip.map(|clip| clip.clip),
-                                extracted_camera_entity,
-                                rect,
-                                item: ExtractedUiItem::Glyphs { range: start..end },
-                                main_entity: entity.into(),
-                            });
-                            start = end;
-                        }
-
-                        end += 1;
+                        start = end;
                     }
+
+                    end += 1;
                 }
                 offset_y += 1;
             }
