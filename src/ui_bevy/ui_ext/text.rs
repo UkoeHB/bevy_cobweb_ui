@@ -402,7 +402,7 @@ impl AnimatedAttribute for TextShadowGroup
 /// Inserted as a component to the entity to support animations.
 ///
 /// Does *not* interfere with existing [`TextShadow`] or [`TextShadowGroup`] components on the entity.
-#[derive(Component, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[derive(Component, Reflect, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -415,11 +415,35 @@ pub struct TextOutline
     ///
     /// Large widths may have a noticeable performance impact, especially if large amounts of text are outlined.
     pub width: f32,
+    /// Defaults to [`Color::BLACK`].
+    #[reflect(default = "TextOutline::default_color")]
     pub color: Color,
     /// Multiplied to the alpha of the outermost layer of shadows that make up the outline. The effect is to
     /// soften corners and arcs while leaving straight edges dark.
+    ///
+    /// Defaults to no anti-aliasing.
     #[reflect(default)]
     pub anti_aliasing: Option<f32>,
+}
+
+impl TextOutline
+{
+    fn default_color() -> Color
+    {
+        Color::BLACK
+    }
+}
+
+impl Default for TextOutline
+{
+    fn default() -> Self
+    {
+        Self {
+            width: 0.0,
+            color: Self::default_color(),
+            anti_aliasing: None,
+        }
+    }
 }
 
 impl Instruction for TextOutline

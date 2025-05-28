@@ -6,4 +6,4 @@
     "a"
         TextLine{ text: "Hello, World!" }
         TextLineColor(#FFFFFF)
-        TextOutline{ width: 2.0 color: #000000 anti_aliasing:0.6 }
+        TextOutline{ width: 2.0 anti_aliasing:0.6 }
