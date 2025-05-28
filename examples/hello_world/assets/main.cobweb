@@ -1,3 +1,9 @@
 #scenes
 "scene"
-    TextLine{ text: "Hello, World!" }
+    FlexNode{padding:{top:10px bottom:10px left:10px right:10px}}
+    BackgroundColor(#FFFFFF)
+
+    "a"
+        TextLine{ text: "Hello, World!" }
+        TextLineColor(#FFFFFF)
+        TextOutline{ width: 2.0 color: #000000 soft_corners:false }

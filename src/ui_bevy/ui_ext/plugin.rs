@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::prelude::*;
+use super::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -19,6 +19,7 @@ impl Plugin for StyleExtPlugin
             // overwrite style fields correctly.
             .add_plugins(NodeFieldWrappersPlugin)
             .add_plugins(UiTextExtPlugin)
+            .add_plugins(UiTextRenderingExtPlugin)
             .add_plugins(ImageNodeExtPlugin);
     }
 }

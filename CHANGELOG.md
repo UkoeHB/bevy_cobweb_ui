@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0
+
+- Remove `SetTextShadow` and replace with `TextShadowGroup`.
+- Add `TextOutline` instruction as a convenience wrapper around `TextShadowGroup`.
+
+
 ## 0.16.1
 
 - Bug fix for implicit nodes disappearing temporarily when a change on their loadables is hot reloaded.

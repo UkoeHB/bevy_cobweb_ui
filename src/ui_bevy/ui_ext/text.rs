@@ -1,8 +1,9 @@
 use bevy::prelude::*;
-use bevy::text::LineBreak;
+use bevy::text::{ComputedTextBlock, LineBreak, TextLayoutInfo};
 use bevy::ui::widget::TextNodeFlags;
 use bevy::ui::ContentSize;
 use bevy_cobweb::prelude::*;
+use smallvec::SmallVec;
 
 use crate::prelude::*;
 
@@ -126,7 +127,16 @@ impl Instruction for TextLine
     {
         // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
+            e.remove::<(
+                Text,
+                TextLayout,
+                TextFont,
+                TextColor,
+                TextNodeFlags,
+                ContentSize,
+                ComputedTextBlock,
+                TextLayoutInfo,
+            )>();
         });
     }
 }
@@ -194,7 +204,16 @@ impl Instruction for TextLineSize
     {
         // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
+            e.remove::<(
+                Text,
+                TextLayout,
+                TextFont,
+                TextColor,
+                TextNodeFlags,
+                ContentSize,
+                ComputedTextBlock,
+                TextLayoutInfo,
+            )>();
         });
     }
 }
@@ -244,7 +263,17 @@ impl Instruction for TextLineColor
     {
         // NOTE: Can't use remove_with_requires because removing and reinserting ComputedNodeTarget breaks UI.
         let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<(Self, Text, TextLayout, TextFont, TextColor, TextNodeFlags, ContentSize)>();
+            e.remove::<(
+                Self,
+                Text,
+                TextLayout,
+                TextFont,
+                TextColor,
+                TextNodeFlags,
+                ContentSize,
+                ComputedTextBlock,
+                TextLayoutInfo,
+            )>();
         });
     }
 }
@@ -270,53 +299,20 @@ impl AnimatedAttribute for TextLineColor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction for setting the [`TextColor`] component on an entity.
+/// Reimplementation of [`TextShadow`].
 #[derive(Reflect, Default, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-pub struct SetTextShadow
+pub struct TextShadowImpl
 {
     pub offset: Vec2,
     pub color: Color,
 }
 
-impl Into<TextShadow> for SetTextShadow
-{
-    fn into(self) -> TextShadow
-    {
-        TextShadow { offset: self.offset, color: self.color }
-    }
-}
-
-impl From<TextShadow> for SetTextShadow
-{
-    fn from(shadow: TextShadow) -> Self
-    {
-        Self { offset: shadow.offset, color: shadow.color }
-    }
-}
-
-impl Instruction for SetTextShadow
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(TextShadow::from(self.into()));
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<TextShadow>();
-        });
-    }
-}
-
-impl cob_sickle_math::Lerp for SetTextShadow
+impl cob_sickle_math::Lerp for TextShadowImpl
 {
     fn lerp(&self, to: Self, t: f32) -> Self
     {
@@ -327,7 +323,60 @@ impl cob_sickle_math::Lerp for SetTextShadow
     }
 }
 
-impl StaticAttribute for SetTextShadow
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Instruction for setting a group of text shadows on an entity.
+#[derive(Component, Reflect, Default, Debug, Clone, PartialEq, Deref, DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+pub struct TextShadowGroup(pub SmallVec<[TextShadowImpl; 4]>);
+
+impl TextShadowGroup
+{
+    pub fn new(shadow: TextShadowImpl) -> Self
+    {
+        Self(SmallVec::from_elem(shadow, 1))
+    }
+
+    pub fn from_slice(shadows: &[TextShadowImpl]) -> Self
+    {
+        Self(SmallVec::from_slice(shadows))
+    }
+}
+
+impl Instruction for TextShadowGroup
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(self);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Self>();
+        });
+    }
+}
+
+impl cob_sickle_math::Lerp for TextShadowGroup
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        let mut group = self.clone();
+        group.iter_mut().zip(to.iter()).for_each(|(grp, to)| {
+            *grp = grp.lerp(*to, t);
+        });
+        group
+    }
+}
+
+impl StaticAttribute for TextShadowGroup
 {
     type Value = Self;
     fn construct(value: Self::Value) -> Self
@@ -336,13 +385,93 @@ impl StaticAttribute for SetTextShadow
     }
 }
 
-impl ResponsiveAttribute for SetTextShadow {}
-impl AnimatedAttribute for SetTextShadow
+impl ResponsiveAttribute for TextShadowGroup {}
+impl AnimatedAttribute for TextShadowGroup
 {
     fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
     {
-        let shadow = world.get::<TextShadow>(entity).copied()?;
-        Some(shadow.into())
+        let shadow = world.get::<Self>(entity).cloned()?;
+        Some(shadow)
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+/// Instruction for adding four text shadows to form a text outline.
+///
+/// Inserted as a component to the entity to support animations.
+///
+/// Does *not* interfere with existing [`TextShadow`] or [`TextShadowGroup`] components on the entity.
+#[derive(Component, Reflect, Default, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    reflect(Serialize, Deserialize)
+)]
+#[component(immutable)]
+pub struct TextOutline
+{
+    /// Width of the outline in pixels.
+    ///
+    /// Large widths may have a noticeable performance impact, especially if large amounts of text are outlined.
+    pub width: f32,
+    pub color: Color,
+    /// If true then corners of the outline will not be shaded.
+    ///
+    /// Setting this to `true` may improve performance of text outlines, especially for large widths.
+    ///
+    /// It is recommended to set this to `false` for widths of `1.0`.`
+    ///
+    /// Defaults to `false``.
+    #[reflect(default)]
+    pub soft_corners: bool,
+}
+
+impl Instruction for TextOutline
+{
+    fn apply(self, entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.insert(self);
+        });
+    }
+
+    fn revert(entity: Entity, world: &mut World)
+    {
+        let _ = world.get_entity_mut(entity).map(|mut e| {
+            e.remove::<Self>();
+        });
+    }
+}
+
+impl cob_sickle_math::Lerp for TextOutline
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self {
+            width: self.width.lerp(to.width, t),
+            color: self.color.lerp(to.color, t),
+            soft_corners: self.soft_corners,
+        }
+    }
+}
+
+impl StaticAttribute for TextOutline
+{
+    type Value = Self;
+    fn construct(value: Self::Value) -> Self
+    {
+        value
+    }
+}
+
+impl ResponsiveAttribute for TextOutline {}
+impl AnimatedAttribute for TextOutline
+{
+    fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
+    {
+        let outline = world.get::<Self>(entity).copied()?;
+        Some(outline)
     }
 }
 
@@ -357,7 +486,9 @@ impl Plugin for UiTextExtPlugin
         app.register_static::<TextLine>()
             .register_static::<TextLineSize>()
             .register_animatable::<TextLineColor>()
-            .register_animatable::<SetTextShadow>();
+            .register_animatable::<TextShadowGroup>()
+            .register_animatable::<TextOutline>()
+            .register_type::<TextShadowImpl>();
     }
 }
 
