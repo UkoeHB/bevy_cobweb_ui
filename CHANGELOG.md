@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.0
+
+- Replace `TextOutline::soft_corners` with `TextOutline::anti_aliasing`.
+
+
 ## 0.17.0
 
 - Remove `SetTextShadow` and replace with `TextShadowGroup`.

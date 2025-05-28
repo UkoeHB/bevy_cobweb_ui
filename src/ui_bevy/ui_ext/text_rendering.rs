@@ -43,18 +43,20 @@ fn extract_text_outlines(
             continue;
         };
 
-        for offset_x in (-outline.width as i32)..=(outline.width as i32) {
-            for offset_y in (-outline.width as i32)..=(outline.width as i32) {
-                // Don't apply extra corner glyphs if using soft corners.
-                if outline.soft_corners
-                    && (offset_x.abs() == offset_y.abs())
-                    && (offset_x.abs() == outline.width as i32)
-                {
+        let width = outline.width as i32;
+        let aa_factor = outline.anti_aliasing.unwrap_or(1.0);
+        let color: LinearRgba = outline.color.into();
+
+        for offset_x in -width..=width {
+            for offset_y in -width..=width {
+                if offset_x == 0 && offset_y == 0 {
                     continue;
                 }
 
-                if offset_x == 0 && offset_y == 0 {
-                    continue;
+                // Anti-aliasing.
+                let mut color = color;
+                if (offset_x.abs() == width) || (offset_y.abs() == width) {
+                    color.alpha *= aa_factor;
                 }
 
                 let offset = Vec2 { x: offset_x as f32, y: offset_y as f32 };
@@ -83,7 +85,7 @@ fn extract_text_outlines(
                         extracted_uinodes.uinodes.push(ExtractedUiNode {
                             render_entity: commands.spawn(TemporaryRenderEntity).id(),
                             stack_index: uinode.stack_index,
-                            color: outline.color.into(),
+                            color,
                             image: atlas_info.texture.id(),
                             clip: clip.map(|clip| clip.clip),
                             extracted_camera_entity,

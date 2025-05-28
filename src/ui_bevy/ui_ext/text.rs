@@ -416,15 +416,10 @@ pub struct TextOutline
     /// Large widths may have a noticeable performance impact, especially if large amounts of text are outlined.
     pub width: f32,
     pub color: Color,
-    /// If true then corners of the outline will not be shaded.
-    ///
-    /// Setting this to `true` may improve performance of text outlines, especially for large widths.
-    ///
-    /// It is recommended to set this to `false` for widths of `1.0`.`
-    ///
-    /// Defaults to `false``.
+    /// Multiplied to the alpha of the outermost layer of shadows that make up the outline. The effect is to
+    /// soften corners and arcs while leaving straight edges dark.
     #[reflect(default)]
-    pub soft_corners: bool,
+    pub anti_aliasing: Option<f32>,
 }
 
 impl Instruction for TextOutline
@@ -448,10 +443,12 @@ impl cob_sickle_math::Lerp for TextOutline
 {
     fn lerp(&self, to: Self, t: f32) -> Self
     {
+        let aa_a = self.anti_aliasing.unwrap_or(1.0);
+        let aa_b = to.anti_aliasing.unwrap_or(1.0);
         Self {
             width: self.width.lerp(to.width, t),
             color: self.color.lerp(to.color, t),
-            soft_corners: self.soft_corners,
+            anti_aliasing: Some(aa_a.lerp(aa_b, t)),
         }
     }
 }

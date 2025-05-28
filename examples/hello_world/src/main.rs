@@ -26,6 +26,7 @@ fn main()
         // .add_plugins(bevy_egui::EguiPlugin { enable_multipass_for_primary_context: true })
         // .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
         .load("main.cobweb")
+        // .insert_resource(UiScale(6.0))
         .add_systems(OnEnter(LoadState::Done), build_ui)
         .run();
 }
