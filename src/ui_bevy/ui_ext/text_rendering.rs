@@ -43,21 +43,17 @@ fn extract_text_outlines(
             continue;
         };
 
-        let mut offset_x = -outline.width as i32;
-        while offset_x <= (outline.width as i32).max(0) {
-            let mut offset_y = -outline.width as i32;
-            while offset_y <= (outline.width as i32).max(0) {
+        for offset_x in (-outline.width as i32)..=(outline.width as i32) {
+            for offset_y in (-outline.width as i32)..=(outline.width as i32) {
                 // Don't apply extra corner glyphs if using soft corners.
                 if outline.soft_corners
                     && (offset_x.abs() == offset_y.abs())
                     && (offset_x.abs() == outline.width as i32)
                 {
-                    offset_y += 1;
                     continue;
                 }
 
                 if offset_x == 0 && offset_y == 0 {
-                    offset_y += 1;
                     continue;
                 }
 
@@ -100,9 +96,7 @@ fn extract_text_outlines(
 
                     end += 1;
                 }
-                offset_y += 1;
             }
-            offset_x += 1;
         }
     }
 }
