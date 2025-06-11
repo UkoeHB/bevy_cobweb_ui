@@ -198,9 +198,8 @@ impl Plugin for UiTextRenderingExtPlugin
             ExtractSchedule,
             // Outlines last so they render above shadows.
             (
-                bevy::ui::extract_text_shadows,
                 extract_text_shadow_groups,
-                extract_text_outlines,
+                extract_text_outlines.after(bevy::ui::extract_text_shadows),
             )
                 .chain()
                 .in_set(RenderUiSystem::ExtractTextShadows),

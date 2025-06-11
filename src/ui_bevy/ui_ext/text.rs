@@ -397,18 +397,18 @@ impl AnimatedAttribute for TextShadowGroup
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction for adding four text shadows to form a text outline.
+/// Instruction for adding an outline around text.
 ///
 /// Inserted as a component to the entity to support animations.
 ///
-/// Does *not* interfere with existing [`TextShadow`] or [`TextShadowGroup`] components on the entity.
+/// Does *not* interfere with existing [`TextShadow`] or [`TextShadowGroup`] components on the entity. The
+/// outline will be 'above' any shadows.
 #[derive(Component, Reflect, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     reflect(Serialize, Deserialize)
 )]
-#[component(immutable)]
 pub struct TextOutline
 {
     /// Width of the outline in pixels.
