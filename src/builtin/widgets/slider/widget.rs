@@ -197,9 +197,6 @@ fn slider_bar_ptr_down(
     handles: Query<(Entity, &ComputedNode, &GlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
 )
 {
-    // Prevent propagation, we are consuming this event.
-    event.propagate(false);
-
     // Look up the slider and its handle.
     let slider_entity = event.target();
     let Ok((
@@ -214,6 +211,9 @@ fn slider_bar_ptr_down(
     else {
         return;
     };
+
+    // Prevent propagation, we are consuming this event.
+    event.propagate(false);
 
     let maybe_handle =
         iter_children.search_descendants(slider_children, &children_query, |child| handles.get(child).ok());
@@ -322,6 +322,14 @@ fn slider_bar_drag(
     handles: Query<&ComputedNode, (With<SliderHandle>, Without<ComputedSlider>)>,
 )
 {
+    // Look up the slider.
+    let slider_entity = event.target();
+    let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
+        sliders.get_mut(slider_entity)
+    else {
+        return;
+    };
+
     // Prevent propagation, we are consuming this event.
     event.propagate(false);
 
@@ -330,14 +338,6 @@ fn slider_bar_drag(
     if event.event().distance == Vec2::default() {
         return;
     }
-
-    // Look up the slider.
-    let slider_entity = event.target();
-    let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
-        sliders.get_mut(slider_entity)
-    else {
-        return;
-    };
 
     // Drags require a valid press event.
     if slider.drag_reference.invalid_press {

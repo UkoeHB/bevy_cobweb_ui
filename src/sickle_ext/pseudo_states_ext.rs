@@ -7,7 +7,7 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
+fn enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -22,7 +22,7 @@ fn detect_enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Qu
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
+fn disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -35,7 +35,7 @@ fn detect_disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
+fn select_reactor(event: EntityEvent<Select>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -45,7 +45,7 @@ fn detect_select_reactor(event: EntityEvent<Select>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
+fn deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -55,7 +55,7 @@ fn detect_deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
+fn check_reactor(event: EntityEvent<Check>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -65,7 +65,7 @@ fn detect_check_reactor(event: EntityEvent<Check>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
+fn uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -75,7 +75,7 @@ fn detect_uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
+fn toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
 {
     let entity = event.entity();
 
@@ -88,7 +88,7 @@ fn detect_toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands,
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
+fn open_reactor(event: EntityEvent<Open>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -99,7 +99,7 @@ fn detect_open_reactor(event: EntityEvent<Open>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
+fn close_reactor(event: EntityEvent<Close>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -110,7 +110,7 @@ fn detect_close_reactor(event: EntityEvent<Close>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
+fn fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -120,7 +120,7 @@ fn detect_fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn detect_unfold_reactor(event: EntityEvent<Unfold>, mut c: Commands)
+fn unfold_reactor(event: EntityEvent<Unfold>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -729,17 +729,17 @@ impl Plugin for PseudoStatesExtPlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.add_reactor(any_entity_event::<Enable>(), detect_enable_reactor);
-        app.add_reactor(any_entity_event::<Disable>(), detect_disable_reactor);
-        app.add_reactor(any_entity_event::<Select>(), detect_select_reactor);
-        app.add_reactor(any_entity_event::<Deselect>(), detect_deselect_reactor);
-        app.add_reactor(any_entity_event::<Check>(), detect_check_reactor);
-        app.add_reactor(any_entity_event::<Uncheck>(), detect_uncheck_reactor);
-        app.add_reactor(any_entity_event::<ToggleCheck>(), detect_toggle_check_reactor);
-        app.add_reactor(any_entity_event::<Open>(), detect_open_reactor);
-        app.add_reactor(any_entity_event::<Close>(), detect_close_reactor);
-        app.add_reactor(any_entity_event::<Fold>(), detect_fold_reactor);
-        app.add_reactor(any_entity_event::<Unfold>(), detect_unfold_reactor);
+        app.add_reactor(any_entity_event::<Enable>(), enable_reactor);
+        app.add_reactor(any_entity_event::<Disable>(), disable_reactor);
+        app.add_reactor(any_entity_event::<Select>(), select_reactor);
+        app.add_reactor(any_entity_event::<Deselect>(), deselect_reactor);
+        app.add_reactor(any_entity_event::<Check>(), check_reactor);
+        app.add_reactor(any_entity_event::<Uncheck>(), uncheck_reactor);
+        app.add_reactor(any_entity_event::<ToggleCheck>(), toggle_check_reactor);
+        app.add_reactor(any_entity_event::<Open>(), open_reactor);
+        app.add_reactor(any_entity_event::<Close>(), close_reactor);
+        app.add_reactor(any_entity_event::<Fold>(), fold_reactor);
+        app.add_reactor(any_entity_event::<Unfold>(), unfold_reactor);
     }
 }
 

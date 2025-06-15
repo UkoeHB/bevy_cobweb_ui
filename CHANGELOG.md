@@ -3,6 +3,7 @@
 ## WIP
 
 - Set `TextOutline` default color to black.
+- Improve `TextOutline` performance.
 
 
 ## 0.18.0
