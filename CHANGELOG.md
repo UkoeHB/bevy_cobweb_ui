@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.19.0
 
 - Set `TextOutline` default color to black.
 - Improve `TextOutline` performance.
