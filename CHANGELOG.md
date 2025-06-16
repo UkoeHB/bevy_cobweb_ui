@@ -1,5 +1,10 @@
 # Changelog
 
+## WIP
+
+- Fix `TextOutline` rendering when antialiasing is enabled.
+
+
 ## 0.19.1
 
 - Bug fixes for `TextOutline`:

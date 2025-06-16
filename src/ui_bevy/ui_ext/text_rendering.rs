@@ -92,24 +92,26 @@ fn extract_text_outlines(
                 .get(i + 1)
                 .is_none_or(|info| info.atlas_info.texture != atlas_info.texture)
             {
+                if len > 0 {
+                    extracted_uinodes.uinodes.push(ExtractedUiNode {
+                        render_entity: commands.spawn(TemporaryRenderEntity).id(),
+                        stack_index: uinode.stack_index,
+                        color,
+                        image: atlas_info.texture.id(),
+                        clip: clip.map(|clip| clip.clip),
+                        extracted_camera_entity,
+                        rect,
+                        item: ExtractedUiItem::Glyphs { range: start..(start + len) },
+                        main_entity: entity.into(),
+                    });
+                    start += len;
+                    len = 0;
+                }
+
                 let aa_len = aa_glyph_cache.len();
                 for aa_glyph in aa_glyph_cache.drain(..) {
                     extracted_uinodes.glyphs.push(aa_glyph);
                 }
-
-                extracted_uinodes.uinodes.push(ExtractedUiNode {
-                    render_entity: commands.spawn(TemporaryRenderEntity).id(),
-                    stack_index: uinode.stack_index,
-                    color,
-                    image: atlas_info.texture.id(),
-                    clip: clip.map(|clip| clip.clip),
-                    extracted_camera_entity,
-                    rect,
-                    item: ExtractedUiItem::Glyphs { range: start..(start + len) },
-                    main_entity: entity.into(),
-                });
-                start += len;
-                len = 0;
 
                 if aa_len > 0 {
                     extracted_uinodes.uinodes.push(ExtractedUiNode {
@@ -123,6 +125,7 @@ fn extract_text_outlines(
                         item: ExtractedUiItem::Glyphs { range: start..(start + aa_len) },
                         main_entity: entity.into(),
                     });
+                    start += aa_len;
                 }
             }
         }
