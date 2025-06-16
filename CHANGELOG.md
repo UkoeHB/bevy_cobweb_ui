@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP
+## 0.19.2
 
 - Fix `TextOutline` rendering when antialiasing is enabled.
 
