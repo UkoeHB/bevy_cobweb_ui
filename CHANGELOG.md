@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.1
+
+- Bug fixes for `TextOutline`:
+    - Apply UI scaling to width instead of offset.
+    - Use radial pattern for shadows instead of grid.
+    - Apply `TextOutline` antialiasing properly.
+
+
 ## 0.19.0
 
 - Set `TextOutline` default color to black.
