@@ -20,7 +20,8 @@ impl Plugin for StyleExtPlugin
             .add_plugins(NodeFieldWrappersPlugin)
             .add_plugins(UiTextExtPlugin)
             .add_plugins(UiTextRenderingExtPlugin)
-            .add_plugins(ImageNodeExtPlugin);
+            .add_plugins(ImageNodeExtPlugin)
+            .add_plugins(bevy_slow_text_outline::prelude::SlowTextOutlinePlugin::default());
     }
 }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.20.0
+
+- Move `TextOutline` to new crate `bevy_slow_text_outline`. `TextOutline` is now re-exported instead of implemented here.
+
+
 ## 0.19.2
 
 - Fix `TextOutline` rendering when antialiasing is enabled.

@@ -8,4 +8,5 @@ repository = "https://github.com/UkoeHB/bevy_cobweb_ui"
 
 [dependencies]
 bevy.workspace = true
+bevy_slow_text_outline.workspace = true
 serde.workspace = true

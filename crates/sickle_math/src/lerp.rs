@@ -1,7 +1,7 @@
 use bevy::color::{Color, Mix};
 use bevy::prelude::Vec2;
 use bevy::ui::{BorderRadius, Outline, UiRect, Val};
-
+use bevy_slow_text_outline::prelude::TextOutline;
 pub trait Lerp
 {
     fn lerp(&self, to: Self, t: f32) -> Self;
@@ -161,5 +161,19 @@ impl Lerp for Vec2
     fn lerp(&self, to: Self, t: f32) -> Self
     {
         Self { x: self.x.lerp(to.x, t), y: self.y.lerp(to.y, t) }
+    }
+}
+
+impl Lerp for TextOutline
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        let aa_a = self.anti_aliasing.unwrap_or(1.0);
+        let aa_b = to.anti_aliasing.unwrap_or(1.0);
+        Self {
+            width: self.width.lerp(to.width, t),
+            color: self.color.lerp(to.color, t),
+            anti_aliasing: Some(aa_a.lerp(aa_b, t)),
+        }
     }
 }

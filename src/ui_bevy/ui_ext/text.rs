@@ -397,54 +397,12 @@ impl AnimatedAttribute for TextShadowGroup
 
 //-------------------------------------------------------------------------------------------------------------------
 
-/// Instruction for adding an outline around text.
+/// Re-exports [`TextOutline`].
 ///
-/// Inserted as a component to the entity to support animations.
+/// Implements instruction for adding an outline around text.
 ///
-/// Does *not* interfere with existing [`TextShadow`] or [`TextShadowGroup`] components on the entity. The
-/// outline will be 'above' any shadows.
-#[derive(Component, Reflect, Debug, Copy, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "serde",
-    derive(serde::Serialize, serde::Deserialize),
-    reflect(Serialize, Deserialize)
-)]
-pub struct TextOutline
-{
-    /// Width of the outline in pixels.
-    ///
-    /// Large widths may have a noticeable performance impact, especially if large amounts of text are outlined.
-    pub width: f32,
-    /// Defaults to [`Color::BLACK`].
-    #[reflect(default = "TextOutline::default_color")]
-    pub color: Color,
-    /// Multiplied to the alpha of the outermost layer of shadows that make up the outline. The effect is to
-    /// soften corners and arcs while leaving straight edges dark.
-    ///
-    /// Defaults to no anti-aliasing.
-    #[reflect(default)]
-    pub anti_aliasing: Option<f32>,
-}
-
-impl TextOutline
-{
-    fn default_color() -> Color
-    {
-        Color::BLACK
-    }
-}
-
-impl Default for TextOutline
-{
-    fn default() -> Self
-    {
-        Self {
-            width: 0.0,
-            color: Self::default_color(),
-            anti_aliasing: None,
-        }
-    }
-}
+/// Re-expo
+pub use bevy_slow_text_outline::prelude::TextOutline;
 
 impl Instruction for TextOutline
 {
@@ -460,20 +418,6 @@ impl Instruction for TextOutline
         let _ = world.get_entity_mut(entity).map(|mut e| {
             e.remove::<Self>();
         });
-    }
-}
-
-impl cob_sickle_math::Lerp for TextOutline
-{
-    fn lerp(&self, to: Self, t: f32) -> Self
-    {
-        let aa_a = self.anti_aliasing.unwrap_or(1.0);
-        let aa_b = to.anti_aliasing.unwrap_or(1.0);
-        Self {
-            width: self.width.lerp(to.width, t),
-            color: self.color.lerp(to.color, t),
-            anti_aliasing: Some(aa_a.lerp(aa_b, t)),
-        }
     }
 }
 

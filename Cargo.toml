@@ -47,7 +47,7 @@ widgets = ["colors"]
 editor = ["hot_reload", "colors", "widgets", "dep:foldhash"]
 
 # Enables Serialize/Deserialize on some built-in types.
-serde = ["bevy/serialize"]
+serde = ["bevy/serialize", "bevy_slow_text_outline/serde"]
 
 # Enables hot-reloading. Note that embedded files are not hot-reloaded by default due to perf
 # issues (see https://github.com/bevyengine/bevy/issues/17430). You'll need bevy's
@@ -60,6 +60,7 @@ dev = ["hot_reload", "bevy/dynamic_linking"]
 [dependencies]
 bevy.workspace = true
 bevy_cobweb.workspace = true
+bevy_slow_text_outline.workspace = true
 dyn-clone.workspace = true
 nom.workspace = true
 serde.workspace = true
@@ -91,6 +92,7 @@ cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.2.0", 
 
 [workspace.dependencies]
 bevy_cobweb = { version = "0.17.0" }
+bevy_slow_text_outline = { version = "0.1", default-features = false }
 #bevy_cobweb = { git = "https://github.com/UkoeHB/bevy_cobweb", rev = "19c66ab" }
 dyn-clone = { version = "1.0" }
 nom = { version = "7.1" }
