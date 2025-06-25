@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.1
+
+- Update `bevy_slow_text_outline` to v0.2.0.
+
 ## 0.20.0
 
 - Move `TextOutline` to new crate `bevy_slow_text_outline`. `TextOutline` is now re-exported instead of implemented here.

@@ -3,7 +3,7 @@ use bevy::render::sync_world::TemporaryRenderEntity;
 use bevy::render::{Extract, RenderApp};
 use bevy::text::{PositionedGlyph, TextLayoutInfo};
 use bevy::ui::{ExtractedGlyph, ExtractedUiItem, ExtractedUiNode, ExtractedUiNodes, RenderUiSystem, UiCameraMap};
-use bevy_slow_text_outline::text_outline_rendering::extract_text_outlines;
+use bevy_slow_text_outline::text_outline_rendering::extract_ui_text_outlines;
 
 use super::TextShadowGroup;
 
@@ -101,7 +101,7 @@ impl Plugin for UiTextRenderingExtPlugin
         render_app.add_systems(
             ExtractSchedule,
             extract_text_shadow_groups
-                .before(extract_text_outlines)
+                .before(extract_ui_text_outlines)
                 .after(bevy::ui::extract_text_shadows)
                 .in_set(RenderUiSystem::ExtractTextShadows),
         );
