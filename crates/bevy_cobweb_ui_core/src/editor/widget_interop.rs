@@ -12,7 +12,7 @@ use crate::prelude::*;
 
 /// A structure point is a specific item inside some container.
 #[derive(Debug)]
-pub(super) enum ReflectStructurePoint
+pub enum ReflectStructurePoint
 {
     /// Includes the field name.
     Struct(&'static str),
@@ -96,9 +96,9 @@ impl ReflectStructurePoint
 ///
 /// Used to target-patch parts of a reflected type.
 #[derive(Clone, Debug)]
-pub(super) struct ReflectStructurePath
+pub struct ReflectStructurePath
 {
-    pub(super) path: Arc<[ReflectStructurePoint]>,
+    pub path: Arc<[ReflectStructurePoint]>,
 }
 
 impl ReflectStructurePath
@@ -144,21 +144,21 @@ pub struct CobEditorRef
     /// The file hash at the time this reference was created.
     ///
     /// Used to discard patches aimed at old file states.
-    pub(super) file_hash: CobFileHash,
+    pub file_hash: CobFileHash,
     /// Points to a scene location.
     ///
     /// If the loadable is a command, then `SceneRef::path` will equal `"#commands"`.
-    pub(super) scene_ref: SceneRef,
+    pub scene_ref: SceneRef,
     /// Shortname of the loadable.
-    pub(super) loadable_name: &'static str,
+    pub loadable_name: &'static str,
     /// If the path is empty then the ref points to a loadable, otherwise it points to a value inside a loadable.
-    pub(super) structure_path: ReflectStructurePath,
+    pub structure_path: ReflectStructurePath,
     /// Death signal used to block patch submissions if the widget has been killed by the editor.
     ///
     /// The editor kills widgets whenever a structural change is made to a destructured loadable, to ensure
     /// editor refs are recreated accurately (e.g. when inserting/removing list elements, the old widgets
     /// may have stale indices recorded).
-    pub(super) death_signal: DeathSignal,
+    pub death_signal: DeathSignal,
 }
 
 impl CobEditorRef

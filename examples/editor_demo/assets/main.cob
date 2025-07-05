@@ -3,4 +3,4 @@
 
 #scenes
 "orbit"
-    Orbiter{radius:9.609539 velocity:6.5658884}
+    Orbiter{radius:40.962933 velocity:-4.2340198}

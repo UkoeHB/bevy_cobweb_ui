@@ -17,12 +17,14 @@ impl Plugin for CobwebUiPlugin
         if !app.is_plugin_added::<ReactPlugin>() {
             app.add_plugins(ReactPlugin);
         }
+        if !app.is_plugin_added::<BevyCobwebUiCorePlugin>() {
+            app.add_plugins(BevyCobwebUiCorePlugin);
+        }
 
         app.register_type_data::<Cow<str>, ReflectDeserialize>()
             .add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)
-            .add_plugins(LoadingPlugin)
             .add_plugins(LocalizationPlugin)
             .add_plugins(SickleExtPlugin)
             .add_plugins(ToolsPlugin)

@@ -11,16 +11,17 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) struct CobFileData
+/// File data for the COB editor.
+pub struct CobFileData
 {
-    pub(super) last_save_hash: CobFileHash,
+    pub last_save_hash: CobFileHash,
     /// Data for the file. Defs in this data are *not* resolved.
-    pub(super) data: Cob,
+    pub data: Cob,
 }
 
 impl CobFileData
 {
-    pub(super) fn is_editable(&self) -> bool
+    pub fn is_editable(&self) -> bool
     {
         // Temp hack to qualify files with non-default asset source as uneditable, since we don't have a good
         // way to save them yet.
@@ -32,7 +33,7 @@ impl CobFileData
 
 /// Files cannot be saved on `wasm32` or `android` targets.
 #[derive(Resource)]
-pub(crate) struct CobEditor
+pub struct CobEditor
 {
     /// All files tracked by the editor.
     files: HashMap<CobFile, CobFileData>,
@@ -67,17 +68,17 @@ impl CobEditor
         }
     }
 
-    pub(super) fn any_unsaved(&self) -> bool
+    pub fn any_unsaved(&self) -> bool
     {
         !self.unsaved.is_empty()
     }
 
-    pub(super) fn iter_files(&self) -> impl Iterator<Item = (&CobFile, &CobFileData)> + '_
+    pub fn iter_files(&self) -> impl Iterator<Item = (&CobFile, &CobFileData)> + '_
     {
         self.files.iter()
     }
 
-    pub(super) fn get_file(&self, file: &CobFile) -> Option<&CobFileData>
+    pub fn get_file(&self, file: &CobFile) -> Option<&CobFileData>
     {
         self.files.get(file)
     }

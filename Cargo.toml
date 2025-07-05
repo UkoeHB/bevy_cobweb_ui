@@ -44,15 +44,13 @@ firasans_default = ["firasans"]
 widgets = ["colors"]
 
 # Enables the built-in experimental COB editor.
-editor = ["hot_reload", "colors", "widgets", "dep:foldhash"]
+editor = ["bevy_cobweb_ui_core/editor", "hot_reload", "colors", "widgets"]
 
 # Enables Serialize/Deserialize on some built-in types.
-serde = ["bevy/serialize", "bevy_slow_text_outline/serde"]
+serde = ["bevy/serialize", "bevy_slow_text_outline/serde", "bevy_cobweb_ui_core/ui_serde"]
 
-# Enables hot-reloading. Note that embedded files are not hot-reloaded by default due to perf
-# issues (see https://github.com/bevyengine/bevy/issues/17430). You'll need bevy's
-# `embedded_watcher` feature.
-hot_reload = ["bevy/file_watcher", "bevy/multi_threaded"]
+# Enables hot-reloading.
+hot_reload = ["bevy_cobweb_ui_core/hot_reload"]
 
 # Dev features. Enables hot-reloading.
 dev = ["hot_reload", "bevy/dynamic_linking"]
@@ -68,7 +66,7 @@ smol_str.workspace = true
 smallvec.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
-wasm-timer = { version = "0.2" }
+wasm-timer.workspace = true
 
 # Localization deps
 sys-locale = { version = "0.3" }
@@ -80,15 +78,13 @@ ron = { version = "0.8" }
 serde_yaml = { version = "0.9" }
 unic-langid = { version = "0.9" }
 
-# Editor deps
-foldhash = { version = "0.1.3", optional = true }
-
 # Local sub-crates
 bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.3.0" }
 cob_sickle_math = { path = "crates/sickle_math", version = "0.7.2" }
 cob_sickle_macros = { path = "crates/sickle_macros", version = "0.7.2" }
 cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.7.2" }
 cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.2.0", default-features = false, features = ["full"] }
+bevy_cobweb_ui_core = { path = "crates/bevy_cobweb_ui_core", version = "0.1.0", default-features = false, features = ["ui"] }
 
 [workspace.dependencies]
 bevy_cobweb = { version = "0.17.0" }
@@ -102,6 +98,7 @@ smol_str = { version = "0.2" }  # Locked to Bevy's smol_str version.
 smallvec = { version = "1.13" }
 thiserror = { version = "1.0" }
 tracing = { version = "0.1" }
+wasm-timer = { version = "0.2" }
 
 [workspace.dependencies.bevy]
 version = "0.16"

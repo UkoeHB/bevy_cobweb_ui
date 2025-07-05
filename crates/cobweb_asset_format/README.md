@@ -83,100 +83,215 @@ Scene layers
 
 ## Value model
 
-Limitations
-- Disallowed struct fields: `auto`, `none`, `nan`, `inf`, `true`, `false`.
-- Struct field names must be snake-case
-- Loadable names and enum variant names must be camel-case
+Loadable values appear in COB files very similar to how they appear in Rust. Since COB is minimalist, there are several simplifications and details to note.
+
+### Comments
+
+Single-line and block comments are both supported, the same as rust.
+
+```rust
+// Single-line
+/*
+Multi-line
+*/
+```
+
+### Spacing instead of punctuation
+
+Commas and semicolons are treated as whitespace. They are completely optional, even inside type generics.
+
+Since we don't use commas to separate items, we have one important whitespace rule.
+
+**Important whitespace rule**: All loadables and enum variants with data must have no whitespace between their name (or generics) and their data container (`{}`, `[]`, or `()`).
+
+Example (rust):
+```rust
+let s = MyStruct::<A, B<C, D>> { a: 10.0, b: true };
+```
+
+Example (COB):
+```rust
+MyStruct<A B<C D>>{ a: 10 b: true }
+// No space here..^..
+```
+
+This rule lets us differentiate between a list of 'unit struct/variant, map/array/tuple' and a single 'struct/variant with data'.
+
+### Keywords banned from structs
+
+Built-in keywords cannot be used as struct field names.
+- `true`/`false`: Boolean true/false.
+- `inf`/`-inf`/`nan`: Float values.
+- `none`: Corresponds to rust `None`.
+- `auto`: Corresponds to enum variant `Val::Auto` (used in UI, see built-in types below).
+
+**`Option<T>`**
+
+If a rust type contains `Option<T>`, then `Some(T)` is elided to `T`, and `None` is represented by the `none` keyword.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: Option<u32>,
+    b: Option<bool>
+}
+
+let s = MyStruct{ a: Some(10), b: None };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:10 b:none }
+```
+
+### Type name ellision
+
+Type names inside loadable values are elided.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct OtherStruct
+{
+    a: u32
+}
+
+#[derive(Reflect, Default, PartialEq)]
+enum OtherEnum
+{
+    A,
+    B
+}
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: OtherStruct,
+    b: OtherEnum,
+}
+
+let s = MyStruct{ a: OtherStruct{ a: 10 }, b: OtherEnum::B };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:{ a:10 } b:B }
+```
+
+Loadable type names are always required, since they are used to figure out how to deserialize values.
+
+Example loadables (COB):
+```rust
+OtherStruct{ a:10 }
+OtherEnum::A
+```
+
+### Newtype ellision
+
+When a newtype struct appears inside a loadable, the newtype is 'peeled' to the innermost non-newtype type.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyNewtype(u32);
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: MyNewtype(u32),
+}
+
+let s = MyStruct{ a: MyNewtype(10) };
+```
+
+Example (COB):
+```rust
+MyStruct{ a:10 }
+//          ^
+// MyNewtype(10) simplified to 10
+```
+
+### Newtype collapsing
+
+Instead of peeling, loadable newtypes and newtype enum variants use *newtype collapsing*. Newtypes are collapsed by discarding 'outer layers'.
+
+Example (rust):
+```rust
+#[derive(Reflect, Default, PartialEq)]
+struct MyStruct
+{
+    a: u32,
+}
+
+#[derive(Reflect, Default, PartialEq)]
+struct MyNewtype(MyStruct);
+
+let s = MyNewtype(MyStruct{ a: 10 });
+```
+
+Example (COB):
+```rust
+MyNewtype{ a:10 }
+// Un-collapsed: MyNewtype({ a:10 })
+```
+
+An important use-case for collapsing is bevy's `Color` type.
+
+Rust:
+```rust
+let c = Color::Srgba(Srgba{ red: 1.0, blue: 1.0, green: 1.0, alpha: 1.0 });
+```
+
+COB:
+```rust
+Srgba{ red:1 blue:1 green:1 alpha:1 }
+```
+
+Here we have `Srgba` for the `Color::Srgba` variant, and `{ ... }` for the `Srgba{ ... }` inner struct's value.
+
+### Floats
+
+Floats are written similar to how they are written in rust.
+
+- Scientific notation: `1.2e3` or `1.2E3`.
+- Integer-to-float conversion: `1` can be written instead of `1.0`.
+- Keywords `inf`/`-inf`/`nan`: infinity, negative infinity, `NaN`.
+
+### String parsing
+
+Strings are handled similar to how rust string literals are handled.
+
+- Enclosed by double quotes (e.g. `"Hello, World!"`).
+- Escape sequences: standard ASCII escape sequences are supported (`\n`, `\t`, `\r`, `\f`, `\"`, `\\`), in addition to Unicode code points (`\u{..1-6 digit hex..}`).
+- Multi-line strings: a string segment that ends in `\` followed by a newline will be concatenated with the next non-space character on the next line.
+- Can contain raw Unicode characters.
+
+### Built-in types
+
+Since COB is part of `bevy_cobweb_ui`, we include special support for two common UI types.
+
+- [`Val`](bevy::prelude::Val): `Val` variants can be written with special units (`px`, `%`, `vw`, `vh`, `vmin`, `vmax`, `fr`) and the keyword `auto`. For example, `10px` is equivalent to `Px(10)`.
+    - The `fr` variant corresponds to [`GridVal::Fraction`](bevy_cobweb_ui::prelude::GridVal::Fraction).
+- [`Color`](bevy::prelude::Color): The `Color::Srgba` variant can be written with color-hex in the format `#FFFFFF` (for `alpha = 1.0`) or `#AAFFFFFF` (for custom `alpha`).
+
+### Limitations
+
+- Struct field names must be snake-case.
+- Loadable names and enum variant names must be camel-case.
 - Loadables must be structs/enums (no tuples, arrays, or rust primitives).
-- Loadable names and enum variants must abut their containers (i.e. no whitespace between name and braces/parens/brackets).
 
-Loadables
-- Identifier
-    - Camel-case w/ optional numbers after first letter
-    - Optional generics
-- Value
-    - Unit
-    - Struct-like
-        - Map container; must start immediately after end of identifier
-    - Tuple-like (including newtypes)
-        - Tuple container; must start immediately after end of identifier
-    - Newtype-of-array
-        - Array container; must start immediately after end of identifier
+### Lossy conversions (COB file to rust value back to COB file):
 
-Values
-- Containers
-- Keywords and special sequences
-- Numbers
-- Strings
-- Bools
-    - `true`/`false`
-
-Containers
-- Newtype structs and `Option::Some`
-    - Implicitly elided
-- Maps and structs
-    - Delimited by `{ ... }`
-    - Map keys can be
-        - Struct field names
-            - snake-case w/ optional numbers after first letter
-        - Values
-    - Map values can be
-        - Values
-- Arrays
-    - Delimited by `[ ... ]`
-    - Entries can be
-        - Values
-- Tuples, tuple structs, and unit structs
-    - Delimited by `( ... )`
-    - Entries can be
-        - Values
-- Enums
-    - Variant identifier
-        - Camel-case w/ optional numbers after first letter
-    - Value
-        - Unit: identifier only (special case: `Option::None` as `none` keyword)
-        - Struct-like
-            - Map container; must start immediately after end of identifier
-        - Tuple-like (including newtype variants of non-array/non-map/non-tuple) (special case: `Option::Some` implicitly elided)
-            - Tuple container; must start immediately after end of identifier
-        - Newtype-of-array
-            - Array container; must start immediately after end of identifier
-    - Newtype-variant of tuple/map/array can be flattened (e.g. A({1:1 2:2}) -> A{1:1 2:2})
-        - Very handy for newtype-variant of newtype-struct (e.g. Bevy's Color enum can be simplified directly to its variants' inner structs like Srgba{ ... }, where in Rust it looks like Color::Srgba(Srgba{ ... })).
-
-Keywords and special sequences
-- `none`
-- `true`/`false`
-- `nan`/`inf`/`-inf`
-- Val variants
-    - nums (all floats): `px`, `%`, `vw`, `vh`, `vmin`, `vmax`
-        - e.g. `1px` or `5.5%`
-    - `auto`
-- Hex colors
-    - `#` followed by 6 hex digits (upper or lowercase)
-
-Numbers
-- Ints deserialize to u128 and i128
-- Floats deserialize to f64
-    - `nan`/`inf`/`-inf`
-    - scientific notation
-    - decimals require at least one digit before and after dot
-
-Strings
-- Start/end with `"`
-- Escape sequences and literals
-    - escapes: \b,\f,\n,\r,\t,\",\\,\\u{1 to 6 hex digits}
-- Multi-line strings: segment ends in `\` followed by a newline character, next segment begins with first non-space character
-
-Lossy conversions (COB file to rust value back to COB file):
-- scientific notation: only floats >= 1e16 or <= 1e-7 will be formatted with scientific notation when serializing to raw COB
-- trailing zeroes after decimal in floats: if float can be coerced to int, it will be; otherwise trailing zeroes will be removed
-- multiline strings: multi-line strings are concatenated
-- in-line string formatting (newlines/tabs/etc.) and unicode characters will be replaced with escape sequences
-- unicode with leading zeros: leading zeroes removed
-- unicode escape sequences will be lower-cased
-- hex color sequences will be upper-cased
-- manual builtin to auto-builtin
-- reflect-defaulted fields: all serializable fields will be serialized
-    - workaround: manually filter default values somehow??
-- whitespace/comments/filler characters can often, but not always, be recovered using `recover_fill`
+- Scientific notation: only floats >= 1e16 or <= 1e-7 will be formatted with scientific notation when serializing to raw COB
+- Trailing zeroes after decimal in floats: if float can be coerced to int, it will be; otherwise trailing zeroes will be removed
+- Multiline strings: multi-line strings are concatenated
+- In-line string formatting (newlines/tabs/etc.) and unicode characters will be replaced with escape sequences
+- Unicode with leading zeros: leading zeroes removed
+- Unicode escape sequences will be lower-cased
+- Hex color sequences will be upper-cased
+- Manual builtin values (e.g. `Val::Px(1.0)`) will be converted to auto-builtin (e.g. `1.0px`)
+- Reflect-defaulted fields: all serializable fields will be serialized
+    - Workaround: manually filter default values somehow ??
+- Whitespace/comments/filler characters can often, but not always, be recovered using `recover_fill`

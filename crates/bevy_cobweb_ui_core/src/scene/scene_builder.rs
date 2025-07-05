@@ -569,7 +569,7 @@ impl SceneBuilderInner
     /// [`Self::release_active_scene`] is called unless the `hot_reload` feature is active.
     pub(crate) fn build_scene<T>(&mut self, c: &mut Commands, root_entity: Entity, mut scene_ref: SceneRef) -> bool
     where
-        T: crate::loading::scene::spawn_scene_ext::scene_traits::SceneNodeBuilder,
+        T: crate::scene::spawn_scene_ext::scene_traits::SceneNodeBuilder,
     {
         // Reject non-root nodes.
         if scene_ref.path.len() != 1 {

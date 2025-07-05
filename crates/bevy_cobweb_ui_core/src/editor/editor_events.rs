@@ -36,8 +36,7 @@ pub struct EditorFileSaved
 {
     pub file: CobFile,
     /// The hash of the file after saving.
-    // TODO: make this public?
-    pub(super) hash: CobFileHash,
+    pub hash: CobFileHash,
 }
 
 //-------------------------------------------------------------------------------------------------------------------

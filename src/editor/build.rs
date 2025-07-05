@@ -5,6 +5,7 @@ use bevy::reflect::TypeRegistry;
 use bevy::render::camera::RenderTarget;
 use bevy::window::{EnabledButtons, PrimaryWindow, WindowRef, WindowResolution, WindowTheme};
 use bevy_cobweb::prelude::*;
+use bevy_cobweb_ui_core::editor::*;
 use serde::de::DeserializeSeed;
 
 use super::*;

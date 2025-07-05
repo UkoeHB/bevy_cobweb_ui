@@ -9,7 +9,7 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn get_targeted<'a>(data: &'a mut Cob, editor_ref: &CobEditorRef) -> Option<&'a mut CobLoadable>
+pub fn get_targeted<'a>(data: &'a mut Cob, editor_ref: &CobEditorRef) -> Option<&'a mut CobLoadable>
 {
     match editor_ref.is_command() {
         true => data.get_command_loadable_mut(&*editor_ref.loadable_name),
@@ -19,7 +19,7 @@ pub(super) fn get_targeted<'a>(data: &'a mut Cob, editor_ref: &CobEditorRef) -> 
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn get_registration<'a>(
+pub fn get_registration<'a>(
     type_registry: &'a TypeRegistry,
     short_name: &str,
     loadables: &LoadableRegistry,
@@ -37,7 +37,7 @@ pub(super) fn get_registration<'a>(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(super) fn get_deserializer<'a>(
+pub fn get_deserializer<'a>(
     type_registry: &'a TypeRegistry,
     short_name: &str,
     loadables: &LoadableRegistry,

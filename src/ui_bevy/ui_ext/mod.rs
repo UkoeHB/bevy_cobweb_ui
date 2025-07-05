@@ -10,7 +10,7 @@ mod text_rendering;
 pub use component_wrappers::*;
 pub use image_node::*;
 pub use node_field_wrappers::*;
-pub use node_wrappers::*;
+pub(crate) use node_wrappers::*;
 pub use opacity::*;
 pub use plugin::*;
 pub use text::*;

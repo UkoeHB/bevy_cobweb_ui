@@ -12,7 +12,7 @@ use foldhash::fast::FixedState;
 ///
 /// Used as an optimization to avoid redundantly parsing files that were saved by the editor.
 #[derive(Resource, Clone)]
-pub(crate) struct CobHashRegistry
+pub struct CobHashRegistry
 {
     registry: Arc<Mutex<HashMap<String, CobFileHash>>>,
 }
@@ -84,7 +84,7 @@ const HASH_STATE: FixedState = FixedState::with_seed(FILE_HASH_SEED);
 ///
 /// We include the file length to reduce the chance of accidental collisions even further.
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
-pub(crate) struct CobFileHash(u64, usize);
+pub struct CobFileHash(u64, usize);
 
 impl CobFileHash
 {

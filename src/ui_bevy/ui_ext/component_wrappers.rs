@@ -73,22 +73,7 @@ fn set_border_radius_bottom_right(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for BackgroundColor
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Self>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for BackgroundColor
 {
@@ -111,22 +96,7 @@ impl AnimatedAttribute for BackgroundColor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for BorderColor
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Self>();
-        });
-    }
-}
+// Intruction implemented in core crate.
 
 impl StaticAttribute for BorderColor
 {
@@ -687,23 +657,7 @@ impl AnimatedAttribute for NodeShadows
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for FocusPolicy
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let policy: FocusPolicy = self.into();
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(policy);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<FocusPolicy>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for FocusPolicy
 {
@@ -717,22 +671,7 @@ impl ResponsiveAttribute for FocusPolicy {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for ZIndex
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<ZIndex>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for ZIndex
 {
@@ -746,22 +685,7 @@ impl ResponsiveAttribute for ZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for GlobalZIndex
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<GlobalZIndex>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for GlobalZIndex
 {
@@ -775,23 +699,7 @@ impl ResponsiveAttribute for GlobalZIndex {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl Instruction for Visibility
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let visibility: Visibility = self.into();
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(visibility);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Visibility>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for Visibility
 {

@@ -7,7 +7,6 @@ use crate as bevy_cobweb_ui;
 pub mod assets_ext;
 pub mod bevy_ext;
 pub mod builtin;
-pub mod loading;
 pub mod localization;
 mod plugin;
 pub mod react_ext;
@@ -33,13 +32,13 @@ pub mod sickle
 pub mod prelude
 {
     pub use bevy_cobweb::prelude::{CobwebResult, DropErr, OptionToNoneErr, WarnErr, DONE, OK};
+    pub use bevy_cobweb_ui_core::prelude::*;
+    pub use bevy_cobweb_ui_core::ui::*;
     pub use bevy_cobweb_ui_derive::*;
     pub use cob_sickle_ui_scaffold::{UiBuilder, UiBuilderExt};
-    pub use cobweb_asset_format::prelude::{SceneFile, ScenePath, SceneRef};
 
     pub use crate::assets_ext::*;
     pub use crate::bevy_ext::*;
-    pub use crate::loading::*;
     pub use crate::localization::*;
     pub use crate::plugin::*;
     pub use crate::react_ext::*;

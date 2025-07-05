@@ -1,0 +1,40 @@
+[package]
+name = "bevy_cobweb_ui_core"
+version = "0.1.0"
+edition = "2021"
+description = "Asset loading for the COB asset format."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/UkoeHB/bevy_cobweb_ui_core"
+
+[features]
+default = ["ui"]
+
+# Enables using this crate for UI.
+ui = ["bevy/bevy_ui", "dep:cob_sickle_ui_scaffold", "dep:cob_sickle_math", "dep:bevy_slow_text_outline"]
+
+# Enables serde for ui types.
+ui_serde = ["bevy_slow_text_outline/serde"]
+
+# Enables editor support.
+editor = ["hot_reload", "dep:foldhash"]
+
+# Enables hot reloading of COB files.
+hot_reload = ["bevy/file_watcher", "bevy/multi_threaded", "bevy/embedded_watcher"]
+
+[dependencies]
+bevy = { version = "0.16", default-features = false, features = ["std", "bevy_asset"] }
+bevy_cobweb = { workspace = true }
+bevy_slow_text_outline = { workspace = true, optional = true }
+nom = { workspace = true }
+smallvec = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+wasm-timer = { workspace = true }
+
+cob_sickle_math = { path = "../sickle_math", version = "0.7.2", optional = true }
+cob_sickle_ui_scaffold = { path = "../sickle_ui_scaffold", version = "0.7.2", optional = true }
+cobweb_asset_format = { path = "../cobweb_asset_format", version = "0.2.0" }
+
+# Editor deps
+foldhash = { version = "0.1.3", optional = true }

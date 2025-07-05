@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 
 use bevy::prelude::*;
-use bevy_cobweb_ui::ui_bevy::{GridVal, GridValRepetition, RepeatedGridVal};
+use bevy_cobweb_ui::prelude::{GridVal, GridValRepetition, RepeatedGridVal};
 
 use super::helpers::*;
 

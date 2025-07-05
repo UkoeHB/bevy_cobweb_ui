@@ -9,7 +9,7 @@ use super::*;
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
-pub(super) struct CobWidgetRegistry
+pub struct CobWidgetRegistry
 {
     /// [ longname : widget fn ]
     widgets: HashMap<&'static str, EditorWidgetSpawnFn>,
@@ -33,7 +33,7 @@ impl CobWidgetRegistry
         }
     }
 
-    pub(super) fn get(&self, longname: &'static str) -> Option<EditorWidgetSpawnFn>
+    pub fn get(&self, longname: &'static str) -> Option<EditorWidgetSpawnFn>
     {
         self.widgets.get(longname).copied()
     }

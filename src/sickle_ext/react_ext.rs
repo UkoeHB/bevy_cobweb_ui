@@ -6,29 +6,6 @@ use crate::prelude::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-impl InstructionExt for UiBuilder<'_, Entity>
-{
-    fn apply(&mut self, instruction: impl Instruction + Send + Sync + 'static) -> &mut Self
-    {
-        let id = self.id();
-        if let Ok(mut ec) = self.commands().get_entity(id) {
-            ec.apply(instruction);
-        }
-        self
-    }
-
-    fn revert<T: Instruction>(&mut self) -> &mut Self
-    {
-        let id = self.id();
-        if let Ok(mut ec) = self.commands().get_entity(id) {
-            ec.revert::<T>();
-        }
-        self
-    }
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 /// Helper trait for registering reactors for node entities using [`UiBuilder`].
 pub trait UiBuilderReactExt
 {

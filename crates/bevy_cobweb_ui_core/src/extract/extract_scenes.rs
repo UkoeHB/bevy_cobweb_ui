@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use bevy::prelude::Commands;
 use bevy::reflect::TypeRegistry;
 

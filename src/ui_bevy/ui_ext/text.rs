@@ -400,26 +400,9 @@ impl AnimatedAttribute for TextShadowGroup
 /// Re-exports [`TextOutline`].
 ///
 /// Implements instruction for adding an outline around text.
-///
-/// Re-expo
 pub use bevy_slow_text_outline::prelude::TextOutline;
 
-impl Instruction for TextOutline
-{
-    fn apply(self, entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.insert(self);
-        });
-    }
-
-    fn revert(entity: Entity, world: &mut World)
-    {
-        let _ = world.get_entity_mut(entity).map(|mut e| {
-            e.remove::<Self>();
-        });
-    }
-}
+// Instruction implemented in core crate.
 
 impl StaticAttribute for TextOutline
 {

@@ -7,6 +7,7 @@ use bevy::reflect::GetTypeRegistration;
 use bevy_cobweb::prelude::*;
 
 use crate::prelude::*;
+use crate::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -204,7 +205,7 @@ pub(crate) fn load_queued_from_ref(
 //-------------------------------------------------------------------------------------------------------------------
 
 #[derive(Resource, Default)]
-pub(crate) struct LoadableRegistry
+pub struct LoadableRegistry
 {
     /// [ short name : type id ]
     loadables: HashMap<&'static str, TypeId>,

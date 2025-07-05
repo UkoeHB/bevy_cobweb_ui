@@ -161,7 +161,7 @@ where
 /// Component added to nodes that load scene nodes from cobweb asset files (see [`SceneBuilder`]).
 #[cfg(feature = "hot_reload")]
 #[derive(Component)]
-pub(crate) struct HasLoadables;
+pub struct HasLoadables;
 
 //-------------------------------------------------------------------------------------------------------------------
 
