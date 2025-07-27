@@ -1,12 +1,19 @@
 # Changelog
 
+## 0.21.1
+
+- Fix ordering bug with `DisplayControl` instruction.
+
+
 ## 0.21.0
 
 - Move core COB loading functionality to `bevy_cobweb_ui_core` crate.
 
+
 ## 0.20.1
 
 - Update `bevy_slow_text_outline` to v0.2.0.
+
 
 ## 0.20.0
 

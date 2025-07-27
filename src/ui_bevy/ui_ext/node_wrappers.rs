@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use bevy::ui::UiSystem;
 use bevy_cobweb_ui_core::ui::*;
+use cob_sickle_ui_scaffold::DynamicStylePostUpdate;
 
 use crate::prelude::*;
+
+//-------------------------------------------------------------------------------------------------------------------
 
 fn refresh_display_control(
     mut nodes: Query<
@@ -44,7 +47,12 @@ impl Plugin for NodeWrappersPlugin
             .register_instruction_type::<AbsoluteGridNode>()
             .register_instruction_type::<GridNode>()
             .register_static::<DisplayControl>()
-            .add_systems(PostUpdate, refresh_display_control.before(UiSystem::Prepare));
+            .add_systems(
+                PostUpdate,
+                refresh_display_control
+                    .after(DynamicStylePostUpdate)
+                    .before(UiSystem::Prepare),
+            );
     }
 }
 
