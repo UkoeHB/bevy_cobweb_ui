@@ -215,7 +215,8 @@ impl<T: UiBuilderGetId> UiBuilder<'_, T>
     /// Mount an observer to the current entity (identified by [`UiBuilder<'_, Entity>::id()`])
     ///
     /// Does nothing if the entity does not exist.
-    pub fn observe<E: EntityEvent, B: Bundle, M>(&mut self, system: impl IntoObserverSystem<E, B, M>) -> &mut Self
+    pub fn observe<E: EntityEvent, B: Bundle, M>(&mut self, system: impl IntoObserverSystem<E, B, M>)
+        -> &mut Self
     {
         let entity = self.id();
         if let Ok(mut ec) = self.commands().get_entity(entity) {

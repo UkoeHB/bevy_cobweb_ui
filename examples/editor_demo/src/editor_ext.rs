@@ -128,7 +128,9 @@ fn make_draggable_field_widget(
 
         // Convert drag values to field value changes.
         h.on_event::<DragValue>().r(
-            move |event: bevy_cobweb::prelude::EntityEvent<DragValue>, mut c: Commands, mut fields: ReactiveMut<FieldValue<f32>>| {
+            move |event: bevy_cobweb::prelude::EntityEvent<DragValue>,
+                  mut c: Commands,
+                  mut fields: ReactiveMut<FieldValue<f32>>| {
                 let (_, delta) = event.try_read()?;
                 let val = fields.get(widget_id)?;
                 let bounds_width = *bounds.end() - *bounds.start();

@@ -3,7 +3,10 @@ use bevy::prelude::*;
 use bevy::render::sync_world::TemporaryRenderEntity;
 use bevy::render::{Extract, RenderApp};
 use bevy::text::{PositionedGlyph, TextLayoutInfo};
-use bevy::ui_render::{stack_z_offsets, ExtractedGlyph, ExtractedUiItem, ExtractedUiNode, ExtractedUiNodes, RenderUiSystems, UiCameraMap};
+use bevy::ui_render::{
+    stack_z_offsets, ExtractedGlyph, ExtractedUiItem, ExtractedUiNode, ExtractedUiNodes, RenderUiSystems,
+    UiCameraMap,
+};
 use bevy_slow_text_outline::text_outline_rendering::extract_ui_text_outlines;
 
 use super::TextShadowGroup;
@@ -54,7 +57,11 @@ fn extract_text_shadow_groups(
                     .unwrap()
                     .textures[atlas_info.location.glyph_index]
                     .as_rect();
-                extracted_uinodes.glyphs.push(ExtractedGlyph { color: shadow.color.into(), translation: position + shadow.offset, rect });
+                extracted_uinodes.glyphs.push(ExtractedGlyph {
+                    color: shadow.color.into(),
+                    translation: position + shadow.offset,
+                    rect,
+                });
                 len += 1;
 
                 if text_layout_info

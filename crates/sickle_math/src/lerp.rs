@@ -68,7 +68,7 @@ impl Lerp for BorderColor
 {
     fn lerp(&self, to: Self, t: f32) -> Self
     {
-        Self{
+        Self {
             left: self.left.lerp(to.left, t),
             right: self.right.lerp(to.right, t),
             top: self.top.lerp(to.top, t),

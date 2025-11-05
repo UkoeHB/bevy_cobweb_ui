@@ -52,10 +52,7 @@ impl UiUtils
         let mut container_size = Vec2::ZERO;
 
         // Unsafe unwarp: If a Ui element doesn't have a GT, we should panic!
-        let mut offset = world
-            .get::<UiGlobalTransform>(entity)
-            .unwrap()
-            .translation;
+        let mut offset = world.get::<UiGlobalTransform>(entity).unwrap().translation;
 
         let mut current_ancestor = entity;
         while let Some(child_of) = world.get::<ChildOf>(current_ancestor) {
@@ -232,10 +229,8 @@ impl UiUtils
                 };
 
                 Vec2::new(texture_view.size.x as f32, texture_view.size.y as f32)
-            },
-            RenderTarget::None { size } => {
-                Vec2{ x: size.x as f32, y: size.y as f32 }
             }
+            RenderTarget::None { size } => Vec2 { x: size.x as f32, y: size.y as f32 },
         }
     }
 

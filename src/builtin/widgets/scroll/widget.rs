@@ -310,7 +310,7 @@ fn apply_mouse_scroll(
                 unconsumed_delta: mouse_scroll.delta,
                 mouse_unit: mouse_scroll.unit,
                 id: change_tick.this_run().get(),
-                entity
+                entity,
             });
         }
     }
@@ -387,10 +387,7 @@ fn update_scrollbar_handle_size(
     iter_children: &mut IterChildren,
     children: &Query<&Children>,
     bar_handles: &Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    handles: &mut Query<
-        &mut ComputedNode,
-        (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
-    >,
+    handles: &mut Query<&mut ComputedNode, (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
     mut transforms: &mut Query<&mut UiGlobalTransform>,
     content_dim: f32,
     view_dim: f32,
@@ -435,7 +432,13 @@ fn update_scrollbar_handle_size(
     // - Do this before updating the handle node size.
     let handle_dim = (get_dim_fn)(&handle_node);
     let adjustment = (dim_rounded - handle_dim) / 2.;
-    update_handle_transform_recursive(handle_entity, adjustment, &mut transforms, update_transform_fn, children);
+    update_handle_transform_recursive(
+        handle_entity,
+        adjustment,
+        &mut transforms,
+        update_transform_fn,
+        children,
+    );
 
     // Use reflection to force-edit the computed node's private fields.
     let ReflectMut::Struct(handle_reflect) = handle_node.as_partial_reflect_mut().reflect_mut() else {
@@ -464,7 +467,7 @@ fn update_handle_transform_recursive(
     adjustment: f32,
     transforms: &mut Query<&mut UiGlobalTransform>,
     update_transform_fn: impl Fn(&mut Vec2, f32) + Copy,
-    children_q: &Query<&Children>
+    children_q: &Query<&Children>,
 )
 {
     let Ok(mut transform) = transforms.get_mut(entity) else { return };
@@ -498,10 +501,7 @@ fn refresh_scroll_handles(
     views: Query<(Entity, &ComputedNode), With<ScrollView>>,
     shims: Query<&ComputedNode, With<ScrollShim>>,
     bar_handles: Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
-    mut handles: Query<
-        &mut ComputedNode,
-        (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
-    >,
+    mut handles: Query<&mut ComputedNode, (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>)>,
     mut transforms: Query<&mut UiGlobalTransform>,
 )
 {
@@ -1009,7 +1009,7 @@ impl Plugin for CobwebScrollPlugin
                 PostUpdate,
                 ScrollHandleUpdateSet
                     .in_set(UiSystems::PostLayout)
-                    .before(SliderUpdateSet)
+                    .before(SliderUpdateSet),
             )
             .add_observer(handle_mouse_scroll_event)
             .add_systems(First, cleanup_dead_bases.after(FileProcessingSet))

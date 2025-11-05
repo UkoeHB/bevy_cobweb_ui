@@ -7,7 +7,11 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn enable_reactor(event: bevy_cobweb::prelude::EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
+fn enable_reactor(
+    event: bevy_cobweb::prelude::EntityEvent<Enable>,
+    mut c: Commands,
+    fluxes: Query<&FluxInteraction>,
+)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -22,7 +26,11 @@ fn enable_reactor(event: bevy_cobweb::prelude::EntityEvent<Enable>, mut c: Comma
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn disable_reactor(event: bevy_cobweb::prelude::EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
+fn disable_reactor(
+    event: bevy_cobweb::prelude::EntityEvent<Disable>,
+    mut c: Commands,
+    fluxes: Query<(), With<FluxInteraction>>,
+)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -75,7 +83,11 @@ fn uncheck_reactor(event: bevy_cobweb::prelude::EntityEvent<Uncheck>, mut c: Com
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn toggle_check_reactor(event: bevy_cobweb::prelude::EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
+fn toggle_check_reactor(
+    event: bevy_cobweb::prelude::EntityEvent<ToggleCheck>,
+    mut c: Commands,
+    ps: PseudoStateParam,
+)
 {
     let entity = event.entity();
 

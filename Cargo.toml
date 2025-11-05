@@ -2,7 +2,7 @@
 name = "bevy_cobweb_ui"
 description = "UI framework for the bevy game engine"
 authors = ["koe <ukoe@protonmail.com>"]
-version = "0.21.1"
+version = "0.22.0"
 edition = "2021"
 keywords = ["gamedev", "reactive", "ui"]
 license = "MIT OR Apache-2.0"
@@ -79,12 +79,12 @@ serde_yaml = { version = "0.9" }
 unic-langid = { version = "0.9" }
 
 # Local sub-crates
-bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.3.0" }
-cob_sickle_math = { path = "crates/sickle_math", version = "0.7.2" }
-cob_sickle_macros = { path = "crates/sickle_macros", version = "0.7.2" }
-cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.7.2" }
-cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.2.1", default-features = false, features = ["full"] }
-bevy_cobweb_ui_core = { path = "crates/bevy_cobweb_ui_core", version = "0.1.0", default-features = false, features = ["ui"] }
+bevy_cobweb_ui_derive = { path = "crates/bevy_cobweb_ui_derive", version = "0.4.0" }
+cob_sickle_math = { path = "crates/sickle_math", version = "0.8.0" }
+cob_sickle_macros = { path = "crates/sickle_macros", version = "0.8.0" }
+cob_sickle_ui_scaffold = { path = "crates/sickle_ui_scaffold", version = "0.8.0" }
+cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.3.0", default-features = false, features = ["full"] }
+bevy_cobweb_ui_core = { path = "crates/bevy_cobweb_ui_core", version = "0.2.0", default-features = false, features = ["ui"] }
 
 [workspace.dependencies]
 bevy_cobweb = { version = "0.18" }

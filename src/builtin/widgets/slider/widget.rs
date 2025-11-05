@@ -91,8 +91,8 @@ struct SliderDragReference
     /// Logical offset between handle and pointer during a drag. Add this to the pointer to get the target
     /// handle position.
     ///
-    /// Used when drag starts on top of the handle, so the pointer needs to be offset from the handle center during
-    /// drag.
+    /// Used when drag starts on top of the handle, so the pointer needs to be offset from the handle center
+    /// during drag.
     offset: Vec2,
 }
 
@@ -450,7 +450,12 @@ fn update_slider_handle_positions(
     }
 }
 
-fn update_handle_transform_recursive(entity: Entity, offset: Vec2, transforms: &mut Query<&mut UiGlobalTransform>, children_q: &Query<&Children>)
+fn update_handle_transform_recursive(
+    entity: Entity,
+    offset: Vec2,
+    transforms: &mut Query<&mut UiGlobalTransform>,
+    children_q: &Query<&Children>,
+)
 {
     let Ok(mut transform) = transforms.get_mut(entity) else { return };
     let mut temp = **transform;
@@ -868,11 +873,7 @@ impl Plugin for CobwebSliderPlugin
     {
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
-            .configure_sets(
-                PostUpdate,
-                SliderUpdateSet
-                    .in_set(UiSystems::PostLayout)
-            )
+            .configure_sets(PostUpdate, SliderUpdateSet.in_set(UiSystems::PostLayout))
             .add_systems(PostUpdate, update_slider_handle_positions.in_set(SliderUpdateSet));
     }
 }
