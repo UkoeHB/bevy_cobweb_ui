@@ -1,8 +1,10 @@
 use std::borrow::Cow;
 
 use bevy::prelude::*;
+use bevy::window::CursorIcon;
+use bevy::window::CustomCursor;
+use bevy::window::CustomCursorImage;
 use bevy::window::SystemCursorIcon;
-use bevy::winit::cursor::{CursorIcon, CustomCursor, CustomCursorImage};
 use smallvec::SmallVec;
 
 use crate::prelude::*;

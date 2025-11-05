@@ -1,7 +1,7 @@
 use bevy::ecs::entity::Entities;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
 
@@ -510,7 +510,7 @@ impl Plugin for ControlMapPlugin
                     .after(FileProcessingSet)
                     .after(RefreshPseudoStates)
                     .before(DynamicStylePostUpdate)
-                    .before(UiSystem::Prepare),
+                    .before(UiSystems::Prepare),
             )
             .add_systems(
                 PostUpdate,

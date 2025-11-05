@@ -2,6 +2,7 @@
 //!
 //! Access these assets with `asset_server.load("embedded://bevy_cobweb_ui/fonts/OpenSans-Regular.ttf")`.
 
+#[cfg(feature = "firasans")]
 mod fonts;
 mod plugin;
 

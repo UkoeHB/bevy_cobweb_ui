@@ -26,7 +26,7 @@ $blob_big = 600px
         ScrollBase
         FlexNode{$demo_size flex_direction:Row justify_cross:FlexStart}
         Splat<Border>($demo_border)
-        BorderColor($demo_br_color)
+        Splat<BorderColor>($demo_br_color)
         BackgroundColor($demo_bg_color)
 
         "view"
@@ -61,7 +61,7 @@ $blob_big = 600px
         ScrollBase
         FlexNode{$demo_size}
         Splat<Border>($demo_border)
-        BorderColor($demo_br_color)
+        Splat<BorderColor>($demo_br_color)
         BackgroundColor($demo_bg_color)
 
         // View is separate from base so we can get the right size for the bar shim. Absolute nodes include the
@@ -117,7 +117,7 @@ $blob_big = 600px
         ScrollBase
         FlexNode{$demo_size flex_direction:Column}
         Splat<Border>($demo_border)
-        BorderColor($demo_br_color)
+        Splat<BorderColor>($demo_br_color)
         BackgroundColor($demo_bg_color)
 
         "view_shim"
@@ -295,7 +295,7 @@ $blob_big = 600px
             FlexNode{
                 height:100% border:{left:1px} padding:{top:2.5px bottom:2.5px right:1px left:-1px}
                 flex_direction:Column justify_cross:Center}
-            BorderColor(#40555555)
+            Splat<BorderColor>(#40555555)
             BackgroundColor(#60BBBBBB)
             Multi<Static<Visibility>>[
                 {state:[Custom("IsScrolling")] value:Hidden}
@@ -366,7 +366,7 @@ $blob_big = 600px
     ControlRoot
     Splat<Border>(2px)
     BrRadius(25px)
-    BorderColor(#FFFFFF)
+    Splat<BorderColor>(#FFFFFF)
     Multi<Static<Width>>[{value:$blob_small} {state:[Custom("Wide")] value:$blob_big}]
     Multi<Static<Height>>[{value:$blob_small} {state:[Custom("Tall")] value:$blob_big}]
     Splat<Margin>(20px)

@@ -56,7 +56,7 @@
                 BrRadiusTopLeft(11px)
                 BrRadiusBottomLeft(11px)
                 BackgroundColor(#11BB00)
-                BorderColor(#FF5500)
+                Splat<BorderColor>(#FF5500)
 
             "bar"
                 FlexNode{
@@ -64,7 +64,7 @@
                     border:{top:2px bottom:2px}
                 }
                 BackgroundColor(#11BB00)
-                BorderColor(#FF5500)
+                Splat<BorderColor>(#FF5500)
 
             "end"
                 FlexNode{
@@ -75,7 +75,7 @@
                 BrRadiusTopRight(11px)
                 BrRadiusBottomRight(11px)
                 BackgroundColor(#11BB00)
-                BorderColor(#FF5500)
+                Splat<BorderColor>(#FF5500)
 
             "handle"
                 AbsoluteNode{width:0px height:0px justify_main:Center justify_cross:Center}
@@ -86,7 +86,7 @@
                     Splat<Border>(2px)
                     BrRadius(23.5px)
                     BackgroundColor(#550000FF)
-                    BorderColor(#FFFFFF)
+                    Splat<BorderColor>(#FFFFFF)
 
     "planar"
         FlexNode{flex_direction:Row justify_main:Center justify_cross:Center}

@@ -148,7 +148,7 @@ LoadLocalizedImages[
             press_with: $animation_settings_medium
         }
     ]
-    BorderColor(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
+    Splat<BorderColor>(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
 
     "indicator"
         ControlMember
@@ -158,7 +158,7 @@ LoadLocalizedImages[
         }
         Splat<Border>(2px)
         BrRadius(8.5px)
-        BorderColor(#000000)
+        Splat<BorderColor>(#000000)
 
         "indicator_dot"
             ControlMember

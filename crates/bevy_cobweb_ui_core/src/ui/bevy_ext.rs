@@ -60,6 +60,19 @@ impl Instruction for FocusPolicy
     }
 }
 
+impl Splattable for BorderColor
+{
+    type Splat = Color;
+
+    fn splat(splat: Self::Splat) -> Self {
+        splat.into()
+    }
+
+    fn splat_value(self) -> Option<Self::Splat> {
+        Some(self.top)
+    }
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
 impl Instruction for ZIndex

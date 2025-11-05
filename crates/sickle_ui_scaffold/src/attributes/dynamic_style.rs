@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::time::Stopwatch;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 
 use crate::*;
 
@@ -10,7 +10,7 @@ impl Plugin for DynamicStylePlugin
 {
     fn build(&self, app: &mut App)
     {
-        app.configure_sets(PostUpdate, DynamicStylePostUpdate.before(UiSystem::Prepare))
+        app.configure_sets(PostUpdate, DynamicStylePostUpdate.before(UiSystems::Prepare))
             .add_systems(
                 PostUpdate,
                 (

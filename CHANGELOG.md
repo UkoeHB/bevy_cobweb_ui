@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.0
+
+- Update to `bevy` 0.17.
+    - `BorderColor` is no longer a newtype. Use `Splat<BorderColor>(color)` instead.
+
+
 ## 0.21.1
 
 - Fix ordering bug with `DisplayControl` instruction.

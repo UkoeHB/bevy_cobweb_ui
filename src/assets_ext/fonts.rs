@@ -167,8 +167,8 @@ fn handle_new_lang_list(
 
 fn check_loaded_fonts(
     mut c: Commands,
-    mut events: EventReader<AssetEvent<Font>>,
-    mut errors: EventReader<AssetLoadFailedEvent<Font>>,
+    mut events: MessageReader<AssetEvent<Font>>,
+    mut errors: MessageReader<AssetLoadFailedEvent<Font>>,
     mut fonts: ResMut<FontMap>,
 )
 {

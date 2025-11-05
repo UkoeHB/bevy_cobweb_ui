@@ -60,7 +60,7 @@ pub enum GridVal
     FitContentPx(f32),
     /// Includes a percentage limit.
     FitContentPercent(f32),
-    /// Equivalent to `Self::MinMax(vec![Self::Px(0.0), Seof::Fraction(val)])`.
+    /// Equivalent to `Self::MinMax(vec![Self::Px(0.0), Self::Fraction(val)])`.
     Flex(f32),
     MinContent,
     MaxContent,
@@ -1441,13 +1441,13 @@ impl Instruction for AbsoluteNode
         }
         #[cfg(feature = "hot_reload")]
         {
-            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            // Need to copy ComputedUiTargetCamera manually because prior reverts may have put it in a bad state.
             let computed_target = match emut.get::<ChildOf>().cloned() {
                 Some(childof) => world
-                    .get::<ComputedNodeTarget>(childof.parent())
+                    .get::<ComputedUiTargetCamera>(childof.parent())
                     .copied()
                     .unwrap_or_default(),
-                None => ComputedNodeTarget::default(),
+                None => ComputedUiTargetCamera::default(),
             };
             world
                 .get_entity_mut(entity)
@@ -1637,13 +1637,13 @@ impl Instruction for FlexNode
         }
         #[cfg(feature = "hot_reload")]
         {
-            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            // Need to copy ComputedUiTargetCamera manually because prior reverts may have put it in a bad state.
             let computed_target = match emut.get::<ChildOf>().cloned() {
                 Some(childof) => world
-                    .get::<ComputedNodeTarget>(childof.parent())
+                    .get::<ComputedUiTargetCamera>(childof.parent())
                     .copied()
                     .unwrap_or_default(),
-                None => ComputedNodeTarget::default(),
+                None => ComputedUiTargetCamera::default(),
             };
             world
                 .get_entity_mut(entity)
@@ -1813,13 +1813,13 @@ impl Instruction for AbsoluteGridNode
         }
         #[cfg(feature = "hot_reload")]
         {
-            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            // Need to copy ComputedUiTargetCamera manually because prior reverts may have put it in a bad state.
             let computed_target = match emut.get::<ChildOf>().cloned() {
                 Some(childof) => world
-                    .get::<ComputedNodeTarget>(childof.parent())
+                    .get::<ComputedUiTargetCamera>(childof.parent())
                     .copied()
                     .unwrap_or_default(),
-                None => ComputedNodeTarget::default(),
+                None => ComputedUiTargetCamera::default(),
             };
             world
                 .get_entity_mut(entity)
@@ -2010,13 +2010,13 @@ impl Instruction for GridNode
         }
         #[cfg(feature = "hot_reload")]
         {
-            // Need to copy ComputedNodeTarget manually because prior reverts may have put it in a bad state.
+            // Need to copy ComputedUiTargetCamera manually because prior reverts may have put it in a bad state.
             let computed_target = match emut.get::<ChildOf>().cloned() {
                 Some(childof) => world
-                    .get::<ComputedNodeTarget>(childof.parent())
+                    .get::<ComputedUiTargetCamera>(childof.parent())
                     .copied()
                     .unwrap_or_default(),
-                None => ComputedNodeTarget::default(),
+                None => ComputedUiTargetCamera::default(),
             };
             world
                 .get_entity_mut(entity)

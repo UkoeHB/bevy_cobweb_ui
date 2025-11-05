@@ -48,7 +48,7 @@ fn check_firefox_timer(
     let Ok((scrollbar_entity, gutter_entity, mut timer)) = timer.single_mut() else { return };
     timer.0.tick(time.delta());
 
-    if timer.0.finished() {
+    if timer.0.is_finished() {
         c.entity(scrollbar_entity).remove::<FirefoxTimer>();
         c.react().entity_event(scrollbar_entity, Disable);
         ps.try_remove(&mut c, gutter_entity.parent(), IS_SCROLLING_PARAM.clone());

@@ -10,7 +10,7 @@ $animation_settings_fast = {duration:0.025 ease:Linear}
     "display"
         FlexNode{border:{top:2px bottom:2px left:2px right:2px} justify_main:Center justify_cross:Center}
         BackgroundColor(Hsla{hue:212 saturation:0.33 lightness:0.45 alpha:1})
-        BorderColor(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
+        Splat<BorderColor>(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
         BrRadius(6px)
 
         "text"
@@ -26,7 +26,7 @@ $animation_settings_fast = {duration:0.025 ease:Linear}
             flex_direction:Column justify_main:SpaceEvenly justify_cross:Center
         }
         BackgroundColor(Hsla{hue:138 saturation:0.23 lightness:0.57 alpha:1})
-        BorderColor(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
+        Splat<BorderColor>(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
         BrRadius(6px)
 
 // Button widget, implemented from scratch.
@@ -58,7 +58,7 @@ $animation_settings_fast = {duration:0.025 ease:Linear}
             press_with: $animation_settings_medium
         }
     ]
-    BorderColor(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
+    Splat<BorderColor>(Hsla{hue:174 saturation:0.23 lightness:0.18 alpha:1})
 
     "indicator"
         ControlMember
@@ -68,7 +68,7 @@ $animation_settings_fast = {duration:0.025 ease:Linear}
         }
         Splat<Border>(2px)
         BrRadius(8.5px)
-        BorderColor(#000000)
+        Splat<BorderColor>(#000000)
 
         "indicator_dot"
             ControlMember

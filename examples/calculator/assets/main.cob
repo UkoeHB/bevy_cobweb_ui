@@ -15,7 +15,7 @@ $BORDER_DISPLAY = $tw::SKY_950
     Splat<Padding>(20px)
     Splat<Margin>(5px)
     BrRadius(5px)
-    BorderColor($BORDER_BUTTON)
+    Splat<BorderColor>($BORDER_BUTTON)
     Responsive<BackgroundColor>{ idle:$NORMAL_BUTTON hover:$HOVERED_BUTTON press:$PRESSED_BUTTON }
 
     "text"
@@ -35,7 +35,7 @@ $BORDER_DISPLAY = $tw::SKY_950
     +calculator_item{
         GridColumn{ span:3 }
         BrRadius(0px)
-        BorderColor($BORDER_DISPLAY)
+        Splat<BorderColor>($BORDER_DISPLAY)
         -Responsive<BackgroundColor>
         BackgroundColor($NORMAL_BUTTON)
     }

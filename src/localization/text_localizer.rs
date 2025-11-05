@@ -68,8 +68,8 @@ fn handle_new_lang_list(
 
 fn get_localization_data(
     mut c: Commands,
-    mut errors: EventReader<AssetLoadFailedEvent<FtlBundle>>,
-    mut events: EventReader<AssetEvent<FtlBundle>>,
+    mut errors: MessageReader<AssetLoadFailedEvent<FtlBundle>>,
+    mut events: MessageReader<AssetEvent<FtlBundle>>,
     mut assets: ResMut<Assets<FtlBundle>>,
     mut localizer: ResMut<TextLocalizer>,
 )

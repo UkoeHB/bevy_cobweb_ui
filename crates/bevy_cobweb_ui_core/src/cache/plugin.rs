@@ -11,7 +11,7 @@ use crate::*;
 
 fn preprocess_cobweb_asset_files(
     asset_server: Res<AssetServer>,
-    mut events: EventReader<AssetEvent<CobAssetFile>>,
+    mut events: MessageReader<AssetEvent<CobAssetFile>>,
     mut cob_files: ResMut<LoadedCobAssetFiles>,
     mut assets: ResMut<Assets<CobAssetFile>>,
     mut cob_cache: ResMut<CobAssetCache>,
@@ -248,8 +248,7 @@ impl Plugin for CobAssetCachePlugin
                     apply_pending_node_updates_post,
                 )
                     .chain()
-                    .before(bevy::ui::UiSystem::Prepare)
-                    .before(bevy::prelude::TransformSystem::TransformPropagate)
+                    .before(bevy::ui::UiSystems::Prepare)
                     .in_set(FileProcessingSet),
             );
         }

@@ -164,10 +164,39 @@ enum _StyleAttributes
     {
         background_color: Color
     },
-    #[target_tupl(BorderColor)]
+    #[skip_lockable_enum]
+    #[target_component(BorderColor)]
     BorderColor
     {
-        border_color: Color
+        border_color: BorderColor
+    },
+    #[skip_lockable_enum]
+    #[target_component(BorderColor)]
+    #[target_component_attr(left)]
+    BorderLeftColor
+    {
+        border_left_color: Color
+    },
+    #[skip_lockable_enum]
+    #[target_component(BorderColor)]
+    #[target_component_attr(right)]
+    BorderRightColor
+    {
+        border_right_color: Color
+    },
+    #[skip_lockable_enum]
+    #[target_component(BorderColor)]
+    #[target_component_attr(bottom)]
+    BorderBottomColor
+    {
+        border_bottom_color: Color
+    },
+    #[skip_lockable_enum]
+    #[target_component(BorderColor)]
+    #[target_component_attr(top)]
+    BorderTopColor
+    {
+        border_top_color: Color
     },
     #[target_enum]
     FocusPolicy

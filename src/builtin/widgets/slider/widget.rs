@@ -1,6 +1,5 @@
-use bevy::prelude::TransformSystem::TransformPropagate;
 use bevy::prelude::*;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use bevy_cobweb::prelude::*;
 use smallvec::SmallVec;
 use smol_str::SmolStr;
@@ -91,6 +90,9 @@ struct SliderDragReference
     invalid_press: bool,
     /// Logical offset between handle and pointer during a drag. Add this to the pointer to get the target
     /// handle position.
+    ///
+    /// Used when drag starts on top of the handle, so the pointer needs to be offset from the handle center during
+    /// drag.
     offset: Vec2,
 }
 
@@ -98,7 +100,7 @@ struct SliderDragReference
 
 // NOTE: If the slider bar moves during a slider handle drag, then the handle will appear to glitch away from the
 // pointer until more drag is applied.
-// One solution would be to visually adjust the handle position between UiSystem::Layout and PropagateTransforms,
+// One solution would be to visually adjust the handle position between UiSystems::Layout and PropagateTransforms,
 // then update the value in Update in the next tick (if it changed due to handle adjustment). The visual position
 // would always be correct, however there would be a one-frame delay in slider values.
 #[derive(Component)]
@@ -144,13 +146,13 @@ fn get_camera_scale_factor(
 /// coordinates.
 fn compute_value_for_target_position(
     mut target_position_physical: Vec2,
-    slider_transform: &GlobalTransform,
+    slider_transform: &UiGlobalTransform,
     bar_size: Vec2,
     handle_size: Vec2,
     axis: SliderAxis,
 ) -> SliderValue
 {
-    let mut bar_location = slider_transform.translation().truncate();
+    let mut bar_location = slider_transform.translation;
 
     // Invert y-axis to point up.
     target_position_physical.y = -target_position_physical.y;
@@ -178,7 +180,7 @@ fn compute_value_for_target_position(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn slider_bar_ptr_down(
-    mut event: Trigger<Pointer<Pressed>>,
+    mut event: On<Pointer<Press>>,
     mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
@@ -189,16 +191,16 @@ fn slider_bar_ptr_down(
         &mut React<SliderValue>,
         Option<&mut NodeAttributes>,
         &ComputedNode,
-        &GlobalTransform,
+        &UiGlobalTransform,
         &Children,
         Option<&UiTargetCamera>,
     )>,
     children_query: Query<&Children>,
-    handles: Query<(Entity, &ComputedNode, &GlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
+    handles: Query<(Entity, &ComputedNode, &UiGlobalTransform), (With<SliderHandle>, Without<ComputedSlider>)>,
 )
 {
     // Look up the slider and its handle.
-    let slider_entity = event.target();
+    let slider_entity = event.entity;
     let Ok((
         mut slider,
         mut slider_value,
@@ -235,7 +237,7 @@ fn slider_bar_ptr_down(
     let pointer_position_physical = pointer_position * camera_scale_factor;
 
     // Check if pointer targets the handle or any of its descendants.
-    let pointer_target = event.event().target;
+    let pointer_target = event.original_event_target();
     let targets_handle = iter_children
         .search(handle_entity, &children_query, |entity| {
             if entity == pointer_target {
@@ -249,7 +251,7 @@ fn slider_bar_ptr_down(
     // If the point targets the handle, we initiate drag.
     if targets_handle {
         // Calculate logical offset between pointer and center of handle.
-        let handle_position_logical = handle_transform.translation().truncate() / camera_scale_factor.max(0.0001);
+        let handle_position_logical = handle_transform.translation / camera_scale_factor.max(0.0001);
         let offset = handle_position_logical - pointer_position;
 
         slider.drag_reference = SliderDragReference { invalid_press: false, offset };
@@ -304,7 +306,7 @@ fn slider_bar_ptr_down(
 //-------------------------------------------------------------------------------------------------------------------
 
 fn slider_bar_drag(
-    mut event: Trigger<Pointer<Drag>>,
+    mut event: On<Pointer<Drag>>,
     mut iter_children: ResMut<IterChildren>,
     mut c: Commands,
     ps: PseudoStateParam,
@@ -314,7 +316,7 @@ fn slider_bar_drag(
         &ComputedSlider,
         &mut React<SliderValue>,
         &ComputedNode,
-        &GlobalTransform,
+        &UiGlobalTransform,
         &Children,
         Option<&UiTargetCamera>,
     )>,
@@ -323,7 +325,7 @@ fn slider_bar_drag(
 )
 {
     // Look up the slider.
-    let slider_entity = event.target();
+    let slider_entity = event.entity;
     let Ok((slider, mut slider_value, slider_node, slider_transform, slider_children, maybe_slider_camera)) =
         sliders.get_mut(slider_entity)
     else {
@@ -357,7 +359,7 @@ fn slider_bar_drag(
     let bar_size = slider_node.size();
     let handle_size = handle_node.size();
 
-    // Correct the pointer location based on where we want the handle to go.
+    // Correct the pointer location based on where we want the handle to go relative to the pointer.
     let pointer_position = event.event().pointer_location.position;
     let target_position_corrected = pointer_position + slider.drag_reference.offset;
 
@@ -397,7 +399,7 @@ fn update_slider_handle_positions(
     mut sliders: Query<(&ComputedSlider, &React<SliderValue>, &Node, &ComputedNode, &Children)>,
     children_q: Query<&Children>,
     handles: Query<(Entity, &ComputedNode), (With<SliderHandle>, Without<ComputedSlider>)>,
-    mut transforms: Query<&mut Transform>,
+    mut transforms: Query<&mut UiGlobalTransform>,
 )
 {
     for (slider, slider_value, slider_node, slider_computed_node, children) in sliders.iter_mut() {
@@ -413,7 +415,6 @@ fn update_slider_handle_positions(
         else {
             continue;
         };
-        let Ok(mut handle_transform) = transforms.get_mut(handle_entity) else { continue };
 
         let axis = slider.config.axis;
 
@@ -445,7 +446,20 @@ fn update_slider_handle_positions(
 
         // Update handle's position relative to the slider bar.
         // NOTE: This position adjustment may not be 'correct' if the handle isn't a direct child of the slider.
-        handle_transform.translation += transform_offset_corrected.extend(0.);
+        update_handle_transform_recursive(handle_entity, transform_offset_corrected, &mut transforms, &children_q);
+    }
+}
+
+fn update_handle_transform_recursive(entity: Entity, offset: Vec2, transforms: &mut Query<&mut UiGlobalTransform>, children_q: &Query<&Children>)
+{
+    let Ok(mut transform) = transforms.get_mut(entity) else { return };
+    let mut temp = **transform;
+    temp.translation += offset;
+    *transform = temp.into();
+
+    let Ok(children) = children_q.get(entity) else { return };
+    for child in children.iter() {
+        update_handle_transform_recursive(child, offset, transforms, children_q);
     }
 }
 
@@ -852,15 +866,12 @@ impl Plugin for CobwebSliderPlugin
 {
     fn build(&self, app: &mut App)
     {
-        // TODO: re-enable once COB scene macros are implemented
-        //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/slider", "slider.cob");
         app.register_instruction_type::<Slider>()
             .register_component_type::<SliderHandle>()
             .configure_sets(
                 PostUpdate,
                 SliderUpdateSet
-                    .after(UiSystem::Layout)
-                    .before(TransformPropagate),
+                    .in_set(UiSystems::PostLayout)
             )
             .add_systems(PostUpdate, update_slider_handle_positions.in_set(SliderUpdateSet));
     }

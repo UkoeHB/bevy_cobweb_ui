@@ -36,13 +36,12 @@ unsolved problems
 use bevy::ecs::entity::EntityHashSet;
 use bevy::ecs::system::SystemChangeTick;
 use bevy::input::mouse::{AccumulatedMouseScroll, MouseScrollUnit};
-use bevy::input::InputSystem;
+use bevy::input::InputSystems;
 use bevy::picking::pointer::{PointerId, PointerInteraction};
-use bevy::picking::PickSet;
-use bevy::prelude::TransformSystem::TransformPropagate;
+use bevy::picking::PickingSystems;
 use bevy::prelude::*;
 use bevy::reflect::ReflectMut;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use bevy_cobweb::prelude::*;
 use smol_str::SmolStr;
 
@@ -166,7 +165,7 @@ struct MouseScrollEventTracker
 
 impl MouseScrollEventTracker
 {
-    fn update(&mut self, event: &Trigger<MouseScrollEvent>) -> bool
+    fn update(&mut self, event: &On<MouseScrollEvent>) -> bool
     {
         if self.active_id != Some(event.event().id) {
             self.active_id = Some(event.event().id);
@@ -179,7 +178,7 @@ impl MouseScrollEventTracker
             return false;
         }
 
-        let is_new = self.seen_entities.insert(event.target());
+        let is_new = self.seen_entities.insert(event.entity);
         is_new
     }
 
@@ -197,7 +196,7 @@ impl MouseScrollEventTracker
 //-------------------------------------------------------------------------------------------------------------------
 
 fn handle_mouse_scroll_event(
-    mut event: Trigger<MouseScrollEvent>,
+    mut event: On<MouseScrollEvent>,
     mut event_tracker: Local<MouseScrollEventTracker>,
     mut c: Commands,
     mut iter_children: ResMut<IterChildren>,
@@ -216,7 +215,7 @@ fn handle_mouse_scroll_event(
     }
 
     let mouse_scroll_unit = event.event().mouse_unit;
-    let hit_entity = event.target();
+    let hit_entity = event.entity;
 
     let Ok((base_entity, scroll_base, computed_base)) = bases.get(hit_entity) else { return };
 
@@ -307,10 +306,11 @@ fn apply_mouse_scroll(
     // send events erroneously
     for (entity, _) in ptr_interaction.iter() {
         if let Ok(mut ec) = c.get_entity(*entity) {
-            ec.trigger(MouseScrollEvent {
+            ec.trigger(|entity| MouseScrollEvent {
                 unconsumed_delta: mouse_scroll.delta,
                 mouse_unit: mouse_scroll.unit,
                 id: change_tick.this_run().get(),
+                entity
             });
         }
     }
@@ -357,20 +357,20 @@ fn refresh_scroll_position(
             let mut slider_val = slider_vals.get(horizontal).copied().unwrap_or_default();
             slider_val.normalize();
             let val = slider_val.single().unwrap_or_default();
-            let computed_x_offset = val * scroll_size.x;
+            let computed_x_offset = val * scroll_size.x * inverse_scale_factor;
 
-            if scroll_pos.offset_x != computed_x_offset {
-                scroll_pos.offset_x = computed_x_offset * inverse_scale_factor;
+            if scroll_pos.x != computed_x_offset {
+                scroll_pos.x = computed_x_offset;
             }
         }
         if let Some(vertical) = computed_base.vertical {
             let mut slider_val = slider_vals.get(vertical).copied().unwrap_or_default();
             slider_val.normalize();
             let val = slider_val.single().unwrap_or_default();
-            let computed_y_offset = val * scroll_size.y;
+            let computed_y_offset = val * scroll_size.y * inverse_scale_factor;
 
-            if scroll_pos.offset_y != computed_y_offset {
-                scroll_pos.offset_y = computed_y_offset * inverse_scale_factor;
+            if scroll_pos.y != computed_y_offset {
+                scroll_pos.y = computed_y_offset;
             }
         }
     }
@@ -388,16 +388,17 @@ fn update_scrollbar_handle_size(
     children: &Query<&Children>,
     bar_handles: &Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
     handles: &mut Query<
-        (&mut ComputedNode, &mut Transform),
+        &mut ComputedNode,
         (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
     >,
+    mut transforms: &mut Query<&mut UiGlobalTransform>,
     content_dim: f32,
     view_dim: f32,
     pseudo_state: PseudoState,
     get_dim_fn: impl Fn(&ComputedNode) -> f32,
     get_unrounded_size_fn: impl FnOnce(f32, &ComputedNode) -> Vec2,
     get_rounded_size_fn: impl FnOnce(f32, &ComputedNode) -> Vec2,
-    update_transform_fn: impl FnOnce(&mut Transform, f32),
+    update_transform_fn: impl Fn(&mut Vec2, f32) + Copy,
     variant: &str,
 )
 {
@@ -408,7 +409,7 @@ fn update_scrollbar_handle_size(
     else {
         return;
     };
-    let Ok((mut handle_node, handle_transform)) = handles.get_mut(handle_entity) else { return };
+    let Ok(mut handle_node) = handles.get_mut(handle_entity) else { return };
 
     let proportion = if content_dim > 0.0 {
         view_dim / content_dim
@@ -434,7 +435,7 @@ fn update_scrollbar_handle_size(
     // - Do this before updating the handle node size.
     let handle_dim = (get_dim_fn)(&handle_node);
     let adjustment = (dim_rounded - handle_dim) / 2.;
-    (update_transform_fn)(handle_transform.into_inner(), adjustment);
+    update_handle_transform_recursive(handle_entity, adjustment, &mut transforms, update_transform_fn, children);
 
     // Use reflection to force-edit the computed node's private fields.
     let ReflectMut::Struct(handle_reflect) = handle_node.as_partial_reflect_mut().reflect_mut() else {
@@ -455,6 +456,25 @@ fn update_scrollbar_handle_size(
     {
         error_once!("failed updating scrollbar handle {variant} for {bar_entity:?}: {err:?} (this error only \
             prints once; this is a bug)");
+    }
+}
+
+fn update_handle_transform_recursive(
+    entity: Entity,
+    adjustment: f32,
+    transforms: &mut Query<&mut UiGlobalTransform>,
+    update_transform_fn: impl Fn(&mut Vec2, f32) + Copy,
+    children_q: &Query<&Children>
+)
+{
+    let Ok(mut transform) = transforms.get_mut(entity) else { return };
+    let mut temp = **transform;
+    (update_transform_fn)(&mut temp.translation, adjustment);
+    *transform = temp.into();
+
+    let Ok(children) = children_q.get(entity) else { return };
+    for child in children.iter() {
+        update_handle_transform_recursive(child, adjustment, transforms, update_transform_fn, children_q);
     }
 }
 
@@ -479,9 +499,10 @@ fn refresh_scroll_handles(
     shims: Query<&ComputedNode, With<ScrollShim>>,
     bar_handles: Query<Entity, (With<SliderHandle>, With<ScrollHandle>)>,
     mut handles: Query<
-        (&mut ComputedNode, &mut Transform),
+        &mut ComputedNode,
         (Without<ScrollView>, Without<ScrollShim>, Without<ScrollBar>),
     >,
+    mut transforms: Query<&mut UiGlobalTransform>,
 )
 {
     for (view_entity, view_node) in views.iter() {
@@ -523,14 +544,15 @@ fn refresh_scroll_handles(
                 &children,
                 &bar_handles,
                 &mut handles,
+                &mut transforms,
                 content_size.x,
                 view_size.x,
                 HORIZONTAL_SCROLL_PSEUDO_STATE.clone(),
                 |node| node.size().x,
                 |w_unrounded, handle_node| Vec2::new(w_unrounded, handle_node.unrounded_size().y),
                 |w_rounded, handle_node| Vec2::new(w_rounded, handle_node.size().y),
-                |transform, adjustment| {
-                    transform.translation.x += adjustment;
+                |transform: &mut Vec2, adjustment| {
+                    transform.x += adjustment;
                 },
                 "width",
             );
@@ -546,14 +568,15 @@ fn refresh_scroll_handles(
                 &children,
                 &bar_handles,
                 &mut handles,
+                &mut transforms,
                 content_size.y,
                 view_size.y,
                 VERTICAL_SCROLL_PSEUDO_STATE.clone(),
                 |node| node.size().y,
                 |h_unrounded, handle_node| Vec2::new(handle_node.unrounded_size().x, h_unrounded),
                 |h_rounded, handle_node| Vec2::new(handle_node.size().x, h_rounded),
-                |transform, adjustment| {
-                    transform.translation.y += adjustment;
+                |transform: &mut Vec2, adjustment| {
+                    transform.y += adjustment;
                 },
                 "height",
             );
@@ -922,7 +945,8 @@ pub struct MouseScroll;
 ///
 /// Note that by default [`ScrollBase`] entities will block propagation unless [`ScrollBase::allow_multiscroll`]
 /// is set.
-#[derive(Component)]
+#[derive(Component, EntityEvent)]
+#[entity_event(propagate = &'static ChildOf, auto_propagate)]
 pub struct MouseScrollEvent
 {
     /// Mouse delta that hasn't been consumed by scroll areas yet.
@@ -932,12 +956,8 @@ pub struct MouseScrollEvent
 
     /// Unique ID for the current tick. Used to avoid duplicate-propagation of events.
     id: u32,
-}
 
-impl Event for MouseScrollEvent
-{
-    type Traversal = &'static ChildOf;
-    const AUTO_PROPAGATE: bool = true;
+    entity: Entity,
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -965,8 +985,6 @@ impl Plugin for CobwebScrollPlugin
 {
     fn build(&self, app: &mut App)
     {
-        // TODO: re-enable once COB scene macros are implemented
-        //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/scroll", "scroll.cob");
         app.register_instruction_type::<ScrollBase>()
             .register_component_type::<ScrollView>()
             .register_component_type::<ScrollShim>()
@@ -975,8 +993,8 @@ impl Plugin for CobwebScrollPlugin
             .configure_sets(
                 PreUpdate,
                 ScrollUpdateSet
-                    .after(InputSystem)
-                    .in_set(PickSet::Hover)
+                    .after(InputSystems)
+                    .in_set(PickingSystems::Hover)
                     .after(bevy::picking::hover::update_interactions)
                     .before(bevy::picking::events::pointer_events),
             )
@@ -985,14 +1003,13 @@ impl Plugin for CobwebScrollPlugin
                 ScrollUpdateSet
                     .after(FileProcessingSet)
                     .after(DynamicStylePostUpdate)
-                    .before(UiSystem::Prepare),
+                    .before(UiSystems::Prepare),
             )
             .configure_sets(
                 PostUpdate,
                 ScrollHandleUpdateSet
-                    .after(UiSystem::Layout)
+                    .in_set(UiSystems::PostLayout)
                     .before(SliderUpdateSet)
-                    .before(TransformPropagate),
             )
             .add_observer(handle_mouse_scroll_event)
             .add_systems(First, cleanup_dead_bases.after(FileProcessingSet))

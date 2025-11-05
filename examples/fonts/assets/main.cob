@@ -28,7 +28,7 @@ LoadFonts["LibreBaskerville"] // <-- required to actually use the font family! A
 
     "header"
         FlexNode{border:{bottom:2px} margin:{bottom:8px}}
-        BorderColor(#FFFFFF)
+        Splat<BorderColor>(#FFFFFF)
 
         // Note: can't have border on a text node
         "text"

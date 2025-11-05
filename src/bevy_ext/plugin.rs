@@ -12,7 +12,7 @@ impl Plugin for BevyExtPlugin
     {
         app.add_plugins(CursorPlugin)
             .add_plugins(FontExtPlugin)
-            .add_plugins(PickingPlugin)
+            .add_plugins(super::PickingPlugin)
             .add_plugins(TextureAtlasExtPlugin);
     }
 }

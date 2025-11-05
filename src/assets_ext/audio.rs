@@ -47,8 +47,8 @@ fn handle_new_lang_list(
 
 fn check_loaded_audios(
     mut c: Commands,
-    mut errors: EventReader<AssetLoadFailedEvent<AudioSource>>,
-    mut events: EventReader<AssetEvent<AudioSource>>,
+    mut errors: MessageReader<AssetLoadFailedEvent<AudioSource>>,
+    mut events: MessageReader<AssetEvent<AudioSource>>,
     mut audios: ResMut<AudioMap>,
 )
 {

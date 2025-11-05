@@ -100,10 +100,10 @@ impl AnimatedAttribute for BackgroundColor
 
 impl StaticAttribute for BorderColor
 {
-    type Value = Color;
+    type Value = Self;
     fn construct(value: Self::Value) -> Self
     {
-        Self(value)
+        value
     }
 }
 
@@ -113,7 +113,7 @@ impl AnimatedAttribute for BorderColor
     fn get_value(entity: Entity, world: &World) -> Option<Self::Value>
     {
         let br = world.get::<BorderColor>(entity).copied()?;
-        Some(br.0)
+        Some(br)
     }
 }
 
@@ -721,6 +721,7 @@ impl Plugin for UiComponentWrappersPlugin
     {
         app.register_animatable::<BackgroundColor>()
             .register_animatable::<BorderColor>()
+            .register_animatable::<Splat<BorderColor>>()
             .register_animatable::<BrRadius>()
             .register_animatable::<BrRadiusTopLeft>()
             .register_animatable::<BrRadiusTopRight>()

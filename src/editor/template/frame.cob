@@ -24,7 +24,7 @@ PrimaryCursor(System(Default))
             flex_direction:Column justify_main:FlexStart justify_cross:Center
         }
         BackgroundColor(#000000)
-        BorderColor(#FFFFFF)
+        Splat<BorderColor>(#FFFFFF)
         ResponsiveCursor{hover:System(Grab)}
         FocusPolicy::Block
 

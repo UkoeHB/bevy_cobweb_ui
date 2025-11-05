@@ -1,6 +1,6 @@
 use bevy::color::{Color, Mix};
 use bevy::prelude::Vec2;
-use bevy::ui::{BorderRadius, Outline, UiRect, Val};
+use bevy::ui::{BorderColor, BorderRadius, Outline, UiRect, Val};
 use bevy_slow_text_outline::prelude::TextOutline;
 pub trait Lerp
 {
@@ -61,6 +61,19 @@ impl Lerp for Color
     fn lerp(&self, to: Self, t: f32) -> Self
     {
         self.mix(&to, t)
+    }
+}
+
+impl Lerp for BorderColor
+{
+    fn lerp(&self, to: Self, t: f32) -> Self
+    {
+        Self{
+            left: self.left.lerp(to.left, t),
+            right: self.right.lerp(to.right, t),
+            top: self.top.lerp(to.top, t),
+            bottom: self.bottom.lerp(to.bottom, t),
+        }
     }
 }
 

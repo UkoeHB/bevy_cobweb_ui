@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use bevy_cobweb_ui_core::ui::*;
 use cob_sickle_ui_scaffold::DynamicStylePostUpdate;
 
@@ -51,7 +51,7 @@ impl Plugin for NodeWrappersPlugin
                 PostUpdate,
                 refresh_display_control
                     .after(DynamicStylePostUpdate)
-                    .before(UiSystem::Prepare),
+                    .before(UiSystems::Prepare),
             );
     }
 }

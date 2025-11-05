@@ -63,7 +63,7 @@ struct RestorableOpacity
     ui_image: f32,
     // Record for each span.
     text: SmallVec<[f32; 1]>,
-    border_color: f32,
+    border_color: (f32, f32, f32, f32),
     background_color: f32,
     box_shadows: SmallVec<[f32; 4]>,
 }
@@ -166,11 +166,26 @@ fn recursively_propagate_opacity_value(
             }
             if let Some(mut br_color) = maybe_br_color {
                 if first_traversal {
-                    restorable.border_color = color_alpha(&br_color.0);
+                    restorable.border_color.0 = color_alpha(&br_color.top);
+                    restorable.border_color.1 = color_alpha(&br_color.bottom);
+                    restorable.border_color.2 = color_alpha(&br_color.left);
+                    restorable.border_color.3 = color_alpha(&br_color.right);
                 }
-                let computed = restorable.border_color * accumulated_opacity;
-                if (color_alpha(&br_color.0) - computed).abs() > ALPHA_ROUNDING_ERROR {
-                    set_color_alpha(&mut br_color.0, computed);
+                let computed_top = restorable.border_color.0 * accumulated_opacity;
+                if (color_alpha(&br_color.top) - computed_top).abs() > ALPHA_ROUNDING_ERROR {
+                    set_color_alpha(&mut br_color.top, computed_top);
+                }
+                let computed_bottom = restorable.border_color.1 * accumulated_opacity;
+                if (color_alpha(&br_color.bottom) - computed_bottom).abs() > ALPHA_ROUNDING_ERROR {
+                    set_color_alpha(&mut br_color.bottom, computed_bottom);
+                }
+                let computed_left = restorable.border_color.2 * accumulated_opacity;
+                if (color_alpha(&br_color.left) - computed_left).abs() > ALPHA_ROUNDING_ERROR {
+                    set_color_alpha(&mut br_color.left, computed_left);
+                }
+                let computed_right = restorable.border_color.3 * accumulated_opacity;
+                if (color_alpha(&br_color.right) - computed_right).abs() > ALPHA_ROUNDING_ERROR {
+                    set_color_alpha(&mut br_color.right, computed_right);
                 }
             }
             if let Some(mut bg_color) = maybe_bg_color {
@@ -326,8 +341,17 @@ fn restore_opacity(
             });
         }
         if let Some(mut br_color) = maybe_br_color {
-            if color_alpha(&br_color.0) != restorable.border_color {
-                set_color_alpha(&mut br_color.0, restorable.border_color);
+            if color_alpha(&br_color.top) != restorable.border_color.0 {
+                set_color_alpha(&mut br_color.top, restorable.border_color.0);
+            }
+            if color_alpha(&br_color.bottom) != restorable.border_color.1 {
+                set_color_alpha(&mut br_color.bottom, restorable.border_color.1);
+            }
+            if color_alpha(&br_color.left) != restorable.border_color.2 {
+                set_color_alpha(&mut br_color.left, restorable.border_color.2);
+            }
+            if color_alpha(&br_color.right) != restorable.border_color.3 {
+                set_color_alpha(&mut br_color.right, restorable.border_color.3);
             }
         }
         if let Some(mut bg_color) = maybe_bg_color {

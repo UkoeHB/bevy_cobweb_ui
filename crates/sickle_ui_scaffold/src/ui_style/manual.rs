@@ -467,15 +467,15 @@ impl EntityCommand for SetAbsolutePosition
             };
 
             let size = parent_node.unrounded_size();
-            let Some(parent_transform) = world.get::<GlobalTransform>(child_of.parent()) else {
+            let Some(parent_transform) = world.get::<UiGlobalTransform>(child_of.parent()) else {
                 warn!(
-                    "Failed to set position on entity {}: Parent has no GlobalTransform component!",
+                    "Failed to set position on entity {}: Parent has no UiGlobalTransform component!",
                     entity
                 );
                 return;
             };
 
-            (parent_transform.translation().truncate() - (size / 2.)) * parent_node.inverse_scale_factor()
+            (parent_transform.translation - (size / 2.)) * parent_node.inverse_scale_factor()
         } else {
             Vec2::ZERO
         };

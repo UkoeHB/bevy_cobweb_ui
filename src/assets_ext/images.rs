@@ -47,8 +47,8 @@ fn handle_new_lang_list(
 
 fn check_loaded_images(
     mut c: Commands,
-    mut errors: EventReader<AssetLoadFailedEvent<Image>>,
-    mut events: EventReader<AssetEvent<Image>>,
+    mut errors: MessageReader<AssetLoadFailedEvent<Image>>,
+    mut events: MessageReader<AssetEvent<Image>>,
     mut images: ResMut<ImageMap>,
 )
 {

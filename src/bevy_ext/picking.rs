@@ -81,7 +81,7 @@ impl ResponsiveAttribute for Picking {}
 
 //-------------------------------------------------------------------------------------------------------------------
 
-pub(crate) struct PickingPlugin;
+pub(super) struct PickingPlugin;
 
 impl Plugin for PickingPlugin
 {

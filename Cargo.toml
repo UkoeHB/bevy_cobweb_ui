@@ -87,9 +87,9 @@ cobweb_asset_format = { path = "crates/cobweb_asset_format", version = "0.2.1", 
 bevy_cobweb_ui_core = { path = "crates/bevy_cobweb_ui_core", version = "0.1.0", default-features = false, features = ["ui"] }
 
 [workspace.dependencies]
-bevy_cobweb = { version = "0.17.0" }
-bevy_slow_text_outline = { version = "0.2", default-features = false }
+bevy_cobweb = { version = "0.18" }
 #bevy_cobweb = { git = "https://github.com/UkoeHB/bevy_cobweb", rev = "19c66ab" }
+bevy_slow_text_outline = { version = "0.3", default-features = false }
 dyn-clone = { version = "1.0" }
 nom = { version = "7.1" }
 nom_locate = { version = "4.2" }
@@ -101,7 +101,7 @@ tracing = { version = "0.1" }
 wasm-timer = { version = "0.2" }
 
 [workspace.dependencies.bevy]
-version = "0.16"
+version = "0.17"
 default-features = false
 features = [
   "std",
@@ -124,7 +124,7 @@ features = [
 ]
 
 [dev-dependencies]
-bevy = { version = "0.16", default-features = false, features = [
+bevy = { version = "0.17", default-features = false, features = [
   "serialize",
 
   # AssetEvents for AudioSource are not registered if no audio types are included

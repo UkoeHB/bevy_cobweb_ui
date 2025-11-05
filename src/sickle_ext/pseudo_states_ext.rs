@@ -7,7 +7,7 @@ use crate::sickle::*;
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
+fn enable_reactor(event: bevy_cobweb::prelude::EntityEvent<Enable>, mut c: Commands, fluxes: Query<&FluxInteraction>)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -22,7 +22,7 @@ fn enable_reactor(event: EntityEvent<Enable>, mut c: Commands, fluxes: Query<&Fl
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
+fn disable_reactor(event: bevy_cobweb::prelude::EntityEvent<Disable>, mut c: Commands, fluxes: Query<(), With<FluxInteraction>>)
 {
     let entity = event.entity();
     let Ok(mut ec) = c.get_entity(entity) else { return };
@@ -35,7 +35,7 @@ fn disable_reactor(event: EntityEvent<Disable>, mut c: Commands, fluxes: Query<(
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn select_reactor(event: EntityEvent<Select>, mut c: Commands)
+fn select_reactor(event: bevy_cobweb::prelude::EntityEvent<Select>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -45,7 +45,7 @@ fn select_reactor(event: EntityEvent<Select>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
+fn deselect_reactor(event: bevy_cobweb::prelude::EntityEvent<Deselect>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -55,7 +55,7 @@ fn deselect_reactor(event: EntityEvent<Deselect>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn check_reactor(event: EntityEvent<Check>, mut c: Commands)
+fn check_reactor(event: bevy_cobweb::prelude::EntityEvent<Check>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -65,7 +65,7 @@ fn check_reactor(event: EntityEvent<Check>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
+fn uncheck_reactor(event: bevy_cobweb::prelude::EntityEvent<Uncheck>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -75,7 +75,7 @@ fn uncheck_reactor(event: EntityEvent<Uncheck>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
+fn toggle_check_reactor(event: bevy_cobweb::prelude::EntityEvent<ToggleCheck>, mut c: Commands, ps: PseudoStateParam)
 {
     let entity = event.entity();
 
@@ -88,7 +88,7 @@ fn toggle_check_reactor(event: EntityEvent<ToggleCheck>, mut c: Commands, ps: Ps
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn open_reactor(event: EntityEvent<Open>, mut c: Commands)
+fn open_reactor(event: bevy_cobweb::prelude::EntityEvent<Open>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -99,7 +99,7 @@ fn open_reactor(event: EntityEvent<Open>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn close_reactor(event: EntityEvent<Close>, mut c: Commands)
+fn close_reactor(event: bevy_cobweb::prelude::EntityEvent<Close>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -110,7 +110,7 @@ fn close_reactor(event: EntityEvent<Close>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
+fn fold_reactor(event: bevy_cobweb::prelude::EntityEvent<Fold>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {
@@ -120,7 +120,7 @@ fn fold_reactor(event: EntityEvent<Fold>, mut c: Commands)
 
 //-------------------------------------------------------------------------------------------------------------------
 
-fn unfold_reactor(event: EntityEvent<Unfold>, mut c: Commands)
+fn unfold_reactor(event: bevy_cobweb::prelude::EntityEvent<Unfold>, mut c: Commands)
 {
     let entity = event.entity();
     let _ = c.get_entity(entity).map(|mut ec| {

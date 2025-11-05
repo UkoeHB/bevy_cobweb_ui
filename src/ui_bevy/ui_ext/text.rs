@@ -75,11 +75,11 @@ pub struct TextLine
     /// Defaults to [`LineBreak::NoWrap`].
     #[reflect(default = "TextLine::default_line_break")]
     pub linebreak: LineBreak,
-    /// The line's [`JustifyText`] behavior.
+    /// The line's [`Justify`] behavior.
     ///
-    /// Defaults to [`JustifyText::Left`].
+    /// Defaults to [`Justify::Left`].
     #[reflect(default = "TextLine::default_justify_text")]
-    pub justify: JustifyText,
+    pub justify: Justify,
 }
 
 impl TextLine
@@ -110,9 +110,9 @@ impl TextLine
         LineBreak::NoWrap
     }
 
-    fn default_justify_text() -> JustifyText
+    fn default_justify_text() -> Justify
     {
-        JustifyText::Left
+        Justify::Left
     }
 }
 

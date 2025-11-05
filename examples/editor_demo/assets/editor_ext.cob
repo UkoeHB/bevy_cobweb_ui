@@ -24,7 +24,7 @@ builtin.colors.tailwind as tw
         FlexNode{width:65px flex_direction:Row justify_main:Center justify_cross:Center}
         BrRadius(4px)
         Splat<Border>(1px)
-        BorderColor(#99FFFFFF)
+        Splat<BorderColor>(#99FFFFFF)
         Responsive<BackgroundColor>{idle:#00000000 hover:#66888888}
         ResponsiveCursor{hover:System(ColResize)}
 

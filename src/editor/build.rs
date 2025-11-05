@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use bevy::camera::RenderTarget;
 use bevy::prelude::*;
 use bevy::reflect::TypeRegistry;
-use bevy::render::camera::RenderTarget;
 use bevy::window::{EnabledButtons, PrimaryWindow, WindowRef, WindowResolution, WindowTheme};
 use bevy_cobweb::prelude::*;
 use bevy_cobweb_ui_core::editor::*;
@@ -289,7 +289,7 @@ fn build_editor_view(mut c: Commands, mut s: SceneBuilder, camera: Query<Entity,
             // Core reactor for setting up content.
             h.on_event::<Option<CobFile>>().r(
                 move |//
-                    event: EntityEvent<Option<CobFile>>,
+                    event: bevy_cobweb::prelude::EntityEvent<Option<CobFile>>,
                     mut c: Commands,
                     mut selection: ResMut<EditorFileSelection>//
                 | {
@@ -526,7 +526,7 @@ impl Plugin for CobEditorBuildPlugin
         let initial_height = primary_window.resolution.size().y;
 
         // Make editor window.
-        let mut resolution = WindowResolution::new(0., 0.);
+        let mut resolution = WindowResolution::new(0, 0);
         resolution.set(EDITOR_WIDTH, initial_height); // TODO: don't hard-code the width, and maybe don't fix height to primary?
         let editor_window = app
             .world_mut()

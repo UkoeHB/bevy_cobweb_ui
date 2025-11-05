@@ -21,7 +21,8 @@ impl Plugin for CobwebUiPlugin
             app.add_plugins(BevyCobwebUiCorePlugin);
         }
 
-        app.register_type_data::<Cow<str>, ReflectDeserialize>()
+        app.register_type::<Cow<str>>()
+            .register_type_data::<Cow<str>, ReflectDeserialize>()
             .add_plugins(crate::builtin::BuiltinPlugin)
             .add_plugins(ReactExtPlugin)
             .add_plugins(BevyExtPlugin)

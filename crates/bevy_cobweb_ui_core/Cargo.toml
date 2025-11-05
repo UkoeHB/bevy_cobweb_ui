@@ -22,7 +22,7 @@ editor = ["hot_reload", "dep:foldhash"]
 hot_reload = ["bevy/file_watcher", "bevy/multi_threaded", "bevy/embedded_watcher"]
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = ["std", "bevy_asset"] }
+bevy = { version = "0.17", default-features = false, features = ["std", "bevy_asset"] }
 bevy_cobweb = { workspace = true }
 bevy_slow_text_outline = { workspace = true, optional = true }
 nom = { workspace = true }

@@ -8,7 +8,7 @@ PrimaryCursor(Custom{image:"cursor.png" hotspot:(9, 9)})
     "box"
         FlexNode{width:200px height:200px justify_main:Center justify_cross:Center}
         BackgroundColor(#00BB00)
-        ResponsiveCursor{ hover: System(Move) }
+        ResponsiveCursor{ hover: System(Pointer) }
 
         "inner"
             FlexNode{width:100px height:100px}

@@ -1,6 +1,6 @@
+use bevy::camera::RenderTarget;
 use bevy::ecs::component::ComponentInfo;
 use bevy::prelude::*;
-use bevy::render::camera::{ManualTextureViews, RenderTarget};
 use bevy::window::{PrimaryWindow, Window, WindowRef, WindowResolution};
 
 pub struct UiUtils;
@@ -13,7 +13,7 @@ impl UiUtils
     /// [`UiUtils::simplify_type_name`] on it.
     pub fn simplify_component_name(component_info: &ComponentInfo) -> String
     {
-        UiUtils::simplify_type_name(component_info.name())
+        UiUtils::simplify_type_name(&*component_info.name())
     }
 
     /// Strips fully qualified names and returns the type name
@@ -53,10 +53,9 @@ impl UiUtils
 
         // Unsafe unwarp: If a Ui element doesn't have a GT, we should panic!
         let mut offset = world
-            .get::<GlobalTransform>(entity)
+            .get::<UiGlobalTransform>(entity)
             .unwrap()
-            .translation()
-            .truncate();
+            .translation;
 
         let mut current_ancestor = entity;
         while let Some(child_of) = world.get::<ChildOf>(current_ancestor) {
@@ -73,10 +72,9 @@ impl UiUtils
             let node_size = node.unrounded_size();
             // Unsafe unwrap: If a UI element doesn't have a GT, we should panic!
             let current_pos = world
-                .get::<GlobalTransform>(current_ancestor)
+                .get::<UiGlobalTransform>(current_ancestor)
                 .unwrap()
-                .translation()
-                .truncate();
+                .translation;
 
             if container_size.x == 0. && style.overflow.x == OverflowAxis::Clip {
                 container_size.x = node_size.x;
@@ -234,6 +232,9 @@ impl UiUtils
                 };
 
                 Vec2::new(texture_view.size.x as f32, texture_view.size.y as f32)
+            },
+            RenderTarget::None { size } => {
+                Vec2{ x: size.x as f32, y: size.y as f32 }
             }
         }
     }

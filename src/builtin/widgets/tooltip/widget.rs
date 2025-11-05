@@ -214,7 +214,7 @@ pub fn center_position(mut nodes: Query<(&mut Transform, &CenterPosition)>) {
 }
 
 pub fn window_clamp(
-    mut nodes: Query<(&mut GlobalTransform, &ComputedNode), With<WindowClamp>>,
+    mut nodes: Query<(&mut UiGlobalTransform, &ComputedNode), With<WindowClamp>>,
     window: Single<&Window, With<PrimaryWindow>>,
 ) {
     let size = window.size();
@@ -224,7 +224,7 @@ pub fn window_clamp(
         let min = (affine.translation.xy() - half_size).min(Vec2::ZERO);
         let max = size - (affine.translation.xy() + half_size).max(size);
         affine.translation += Vec3A::from((min + max).extend(0.0));
-        *transform = GlobalTransform::from(affine);
+        *transform = UiGlobalTransform::from(affine);
     }
 }
 */
@@ -237,15 +237,12 @@ impl Plugin for CobwebTooltipPlugin
 {
     fn build(&self, app: &mut App)
     {
-        // TODO: re-enable once COB scene macros are implemented
-        //load_embedded_scene_file!(app, "bevy_cobweb_ui", "src/builtin/widgets/tooltip", "tooltip.cob");
         app.register_instruction_type::<TooltipSource>()
             .register_instruction_type::<Tooltip>()
             .add_systems(
                 PostUpdate,
                 update_tooltip_positions
-                    .after(UiSystem::Layout)
-                    .before(TransformPropagate),
+                    .after(UiSystem::Layout),
             );
     }
 }

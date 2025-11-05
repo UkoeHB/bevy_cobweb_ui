@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use bevy_cobweb::prelude::*;
 use fluent_langneg::LanguageIdentifier;
 use smallvec::SmallVec;
@@ -348,7 +348,7 @@ impl Plugin for LocalizedTextPlugin
             .react(|rc| rc.on_persistent(broadcast::<RelocalizeApp>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<TextLocalizerLoaded>(), relocalize_text))
             .react(|rc| rc.on_persistent(broadcast::<FontMapLoaded>(), handle_font_refresh))
-            .configure_sets(PostUpdate, LocalizationSet::Update.before(UiSystem::Prepare))
+            .configure_sets(PostUpdate, LocalizationSet::Update.before(UiSystems::Prepare))
             .add_systems(PostUpdate, handle_new_localized_text.in_set(LocalizationSet::Update));
     }
 }

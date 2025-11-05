@@ -16,7 +16,7 @@ full = ["builtin"]
 builtin = ["dep:bevy"]
 
 [dependencies]
-bevy = { version = "0.16", default-features = false, features = ["bevy_ui", "bevy_color"], optional = true }
+bevy = { version = "0.17", default-features = false, features = ["bevy_ui", "bevy_color"], optional = true }
 nom = { workspace = true }
 nom_locate = { workspace = true }
 serde = { workspace = true }

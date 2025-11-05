@@ -70,11 +70,11 @@ fn setup_drag(ec: &mut EntityCommands, widget_id: Entity)
 {
     // TODO: drag reacting should be integrated with bevy_cobweb_ui's interaction extensions (need a fully
     // unified and clear input interface from bevy)
-    ec.observe(move |drag: Trigger<Pointer<Drag>>, mut c: Commands| {
+    ec.observe(move |drag: On<Pointer<Drag>>, mut c: Commands| {
         c.entity(widget_id)
             .try_insert(DragZoneDragDistance(drag.distance.x));
     });
-    ec.observe(move |_: Trigger<Pointer<DragEnd>>, mut c: Commands| {
+    ec.observe(move |_: On<Pointer<DragEnd>>, mut c: Commands| {
         c.entity(widget_id).remove::<DragZoneDragDistance>();
     });
 }
@@ -128,7 +128,7 @@ fn make_draggable_field_widget(
 
         // Convert drag values to field value changes.
         h.on_event::<DragValue>().r(
-            move |event: EntityEvent<DragValue>, mut c: Commands, mut fields: ReactiveMut<FieldValue<f32>>| {
+            move |event: bevy_cobweb::prelude::EntityEvent<DragValue>, mut c: Commands, mut fields: ReactiveMut<FieldValue<f32>>| {
                 let (_, delta) = event.try_read()?;
                 let val = fields.get(widget_id)?;
                 let bounds_width = *bounds.end() - *bounds.start();

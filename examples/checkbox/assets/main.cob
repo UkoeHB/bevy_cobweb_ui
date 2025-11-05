@@ -14,7 +14,7 @@ $toggle_animation = {duration:0.2 ease:InOutSine}
             FlexNode{width:20px height:20px justify_main:Center justify_cross:Center}
             Splat<Border>(2px)
             BackgroundColor(#777777)
-            BorderColor(#333333)
+            Splat<BorderColor>(#333333)
 
             "marker"
                 ControlMember
@@ -39,7 +39,7 @@ $toggle_animation = {duration:0.2 ease:InOutSine}
                 {idle:#777777 enter_idle_with:$toggle_animation delete_on_entered:true}
                 {state:[Checked] idle:#3333FF enter_idle_with:$toggle_animation delete_on_entered:true}
             ]
-            BorderColor(#333333)
+            Splat<BorderColor>(#333333)
 
             // Channel for the marker to move in.
             "channel"

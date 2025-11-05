@@ -1,7 +1,7 @@
 use std::any::TypeId;
 use std::marker::PhantomData;
 
-use bevy::ecs::component::HookContext;
+use bevy::ecs::lifecycle::HookContext;
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::DeferredWorld;
 use bevy::prelude::*;

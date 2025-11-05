@@ -70,9 +70,11 @@ impl ReflectStructurePoint
                 // - can maybe be solved by using a callback instead of returning &mut PartialReflect
                 None
             }
-            Self::MapValue(index) => {
-                let ReflectMut::Map(dyn_map) = target.reflect_mut() else { return None };
-                dyn_map.get_at_mut(*index).map(|(_, value)| value)
+            Self::MapValue(_index) => {
+                // let ReflectMut::Map(dyn_map) = target.reflect_mut() else { return None };
+                // dyn_map.get_at_mut(*index).map(|(_, value)| value)
+                // TODO: maps are unordered as of bevy 0.17
+                None
             }
             Self::Set(_index) => {
                 // TODO: needs special handling, set elements can't be edited directly
