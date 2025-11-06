@@ -200,24 +200,17 @@ impl LoadableCursor
                     hotspot,
                 })))
             }
-            Self::Url { url: _url, hotspot: _hotspot } => {
-                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+            Self::Url { url, hotspot } => {
+                if cfg!(not(all(target_family = "wasm", target_os = "unknown")))
                 {
-                    // Some(CursorIcon::Custom(CustomCursor::Url(bevy::winit::cursor::CustomCursorUrl {
-                    //     url: _url.to_string(),
-                    //     hotspot: _hotspot,
-                    // })))
-                    warn_once!("failed making custom cursor from URL on WASM; bevy v0.16.0 is broken, see \
-                        https://github.com/bevyengine/bevy/pull/19006; this warning only prints once");
-                    None
+                    warn_once!("making cursor icon from URL {url:?}; only WASM targets are supported, but the target \
+                        is not WASM; this warning only prints once");
                 }
 
-                #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
-                {
-                    warn_once!("failed making cursor icon from URL {_url:?}; only WASM targets are supported, but the target \
-                        is not WASM; this warning only prints once");
-                    None
-                }
+                Some(CursorIcon::Custom(CustomCursor::Url(bevy::window::CustomCursorUrl {
+                    url: url.to_string(),
+                    hotspot,
+                })))
             }
             Self::System(icon) => Some(CursorIcon::System(icon)),
         }

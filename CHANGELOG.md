@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.1
+
+- Fix `CustomCursorUrl`.
+
+
 ## 0.22.0
 
 - Update to `bevy` 0.17.
