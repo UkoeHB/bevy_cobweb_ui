@@ -72,6 +72,7 @@ Syntax highlighting is provided for the `.rawcob` file extension:
 
 | `bevy` | `bevy_cobweb_ui` |
 |-------|-------------------|
-| 0.16  | 0.13.0 - main     |
-| 0.15  | 0.5.0 - 0.12.3    |
-| 0.14  | 0.1.0 - 0.4.1     |
+| 0.17  | 0.22 - main     |
+| 0.16  | 0.13 - 0.21     |
+| 0.15  | 0.5 - 0.12    |
+| 0.14  | 0.1 - 0.4     |
