@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.2
+
+- (01/13/2026) Crate maintenance ends.
+
+
 ## 0.22.1
 
 - Fix `CustomCursorUrl`.

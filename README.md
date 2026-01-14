@@ -1,5 +1,7 @@
 # Bevy Cobweb UI
 
+**No longer maintained as of 01/13/2026.**
+
 A UI and asset-management framework for the `bevy` game engine.
 
 Depends on `bevy` and [bevy_cobweb](https://github.com/UkoeHB/bevy_cobweb).
